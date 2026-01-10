@@ -1,22 +1,10 @@
+// app/api/admin/legal/cookie-policy/route.ts - CORRECTED
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import LegalDocument from '@/models/LegalDocument';
 import { verifyToken } from '@/lib/jwt';
 
-// Document type mapping
-const TYPE_MAPPING: Record<string, string> = {
-  'privacy-policy': 'privacy_policy',
-  'terms-of-service': 'terms_of_service',
-  'cookie-policy': 'cookie_policy',
-  'privacy_policy': 'privacy_policy',
-  'terms_of_service': 'terms_of_service',
-  'cookie_policy': 'cookie_policy'
-};
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { type: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
     // Admin authentication check
     const authToken = request.cookies.get('auth_token')?.value;
@@ -44,41 +32,20 @@ export async function GET(
       }, { status: 403 });
     }
 
-    const rawType = params.type;
-    const dbType = TYPE_MAPPING[rawType];
-    
-    if (!dbType) {
-      return NextResponse.json(
-        { 
-          success: false,
-          message: 'Invalid document type' 
-        },
-        { status: 400 }
-      );
-    }
-
     await connectToDatabase();
 
-    const document = await LegalDocument.findOne({ type: dbType })
-      .populate('lastUpdatedBy', 'name email');
-
-    if (!document) {
-      return NextResponse.json(
-        { 
-          success: false,
-          message: 'Document not found' 
-        },
-        { status: 404 }
-      );
-    }
+    // FIX: Changed 'cookie-policy' to 'cookie_policy' (database uses underscores)
+    const document = await LegalDocument.findOne({ 
+      type: 'cookie_policy' // ← FIX HERE
+    }).populate('lastUpdatedBy', 'name email');
 
     return NextResponse.json({
       success: true,
-      data: document
+      data: document || null
     });
 
   } catch (error: any) {
-    console.error('Get admin legal document error:', error);
+    console.error('Get cookie policy error:', error);
     return NextResponse.json(
       { 
         success: false,
@@ -89,10 +56,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { type: string } }
-) {
+export async function PUT(request: NextRequest) {
   try {
     // Admin authentication check
     const authToken = request.cookies.get('auth_token')?.value;
@@ -118,19 +82,6 @@ export async function PUT(
         success: false,
         message: 'Insufficient permissions' 
       }, { status: 403 });
-    }
-
-    const rawType = params.type;
-    const dbType = TYPE_MAPPING[rawType];
-    
-    if (!dbType) {
-      return NextResponse.json(
-        { 
-          success: false,
-          message: 'Invalid document type' 
-        },
-        { status: 400 }
-      );
     }
 
     const { title, content, version } = await request.json();
@@ -148,8 +99,8 @@ export async function PUT(
 
     await connectToDatabase();
 
-    // Find existing document or create new
-    let document = await LegalDocument.findOne({ type: dbType });
+    // FIX: Changed 'cookie-policy' to 'cookie_policy'
+    let document = await LegalDocument.findOne({ type: 'cookie_policy' }); // ← FIX HERE
 
     if (document) {
       // Update existing
@@ -161,7 +112,7 @@ export async function PUT(
     } else {
       // Create new
       document = new LegalDocument({
-        type: dbType,
+        type: 'cookie_policy', // ← FIX HERE
         title,
         content,
         version,
@@ -171,15 +122,16 @@ export async function PUT(
     }
 
     await document.save();
+    await document.populate('lastUpdatedBy', 'name email');
 
     return NextResponse.json({
       success: true,
-      message: document.isNew ? 'Document created successfully' : 'Document updated successfully',
+      message: document.isNew ? 'Cookie Policy created' : 'Cookie Policy updated',
       data: document
     });
 
   } catch (error: any) {
-    console.error('Update legal document error:', error);
+    console.error('Update cookie policy error:', error);
     return NextResponse.json(
       { 
         success: false,

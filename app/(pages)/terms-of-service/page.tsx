@@ -39,7 +39,7 @@ export default function TermsOfServicePage() {
       setLoading(true);
       setError('');
       
-      const response = await fetch('/api/legal/terms_of_service');
+      const response = await fetch('/api/legal/terms-of-service');
       
       if (!response.ok) {
         throw new Error('Failed to fetch terms of service');

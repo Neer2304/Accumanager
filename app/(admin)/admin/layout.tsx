@@ -1,3 +1,4 @@
+// app/(admin)/admin/layout.tsx - UPDATED
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -18,6 +19,7 @@ import {
   ListItemIcon,
   ListItemText,
   IconButton,
+  Divider,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -27,6 +29,8 @@ import {
   Logout,
   Store,
   Description,
+  AdminPanelSettings,
+  BarChart,
 } from '@mui/icons-material';
 import Link from 'next/link';
 
@@ -76,10 +80,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const menuItems = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
-    { text: 'Users', icon: <People />, path: '/admin/users' },
-    { text: 'Settings', icon: <Settings />, path: '/admin/settings' },
-    { text: 'Legal Documents', icon: <Description />, path: '/admin/legal' }, // Add this line
+    { 
+      text: 'Dashboard', 
+      icon: <Dashboard />, 
+      path: '/admin/dashboard' 
+    },
+    { 
+      text: 'Users', 
+      icon: <People />, 
+      path: '/admin/users' 
+    },
+    { 
+      text: 'Analytics', 
+      icon: <BarChart />, 
+      path: '/admin/analytics' 
+    },
+    { 
+      text: 'Legal Documents', 
+      icon: <Description />, 
+      path: '/admin/legal' 
+    },
+    { 
+      text: 'Settings', 
+      icon: <Settings />, 
+      path: '/admin/settings' 
+    },
   ];
 
   if (loading && !['/admin/login', '/admin/setup'].includes(pathname)) {
@@ -109,15 +134,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <MenuIcon />
           </IconButton>
           
-          <Store sx={{ mr: 2 }} />
+          <AdminPanelSettings sx={{ mr: 2 }} />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Admin Panel
+            Admin Dashboard
           </Typography>
           
           {user && (
-            <Button color="inherit" onClick={handleLogout}>
-              <Logout sx={{ mr: 1 }} /> Logout
-            </Button>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="body2">
+                {user.name}
+              </Typography>
+              <Button 
+                color="inherit" 
+                onClick={handleLogout}
+                startIcon={<Logout />}
+              >
+                Logout
+              </Button>
+            </Box>
           )}
         </Toolbar>
       </AppBar>
@@ -128,13 +162,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         onClose={() => setDrawerOpen(false)}
         sx={{
           '& .MuiDrawer-paper': {
-            width: 240,
+            width: 280,
+            boxSizing: 'border-box',
           },
         }}
       >
         <Toolbar />
         <Box sx={{ overflow: 'auto' }}>
           <List>
+            <ListItem>
+              <Typography 
+                variant="subtitle2" 
+                color="text.secondary"
+                sx={{ px: 2, py: 1 }}
+              >
+                MAIN NAVIGATION
+              </Typography>
+            </ListItem>
             {menuItems.map((item) => (
               <ListItem key={item.text} disablePadding>
                 <ListItemButton
@@ -142,9 +186,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   href={item.path}
                   selected={pathname === item.path}
                   onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    '&.Mui-selected': {
+                      backgroundColor: 'primary.light',
+                      '&:hover': {
+                        backgroundColor: 'primary.light',
+                      },
+                    },
+                  }}
                 >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
+                  <ListItemIcon sx={{ color: pathname === item.path ? 'primary.main' : 'inherit' }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={item.text} 
+                    primaryTypographyProps={{
+                      fontWeight: pathname === item.path ? 'bold' : 'normal'
+                    }}
+                  />
                 </ListItemButton>
               </ListItem>
             ))}
@@ -153,16 +212,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </Drawer>
 
       {/* Main Content */}
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1, 
+          p: 3,
+          backgroundColor: 'background.default',
+          minHeight: '100vh'
+        }}
+      >
         <Toolbar /> {/* This adds spacing below AppBar */}
         
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert 
+            severity="error" 
+            sx={{ mb: 3 }}
+            onClose={() => setError('')}
+          >
             {error}
           </Alert>
         )}
         
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" sx={{ p: 0 }}>
           {children}
         </Container>
       </Box>

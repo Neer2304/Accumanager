@@ -5,21 +5,24 @@ const legalDocumentSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ['privacy_policy', 'terms_of_service', 'cookie_policy'],
-    required: true,  // Make sure this is required
-    unique: true
+    required: [true, 'Document type is required'],
+    unique: true,
+    index: true
   },
   title: {
     type: String,
-    required: true
+    required: [true, 'Title is required'],
+    trim: true
   },
   content: {
     type: String,
-    required: true
+    required: [true, 'Content is required']
   },
   version: {
     type: String,
-    required: true,
-    default: '1.0.0'
+    required: [true, 'Version is required'],
+    default: '1.0.0',
+    match: [/^\d+\.\d+\.\d+$/, 'Version must be in format X.X.X']
   },
   lastUpdated: {
     type: Date,
@@ -28,14 +31,17 @@ const legalDocumentSchema = new mongoose.Schema({
   lastUpdatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: [true, 'Last updated by is required']
   },
   isActive: {
     type: Boolean,
     default: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'legaldocuments'
 });
+
+legalDocumentSchema.index({ type: 1, isActive: 1 });
 
 export default mongoose.models.LegalDocument || mongoose.model('LegalDocument', legalDocumentSchema);

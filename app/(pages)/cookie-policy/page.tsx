@@ -39,7 +39,7 @@ export default function CookiePolicyPage() {
       setLoading(true);
       setError('');
       
-      const response = await fetch('/api/legal/cookie_policy');
+      const response = await fetch('/api/legal/cookie-policy');
       
       if (!response.ok) {
         throw new Error('Failed to fetch cookie policy');
