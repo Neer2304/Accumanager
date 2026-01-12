@@ -1,4 +1,4 @@
-// app/admin/legal/page.tsx
+// app/admin/legal/page.tsx - Refactored using common components
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -6,47 +6,22 @@ import {
   Box,
   Typography,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Button,
-  Chip,
   Alert,
   CircularProgress,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Snackbar,
 } from "@mui/material";
-import {
-  Edit as EditIcon,
-  Visibility as ViewIcon,
-  Refresh as RefreshIcon,
-  Description as DocumentIcon,
-} from "@mui/icons-material";
+import { Refresh as RefreshIcon } from "@mui/icons-material";
 import LegalDocumentEditor from "@/components/admin/LegalDocumentEditor";
+import LegalDocumentsTable from "@/components/admin/LegalDocumentsTable";
+import { useLegalDocuments } from "@/hooks/useLegalDocuments";
+import { LegalDocument, DocumentTypeConfig } from "@/types/legal";
 
-interface LegalDocument {
-  _id: string;
-  type: string;
-  title: string;
-  content: string;
-  version: string;
-  lastUpdated: string;
-  lastUpdatedBy: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  isActive: boolean;
-}
-
-const documentTypes = [
+const documentTypes: DocumentTypeConfig[] = [
   {
     type: "privacy_policy",
     label: "Privacy Policy",
@@ -65,12 +40,32 @@ const documentTypes = [
     description: "Information about cookies and tracking",
     apiEndpoint: "cookie-policy"
   },
+  // Add more document types as needed
+  {
+    type: "refund_policy",
+    label: "Refund Policy",
+    description: "Policy for refunds and returns",
+    apiEndpoint: "refund-policy"
+  },
+  {
+    type: "shipping_policy",
+    label: "Shipping Policy",
+    description: "Information about shipping and delivery",
+    apiEndpoint: "shipping-policy"
+  }
 ];
 
 export default function LegalDocumentsPage() {
-  const [documents, setDocuments] = useState<LegalDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    documents,
+    loading,
+    error,
+    fetchAllDocuments,
+    getDocumentByType,
+    createInitialDocument,
+    formatDate
+  } = useLegalDocuments({ documentTypes });
+
   const [editingDoc, setEditingDoc] = useState<LegalDocument | null>(null);
   const [previewDialog, setPreviewDialog] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -79,74 +74,17 @@ export default function LegalDocumentsPage() {
     severity: "success" as "success" | "error",
   });
 
-  const fetchDocument = async (docType: typeof documentTypes[0]) => {
-    try {
-      const response = await fetch(`/api/admin/legal/${docType.apiEndpoint}`);
-      
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null; // Document doesn't exist yet
-        }
-        throw new Error(`Failed to fetch ${docType.label}`);
-      }
-
-      const data = await response.json();
-      return data.success ? data.data : null;
-    } catch (error) {
-      console.error(`Error fetching ${docType.label}:`, error);
-      return null;
-    }
-  };
-
-  const fetchAllDocuments = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const promises = documentTypes.map(docType => fetchDocument(docType));
-      const results = await Promise.all(promises);
-
-      const docs: LegalDocument[] = results
-        .filter(doc => doc !== null)
-        .map(doc => ({
-          ...doc,
-          type: doc.type // This will be 'privacy_policy', 'terms_of_service', etc.
-        }));
-
-      setDocuments(docs);
-    } catch (err: any) {
-      setError(err.message || "Failed to load documents");
-      console.error("Error fetching documents:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchAllDocuments();
-  }, []);
+  }, [fetchAllDocuments]);
 
-  const getDocumentByType = (type: string) => {
-    return documents.find((doc) => doc.type === type);
-  };
-
-  const handleEdit = (docType: typeof documentTypes[0]) => {
+  const handleEdit = (docType: DocumentTypeConfig) => {
     const existingDoc = getDocumentByType(docType.type);
     
     if (existingDoc) {
       setEditingDoc(existingDoc);
     } else {
-      // Create new document object
-      setEditingDoc({
-        _id: "",
-        type: docType.type,
-        title: docType.label,
-        content: "# " + docType.label + "\n\nStart typing your content here...",
-        version: "1.0.0",
-        lastUpdated: new Date().toISOString(),
-        lastUpdatedBy: { _id: "", name: "", email: "" },
-        isActive: true
-      });
+      setEditingDoc(createInitialDocument(docType));
     }
   };
 
@@ -157,13 +95,10 @@ export default function LegalDocumentsPage() {
 
   const handleSave = async (updatedDoc: LegalDocument) => {
     try {
-      // Find the document type config
       const docType = documentTypes.find(dt => dt.type === updatedDoc.type);
       if (!docType) {
         throw new Error("Invalid document type");
       }
-
-      console.log("🔍 Saving to:", `/api/admin/legal/${docType.apiEndpoint}`);
 
       const response = await fetch(`/api/admin/legal/${docType.apiEndpoint}`, {
         method: "PUT",
@@ -196,23 +131,13 @@ export default function LegalDocumentsPage() {
         throw new Error(data.message);
       }
     } catch (err: any) {
-      console.error("❌ Save error:", err);
+      console.error("Save error:", err);
       setSnackbar({
         open: true,
         message: err.message || "Failed to save document",
         severity: "error",
       });
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   if (loading) {
@@ -240,77 +165,15 @@ export default function LegalDocumentsPage() {
         </Alert>
       )}
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Document</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Version</TableCell>
-              <TableCell>Last Updated</TableCell>
-              <TableCell>Updated By</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {documentTypes.map((docType) => {
-              const doc = getDocumentByType(docType.type);
-
-              return (
-                <TableRow key={docType.type}>
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <DocumentIcon color="primary" />
-                      <Typography variant="body1" fontWeight="medium">
-                        {docType.label}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{docType.description}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={doc?.version || "Not created"}
-                      color={doc ? "primary" : "default"}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {doc ? formatDate(doc.lastUpdated) : "-"}
-                  </TableCell>
-                  <TableCell>{doc?.lastUpdatedBy?.name || "-"}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={doc?.isActive ? "Active" : "Not created"}
-                      color={doc?.isActive ? "success" : "default"}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
-                      <IconButton
-                        size="small"
-                        onClick={() => doc && handlePreview(doc)}
-                        disabled={!doc}
-                        title="Preview"
-                      >
-                        <ViewIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEdit(docType)}
-                        title="Edit"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Paper>
+        <LegalDocumentsTable
+          documentTypes={documentTypes}
+          documents={documents}
+          formatDate={formatDate}
+          onEdit={handleEdit}
+          onPreview={handlePreview}
+        />
+      </Paper>
 
       {/* Edit Dialog */}
       {editingDoc && !previewDialog && (

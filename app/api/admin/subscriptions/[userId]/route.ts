@@ -1,4 +1,3 @@
-// app/api/admin/subscriptions/[userId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/models/User';
@@ -15,7 +14,13 @@ export async function PUT(
     const authToken = request.cookies.get('auth_token')?.value;
     
     if (!authToken) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Unauthorized' 
+        }, 
+        { status: 401 }
+      );
     }
 
     let decoded;
@@ -23,10 +28,22 @@ export async function PUT(
       decoded = verifyToken(authToken);
       // Check if user is admin
       if (!decoded.role || !['admin', 'superadmin'].includes(decoded.role)) {
-        return NextResponse.json({ message: 'Insufficient permissions' }, { status: 403 });
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'Insufficient permissions' 
+          }, 
+          { status: 403 }
+        );
       }
     } catch (authError) {
-      return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Invalid token' 
+        }, 
+        { status: 401 }
+      );
     }
 
     await connectToDatabase();
@@ -37,14 +54,32 @@ export async function PUT(
     // Validate plan
     if (updateData.plan && !['trial', 'monthly', 'quarterly', 'yearly'].includes(updateData.plan)) {
       return NextResponse.json(
-        { message: 'Invalid plan' },
+        { 
+          success: false, 
+          message: 'Invalid plan' 
+        },
         { status: 400 }
       );
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'User not found' 
+        }, 
+        { status: 404 }
+      );
+    }
+
+    // Update user fields
+    if (updateData.role !== undefined) {
+      user.role = updateData.role;
+    }
+    
+    if (updateData.isActive !== undefined) {
+      user.isActive = Boolean(updateData.isActive);
     }
 
     // Update subscription
@@ -86,7 +121,114 @@ export async function PUT(
   } catch (error: any) {
     console.error('❌ Update user subscription error:', error);
     return NextResponse.json(
-      { message: error.message || 'Internal server error' },
+      { 
+        success: false,
+        message: error.message || 'Internal server error' 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// Optional: GET single user
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  try {
+    console.log('👤 GET /api/admin/subscriptions/[userId] - Starting...');
+    
+    const authToken = request.cookies.get('auth_token')?.value;
+    
+    if (!authToken) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Unauthorized' 
+        }, 
+        { status: 401 }
+      );
+    }
+
+    let decoded;
+    try {
+      decoded = verifyToken(authToken);
+      if (!decoded.role || !['admin', 'superadmin'].includes(decoded.role)) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'Insufficient permissions' 
+          }, 
+          { status: 403 }
+        );
+      }
+    } catch (authError) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Invalid token' 
+        }, 
+        { status: 401 }
+      );
+    }
+
+    await connectToDatabase();
+
+    const { userId } = await params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'User not found' 
+        }, 
+        { status: 404 }
+      );
+    }
+
+    // Ensure subscription has proper structure
+    const subscription = user.subscription || {};
+    let currentPeriodEnd = subscription.currentPeriodEnd;
+    if (!currentPeriodEnd) {
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+      currentPeriodEnd = thirtyDaysFromNow.toISOString();
+    }
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        subscription: {
+          plan: subscription.plan || 'No Plan',
+          status: subscription.status || 'inactive',
+          currentPeriodStart: subscription.currentPeriodStart,
+          currentPeriodEnd: currentPeriodEnd,
+          trialEndsAt: subscription.trialEndsAt,
+          features: subscription.features || []
+        },
+        usage: user.usage || {
+          products: 0,
+          customers: 0,
+          invoices: 0,
+          storageMB: 0
+        },
+        createdAt: user.createdAt
+      }
+    });
+
+  } catch (error: any) {
+    console.error('❌ Get user error:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        message: error.message || 'Internal server error' 
+      },
       { status: 500 }
     );
   }

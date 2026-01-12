@@ -3,47 +3,51 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Typography,
-  Grid,
   Card,
   CardContent,
-  Paper,
-  Button,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Alert,
   CircularProgress,
 } from '@mui/material';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
-import {
-  Assessment as ReportIcon,
-  Download as DownloadIcon,
   TrendingUp as TrendIcon,
   People as PeopleIcon,
   Payment as PaymentIcon,
+  MonetizationOn as RevenueIcon,
+  ShoppingCart as OrderIcon,
+  TrendingDown as ChurnIcon,
 } from '@mui/icons-material';
+
+// Report Components
+import {
+  ReportHeader,
+  ReportChartCard,
+  ReportMetricCard,
+  ReportExportActions,
+  ReportStatusGrid,
+  RevenueLineChart,
+  UserBarChart,
+  PlanPieChart,
+} from '@/components/reports';
 
 interface ReportData {
   monthlyRevenue: Array<{ month: string; revenue: number }>;
   userGrowth: Array<{ month: string; users: number }>;
   planDistribution: Array<{ name: string; value: number }>;
   paymentStatus: Array<{ status: string; count: number }>;
+  subscriptionStatus: Array<{ status: string; count: number }>;
+  topProducts: Array<{ name: string; sales: number; revenue: number }>;
+  metrics: {
+    totalRevenue: number;
+    activeUsers: number;
+    newUsers: number;
+    totalOrders: number;
+    averageOrderValue: number;
+    conversionRate: number;
+    churnRate: number;
+  };
 }
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function AdminReportsPage() {
   const [data, setData] = useState<ReportData | null>(null);
@@ -73,27 +77,45 @@ export default function AdminReportsPage() {
     }
   };
 
-  const handleDownloadReport = async (type: string) => {
+  const handleExportReport = async (type: string) => {
     try {
-      const response = await fetch(`/api/admin/reports/download?type=${type}&range=${timeRange}`);
+      const response = await fetch('/api/admin/reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reportType: type,
+          range: timeRange,
+        }),
+      });
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${type}_report_${timeRange}.csv`;
+        a.download = `${type}_report_${timeRange}_${Date.now()}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+      } else {
+        setError('Failed to download report');
       }
     } catch (err) {
       setError('Failed to download report');
     }
   };
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress />
@@ -104,226 +126,189 @@ export default function AdminReportsPage() {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box>
-          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-            <ReportIcon sx={{ mr: 2, verticalAlign: 'middle' }} />
-            Reports & Analytics
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Business insights and performance metrics
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <FormControl sx={{ minWidth: 150 }}>
-            <InputLabel>Time Range</InputLabel>
-            <Select
-              value={timeRange}
-              label="Time Range"
-              onChange={(e) => setTimeRange(e.target.value)}
-            >
-              <MenuItem value="weekly">Weekly</MenuItem>
-              <MenuItem value="monthly">Monthly</MenuItem>
-              <MenuItem value="quarterly">Quarterly</MenuItem>
-              <MenuItem value="yearly">Yearly</MenuItem>
-            </Select>
-          </FormControl>
-          <Button 
-            variant="contained" 
-            startIcon={<DownloadIcon />}
-            onClick={() => handleDownloadReport('full')}
-          >
-            Export CSV
-          </Button>
-        </Box>
-      </Box>
+      <ReportHeader
+        timeRange={timeRange}
+        onTimeRangeChange={setTimeRange}
+        onExport={handleExportReport}
+      />
 
+      {/* Error Alert */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
           {error}
         </Alert>
       )}
 
-      {/* Charts Grid */}
-      <Grid container spacing={3}>
+      {/* Key Metrics - Replaced Grid with Flexbox */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        gap: 3, 
+        mb: 4 
+      }}>
+        <Box sx={{ flex: '1 1 calc(16.666% - 24px)', minWidth: '200px' }}>
+          <ReportMetricCard
+            title="Total Revenue"
+            value={formatCurrency(data?.metrics.totalRevenue || 0)}
+            icon={<RevenueIcon />}
+            color="success"
+            loading={loading}
+            trend={{ value: 12.5, direction: 'up', label: 'vs last month' }}
+          />
+        </Box>
+        <Box sx={{ flex: '1 1 calc(16.666% - 24px)', minWidth: '200px' }}>
+          <ReportMetricCard
+            title="Active Users"
+            value={(data?.metrics.activeUsers || 0).toLocaleString()}
+            icon={<PeopleIcon />}
+            color="primary"
+            loading={loading}
+            trend={{ value: 8.2, direction: 'up', label: 'vs last month' }}
+          />
+        </Box>
+        <Box sx={{ flex: '1 1 calc(16.666% - 24px)', minWidth: '200px' }}>
+          <ReportMetricCard
+            title="New Users"
+            value={(data?.metrics.newUsers || 0).toLocaleString()}
+            icon={<PeopleIcon />}
+            color="info"
+            loading={loading}
+            trend={{ value: 15.3, direction: 'up', label: 'vs last month' }}
+          />
+        </Box>
+        <Box sx={{ flex: '1 1 calc(16.666% - 24px)', minWidth: '200px' }}>
+          <ReportMetricCard
+            title="Total Orders"
+            value={(data?.metrics.totalOrders || 0).toLocaleString()}
+            icon={<OrderIcon />}
+            color="warning"
+            loading={loading}
+            trend={{ value: 5.7, direction: 'up', label: 'vs last month' }}
+          />
+        </Box>
+        <Box sx={{ flex: '1 1 calc(16.666% - 24px)', minWidth: '200px' }}>
+          <ReportMetricCard
+            title="Avg Order Value"
+            value={formatCurrency(data?.metrics.averageOrderValue || 0)}
+            icon={<PaymentIcon />}
+            color="secondary"
+            loading={loading}
+          />
+        </Box>
+        <Box sx={{ flex: '1 1 calc(16.666% - 24px)', minWidth: '200px' }}>
+          <ReportMetricCard
+            title="Churn Rate"
+            value={`${(data?.metrics.churnRate || 0).toFixed(1)}%`}
+            icon={<ChurnIcon />}
+            color="error"
+            loading={loading}
+            trend={{ value: 0.5, direction: 'down', label: 'vs last month' }}
+          />
+        </Box>
+      </Box>
+
+      {/* Charts - Replaced Grid with Flexbox */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        gap: 3 
+      }}>
         {/* Revenue Chart */}
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <TrendIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6" fontWeight="bold">
-                  Revenue Trends
-                </Typography>
-              </Box>
-              <Box sx={{ height: 300 }}>
-                <LineChart
-                  width={800}
-                  height={300}
-                  data={data?.monthlyRevenue || []}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`₹${value}`, 'Revenue']} />
-                  <Legend />
-                  <Line type="monotone" dataKey="revenue" stroke="#8884d8" activeDot={{ r: 8 }} />
-                </LineChart>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Box sx={{ flex: '1 1 calc(66.666% - 24px)', minWidth: '300px' }}>
+          <ReportChartCard
+            title="Revenue Trends"
+            subtitle="Monthly revenue performance"
+            icon={<TrendIcon color="primary" />}
+            chart={<RevenueLineChart data={data?.monthlyRevenue || []} />}
+            loading={loading}
+          />
+        </Box>
 
         {/* User Growth */}
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <PeopleIcon sx={{ mr: 1, color: 'secondary.main' }} />
-                <Typography variant="h6" fontWeight="bold">
-                  User Growth
-                </Typography>
-              </Box>
-              <Box sx={{ height: 300 }}>
-                <BarChart
-                  width={350}
-                  height={300}
-                  data={data?.userGrowth || []}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="users" fill="#82ca9d" />
-                </BarChart>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Box sx={{ flex: '1 1 calc(33.333% - 24px)', minWidth: '300px' }}>
+          <ReportChartCard
+            title="User Growth"
+            subtitle="New user acquisition"
+            icon={<PeopleIcon color="secondary" />}
+            chart={<UserBarChart data={data?.userGrowth || []} />}
+            loading={loading}
+          />
+        </Box>
 
         {/* Plan Distribution */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <PaymentIcon sx={{ mr: 1, color: 'warning.main' }} />
-                <Typography variant="h6" fontWeight="bold">
-                  Plan Distribution
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'center', height: 300 }}>
-                <PieChart width={400} height={300}>
-                  <Pie
-                    data={data?.planDistribution || []}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {(data?.planDistribution || []).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
+          <ReportChartCard
+            title="Plan Distribution"
+            subtitle="User subscription plans"
+            icon={<PaymentIcon color="warning" />}
+            chart={<PlanPieChart data={data?.planDistribution || []} />}
+            loading={loading}
+          />
+        </Box>
 
         {/* Payment Status */}
-        <Grid item xs={12} md={6}>
+        <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
           <Card>
             <CardContent>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Payment Status Overview
-              </Typography>
-              <Grid container spacing={2} sx={{ mt: 2 }}>
-                {data?.paymentStatus?.map((item, index) => (
-                  <Grid item xs={6} key={item.status}>
-                    <Paper
-                      sx={{
-                        p: 2,
-                        textAlign: 'center',
-                        backgroundColor: COLORS[index % COLORS.length],
-                        color: 'white',
-                      }}
-                    >
-                      <Typography variant="h4" fontWeight="bold">
-                        {item.count}
-                      </Typography>
-                      <Typography variant="body2">
-                        {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
+              <ReportStatusGrid
+                title="Payment Status Overview"
+                items={(data?.paymentStatus || []).map((item, index) => ({
+                  label: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+                  value: item.count,
+                  color: COLORS[index % COLORS.length],
+                }))}
+                columns={2}
+              />
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
 
-      {/* Quick Stats */}
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid item xs={12}>
+        {/* Subscription Status */}
+        <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
           <Card>
             <CardContent>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Quick Actions
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6} md={3}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<DownloadIcon />}
-                    onClick={() => handleDownloadReport('users')}
-                  >
-                    Export Users
-                  </Button>
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<DownloadIcon />}
-                    onClick={() => handleDownloadReport('payments')}
-                  >
-                    Export Payments
-                  </Button>
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<DownloadIcon />}
-                    onClick={() => handleDownloadReport('subscriptions')}
-                  >
-                    Export Subscriptions
-                  </Button>
-                </Grid>
-                <Grid item xs={6} md={3}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<DownloadIcon />}
-                    onClick={() => handleDownloadReport('all')}
-                  >
-                    Full Export
-                  </Button>
-                </Grid>
-              </Grid>
+              <ReportStatusGrid
+                title="Subscription Status"
+                items={(data?.subscriptionStatus || []).map((item, index) => ({
+                  label: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+                  value: item.count,
+                  color: COLORS[index % COLORS.length],
+                }))}
+                columns={2}
+              />
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+
+        {/* Top Products */}
+        <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
+          <Card>
+            <CardContent>
+              <ReportStatusGrid
+                title="Top Products"
+                items={(data?.topProducts?.slice(0, 4) || []).map((item, index) => ({
+                  label: item.name,
+                  value: item.sales,
+                  color: COLORS[index % COLORS.length],
+                }))}
+                columns={2}
+              />
+            </CardContent>
+          </Card>
+        </Box>
+      </Box>
+
+      {/* Quick Export Actions - Replaced Grid with Box */}
+      <Box sx={{ mt: 3 }}>
+        <Card>
+          <CardContent>
+            <ReportExportActions
+              onExport={handleExportReport}
+              fullWidth
+            />
+          </CardContent>
+        </Card>
+      </Box>
     </Box>
   );
 }

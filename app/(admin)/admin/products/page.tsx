@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Typography,
   Paper,
   Table,
   TableBody,
@@ -12,28 +11,19 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  TextField,
-  Button,
-  Chip,
-  IconButton,
   Alert,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
+  Typography,
 } from '@mui/material';
-import {
-  Inventory as InventoryIcon,
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Refresh as RefreshIcon,
-  Visibility as ViewIcon,
-} from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+
+// Product Components
+import ProductGridHeader from '@/components/products/ProductGridHeader';
+import ProductFilters from '@/components/products/ProductFilters';
+import ProductStatusChip from '@/components/products/ProductStatusChip';
+import ProductStockBadge from '@/components/products/ProductStockBadge';
+import ProductPriceDisplay from '@/components/products/ProductPriceDisplay';
+import ProductActions from '@/components/products/ProductActions';
 
 interface Product {
   _id: string;
@@ -45,6 +35,7 @@ interface Product {
   batches: Array<any>;
   isActive: boolean;
   createdAt: string;
+  stock?: number;
 }
 
 export default function AdminProductsPage() {
@@ -90,6 +81,8 @@ export default function AdminProductsPage() {
   };
 
   const getStockTotal = (product: Product) => {
+    if (product.stock !== undefined) return product.stock;
+    
     let totalStock = 0;
     if (product.variations?.length > 0) {
       product.variations.forEach(v => totalStock += v.stock || 0);
@@ -100,77 +93,45 @@ export default function AdminProductsPage() {
     return totalStock || 0;
   };
 
-  const getStatusChip = (isActive: boolean) => (
-    <Chip
-      label={isActive ? 'Active' : 'Inactive'}
-      color={isActive ? 'success' : 'error'}
-      size="small"
-    />
-  );
+  const handleViewProduct = (productId: string) => {
+    router.push(`/admin/products/${productId}`);
+  };
+
+  const handleEditProduct = (productId: string) => {
+    router.push(`/admin/products/${productId}/edit`);
+  };
+
+  const handleAddProduct = () => {
+    router.push('/admin/products/new');
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setCategoryFilter('');
+  };
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" component="h1" fontWeight="bold">
-          <InventoryIcon sx={{ mr: 2, verticalAlign: 'middle' }} />
-          Product Management
-        </Typography>
-        <Button
-          startIcon={<RefreshIcon />}
-          onClick={fetchProducts}
-        >
-          Refresh
-        </Button>
-      </Box>
+      {/* Header */}
+      <ProductGridHeader
+        title="Product Management"
+        subtitle="Manage your product catalog"
+        onRefresh={fetchProducts}
+        onCreate={handleAddProduct}
+      />
 
       {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-              }}
-            />
-          </Grid>
-          <Grid item xs={6} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={categoryFilter}
-                label="Category"
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
-                <MenuItem value="">All Categories</MenuItem>
-                <MenuItem value="electronics">Electronics</MenuItem>
-                <MenuItem value="clothing">Clothing</MenuItem>
-                <MenuItem value="groceries">Groceries</MenuItem>
-                <MenuItem value="books">Books</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={6} md={3}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<FilterIcon />}
-              onClick={() => {
-                setCategoryFilter('');
-                setSearch('');
-              }}
-            >
-              Clear Filters
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
+      <ProductFilters
+        search={search}
+        onSearchChange={setSearch}
+        categoryFilter={categoryFilter}
+        onCategoryChange={setCategoryFilter}
+        onClearFilters={handleClearFilters}
+      />
 
+      {/* Error Alert */}
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
           {error}
         </Alert>
       )}
@@ -180,7 +141,7 @@ export default function AdminProductsPage() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Name</TableCell>
+              <TableCell>Product</TableCell>
               <TableCell>SKU</TableCell>
               <TableCell>Category</TableCell>
               <TableCell align="right">Price</TableCell>
@@ -193,52 +154,85 @@ export default function AdminProductsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
-                  <Typography color="text.secondary">No products found</Typography>
+                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <Typography color="text.secondary">
+                    {search || categoryFilter ? 'No products match your filters' : 'No products found'}
+                  </Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              products.map((product) => (
-                <TableRow key={product._id} hover>
-                  <TableCell>
-                    <Typography fontWeight="medium">{product.name}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip label={product.sku} size="small" variant="outlined" />
-                  </TableCell>
-                  <TableCell>
-                    <Chip label={product.category} size="small" />
-                  </TableCell>
-                  <TableCell align="right">
-                    ₹{product.basePrice.toFixed(2)}
-                  </TableCell>
-                  <TableCell align="right">
-                    {getStockTotal(product)}
-                  </TableCell>
-                  <TableCell>
-                    {getStatusChip(product.isActive)}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(product.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton size="small" onClick={() => router.push(`/admin/products/${product._id}`)}>
-                      <ViewIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
+              products.map((product) => {
+                const stockTotal = getStockTotal(product);
+                
+                return (
+                  <TableRow key={product._id} hover>
+                    <TableCell>
+                      <Typography fontWeight="medium">{product.name}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary" fontFamily="monospace">
+                        {product.sku}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <ProductStatusChip
+                        status={product.category as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <ProductPriceDisplay
+                        price={product.basePrice}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <ProductStockBadge
+                        stock={stockTotal}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <ProductStatusChip
+                        status={product.isActive ? 'active' : 'inactive'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {new Date(product.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </TableCell>
+                    <TableCell align="right">
+                      <ProductActions
+                        onView={() => handleViewProduct(product._id)}
+                        onEdit={() => handleEditProduct(product._id)}
+                        onDelete={() => {
+                          if (confirm('Are you sure you want to delete this product?')) {
+                            // Handle delete
+                          }
+                        }}
+                        variant="icon"
+                        size="small"
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
       </TableContainer>
 
+      {/* Pagination */}
       <TablePagination
         component="div"
         count={total}
@@ -249,6 +243,7 @@ export default function AdminProductsPage() {
           setRowsPerPage(parseInt(e.target.value, 10));
           setPage(0);
         }}
+        rowsPerPageOptions={[5, 10, 25, 50]}
       />
     </Box>
   );
