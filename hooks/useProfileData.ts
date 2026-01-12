@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 
@@ -8,9 +10,19 @@ export interface UserProfile {
   phone: string;
   avatar?: string;
   role: string;
+  
+  // Business Fields
   businessName: string;
   gstNumber?: string;
   businessAddress?: string;
+  
+  // Additional Business Details
+  businessCity?: string;
+  businessState?: string;
+  businessPincode?: string;
+  businessCountry?: string;
+  businessLogo?: string;
+  
   createdAt: string;
   isActive: boolean;
   preferences: {
@@ -56,30 +68,39 @@ export interface UseProfileDataReturn {
   saving: boolean;
   error: string;
   success: string;
+  
+  // Combined form data for all sections
   formData: {
+    // Personal Info
     name: string;
     email: string;
     phone: string;
+    
+    // Business Info
     businessName: string;
     gstNumber: string;
     businessAddress: string;
+    businessCity: string;
+    businessState: string;
+    businessPincode: string;
+    businessCountry: string;
+    businessLogo: string;
   };
-  setFormData: React.Dispatch<React.SetStateAction<{
-    name: string;
-    email: string;
-    phone: string;
-    businessName: string;
-    gstNumber: string;
-    businessAddress: string;
-  }>>;
+  
+  setFormData: React.Dispatch<React.SetStateAction<any>>;
   fetchProfile: () => Promise<void>;
   updateProfile: (data: any) => Promise<boolean>;
+  updateBusinessProfile: (data: any) => Promise<boolean>;
   updatePreference: (preference: string, value: boolean) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   upgradePlan: (plan: string) => Promise<{ paymentId: string; upiUrl: string } | null>;
   checkPaymentStatus: (paymentId: string) => Promise<void>;
   getUsagePercentage: (resource: keyof SubscriptionStatus['limits']) => number;
   getPlanColor: (plan: string) => string;
+  
+  // State setters
+  setError: (error: string) => void;
+  setSuccess: (success: string) => void;
 }
 
 export const useProfileData = (): UseProfileDataReturn => {
@@ -90,19 +111,29 @@ export const useProfileData = (): UseProfileDataReturn => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
   const [formData, setFormData] = useState({
+    // Personal Info
     name: '',
     email: '',
     phone: '',
+    
+    // Business Info
     businessName: '',
     gstNumber: '',
     businessAddress: '',
+    businessCity: '',
+    businessState: '',
+    businessPincode: '',
+    businessCountry: 'India',
+    businessLogo: '',
   });
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
       
+      // Fetch user profile
       const profileResponse = await fetch('/api/profile', {
         credentials: 'include',
       });
@@ -111,15 +142,24 @@ export const useProfileData = (): UseProfileDataReturn => {
         const profileData = await profileResponse.json();
         setProfile(profileData);
         
+        // Update formData with all fields
         setFormData({
           name: profileData.name || '',
           email: profileData.email || '',
           phone: profileData.phone || '',
+          
+          // Business fields
           businessName: profileData.businessName || '',
           gstNumber: profileData.gstNumber || '',
           businessAddress: profileData.businessAddress || '',
+          businessCity: profileData.businessCity || '',
+          businessState: profileData.businessState || '',
+          businessPincode: profileData.businessPincode || '',
+          businessCountry: profileData.businessCountry || 'India',
+          businessLogo: profileData.businessLogo || '',
         });
         
+        // Fetch subscription status
         const subscriptionResponse = await fetch('/api/subscription/status', {
           credentials: 'include',
         });
@@ -151,13 +191,17 @@ export const useProfileData = (): UseProfileDataReturn => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+        }),
       });
 
       if (response.ok) {
         const updatedProfile = await response.json();
         setProfile(updatedProfile);
-        setSuccess('Profile updated successfully');
+        setSuccess('Personal information updated successfully');
         return true;
       } else if (response.status === 401) {
         logout();
@@ -168,6 +212,50 @@ export const useProfileData = (): UseProfileDataReturn => {
     } catch (err) {
       console.error('Error updating profile:', err);
       setError('Failed to update profile');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateBusinessProfile = async (data: any) => {
+    setSaving(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch('/api/profile/business', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          businessName: data.businessName,
+          gstNumber: data.gstNumber,
+          businessAddress: data.businessAddress,
+          businessCity: data.businessCity,
+          businessState: data.businessState,
+          businessPincode: data.businessPincode,
+          businessCountry: data.businessCountry,
+          businessLogo: data.businessLogo,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedProfile = await response.json();
+        setProfile(updatedProfile);
+        setSuccess('Business information updated successfully');
+        return true;
+      } else if (response.status === 401) {
+        logout();
+        return false;
+      } else {
+        throw new Error('Failed to update business profile');
+      }
+    } catch (err) {
+      console.error('Error updating business profile:', err);
+      setError('Failed to update business information');
       return false;
     } finally {
       setSaving(false);
@@ -352,11 +440,14 @@ export const useProfileData = (): UseProfileDataReturn => {
     setFormData,
     fetchProfile,
     updateProfile,
+    updateBusinessProfile,
     updatePreference,
     changePassword,
     upgradePlan,
     checkPaymentStatus,
     getUsagePercentage,
     getPlanColor,
+    setError,
+    setSuccess,
   };
 };

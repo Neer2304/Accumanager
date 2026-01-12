@@ -10,6 +10,8 @@ import {
   Snackbar,
   CircularProgress,
   Typography,
+  Container,
+  Paper,
 } from '@mui/material';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { useProfileData } from '@/hooks/useProfileData';
@@ -58,14 +60,16 @@ export default function ProfilePage() {
     success,
     formData,
     setFormData,
-    fetchProfile,
     updateProfile,
+    updateBusinessProfile,
     updatePreference,
     changePassword,
     upgradePlan,
     checkPaymentStatus,
     getUsagePercentage,
     getPlanColor,
+    setError,
+    setSuccess,
   } = useProfileData();
 
   const { page } = PROFILE_CONTENT;
@@ -74,9 +78,27 @@ export default function ProfilePage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleProfileSubmit = async (e: React.FormEvent) => {
+  const handlePersonalProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updateProfile(formData);
+    await updateProfile({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+    });
+  };
+
+  const handleBusinessProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await updateBusinessProfile({
+      businessName: formData.businessName,
+      gstNumber: formData.gstNumber,
+      businessAddress: formData.businessAddress,
+      businessCity: formData.businessCity,
+      businessState: formData.businessState,
+      businessPincode: formData.businessPincode,
+      businessCountry: formData.businessCountry,
+      businessLogo: formData.businessLogo,
+    });
   };
 
   const handlePreferenceChange = async (preference: string, value: boolean) => {
@@ -99,8 +121,9 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <MainLayout title={page.title}>
-        <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
-          <Typography>{page.loading}</Typography>
+        <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <CircularProgress />
+          <Typography sx={{ ml: 2 }}>{page.loading}</Typography>
         </Box>
       </MainLayout>
     );
@@ -120,79 +143,123 @@ export default function ProfilePage() {
 
   return (
     <MainLayout title={page.title}>
-      <Box sx={{ p: 3, maxWidth: 1200, margin: '0 auto' }}>
-        <HeaderSection
-          profile={profile}
-          subscriptionStatus={subscriptionStatus}
-          getPlanColor={getPlanColor}
-          onUpgradeClick={() => setUpgradeDialogOpen(true)}
-        />
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <HeaderSection
+            profile={profile}
+            subscriptionStatus={subscriptionStatus}
+            getPlanColor={getPlanColor}
+            onUpgradeClick={() => setUpgradeDialogOpen(true)}
+          />
 
-        <UsageStatsSection
-          profile={profile}
-          subscriptionStatus={subscriptionStatus}
-          getUsagePercentage={getUsagePercentage}
-        />
+          <UsageStatsSection
+            profile={profile}
+            subscriptionStatus={subscriptionStatus}
+            getUsagePercentage={getUsagePercentage}
+          />
 
-        <Card>
-          <Tabs
-            value={activeTab}
-            onChange={(_, newValue) => setActiveTab(newValue)}
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
-          >
-            <Tab icon={<ProfileIcon name="Person" />} label="Personal Info" />
-            <Tab icon={<ProfileIcon name="Business" />} label="Business Details" />
-            <Tab icon={<ProfileIcon name="Notifications" />} label="Notifications" />
-            <Tab icon={<ProfileIcon name="Security" />} label="Security" />
-            <Tab icon={<ProfileIcon name="Payment" />} label="Subscription" />
-          </Tabs>
+          <Card sx={{ border: 'none', boxShadow: 'none' }}>
+            <Tabs
+              value={activeTab}
+              onChange={(_, newValue) => setActiveTab(newValue)}
+              sx={{ 
+                borderBottom: 1, 
+                borderColor: 'divider',
+                px: 2,
+                pt: 2 
+              }}
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              <Tab 
+                icon={<ProfileIcon name="Person" />} 
+                iconPosition="start"
+                label="Personal Info" 
+              />
+              <Tab 
+                icon={<ProfileIcon name="Business" />} 
+                iconPosition="start"
+                label="Business Details" 
+              />
+              <Tab 
+                icon={<ProfileIcon name="Notifications" />} 
+                iconPosition="start"
+                label="Notifications" 
+              />
+              <Tab 
+                icon={<ProfileIcon name="Security" />} 
+                iconPosition="start"
+                label="Security" 
+              />
+              <Tab 
+                icon={<ProfileIcon name="Payment" />} 
+                iconPosition="start"
+                label="Subscription" 
+              />
+            </Tabs>
 
-          <TabPanel value={activeTab} index={0}>
-            <PersonalInfoSection
-              formData={formData}
-              saving={saving}
-              onFormChange={handleFormChange}
-              onSubmit={handleProfileSubmit}
-            />
-          </TabPanel>
+            <TabPanel value={activeTab} index={0}>
+              <PersonalInfoSection
+                formData={{
+                  name: formData.name,
+                  email: formData.email,
+                  phone: formData.phone,
+                }}
+                saving={saving}
+                onFormChange={handleFormChange}
+                onSubmit={handlePersonalProfileSubmit}
+              />
+            </TabPanel>
 
-          <TabPanel value={activeTab} index={1}>
-            <BusinessInfoSection
-              formData={formData}
-              saving={saving}
-              onFormChange={handleFormChange}
-              onSubmit={handleProfileSubmit}
-            />
-          </TabPanel>
+            <TabPanel value={activeTab} index={1}>
+              <BusinessInfoSection
+                formData={{
+                  businessName: formData.businessName,
+                  gstNumber: formData.gstNumber,
+                  businessAddress: formData.businessAddress,
+                  city: formData.businessCity,
+                  state: formData.businessState,
+                  pincode: formData.businessPincode,
+                  country: formData.businessCountry,
+                  phone: formData.phone,
+                  email: formData.email,
+                  logo: formData.businessLogo,
+                }}
+                saving={saving}
+                onFormChange={handleFormChange}
+                onSubmit={handleBusinessProfileSubmit}
+              />
+            </TabPanel>
 
-          <TabPanel value={activeTab} index={2}>
-            <NotificationsSection
-              profile={profile}
-              onPreferenceChange={handlePreferenceChange}
-            />
-          </TabPanel>
+            <TabPanel value={activeTab} index={2}>
+              <NotificationsSection
+                profile={profile}
+                onPreferenceChange={handlePreferenceChange}
+              />
+            </TabPanel>
 
-          <TabPanel value={activeTab} index={3}>
-            <SecuritySection
-              profile={profile}
-              onChangePassword={handlePasswordChange}
-            />
-          </TabPanel>
+            <TabPanel value={activeTab} index={3}>
+              <SecuritySection
+                profile={profile}
+                onChangePassword={handlePasswordChange}
+              />
+            </TabPanel>
 
-          <TabPanel value={activeTab} index={4}>
-            <SubscriptionSection
-              subscriptionStatus={subscriptionStatus}
-              onUpgradeClick={() => setUpgradeDialogOpen(true)}
-            />
-          </TabPanel>
-        </Card>
+            <TabPanel value={activeTab} index={4}>
+              <SubscriptionSection
+                subscriptionStatus={subscriptionStatus}
+                onUpgradeClick={() => setUpgradeDialogOpen(true)}
+              />
+            </TabPanel>
+          </Card>
 
-        <UpgradeDialog
-          open={upgradeDialogOpen}
-          currentPlan={subscriptionStatus?.plan || 'trial'}
-          onClose={() => setUpgradeDialogOpen(false)}
-          onUpgrade={handleUpgradeClick}
-        />
+          <UpgradeDialog
+            open={upgradeDialogOpen}
+            currentPlan={subscriptionStatus?.plan || 'trial'}
+            onClose={() => setUpgradeDialogOpen(false)}
+            onUpgrade={handleUpgradeClick}
+          />
+        </Paper>
 
         <Snackbar
           open={!!error || !!success}
@@ -212,7 +279,7 @@ export default function ProfilePage() {
             {error || success}
           </Alert>
         </Snackbar>
-      </Box>
+      </Container>
     </MainLayout>
   );
 }

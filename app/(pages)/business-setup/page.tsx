@@ -1,4 +1,3 @@
-// app/business-setup/page.tsx
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -66,20 +65,38 @@ export default function BusinessSetupPage() {
   useEffect(() => {
     const checkBusiness = async () => {
       try {
+        console.log('🔍 Checking for existing business...')
         const response = await fetch('/api/business', {
           credentials: 'include'
         })
         
+        console.log('📊 Business API Response Status:', response.status)
+        
+        if (response.status === 404) {
+          console.log('ℹ️ No existing business found (404)')
+          setSuccess('Please setup your business profile')
+          return
+        }
+        
         if (response.ok) {
           const data = await response.json()
+          console.log('📦 Business API Response Data:', data)
+          
           if (data.business) {
+            console.log('✅ Business found:', data.business.businessName)
             setBusiness(data.business)
             setFormData(data.business)
             setSuccess('Business profile found! You can update your details.')
           }
+        } else {
+          console.log('❌ Business check failed:', response.status)
+          if (response.status === 401) {
+            setError('Please login to access business setup')
+          }
         }
       } catch (error) {
-        console.log('No existing business found')
+        console.error('❌ Error checking business:', error)
+        setError('Failed to check existing business. Please try again.')
       }
     }
 
@@ -167,6 +184,8 @@ export default function BusinessSetupPage() {
     setSuccess('')
 
     try {
+      console.log('🚀 Submitting business data:', formData)
+      
       const response = await fetch('/api/business', {
         method: 'POST',
         headers: {
@@ -176,21 +195,39 @@ export default function BusinessSetupPage() {
         body: JSON.stringify(formData),
       })
 
+      console.log('📊 Submit Response Status:', response.status)
+      console.log('📊 Submit Response Headers:', response.headers)
+
+      const responseText = await response.text()
+      console.log('📦 Raw Response:', responseText)
+
+      let data
+      try {
+        data = JSON.parse(responseText)
+        console.log('📦 Parsed Response Data:', data)
+      } catch (parseError) {
+        console.error('❌ Failed to parse response:', parseError)
+        setError('Invalid response from server')
+        return
+      }
+
       if (response.ok) {
-        const data = await response.json()
         setBusiness(data.business)
         setSuccess(
           business 
             ? 'Business profile updated successfully!' 
             : 'Business profile created successfully!'
         )
+        // Reset form to show success message clearly
+        setTimeout(() => {
+          setSuccess('')
+        }, 5000)
       } else {
-        const errorData = await response.json()
-        setError(errorData.message || 'Failed to save business details')
+        setError(data.message || `Failed to save business details (Status: ${response.status})`)
       }
     } catch (error) {
-      console.error('Error saving business:', error)
-      setError('Failed to save business details')
+      console.error('❌ Error saving business:', error)
+      setError('Failed to save business details. Please check your connection.')
     } finally {
       setIsLoading(false)
     }
@@ -213,6 +250,8 @@ export default function BusinessSetupPage() {
               onChange={(e) => handleInputChange('businessName', e.target.value)}
               placeholder="Enter your business name"
               helperText="Legal name of your business as registered"
+              required
+              error={!formData.businessName.trim() && activeStep === 0}
             />
             
             <TextField
@@ -223,6 +262,8 @@ export default function BusinessSetupPage() {
               placeholder="e.g., 07AABCU9603R1ZM"
               helperText="15-character GST identification number"
               inputProps={{ maxLength: 15 }}
+              required
+              error={formData.gstNumber.length !== 15 && activeStep === 0}
             />
             
             <TextField
@@ -252,15 +293,19 @@ export default function BusinessSetupPage() {
               placeholder="Street address, building name"
               multiline
               rows={3}
+              required
+              error={!formData.address.trim() && activeStep === 1}
             />
             
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
               <TextField
                 fullWidth
                 label="City *"
                 value={formData.city}
                 onChange={(e) => handleInputChange('city', e.target.value)}
                 placeholder="City"
+                required
+                error={!formData.city.trim() && activeStep === 1}
               />
               
               <TextField
@@ -269,10 +314,12 @@ export default function BusinessSetupPage() {
                 value={formData.state}
                 onChange={(e) => handleInputChange('state', e.target.value)}
                 placeholder="State"
+                required
+                error={!formData.state.trim() && activeStep === 1}
               />
             </Box>
             
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
               <TextField
                 fullWidth
                 label="Pincode *"
@@ -280,6 +327,8 @@ export default function BusinessSetupPage() {
                 onChange={(e) => handleInputChange('pincode', e.target.value.replace(/\D/g, ''))}
                 placeholder="6-digit pincode"
                 inputProps={{ maxLength: 6 }}
+                required
+                error={(formData.pincode.length !== 6) && activeStep === 1}
               />
               
               <TextField
@@ -309,6 +358,8 @@ export default function BusinessSetupPage() {
               placeholder="10-digit mobile number"
               inputProps={{ maxLength: 10 }}
               helperText="Primary contact number for your business"
+              required
+              error={(formData.phone.length !== 10) && activeStep === 2}
             />
             
             <TextField
@@ -319,6 +370,8 @@ export default function BusinessSetupPage() {
               onChange={(e) => handleInputChange('email', e.target.value)}
               placeholder="business@example.com"
               helperText="Official email address for communications"
+              required
+              error={!formData.email.trim() && activeStep === 2}
             />
           </Stack>
         )
@@ -332,7 +385,7 @@ export default function BusinessSetupPage() {
     <MainLayout title={business ? "Business Profile" : "Setup Your Business"}>
       <Box sx={{ p: 3, maxWidth: 800, margin: '0 auto' }}>
         {/* Header */}
-        <Paper sx={{ p: 4, mb: 3, textAlign: 'center' }}>
+        <Paper sx={{ p: 4, mb: 3, textAlign: 'center', borderRadius: 2 }}>
           <BusinessIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
           <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
             {business ? 'Business Profile' : 'Setup Your Business'}
@@ -346,7 +399,7 @@ export default function BusinessSetupPage() {
         </Paper>
 
         {/* Stepper */}
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ mb: 3, borderRadius: 2 }}>
           <CardContent>
             <Stepper activeStep={activeStep} alternativeLabel>
               {steps.map((label) => (
@@ -360,19 +413,19 @@ export default function BusinessSetupPage() {
 
         {/* Alerts */}
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
             {error}
           </Alert>
         )}
         
         {success && (
-          <Alert severity="success" sx={{ mb: 3 }}>
+          <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
             {success}
           </Alert>
         )}
 
         {/* Form Content */}
-        <Card>
+        <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
           <CardContent sx={{ p: 4 }}>
             {renderStepContent(activeStep)}
 
@@ -382,6 +435,7 @@ export default function BusinessSetupPage() {
                 onClick={handleBack}
                 disabled={activeStep === 0}
                 variant="outlined"
+                sx={{ borderRadius: 2 }}
               >
                 Back
               </Button>
@@ -393,11 +447,12 @@ export default function BusinessSetupPage() {
                   variant="contained"
                   size="large"
                   startIcon={isLoading ? null : <CheckCircleIcon />}
+                  sx={{ borderRadius: 2 }}
                 >
                   {isLoading ? 'Saving...' : business ? 'Update Business' : 'Save Business'}
                 </Button>
               ) : (
-                <Button onClick={handleNext} variant="contained">
+                <Button onClick={handleNext} variant="contained" sx={{ borderRadius: 2 }}>
                   Next
                 </Button>
               )}
@@ -406,7 +461,7 @@ export default function BusinessSetupPage() {
         </Card>
 
         {/* Quick Info */}
-        <Card sx={{ mt: 3 }}>
+        <Card sx={{ mt: 3, borderRadius: 2 }}>
           <CardContent>
             <Typography variant="h6" gutterBottom color="primary">
               Why setup business profile?

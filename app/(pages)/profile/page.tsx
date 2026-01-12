@@ -23,7 +23,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Grid,
   List,
   ListItem,
   ListItemIcon,
@@ -94,6 +93,20 @@ interface PricingPlan {
     invoices: number;
     storageMB: number;
   };
+}
+
+interface BusinessData {
+  id: string;
+  businessName: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+  gstNumber: string;
+  phone: string;
+  email: string;
+  logo: string;
 }
 
 const PRICING_PLANS: Record<string, PricingPlan> = {
@@ -194,6 +207,7 @@ export default function ProfilePage() {
   const { user, isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [businessData, setBusinessData] = useState<BusinessData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
@@ -205,6 +219,17 @@ export default function ProfilePage() {
     gstNumber: '',
     businessAddress: '',
   });
+  const [businessFormData, setBusinessFormData] = useState({
+    businessName: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    country: 'India',
+    gstNumber: '',
+    phone: '',
+    email: '',
+  });
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
 
@@ -215,6 +240,38 @@ export default function ProfilePage() {
       setIsLoading(false);
     }
   }, [isAuthenticated, user]);
+
+  const fetchBusinessData = async () => {
+    try {
+      const response = await fetch('/api/business', {
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.business) {
+          setBusinessData(data.business);
+          
+          // Update business form data
+          setBusinessFormData({
+            businessName: data.business.businessName || '',
+            address: data.business.address || '',
+            city: data.business.city || '',
+            state: data.business.state || '',
+            pincode: data.business.pincode || '',
+            country: data.business.country || 'India',
+            gstNumber: data.business.gstNumber || '',
+            phone: data.business.phone || '',
+            email: data.business.email || '',
+          });
+        }
+      } else {
+        console.warn('Failed to fetch business data');
+      }
+    } catch (error) {
+      console.error('Error fetching business data:', error);
+    }
+  };
 
   const initializeUserData = async () => {
     try {
@@ -236,6 +293,9 @@ export default function ProfilePage() {
           gstNumber: profileData.gstNumber || '',
           businessAddress: profileData.businessAddress || '',
         });
+        
+        // Fetch business data
+        await fetchBusinessData();
         
         // Fetch subscription status using your API
         const subscriptionResponse = await fetch('/api/subscription/status', {
@@ -293,6 +353,50 @@ export default function ProfilePage() {
       setSnackbar({
         open: true,
         message: 'Failed to update profile',
+        severity: 'error'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateBusiness = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+      const response = await fetch('/api/business', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(businessFormData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.business) {
+          setBusinessData(data.business);
+          setSnackbar({
+            open: true,
+            message: 'Business details updated successfully',
+            severity: 'success'
+          });
+        } else {
+          throw new Error('Failed to update business');
+        }
+      } else if (response.status === 401) {
+        logout();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update business');
+      }
+    } catch (error) {
+      console.error('Error updating business:', error);
+      setSnackbar({
+        open: true,
+        message: error instanceof Error ? error.message : 'Failed to update business',
         severity: 'error'
       });
     } finally {
@@ -471,7 +575,7 @@ export default function ProfilePage() {
           setSnackbar({
             open: true,
             message: 'Payment verification timeout. Please check your payment status manually.',
-            severity: 'warning'
+            severity: 'error'
           });
         }
       } catch (error) {
@@ -549,7 +653,7 @@ export default function ProfilePage() {
                 {profile.name || 'User'}
               </Typography>
               <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                {profile.businessName || 'Business'}
+                {businessData?.businessName || profile.businessName || 'Business'}
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                 <Chip label={profile.role || 'User'} size="small" sx={{ bgcolor: 'white', color: '#667eea' }} />
@@ -609,34 +713,32 @@ export default function ProfilePage() {
               <Typography variant="h6" gutterBottom>
                 Usage Statistics
               </Typography>
-              <Grid container spacing={3}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3 }}>
                 {(['products', 'customers', 'invoices', 'storageMB'] as const).map((resource) => (
-                  <Grid item xs={12} sm={6} md={3} key={resource}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        {resource.charAt(0).toUpperCase() + resource.slice(1)}
-                        {resource === 'storageMB' && ' (Storage)'}
-                      </Typography>
-                      <Typography variant="h6" gutterBottom>
-                        {profile.usage![resource] || 0} / {subscriptionStatus.limits[resource]}
-                        {resource === 'storageMB' && ' MB'}
-                      </Typography>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={getUsagePercentage(resource)}
-                        color={
-                          getUsagePercentage(resource) > 90 ? 'error' :
-                          getUsagePercentage(resource) > 75 ? 'warning' : 'primary'
-                        }
-                        sx={{ height: 8, borderRadius: 4 }}
-                      />
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                        {Math.round(getUsagePercentage(resource))}% used
-                      </Typography>
-                    </Box>
-                  </Grid>
+                  <Box key={resource}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      {resource.charAt(0).toUpperCase() + resource.slice(1)}
+                      {resource === 'storageMB' && ' (Storage)'}
+                    </Typography>
+                    <Typography variant="h6" gutterBottom>
+                      {profile.usage![resource] || 0} / {subscriptionStatus.limits[resource]}
+                      {resource === 'storageMB' && ' MB'}
+                    </Typography>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={getUsagePercentage(resource)}
+                      color={
+                        getUsagePercentage(resource) > 90 ? 'error' :
+                        getUsagePercentage(resource) > 75 ? 'warning' : 'primary'
+                      }
+                      sx={{ height: 8, borderRadius: 4 }}
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      {Math.round(getUsagePercentage(resource))}% used
+                    </Typography>
+                  </Box>
                 ))}
-              </Grid>
+              </Box>
             </CardContent>
           </Card>
         )}
@@ -704,7 +806,7 @@ export default function ProfilePage() {
 
           {/* Business Details Tab */}
           <TabPanel value={activeTab} index={1}>
-            <form onSubmit={handleUpdateProfile}>
+            <form onSubmit={handleUpdateBusiness}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Typography variant="h5" gutterBottom fontWeight="bold">
                   Business Information
@@ -713,27 +815,78 @@ export default function ProfilePage() {
                 <TextField
                   fullWidth
                   label="Business Name"
-                  value={formData.businessName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
+                  value={businessFormData.businessName}
+                  onChange={(e) => setBusinessFormData(prev => ({ ...prev, businessName: e.target.value }))}
                   required
-                />
-
-                <TextField
-                  fullWidth
-                  label="GST Number"
-                  value={formData.gstNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, gstNumber: e.target.value }))}
-                  placeholder="e.g., 07AABCU9603R1ZM"
                 />
 
                 <TextField
                   fullWidth
                   label="Business Address"
                   multiline
-                  rows={3}
-                  value={formData.businessAddress}
-                  onChange={(e) => setFormData(prev => ({ ...prev, businessAddress: e.target.value }))}
+                  rows={2}
+                  value={businessFormData.address}
+                  onChange={(e) => setBusinessFormData(prev => ({ ...prev, address: e.target.value }))}
+                  required
                 />
+
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="City"
+                    value={businessFormData.city}
+                    onChange={(e) => setBusinessFormData(prev => ({ ...prev, city: e.target.value }))}
+                    required
+                  />
+                  <TextField
+                    fullWidth
+                    label="State"
+                    value={businessFormData.state}
+                    onChange={(e) => setBusinessFormData(prev => ({ ...prev, state: e.target.value }))}
+                    required
+                  />
+                  <TextField
+                    fullWidth
+                    label="Pincode"
+                    value={businessFormData.pincode}
+                    onChange={(e) => setBusinessFormData(prev => ({ ...prev, pincode: e.target.value }))}
+                    required
+                  />
+                </Box>
+
+                <TextField
+                  fullWidth
+                  label="Country"
+                  value={businessFormData.country}
+                  onChange={(e) => setBusinessFormData(prev => ({ ...prev, country: e.target.value }))}
+                  required
+                />
+
+                <TextField
+                  fullWidth
+                  label="GST Number"
+                  value={businessFormData.gstNumber}
+                  onChange={(e) => setBusinessFormData(prev => ({ ...prev, gstNumber: e.target.value }))}
+                  placeholder="e.g., 07AABCU9603R1ZM"
+                />
+
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="Business Phone"
+                    value={businessFormData.phone}
+                    onChange={(e) => setBusinessFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    required
+                  />
+                  <TextField
+                    fullWidth
+                    label="Business Email"
+                    type="email"
+                    value={businessFormData.email}
+                    onChange={(e) => setBusinessFormData(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                  />
+                </Box>
 
                 <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                   <Button
@@ -741,7 +894,7 @@ export default function ProfilePage() {
                     variant="contained"
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isSaving ? 'Saving...' : 'Save Business Details'}
                   </Button>
                 </Box>
               </Box>
@@ -901,7 +1054,7 @@ export default function ProfilePage() {
             </Typography>
           </DialogTitle>
           <DialogContent>
-            <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: 'repeat(4, 1fr)' }, gap: 3, mt: 1 }}>
               {Object.entries(PRICING_PLANS).map(([planKey, plan]) => {
                 if (planKey === 'trial') return null;
                 
@@ -909,71 +1062,70 @@ export default function ProfilePage() {
                 const isRecommended = planKey === 'quarterly';
                 
                 return (
-                  <Grid item xs={12} md={6} lg={3} key={planKey}>
-                    <Card 
-                      sx={{ 
-                        height: '100%',
-                        border: isCurrentPlan ? 2 : 1,
-                        borderColor: isCurrentPlan ? 'primary.main' : 'divider',
-                        position: 'relative',
-                        ...(isRecommended && {
-                          border: 2,
-                          borderColor: 'secondary.main',
-                        })
-                      }}
-                    >
-                      {isRecommended && (
-                        <Chip
-                          label="Most Popular"
-                          color="secondary"
-                          size="small"
-                          sx={{ position: 'absolute', top: 16, right: 16 }}
-                        />
-                      )}
-                      <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="h6" gutterBottom fontWeight="bold">
-                          {plan.name}
-                        </Typography>
-                        <Typography variant="h4" gutterBottom color="primary.main">
-                          ₹{plan.price}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          {planKey === 'monthly' && 'per month'}
-                          {planKey === 'quarterly' && 'per quarter'}
-                          {planKey === 'yearly' && 'per year'}
-                        </Typography>
-                        
-                        <Divider sx={{ my: 2 }} />
-                        
-                        <List dense sx={{ flex: 1 }}>
-                          {plan.features.map((feature, index) => (
-                            <ListItem key={index} sx={{ px: 0, py: 0.5 }}>
-                              <ListItemIcon sx={{ minWidth: 32 }}>
-                                <CheckIcon color="success" fontSize="small" />
-                              </ListItemIcon>
-                              <ListItemText 
-                                primary={feature} 
-                                primaryTypographyProps={{ variant: 'body2' }}
-                              />
-                            </ListItem>
-                          ))}
-                        </List>
-                        
-                        <Button
-                          variant={isCurrentPlan ? "outlined" : "contained"}
-                          fullWidth
-                          disabled={isCurrentPlan}
-                          onClick={() => handleUpgradePlan(planKey)}
-                          sx={{ mt: 2 }}
-                        >
-                          {isCurrentPlan ? 'Current Plan' : `Upgrade to ${plan.name}`}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </Grid>
+                  <Card 
+                    key={planKey}
+                    sx={{ 
+                      height: '100%',
+                      border: isCurrentPlan ? 2 : 1,
+                      borderColor: isCurrentPlan ? 'primary.main' : 'divider',
+                      position: 'relative',
+                      ...(isRecommended && {
+                        border: 2,
+                        borderColor: 'secondary.main',
+                      })
+                    }}
+                  >
+                    {isRecommended && (
+                      <Chip
+                        label="Most Popular"
+                        color="secondary"
+                        size="small"
+                        sx={{ position: 'absolute', top: 16, right: 16 }}
+                      />
+                    )}
+                    <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="h6" gutterBottom fontWeight="bold">
+                        {plan.name}
+                      </Typography>
+                      <Typography variant="h4" gutterBottom color="primary.main">
+                        ₹{plan.price}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        {planKey === 'monthly' && 'per month'}
+                        {planKey === 'quarterly' && 'per quarter'}
+                        {planKey === 'yearly' && 'per year'}
+                      </Typography>
+                      
+                      <Divider sx={{ my: 2 }} />
+                      
+                      <List dense sx={{ flex: 1 }}>
+                        {plan.features.map((feature, index) => (
+                          <ListItem key={index} sx={{ px: 0, py: 0.5 }}>
+                            <ListItemIcon sx={{ minWidth: 32 }}>
+                              <CheckIcon color="success" fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText 
+                              primary={feature} 
+                              primaryTypographyProps={{ variant: 'body2' }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                      
+                      <Button
+                        variant={isCurrentPlan ? "outlined" : "contained"}
+                        fullWidth
+                        disabled={isCurrentPlan}
+                        onClick={() => handleUpgradePlan(planKey)}
+                        sx={{ mt: 2 }}
+                      >
+                        {isCurrentPlan ? 'Current Plan' : `Upgrade to ${plan.name}`}
+                      </Button>
+                    </CardContent>
+                  </Card>
                 );
               })}
-            </Grid>
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setUpgradeDialogOpen(false)}>Cancel</Button>
@@ -997,7 +1149,7 @@ export default function ProfilePage() {
   );
 }
 
-// Password Change Component (unchanged)
+// Password Change Component
 function PasswordChangeForm({ onChangePassword }: { onChangePassword: (currentPassword: string, newPasswordValue: string) => void }) {
   const [passwords, setPasswords] = useState({
     currentPassword: '',

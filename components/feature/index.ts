@@ -1,0 +1,8 @@
+export { HeroSection } from './HeroSection'
+export { CategoryTabs } from './CategoryTabs'
+export { CategoryCard } from './CategoryCard'
+export { FeatureItem } from './FeatureItem'
+export { BenefitCard } from './BenefitCard'
+export { MobileAccordion } from './MobileAccordion'
+export { IntegrationSection } from './IntegrationSection'
+export { CTASection } from './CTASection'
