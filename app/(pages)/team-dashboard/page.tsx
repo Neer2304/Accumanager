@@ -33,6 +33,8 @@ import {
   TableRow,
   Tabs,
   Tab,
+  AlertTitle,
+  Grid,
 } from '@mui/material';
 import {
   Person,
@@ -45,6 +47,9 @@ import {
   Visibility,
   BarChart,
   AssignmentTurnedIn,
+  Construction,
+  Warning,
+  Info,
 } from '@mui/icons-material';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -120,6 +125,10 @@ export default function TeamDashboardPage() {
     category: 'daily' as const,
   });
 
+  // Demo mode state
+  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [showDemoAlert, setShowDemoAlert] = useState(true);
+
   // Fetch employee data for dropdown
   const [availableEmployees, setAvailableEmployees] = useState<Array<{
     _id: string;
@@ -141,6 +150,15 @@ export default function TeamDashboardPage() {
       }
     } catch (err) {
       console.error('Error fetching employees:', err);
+      
+      // If API fails, load demo data
+      if (isDemoMode) {
+        setAvailableEmployees([
+          { _id: 'demo1', name: 'John Doe', role: 'Developer' },
+          { _id: 'demo2', name: 'Jane Smith', role: 'Designer' },
+          { _id: 'demo3', name: 'Mike Johnson', role: 'Manager' },
+        ]);
+      }
     }
   };
 
@@ -183,11 +201,141 @@ export default function TeamDashboardPage() {
       }));
       
       setEmployees(safeEmployees);
+      
+      // If no data, load demo data
+      if (isDemoMode && employeesData.length === 0) {
+        loadDemoData();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      
+      // Load demo data in demo mode
+      if (isDemoMode) {
+        loadDemoData();
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  // Load demo data for development
+  const loadDemoData = () => {
+    const demoEmployees: EmployeeData[] = [
+      {
+        _id: 'demo1',
+        name: 'John Doe',
+        role: 'Senior Developer',
+        department: 'Engineering',
+        stats: {
+          totalTasks: 12,
+          completedTasks: 8,
+          inProgressTasks: 3,
+          pendingTasks: 1,
+          overdueTasks: 0,
+        },
+        recentTasks: [
+          {
+            _id: 'task1',
+            title: 'Implement user authentication',
+            description: 'Add JWT authentication system',
+            status: 'completed',
+            priority: 'high',
+            dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            estimatedHours: 16,
+            actualHours: 14,
+            progress: 100,
+            category: 'project',
+            projectName: 'Authentication System',
+            assignedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+            updates: []
+          },
+          {
+            _id: 'task2',
+            title: 'Fix mobile responsive issues',
+            description: 'Optimize for mobile devices',
+            status: 'in_progress',
+            priority: 'medium',
+            dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+            estimatedHours: 8,
+            actualHours: 4,
+            progress: 50,
+            category: 'maintenance',
+            projectName: 'Website Redesign',
+            assignedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            updates: []
+          },
+        ]
+      },
+      {
+        _id: 'demo2',
+        name: 'Jane Smith',
+        role: 'UI/UX Designer',
+        department: 'Design',
+        stats: {
+          totalTasks: 8,
+          completedTasks: 6,
+          inProgressTasks: 2,
+          pendingTasks: 0,
+          overdueTasks: 1,
+        },
+        recentTasks: [
+          {
+            _id: 'task3',
+            title: 'Design dashboard layout',
+            description: 'Create new dashboard mockups',
+            status: 'completed',
+            priority: 'medium',
+            dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            estimatedHours: 12,
+            actualHours: 10,
+            progress: 100,
+            category: 'project',
+            projectName: 'Admin Dashboard',
+            assignedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+            updates: []
+          },
+        ]
+      },
+      {
+        _id: 'demo3',
+        name: 'Mike Johnson',
+        role: 'Project Manager',
+        department: 'Management',
+        stats: {
+          totalTasks: 5,
+          completedTasks: 3,
+          inProgressTasks: 2,
+          pendingTasks: 0,
+          overdueTasks: 0,
+        },
+        recentTasks: [
+          {
+            _id: 'task4',
+            title: 'Weekly progress report',
+            description: 'Compile team progress updates',
+            status: 'in_progress',
+            priority: 'low',
+            dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+            estimatedHours: 4,
+            actualHours: 2,
+            progress: 50,
+            category: 'daily',
+            projectName: 'Weekly Reports',
+            assignedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            updates: []
+          },
+        ]
+      }
+    ];
+
+    setEmployees(demoEmployees);
+    setSummary({
+      totalEmployees: demoEmployees.length,
+      totalTasks: demoEmployees.reduce((sum, emp) => sum + emp.stats.totalTasks, 0),
+      completedTasks: demoEmployees.reduce((sum, emp) => sum + emp.stats.completedTasks, 0),
+      overdueTasks: demoEmployees.reduce((sum, emp) => sum + emp.stats.overdueTasks, 0),
+      completionRate: 68,
+    });
   };
 
   useEffect(() => {
@@ -199,6 +347,61 @@ export default function TeamDashboardPage() {
     try {
       if (!assignForm.title.trim() || !assignForm.assignedTo) {
         setError('Please fill in all required fields');
+        return;
+      }
+
+      if (isDemoMode) {
+        // In demo mode, just show success message
+        alert('In demo mode: Task would be assigned successfully!\n\n' +
+              `Task: ${assignForm.title}\n` +
+              `Assigned to: ${availableEmployees.find(e => e._id === assignForm.assignedTo)?.name}\n` +
+              `Due: ${assignForm.dueDate.toLocaleDateString()}`);
+        
+        // Simulate adding to local state
+        const assignedToEmployee = availableEmployees.find(e => e._id === assignForm.assignedTo);
+        if (assignedToEmployee) {
+          const newTask: EmployeeTask = {
+            _id: `demo-task-${Date.now()}`,
+            title: assignForm.title,
+            description: assignForm.description,
+            status: 'assigned',
+            priority: assignForm.priority,
+            dueDate: assignForm.dueDate.toISOString(),
+            estimatedHours: assignForm.estimatedHours,
+            actualHours: 0,
+            progress: 0,
+            category: assignForm.category,
+            projectName: 'New Assignment',
+            assignedAt: new Date().toISOString(),
+            updates: []
+          };
+
+          setEmployees(prev => prev.map(emp => {
+            if (emp._id === assignForm.assignedTo) {
+              return {
+                ...emp,
+                stats: {
+                  ...emp.stats,
+                  totalTasks: emp.stats.totalTasks + 1,
+                  pendingTasks: emp.stats.pendingTasks + 1,
+                },
+                recentTasks: [newTask, ...emp.recentTasks]
+              };
+            }
+            return emp;
+          }));
+        }
+
+        setAssignDialogOpen(false);
+        setAssignForm({
+          title: '',
+          description: '',
+          assignedTo: '',
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          estimatedHours: 8,
+          priority: 'medium',
+          category: 'daily',
+        });
         return;
       }
 
@@ -257,6 +460,16 @@ export default function TeamDashboardPage() {
   };
 
   const getEmployeeTasks = async (employeeId: string) => {
+    if (isDemoMode) {
+      // Find demo employee
+      const employee = employees.find(emp => emp._id === employeeId);
+      if (employee) {
+        setSelectedEmployee(employee);
+        setViewDialogOpen(true);
+      }
+      return;
+    }
+
     try {
       const response = await fetch(`/api/tasks/employee/${employeeId}`);
       if (response.ok) {
@@ -303,7 +516,7 @@ export default function TeamDashboardPage() {
 
   if (loading) {
     return (
-      <MainLayout title="Team Dashboard">
+      <MainLayout title="Team Dashboard (Preview)">
         <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
           <CircularProgress />
         </Box>
@@ -312,22 +525,98 @@ export default function TeamDashboardPage() {
   }
 
   return (
-    <MainLayout title="Team Dashboard">
+    <MainLayout title="Team Dashboard (Preview)">
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <Box sx={{ p: 3, maxWidth: 1400, margin: '0 auto' }}>
           
+          {/* Development Notice */}
+          {showDemoAlert && (
+            <Alert 
+              severity="warning" 
+              sx={{ mb: 3 }}
+              icon={<Construction />}
+              onClose={() => setShowDemoAlert(false)}
+            >
+              <AlertTitle>🚧 Feature Under Development</AlertTitle>
+              This team dashboard is currently in preview mode. 
+              {isDemoMode ? ' You are viewing demo data. ' : ' '}
+              Some features may not be fully functional yet.
+            </Alert>
+          )}
+
+          {/* Demo Mode Indicator */}
+          {isDemoMode && (
+            <Alert 
+              severity="info" 
+              sx={{ mb: 3 }}
+              icon={<Info />}
+              action={
+                <Button 
+                  color="inherit" 
+                  size="small"
+                  onClick={() => setIsDemoMode(false)}
+                >
+                  Exit Demo
+                </Button>
+              }
+            >
+              <strong>Demo Mode Active</strong> - Using sample data. 
+              All changes are temporary and will be reset on refresh.
+            </Alert>
+          )}
+
           {/* Header */}
-          <Paper sx={{ p: 3, mb: 3 }}>
+          <Paper sx={{ p: 3, mb: 3, position: 'relative' }}>
+            <Box sx={{ 
+              position: 'absolute', 
+              top: 8, 
+              right: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              {isDemoMode && (
+                <Chip
+                  size="small"
+                  label="DEMO MODE"
+                  color="warning"
+                  variant="outlined"
+                />
+              )}
+              <Chip
+                size="small"
+                label="PREVIEW"
+                color="info"
+                icon={<Construction />}
+              />
+            </Box>
+
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box>
-                <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-                  👥 Team Work Dashboard
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Construction color="warning" />
+                  <Typography variant="h4" component="h1" fontWeight="bold">
+                    👥 Team Work Dashboard
+                  </Typography>
+                </Box>
                 <Typography variant="body1" color="text.secondary">
                   Assign tasks, track progress, and monitor team performance
                 </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  ⚠️ Preview feature - Data may not persist
+                </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Tooltip title="Load demo data">
+                  <Button
+                    variant="outlined"
+                    startIcon={<Refresh />}
+                    onClick={loadDemoData}
+                    sx={{ display: isDemoMode ? 'flex' : 'none' }}
+                  >
+                    Reload Demo
+                  </Button>
+                </Tooltip>
                 <Button
                   variant="contained"
                   startIcon={<Add />}
@@ -343,7 +632,7 @@ export default function TeamDashboardPage() {
               </Box>
             </Box>
 
-            {/* Summary Stats - Using flexbox instead of Grid */}
+            {/* Summary Stats */}
             <Box sx={{ 
               display: 'flex', 
               flexWrap: 'wrap',
@@ -417,6 +706,21 @@ export default function TeamDashboardPage() {
               {error}
             </Alert>
           )}
+
+          {/* Feature Status Bar */}
+          <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+              🚀 Development Status
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Chip size="small" label="✓ Task Assignment" color="success" variant="outlined" />
+              <Chip size="small" label="✓ Progress Tracking" color="success" variant="outlined" />
+              <Chip size="small" label="✓ Performance Analytics" color="success" variant="outlined" />
+              <Chip size="small" label="⏳ Real-time Updates" color="warning" variant="outlined" />
+              <Chip size="small" label="⏳ Notifications" color="warning" variant="outlined" />
+              <Chip size="small" label="⏳ Advanced Reporting" color="warning" variant="outlined" />
+            </Box>
+          </Box>
 
           {/* Tabs */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
@@ -547,7 +851,7 @@ export default function TeamDashboardPage() {
                 </Card>
               ))}
               
-              {employees.length === 0 && (
+              {employees.length === 0 && !isDemoMode && (
                 <Card sx={{ width: '100%' }}>
                   <CardContent sx={{ textAlign: 'center', py: 4 }}>
                     <Assignment sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
@@ -573,9 +877,16 @@ export default function TeamDashboardPage() {
           {selectedTab === 1 && (
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  All Tasks Overview
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">
+                    All Tasks Overview
+                  </Typography>
+                  {isDemoMode && (
+                    <Typography variant="caption" color="text.secondary">
+                      Sample data • {employees.flatMap(e => e.recentTasks).length} tasks shown
+                    </Typography>
+                  )}
+                </Box>
                 <TableContainer>
                   <Table>
                     <TableHead>
@@ -668,6 +979,17 @@ export default function TeamDashboardPage() {
                             <Typography variant="body2" color="text.secondary">
                               No tasks found. Start by assigning tasks to your team.
                             </Typography>
+                            {!isDemoMode && (
+                              <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<Add />}
+                                onClick={() => setAssignDialogOpen(true)}
+                                sx={{ mt: 2 }}
+                              >
+                                Assign First Task
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       )}
@@ -682,9 +1004,16 @@ export default function TeamDashboardPage() {
           {selectedTab === 2 && (
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Team Performance Summary
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">
+                    Team Performance Summary
+                  </Typography>
+                  {isDemoMode && (
+                    <Typography variant="caption" color="text.secondary">
+                      Based on sample data
+                    </Typography>
+                  )}
+                </Box>
                 <TableContainer>
                   <Table>
                     <TableHead>
@@ -788,12 +1117,20 @@ export default function TeamDashboardPage() {
                         );
                       })}
                       
-                      {employees.length === 0 && (
+                      {employees.length === 0 && !isDemoMode && (
                         <TableRow>
                           <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                             <Typography variant="body2" color="text.secondary">
                               No employee data available
                             </Typography>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={() => setIsDemoMode(true)}
+                              sx={{ mt: 2 }}
+                            >
+                              Load Demo Data
+                            </Button>
                           </TableCell>
                         </TableRow>
                       )}
@@ -807,8 +1144,26 @@ export default function TeamDashboardPage() {
 
         {/* Assign Task Dialog */}
         <Dialog open={assignDialogOpen} onClose={() => setAssignDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Assign New Task</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {isDemoMode && <Construction fontSize="small" color="warning" />}
+              <span>Assign New Task</span>
+              {isDemoMode && (
+                <Chip
+                  size="small"
+                  label="Demo Mode"
+                  color="warning"
+                  sx={{ ml: 2 }}
+                />
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
+            {isDemoMode && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                In demo mode, tasks are only added temporarily to the current view.
+              </Alert>
+            )}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
               <TextField
                 label="Task Title *"
@@ -840,7 +1195,7 @@ export default function TeamDashboardPage() {
                       {emp.name} ({emp.role})
                     </MenuItem>
                   ))}
-                  {availableEmployees.length === 0 && (
+                  {availableEmployees.length === 0 && !isDemoMode && (
                     <MenuItem disabled>
                       No employees available. Add employees first.
                     </MenuItem>
@@ -861,6 +1216,7 @@ export default function TeamDashboardPage() {
                 value={assignForm.estimatedHours}
                 onChange={(e) => setAssignForm({...assignForm, estimatedHours: Number(e.target.value) || 0})}
                 fullWidth
+                InputProps={{ inputProps: { min: 1, max: 100 } }}
               />
               
               <FormControl fullWidth>
@@ -900,7 +1256,7 @@ export default function TeamDashboardPage() {
               onClick={handleAssignTask}
               disabled={!assignForm.title || !assignForm.assignedTo}
             >
-              Assign Task
+              {isDemoMode ? 'Assign (Demo)' : 'Assign Task'}
             </Button>
           </DialogActions>
         </Dialog>
@@ -915,7 +1271,12 @@ export default function TeamDashboardPage() {
                     {selectedEmployee.name.charAt(0).toUpperCase()}
                   </Avatar>
                   <Box>
-                    <Typography variant="h6">{selectedEmployee.name}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="h6">{selectedEmployee.name}</Typography>
+                      {isDemoMode && (
+                        <Chip size="small" label="Demo" color="warning" />
+                      )}
+                    </Box>
                     <Typography variant="body2" color="text.secondary">
                       {selectedEmployee.role} • {selectedEmployee.department}
                     </Typography>
