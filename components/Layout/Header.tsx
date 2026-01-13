@@ -1,4 +1,4 @@
-// components/layout/Header.tsx - UPDATED
+// components/layout/Header.tsx - COMPLETE FIXED VERSION
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -35,7 +35,7 @@ import {
 } from '@mui/icons-material'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
-import { useUser } from '@/contexts/UserContext' // Add this import
+import { useUser } from '@/contexts/UserContext'
 import { useRouter } from 'next/navigation'
 
 interface HeaderProps {
@@ -56,7 +56,7 @@ interface Notification {
 export const Header: React.FC<HeaderProps> = ({ title = 'Dashboard', onMenuClick }) => {
   const { mode, toggleTheme } = useTheme()
   const { user: authUser, logout } = useAuth()
-  const { user: contextUser, isLoading } = useUser() // Get user from context
+  const { user: contextUser, isLoading } = useUser()
   const router = useRouter()
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
   const [notificationAnchorEl, setNotificationAnchorEl] = React.useState<null | HTMLElement>(null)
@@ -249,6 +249,136 @@ export const Header: React.FC<HeaderProps> = ({ title = 'Dashboard', onMenuClick
     return user.name || user.email?.split('@')[0] || 'User'
   }
 
+  // Create notifications menu content
+  const renderNotificationsContent = () => {
+    return [
+      // Notifications Header
+      <Box key="header" sx={{ p: 2, pb: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <MuiTypography variant="h6" fontWeight="600">
+            Notifications
+          </MuiTypography>
+          {unreadCount > 0 && (
+            <Button 
+              size="small" 
+              startIcon={<MarkReadIcon />}
+              onClick={handleMarkAllAsRead}
+              disabled={loading}
+            >
+              Mark all read
+            </Button>
+          )}
+        </Box>
+        {unreadCount > 0 && (
+          <MuiTypography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+          </MuiTypography>
+        )}
+      </Box>,
+      
+      // Divider
+      <Divider key="divider1" />,
+      
+      // Notifications List
+      <Box key="list" sx={{ maxHeight: 300, overflow: 'auto' }}>
+        {loading ? (
+          <MenuItem key="loading" disabled>
+            <MuiTypography variant="body2" color="text.secondary">
+              Loading notifications...
+            </MuiTypography>
+          </MenuItem>
+        ) : notifications.length === 0 ? (
+          <MenuItem key="empty" disabled>
+            <MuiTypography variant="body2" color="text.secondary" sx={{ textAlign: 'center', width: '100%', py: 2 }}>
+              No notifications
+            </MuiTypography>
+          </MenuItem>
+        ) : (
+          <List key="notifications-list" sx={{ p: 0 }}>
+            {notifications.slice(0, 10).map((notification) => (
+              <ListItem
+                key={notification._id}
+                sx={{
+                  borderLeft: `4px solid ${getNotificationColor(notification.type)}`,
+                  cursor: 'pointer',
+                  backgroundColor: notification.isRead ? 'transparent' : 'action.hover',
+                  '&:hover': {
+                    backgroundColor: 'action.hover'
+                  },
+                  py: 1.5,
+                  px: 2
+                }}
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <Box sx={{ width: '100%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 0.5 }}>
+                    {!notification.isRead && (
+                      <CircleIcon 
+                        sx={{ 
+                          fontSize: 8, 
+                          color: getNotificationColor(notification.type),
+                          mt: 0.75,
+                          flexShrink: 0
+                        }} 
+                      />
+                    )}
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <MuiTypography 
+                        variant="subtitle2" 
+                        fontWeight={notification.isRead ? 'normal' : '600'}
+                        sx={{ lineHeight: 1.3 }}
+                      >
+                        {notification.title}
+                      </MuiTypography>
+                      <MuiTypography 
+                        variant="body2" 
+                        color="text.secondary"
+                        sx={{ 
+                          lineHeight: 1.4,
+                          mt: 0.5,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {notification.message}
+                      </MuiTypography>
+                      <MuiTypography 
+                        variant="caption" 
+                        color="text.secondary"
+                        sx={{ mt: 0.5, display: 'block' }}
+                      >
+                        {formatTime(notification.createdAt)}
+                      </MuiTypography>
+                    </Box>
+                  </Box>
+                </Box>
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </Box>,
+
+      // View All section - only if there are notifications
+      ...(notifications.length > 0 ? [
+        <Divider key="divider2" />,
+        <MenuItem 
+          key="view-all"
+          onClick={() => {
+            router.push('/notifications')
+            handleNotificationMenuClose()
+          }}
+          sx={{ justifyContent: 'center' }}
+        >
+          <MuiTypography variant="body2" color="primary">
+            View all notifications
+          </MuiTypography>
+        </MenuItem>
+      ] : [])
+    ]
+  }
+
   return (
     <AppBar 
       position="fixed" 
@@ -321,7 +451,7 @@ export const Header: React.FC<HeaderProps> = ({ title = 'Dashboard', onMenuClick
             </IconButton>
           )}
 
-          {/* Notifications Menu */}
+          {/* Notifications Menu - FIXED: Using array of children */}
           <Menu
             anchorEl={notificationAnchorEl}
             open={Boolean(notificationAnchorEl)}
@@ -338,130 +468,7 @@ export const Header: React.FC<HeaderProps> = ({ title = 'Dashboard', onMenuClick
             transformOrigin={{ horizontal: 'right', vertical: 'top' }}
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           >
-            {/* Notifications Header */}
-            <Box sx={{ p: 2, pb: 1 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <MuiTypography variant="h6" fontWeight="600">
-                  Notifications
-                </MuiTypography>
-                {unreadCount > 0 && (
-                  <Button 
-                    size="small" 
-                    startIcon={<MarkReadIcon />}
-                    onClick={handleMarkAllAsRead}
-                    disabled={loading}
-                  >
-                    Mark all read
-                  </Button>
-                )}
-              </Box>
-              {unreadCount > 0 && (
-                <MuiTypography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
-                </MuiTypography>
-              )}
-            </Box>
-            
-            <Divider />
-            
-            {/* Notifications List */}
-            <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-              {loading ? (
-                <MenuItem disabled>
-                  <MuiTypography variant="body2" color="text.secondary">
-                    Loading notifications...
-                  </MuiTypography>
-                </MenuItem>
-              ) : notifications.length === 0 ? (
-                <MenuItem disabled>
-                  <MuiTypography variant="body2" color="text.secondary" sx={{ textAlign: 'center', width: '100%', py: 2 }}>
-                    No notifications
-                  </MuiTypography>
-                </MenuItem>
-              ) : (
-                <List sx={{ p: 0 }}>
-                  {notifications.slice(0, 10).map((notification) => (
-                    <ListItem
-                      key={notification._id}
-                      sx={{
-                        borderLeft: `4px solid ${getNotificationColor(notification.type)}`,
-                        cursor: 'pointer',
-                        backgroundColor: notification.isRead ? 'transparent' : 'action.hover',
-                        '&:hover': {
-                          backgroundColor: 'action.hover'
-                        },
-                        py: 1.5,
-                        px: 2
-                      }}
-                      onClick={() => handleNotificationClick(notification)}
-                    >
-                      <Box sx={{ width: '100%' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 0.5 }}>
-                          {!notification.isRead && (
-                            <CircleIcon 
-                              sx={{ 
-                                fontSize: 8, 
-                                color: getNotificationColor(notification.type),
-                                mt: 0.75,
-                                flexShrink: 0
-                              }} 
-                            />
-                          )}
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <MuiTypography 
-                              variant="subtitle2" 
-                              fontWeight={notification.isRead ? 'normal' : '600'}
-                              sx={{ lineHeight: 1.3 }}
-                            >
-                              {notification.title}
-                            </MuiTypography>
-                            <MuiTypography 
-                              variant="body2" 
-                              color="text.secondary"
-                              sx={{ 
-                                lineHeight: 1.4,
-                                mt: 0.5,
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden'
-                              }}
-                            >
-                              {notification.message}
-                            </MuiTypography>
-                            <MuiTypography 
-                              variant="caption" 
-                              color="text.secondary"
-                              sx={{ mt: 0.5, display: 'block' }}
-                            >
-                              {formatTime(notification.createdAt)}
-                            </MuiTypography>
-                          </Box>
-                        </Box>
-                      </Box>
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-            </Box>
-
-            {/* View All Notifications */}
-            {notifications.length > 0 && (
-              <>
-                <Divider />
-                <MenuItem 
-                  onClick={() => {
-                    router.push('/notifications')
-                    handleNotificationMenuClose()
-                  }}
-                  sx={{ justifyContent: 'center' }}
-                >
-                  <MuiTypography variant="body2" color="primary">
-                    View all notifications
-                  </MuiTypography>
-                </MenuItem>
-              </>
-            )}
+            {renderNotificationsContent()}
           </Menu>
 
           {/* Profile Menu */}
