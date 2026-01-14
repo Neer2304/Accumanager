@@ -1,22 +1,18 @@
-// app/dashboard/all-actions/page.tsx - ALL ACTIONS PAGE
 "use client";
 
 import React from 'react'
 import {
   Box,
   Typography,
-  Paper,
-  Grid,
   Container,
-  useTheme,
-  useMediaQuery,
-  alpha,
   Button,
   Breadcrumbs,
-  Link as MuiLink
+  Link as MuiLink,
+  useTheme
 } from '@mui/material'
 import {
   Home as HomeIcon,
+  ArrowBack as BackIcon,
   Add as AddIcon,
   Receipt as BillIcon,
   People as EmployeeIcon,
@@ -42,18 +38,18 @@ import {
   Security as SecurityIcon,
   Notifications as NotificationIcon,
   ColorLens as ThemeIcon,
-  ArrowBack as BackIcon,
   People
 } from '@mui/icons-material'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { TrendingUpIcon } from 'lucide-react';
+import { TrendingUpIcon } from 'lucide-react'
+import { ActionCategory, ActionStats } from '@/components/all-action'
 
 const AllActionsPage = () => {
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const router = useRouter()
 
+  // COMPLETE ACTION CATEGORIES WITH ALL ACTIONS
   const actionCategories = [
     {
       title: 'Billing & Invoicing',
@@ -83,7 +79,7 @@ const AllActionsPage = () => {
         { label: 'Add Customer', icon: <CustomerIcon />, href: '/customers/new', description: 'New customer' },
         { label: 'Manage Customers', icon: <People />, href: '/customers', description: 'Customer list' },
         { label: 'Add Employee', icon: <EmployeeIcon />, href: '/employees/new', description: 'New team member' },
-        { label: 'Employee Management', icon: <PersonIcon />, href: '/employees', description: 'Team management' }
+        { label: 'Employee Management', icon: <People />, href: '/employees', description: 'Team management' }
       ]
     },
     {
@@ -170,184 +166,41 @@ const AllActionsPage = () => {
         </Typography>
       </Box>
 
-      {/* Action Categories */}
+      {/* Render All Categories */}
       {actionCategories.map((category, categoryIndex) => (
-        <Box key={categoryIndex} sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Box
-              sx={{
-                width: 4,
-                height: 24,
-                backgroundColor: category.color,
-                borderRadius: 1,
-                mr: 2
-              }}
-            />
-            <Typography variant="h5" fontWeight={600}>
-              {category.title}
-            </Typography>
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                ml: 2, 
-                backgroundColor: alpha(category.color, 0.1),
-                color: category.color,
-                px: 1,
-                py: 0.5,
-                borderRadius: 1,
-                fontWeight: 600
-              }}
-            >
-              {category.actions.length} actions
-            </Typography>
-          </Box>
-
-          <Grid container spacing={2}>
-            {category.actions.map((action, actionIndex) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={actionIndex}>
-                <Paper
-                  elevation={0}
-                  component={Link}
-                  href={action.href}
-                  sx={{
-                    p: 2,
-                    height: '100%',
-                    borderRadius: 2,
-                    border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
-                    backgroundColor: alpha(theme.palette.background.paper, 0.7),
-                    textDecoration: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: theme.shadows[4],
-                      borderColor: category.color,
-                      backgroundColor: alpha(category.color, 0.05)
-                    }
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '12px',
-                      backgroundColor: alpha(category.color, 0.1),
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      mb: 2
-                    }}
-                  >
-                    <Box sx={{ color: category.color, fontSize: 24 }}>
-                      {action.icon}
-                    </Box>
-                  </Box>
-                  <Typography 
-                    variant="h6" 
-                    fontWeight={600}
-                    sx={{ mb: 1, fontSize: '1rem' }}
-                  >
-                    {action.label}
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{ fontSize: '0.875rem' }}
-                  >
-                    {action.description}
-                  </Typography>
-                  <Box sx={{ mt: 'auto', pt: 2 }}>
-                    <Typography 
-                      variant="caption" 
-                      color="primary.main"
-                      fontWeight={600}
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        fontSize: '0.75rem'
-                      }}
-                    >
-                      Click to open →
-                    </Typography>
-                  </Box>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
+        <ActionCategory key={categoryIndex} category={category} />
       ))}
 
       {/* Stats Footer */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          mt: 4,
-          borderRadius: 2,
-          border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-          backgroundColor: alpha(theme.palette.primary.main, 0.05)
-        }}
-      >
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              Need Help?
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Can't find what you're looking for? Check our documentation or contact support.
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
-                component={Link}
-                href="/help"
-                startIcon={<HelpIcon />}
-              >
-                Help Center
-              </Button>
-              <Button
-                variant="outlined"
-                component={Link}
-                href="/help/support"
-                startIcon={<SupportIcon />}
-              >
-                Contact Support
-              </Button>
-            </Box>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4 }}>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h3" fontWeight={700} color="primary.main">
-                  {actionCategories.reduce((total, cat) => total + cat.actions.length, 0)}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Total Actions
-                </Typography>
-              </Box>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h3" fontWeight={700} color="success.main">
-                  {actionCategories.length}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Categories
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
+      <ActionStats categories={actionCategories} />
     </Container>
   )
 }
 
-// Add missing icon components
-const PersonIcon = ({ children, ...props }: any) => <span {...props}>{children}</span>
-const AccountBalanceIcon = ({ children, ...props }: any) => <span {...props}>{children}</span>
-const PlayCircleIcon = ({ children, ...props }: any) => <span {...props}>{children}</span>
-const SupportIcon = ({ children, ...props }: any) => <span {...props}>{children}</span>
-const FeedbackIcon = ({ children, ...props }: any) => <span {...props}>{children}</span>
+// Missing Icon Components
+const AccountBalanceIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.29l8 4V16l-8 4-8-4V8.29l8-4z"/>
+    <path d="M12 12l-8-4v8l8 4 8-4V8l-8 4z"/>
+  </svg>
+)
+
+const PlayCircleIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+  </svg>
+)
+
+const SupportIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+  </svg>
+)
+
+const FeedbackIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 12h-2v-2h2v2zm0-4h-2V6h2v4z"/>
+  </svg>
+)
 
 export default AllActionsPage
