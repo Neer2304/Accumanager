@@ -21,6 +21,26 @@ export interface IUser extends Document {
     autoRenew: boolean;
     features: string[];
   };
+
+   legal: {
+    accepted: boolean;
+    acceptedAt: Date;
+    acceptedVersion: string;
+    lastAccepted: {
+      timestamp: Date;
+      version: string;
+      ipAddress: string;
+      userAgent: string;
+      method: string;
+    };
+    acceptanceHistory: {
+      timestamp: Date;
+      version: string;
+      ipAddress: string;
+      userAgent: string;
+      method: string;
+    }[];
+  };
   
   // Usage tracking
   usage: {

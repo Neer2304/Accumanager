@@ -5,13 +5,17 @@ import { setCredentials, logout, setLoading, setError, restoreAuth } from '@/sto
 import { authService } from '@/services/authService'
 import { offlineStorage } from '@/utils/offlineStorage'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export const useAuth = () => {
   const dispatch = useAppDispatch()
   const queryClient = useQueryClient()
   const router = useRouter()
   const auth = useAppSelector((state) => state.auth)
+  
+  // Add state for legal disclaimer
+  const [showLegalDisclaimer, setShowLegalDisclaimer] = useState(false)
+  const [loginSuccessData, setLoginSuccessData] = useState<any>(null)
 
   // Restore auth state on page refresh
   useEffect(() => {
@@ -66,9 +70,23 @@ export const useAuth = () => {
         user: userData
       }
       
+      // Save auth data temporarily
       dispatch(setCredentials({ user: userData }))
-      offlineStorage.setItem('auth', authDataToStore)
-      router.push('/dashboard')
+      offlineStorage.setItem('auth_temp', authDataToStore) // Temporary storage
+      
+      // Check if user has already accepted legal disclaimer
+      const hasAccepted = localStorage.getItem('legal_disclaimer_accepted')
+      
+      if (hasAccepted) {
+        // User already accepted, go directly to dashboard
+        offlineStorage.setItem('auth', authDataToStore) // Move to permanent storage
+        offlineStorage.removeItem('auth_temp') // Clean up temp
+        router.push('/dashboard')
+      } else {
+        // Show legal disclaimer modal
+        setLoginSuccessData({ user: userData, authData: authDataToStore })
+        setShowLegalDisclaimer(true)
+      }
     },
     onError: (error: Error) => {
       console.error('❌ Login error:', error)
@@ -76,6 +94,33 @@ export const useAuth = () => {
       dispatch(setLoading(false))
     },
   })
+
+  // Function to handle disclaimer acceptance
+  const handleAcceptDisclaimer = () => {
+    if (loginSuccessData) {
+      // Move temp auth to permanent storage
+      offlineStorage.setItem('auth', loginSuccessData.authData)
+      offlineStorage.removeItem('auth_temp')
+      
+      // Store acceptance in localStorage
+      localStorage.setItem('legal_disclaimer_accepted', 'true')
+      localStorage.setItem('legal_disclaimer_accepted_date', new Date().toISOString())
+      localStorage.setItem('legal_disclaimer_user_id', loginSuccessData.user.id)
+      
+      // Hide modal and redirect to dashboard
+      setShowLegalDisclaimer(false)
+      router.push('/dashboard')
+    }
+  }
+
+  // Function to handle disclaimer rejection
+  const handleRejectDisclaimer = () => {
+    // Clear temp auth and logout
+    offlineStorage.removeItem('auth_temp')
+    dispatch(logout())
+    setShowLegalDisclaimer(false)
+    router.push('/login')
+  }
 
   const registerMutation = useMutation({
     mutationFn: authService.register,
@@ -95,9 +140,23 @@ export const useAuth = () => {
         user: userData
       }
       
+      // Save auth data temporarily
       dispatch(setCredentials({ user: userData }))
-      offlineStorage.setItem('auth', authDataToStore)
-      router.push('/dashboard')
+      offlineStorage.setItem('auth_temp', authDataToStore)
+      
+      // Check if user has already accepted legal disclaimer
+      const hasAccepted = localStorage.getItem('legal_disclaimer_accepted')
+      
+      if (hasAccepted) {
+        // User already accepted
+        offlineStorage.setItem('auth', authDataToStore)
+        offlineStorage.removeItem('auth_temp')
+        router.push('/dashboard')
+      } else {
+        // Show legal disclaimer modal
+        setLoginSuccessData({ user: userData, authData: authDataToStore })
+        setShowLegalDisclaimer(true)
+      }
     },
     onError: (error: Error) => {
       console.error('❌ Registration error:', error)
@@ -138,12 +197,16 @@ export const useAuth = () => {
     isAuthenticated: auth.isAuthenticated,
     isLoading: auth.isLoading,
     error: auth.error,
+    showLegalDisclaimer,
+    loginSuccessData,
     
     // Actions
     login: loginMutation.mutate,
     register: registerMutation.mutate,
     logout: logoutMutation.mutate,
     clearError: () => dispatch(setError(null)),
+    handleAcceptDisclaimer,
+    handleRejectDisclaimer,
     
     // Helper
     getUserDisplayName,
