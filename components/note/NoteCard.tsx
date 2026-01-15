@@ -1,66 +1,56 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Card,
   CardContent,
+  CardActions,
   Typography,
   Box,
   Chip,
   IconButton,
+  Tooltip,
   Menu,
   MenuItem,
-  Avatar,
-  Tooltip,
-  alpha,
   useTheme,
+  alpha,
 } from '@mui/material';
 import {
-  MoreVert,
-  Lock,
-  Public,
-  Share,
   Edit,
   Delete,
   Archive,
+  Unarchive,
+  Share,
+  MoreVert,
+  Lock,
+  Public,
   Schedule,
-  AccessTime,
-  Folder,
-  Label,
+  Category,
 } from '@mui/icons-material';
 import { Note } from './types';
-import {
-  getPriorityColor,
-  getStatusColor,
-  getCategoryColor,
-  formatDate,
-  truncateText,
-  calculateReadTime,
-  getNoteIcon,
-} from './utils';
+import { getPriorityColor, getCategoryColor } from './utils';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface NoteCardProps {
   note: Note;
+  isSelected?: boolean;
+  onSelect?: (note: Note) => void;
   onEdit?: (note: Note) => void;
   onDelete?: (note: Note) => void;
   onArchive?: (note: Note) => void;
   onShare?: (note: Note) => void;
-  onSelect?: (note: Note) => void;
-  isSelected?: boolean;
-  showCheckbox?: boolean;
 }
 
 export const NoteCard: React.FC<NoteCardProps> = ({
   note,
+  isSelected = false,
+  onSelect,
   onEdit,
   onDelete,
   onArchive,
   onShare,
-  onSelect,
-  isSelected = false,
-  showCheckbox = false,
 }) => {
   const theme = useTheme();
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [hovered, setHovered] = useState(false);
+  const { getColorWithContrast } = useThemeColors();
+  const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -71,253 +61,291 @@ export const NoteCard: React.FC<NoteCardProps> = ({
     setMenuAnchor(null);
   };
 
-  const handleAction = (action: string) => {
-    handleMenuClose();
-    switch (action) {
-      case 'edit':
-        onEdit?.(note);
-        break;
-      case 'delete':
-        onDelete?.(note);
-        break;
-      case 'archive':
-        onArchive?.(note);
-        break;
-      case 'share':
-        onShare?.(note);
-        break;
-    }
-  };
+  // Use the theme hook to get proper contrast
+  const { backgroundColor, color: textColor } = getColorWithContrast(note.color || '#ffffff');
 
-  const cardStyle = {
-    height: '100%',
-    cursor: 'pointer',
-    position: 'relative',
-    overflow: 'hidden',
-    transition: 'all 0.3s ease',
-    backgroundColor: note.color || '#ffffff',
-    border: isSelected
-      ? `2px solid ${theme.palette.primary.main}`
-      : `1px solid ${theme.palette.divider}`,
-    '&:hover': {
-      transform: 'translateY(-4px)',
-      boxShadow: theme.shadows[8],
-      borderColor: theme.palette.primary.main,
-    },
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   return (
     <Card
-      sx={cardStyle}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       onClick={() => onSelect?.(note)}
+      sx={{
+        position: 'relative',
+        cursor: 'pointer',
+        borderRadius: 3,
+        border: `2px solid ${isSelected ? theme.palette.primary.main : 'transparent'}`,
+        backgroundColor,
+        color: textColor,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: theme.shadows[8],
+          '& .note-actions': {
+            opacity: 1,
+          },
+        },
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 4,
+          background: `linear-gradient(90deg, ${alpha(theme.palette.primary.main, 0.8)} 0%, ${alpha(
+            getPriorityColor(note.priority),
+            0.8
+          )} 100%)`,
+          borderTopLeftRadius: 12,
+          borderTopRightRadius: 12,
+        },
+      }}
     >
-      {/* Background Pattern */}
+      {/* Note Icon */}
       <Box
         sx={{
           position: 'absolute',
-          top: 0,
-          right: 0,
-          width: 60,
-          height: 60,
-          opacity: 0.1,
-          background: `linear-gradient(45deg, ${getPriorityColor(note.priority)} 25%, transparent 25%)`,
-          backgroundSize: '10px 10px',
+          top: 12,
+          right: 12,
+          fontSize: 24,
+          opacity: 0.7,
         }}
-      />
+      >
+        {note.icon || '📝'}
+      </Box>
 
-      <CardContent sx={{ p: 2.5, position: 'relative' }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-          <Avatar
-            sx={{
-              bgcolor: alpha(getCategoryColor(note.category), 0.2),
-              color: getCategoryColor(note.category),
-              width: 40,
-              height: 40,
-              fontSize: '1.2rem',
-              mr: 1.5,
-            }}
-          >
-            {getNoteIcon(note.category)}
-          </Avatar>
+      {/* Privacy Badges */}
+      <Box sx={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 0.5 }}>
+        {note.passwordProtected && (
+          <Tooltip title="Password protected">
+            <Lock sx={{ fontSize: 16, color: textColor, opacity: 0.8 }} />
+          </Tooltip>
+        )}
+        {note.isPublic && (
+          <Tooltip title="Public note">
+            <Public sx={{ fontSize: 16, color: textColor, opacity: 0.8 }} />
+          </Tooltip>
+        )}
+      </Box>
 
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              variant="h6"
-              fontWeight="bold"
-              gutterBottom
-              sx={{
-                wordBreak: 'break-word',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                color: theme.palette.text.primary,
-              }}
-            >
-              {note.title}
-            </Typography>
+      <CardContent sx={{ flex: 1, pt: 4, pb: 2 }}>
+        {/* Title */}
+        <Typography
+          variant="h6"
+          fontWeight="bold"
+          gutterBottom
+          sx={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            lineHeight: 1.3,
+            mb: 1,
+          }}
+        >
+          {note.title}
+        </Typography>
 
-            {/* Tags and Status */}
-            <Box sx={{ display: 'flex', gap: 0.5, mb: 1, flexWrap: 'wrap' }}>
-              <Chip
-                label={note.category}
-                size="small"
-                sx={{
-                  bgcolor: alpha(getCategoryColor(note.category), 0.1),
-                  color: getCategoryColor(note.category),
-                  fontWeight: 500,
-                  height: 24,
-                }}
-              />
-              <Chip
-                label={note.priority}
-                size="small"
-                sx={{
-                  bgcolor: alpha(getPriorityColor(note.priority), 0.1),
-                  color: getPriorityColor(note.priority),
-                  height: 24,
-                }}
-              />
-              {note.passwordProtected && (
-                <Tooltip title="Password Protected">
-                  <Lock fontSize="small" sx={{ color: theme.palette.warning.main, ml: 0.5 }} />
-                </Tooltip>
-              )}
-              {note.isPublic && (
-                <Tooltip title="Public Note">
-                  <Public fontSize="small" sx={{ color: theme.palette.info.main, ml: 0.5 }} />
-                </Tooltip>
-              )}
-            </Box>
-          </Box>
-
-          {/* Action Menu */}
-          <IconButton
-            size="small"
-            onClick={handleMenuClick}
-            sx={{
-              opacity: hovered ? 1 : 0.7,
-              transition: 'opacity 0.2s',
-            }}
-          >
-            <MoreVert />
-          </IconButton>
-
-          <Menu
-            anchorEl={menuAnchor}
-            open={Boolean(menuAnchor)}
-            onClose={handleMenuClose}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MenuItem onClick={() => handleAction('edit')}>
-              <Edit fontSize="small" sx={{ mr: 1 }} />
-              Edit
-            </MenuItem>
-            <MenuItem onClick={() => handleAction('share')}>
-              <Share fontSize="small" sx={{ mr: 1 }} />
-              Share
-            </MenuItem>
-            <MenuItem onClick={() => handleAction('archive')}>
-              <Archive fontSize="small" sx={{ mr: 1 }} />
-              {note.status === 'archived' ? 'Unarchive' : 'Archive'}
-            </MenuItem>
-            <MenuItem
-              onClick={() => handleAction('delete')}
-              sx={{ color: theme.palette.error.main }}
-            >
-              <Delete fontSize="small" sx={{ mr: 1 }} />
-              Delete
-            </MenuItem>
-          </Menu>
-        </Box>
-
-        {/* Content Preview */}
+        {/* Summary */}
         {note.summary && (
           <Typography
             variant="body2"
-            color="text.secondary"
             sx={{
+              opacity: 0.8,
               mb: 2,
-              wordBreak: 'break-word',
               display: '-webkit-box',
               WebkitLineClamp: 3,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
-              lineHeight: 1.6,
+              lineHeight: 1.5,
             }}
           >
             {note.summary}
           </Typography>
         )}
 
+        {/* Stats */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, opacity: 0.7 }}>
+          <Schedule sx={{ fontSize: 14 }} />
+          <Typography variant="caption">
+            {note.readTime} min • {note.wordCount} words
+          </Typography>
+        </Box>
+
         {/* Tags */}
         {note.tags && note.tags.length > 0 && (
-          <Box sx={{ display: 'flex', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
-            {note.tags.slice(0, 3).map((tag, index) => (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
+            {note.tags.slice(0, 3).map((tag) => (
               <Chip
-                key={index}
+                key={tag}
                 label={tag}
                 size="small"
-                variant="outlined"
-                icon={<Label fontSize="small" />}
-                sx={{ height: 20, fontSize: '0.7rem' }}
+                sx={{
+                  fontSize: '0.6rem',
+                  height: 20,
+                  backgroundColor: alpha(textColor, 0.1),
+                  color: textColor,
+                  border: `1px solid ${alpha(textColor, 0.2)}`,
+                }}
               />
             ))}
             {note.tags.length > 3 && (
-              <Typography variant="caption" color="text.secondary">
-                +{note.tags.length - 3} more
-              </Typography>
+              <Chip
+                label={`+${note.tags.length - 3}`}
+                size="small"
+                sx={{
+                  fontSize: '0.6rem',
+                  height: 20,
+                  backgroundColor: alpha(textColor, 0.1),
+                  color: textColor,
+                  border: `1px solid ${alpha(textColor, 0.2)}`,
+                }}
+              />
             )}
           </Box>
         )}
 
-        {/* Footer */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            pt: 2,
-            borderTop: `1px solid ${theme.palette.divider}`,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <AccessTime fontSize="small" sx={{ color: 'text.secondary', fontSize: 14 }} />
-              <Typography variant="caption" color="text.secondary">
-                {calculateReadTime(note.wordCount)}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Schedule fontSize="small" sx={{ color: 'text.secondary', fontSize: 14 }} />
-              <Typography variant="caption" color="text.secondary">
-                {formatDate(note.updatedAt)}
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Stats */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {note.readCount > 0 && (
-              <Tooltip title="Read count">
-                <Typography variant="caption" color="text.secondary">
-                  👁️ {note.readCount}
-                </Typography>
-              </Tooltip>
-            )}
-            {note.editCount > 0 && (
-              <Tooltip title="Edit count">
-                <Typography variant="caption" color="text.secondary">
-                  ✏️ {note.editCount}
-                </Typography>
-              </Tooltip>
-            )}
-          </Box>
+        {/* Category & Priority */}
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Chip
+            icon={<Category sx={{ fontSize: 14 }} />}
+            label={note.category}
+            size="small"
+            sx={{
+              fontSize: '0.7rem',
+              backgroundColor: alpha(getCategoryColor(note.category), 0.2),
+              color: getCategoryColor(note.category),
+              fontWeight: 'medium',
+            }}
+          />
+          <Chip
+            label={note.priority}
+            size="small"
+            sx={{
+              fontSize: '0.7rem',
+              backgroundColor: alpha(getPriorityColor(note.priority), 0.2),
+              color: getPriorityColor(note.priority),
+              fontWeight: 'bold',
+            }}
+          />
         </Box>
       </CardContent>
+
+      {/* Footer */}
+      <CardActions
+        sx={{
+          pt: 0,
+          pb: 2,
+          px: 2,
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Typography variant="caption" sx={{ opacity: 0.7 }}>
+          {formatDate(note.updatedAt)}
+        </Typography>
+
+        <Box className="note-actions" sx={{ opacity: 0, transition: 'opacity 0.2s ease' }}>
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.(note);
+              }}
+              sx={{
+                backgroundColor: alpha(textColor, 0.1),
+                color: textColor,
+                '&:hover': {
+                  backgroundColor: alpha(textColor, 0.2),
+                },
+              }}
+            >
+              <Edit fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="More actions">
+            <IconButton
+              size="small"
+              onClick={handleMenuClick}
+              sx={{
+                backgroundColor: alpha(textColor, 0.1),
+                color: textColor,
+                '&:hover': {
+                  backgroundColor: alpha(textColor, 0.2),
+                },
+              }}
+            >
+              <MoreVert fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </CardActions>
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={handleMenuClose}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <MenuItem
+          onClick={() => {
+            onEdit?.(note);
+            handleMenuClose();
+          }}
+        >
+          <Edit fontSize="small" sx={{ mr: 1 }} />
+          Edit
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            onArchive?.(note);
+            handleMenuClose();
+          }}
+        >
+          {note.status === 'archived' ? (
+            <>
+              <Unarchive fontSize="small" sx={{ mr: 1 }} />
+              Restore
+            </>
+          ) : (
+            <>
+              <Archive fontSize="small" sx={{ mr: 1 }} />
+              Archive
+            </>
+          )}
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            onShare?.(note);
+            handleMenuClose();
+          }}
+        >
+          <Share fontSize="small" sx={{ mr: 1 }} />
+          Share
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            onDelete?.(note);
+            handleMenuClose();
+          }}
+          sx={{ color: theme.palette.error.main }}
+        >
+          <Delete fontSize="small" sx={{ mr: 1 }} />
+          Delete
+        </MenuItem>
+      </Menu>
     </Card>
   );
 };

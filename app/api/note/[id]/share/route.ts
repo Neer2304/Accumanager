@@ -3,19 +3,19 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Notes from '@/models/Notes';
 import { verifyToken } from '@/lib/jwt';
 import { z } from 'zod';
-import mongoose from 'mongoose';
 
 const shareNoteSchema = z.object({
   userIds: z.array(z.string()),
   role: z.enum(['viewer', 'editor', 'commenter']).default('viewer')
 });
 
-// POST /api/note/[id]/share - Share note with users
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log(`🤝 POST /api/note/${params.id}/share - Starting...`);
+    
     const authToken = request.cookies.get('auth_token')?.value;
     if (!authToken) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -24,14 +24,18 @@ export async function POST(
     const decoded = verifyToken(authToken);
     await connectToDatabase();
 
+    // Import mongoose for ObjectId
+    const mongoose = await import('mongoose');
+
     // Check if note exists and user is owner
     const note = await Notes.findOne({
       _id: params.id,
-      userId: decoded.userId,
+      userId: new mongoose.Types.ObjectId(decoded.userId),
       status: { $ne: 'deleted' }
     });
 
     if (!note) {
+      console.log('❌ Note not found or no permission');
       return NextResponse.json(
         { success: false, message: 'Note not found or no permission' }, 
         { status: 404 }
@@ -41,6 +45,8 @@ export async function POST(
     // Validate request
     const body = await request.json();
     const { userIds, role } = shareNoteSchema.parse(body);
+
+    console.log(`📤 Sharing with ${userIds.length} users, role: ${role}`);
 
     // Convert user IDs to ObjectId
     const validUserIds = userIds
@@ -77,6 +83,8 @@ export async function POST(
       { new: true }
     ).select('-versions -encryptionKey -passwordHash');
 
+    console.log('✅ Note shared successfully');
+
     return NextResponse.json({
       success: true,
       message: `Note shared with ${filteredUserIds.length} user(s)`,
@@ -84,11 +92,15 @@ export async function POST(
     });
 
   } catch (error: any) {
-    console.error('Share note error:', error);
+    console.error('❌ Share note error:', error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, message: 'Validation error', errors: error.message },
+        { 
+          success: false, 
+          message: 'Validation error', 
+          // errors: error.errors.map(e => ({ path: e.path, message: e.message }))
+        },
         { status: 400 }
       );
     }

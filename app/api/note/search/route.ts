@@ -3,9 +3,10 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Notes from '@/models/Notes';
 import { verifyToken } from '@/lib/jwt';
 
-// GET /api/note/search - Search notes
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 GET /api/note/search - Starting...');
+    
     const authToken = request.cookies.get('auth_token')?.value;
     if (!authToken) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -18,6 +19,8 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || '';
     const limit = parseInt(searchParams.get('limit') || '10');
 
+    console.log('🔍 Search query:', query);
+
     if (!query.trim()) {
       return NextResponse.json({
         success: true,
@@ -26,18 +29,28 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Import mongoose for ObjectId
+    const mongoose = await import('mongoose');
+
     const notes = await Notes.find({
       $or: [
-        { userId: decoded.userId },
-        { 'sharedWith.userId': decoded.userId }
+        { userId: new mongoose.Types.ObjectId(decoded.userId) },
+        { 'sharedWith.userId': new mongoose.Types.ObjectId(decoded.userId) }
       ],
       status: { $ne: 'deleted' },
-      $text: { $search: query }
+      $or: [
+        { title: { $regex: query, $options: 'i' } },
+        { content: { $regex: query, $options: 'i' } },
+        { summary: { $regex: query, $options: 'i' } },
+        { tags: { $regex: query, $options: 'i' } }
+      ]
     })
     .select('title content summary category priority tags createdAt updatedAt')
     .limit(limit)
-    .sort({ score: { $meta: 'textScore' } })
+    .sort({ updatedAt: -1 })
     .lean();
+
+    console.log(`✅ Found ${notes.length} matching notes`);
 
     return NextResponse.json({
       success: true,
@@ -46,7 +59,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Search notes error:', error);
+    console.error('❌ Search notes error:', error);
     return NextResponse.json(
       { success: false, message: error.message || 'Internal server error' },
       { status: 500 }

@@ -14,13 +14,10 @@ import {
 import {
   Search,
   Clear,
-  FilterList,
-  Sort,
   Category,
-  Label,
   TrendingUp,
 } from '@mui/icons-material';
-import { NoteFilters as NoteFiltersType } from './types';
+import { NoteFilters as NoteFiltersType, NOTE_CATEGORIES, getPriorityLabel } from './types';
 
 interface NoteFiltersProps {
   filters: NoteFiltersType;
@@ -28,27 +25,37 @@ interface NoteFiltersProps {
   sx?: any;
 }
 
-export const NoteFilters: React.FC<NoteFiltersProps> = ({
+export const NotesFilters: React.FC<NoteFiltersProps> = ({
   filters,
   onFiltersChange,
   sx,
 }) => {
   const theme = useTheme();
 
-  const categories = [
-    'general',
-    'personal',
-    'work',
-    'ideas',
-    'todo',
-    'reference',
-    'journal',
-    'meeting',
-    'project',
+  const priorities: Array<'low' | 'medium' | 'high' | 'critical'> = ['low', 'medium', 'high', 'critical'];
+  const statuses = ['active', 'draft', 'archived'] as const;
+  const sortOptions = [
+    { value: 'updatedAt', label: 'Last Updated' },
+    { value: 'createdAt', label: 'Date Created' },
+    { value: 'title', label: 'Title' },
+    { value: 'priority', label: 'Priority' },
+    { value: 'category', label: 'Category' },
+    { value: 'wordCount', label: 'Word Count' },
+    { value: 'readCount', label: 'Read Count' },
   ];
 
-  const priorities = ['low', 'medium', 'high', 'critical'];
-  const statuses = ['active', 'draft', 'archived'];
+  // Ensure filter values are never undefined
+  const safeFilters = {
+    search: filters.search || '',
+    category: filters.category || '',
+    tag: filters.tag || '',
+    priority: filters.priority || '',
+    status: filters.status || 'active',
+    sortBy: filters.sortBy || 'updatedAt',
+    sortOrder: filters.sortOrder || 'desc',
+    page: filters.page || 1,
+    limit: filters.limit || 20,
+  };
 
   const handleClearFilters = () => {
     onFiltersChange({
@@ -59,16 +66,24 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
       status: 'active',
       sortBy: 'updatedAt',
       sortOrder: 'desc',
+      page: 1,
+    });
+  };
+
+  const handleFilterChange = (key: keyof typeof safeFilters, value: any) => {
+    onFiltersChange({ 
+      [key]: value,
+      ...(key !== 'page' && { page: 1 }), // Reset to first page when filters change (except page itself)
     });
   };
 
   const hasActiveFilters = 
-    filters.search ||
-    filters.category ||
-    filters.tag ||
-    filters.priority ||
-    filters.status !== 'active' ||
-    filters.sortBy !== 'updatedAt';
+    safeFilters.search ||
+    safeFilters.category ||
+    safeFilters.tag ||
+    safeFilters.priority ||
+    safeFilters.status !== 'active' ||
+    safeFilters.sortBy !== 'updatedAt';
 
   return (
     <Paper
@@ -76,7 +91,7 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
         p: 2,
         mb: 3,
         borderRadius: 2,
-        border: `1px solid ${theme.palette.divider}`,
+        border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
         background: alpha(theme.palette.background.paper, 0.8),
         backdropFilter: 'blur(10px)',
         ...sx,
@@ -85,9 +100,9 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
       {/* Search Bar */}
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
         <TextField
-          placeholder="Search notes..."
-          value={filters.search}
-          onChange={(e) => onFiltersChange({ search: e.target.value, page: 1 })}
+          placeholder="Search notes by title, content, or tags..."
+          value={safeFilters.search}
+          onChange={(e) => handleFilterChange('search', e.target.value)}
           size="small"
           sx={{ flex: 1, minWidth: 200 }}
           InputProps={{
@@ -96,11 +111,12 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
                 <Search fontSize="small" />
               </InputAdornment>
             ),
-            endAdornment: filters.search && (
+            endAdornment: safeFilters.search && (
               <InputAdornment position="end">
                 <IconButton
                   size="small"
-                  onClick={() => onFiltersChange({ search: '' })}
+                  onClick={() => handleFilterChange('search', '')}
+                  edge="end"
                 >
                   <Clear fontSize="small" />
                 </IconButton>
@@ -114,10 +130,10 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
           <TextField
             select
             label="Category"
-            value={filters.category}
-            onChange={(e) => onFiltersChange({ category: e.target.value, page: 1 })}
+            value={safeFilters.category}
+            onChange={(e) => handleFilterChange('category', e.target.value)}
             size="small"
-            sx={{ minWidth: 120 }}
+            sx={{ minWidth: 140 }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -127,7 +143,7 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
             }}
           >
             <MenuItem value="">All Categories</MenuItem>
-            {categories.map((cat) => (
+            {NOTE_CATEGORIES.map((cat) => (
               <MenuItem key={cat} value={cat}>
                 {cat.charAt(0).toUpperCase() + cat.slice(1)}
               </MenuItem>
@@ -138,10 +154,10 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
           <TextField
             select
             label="Priority"
-            value={filters.priority}
-            onChange={(e) => onFiltersChange({ priority: e.target.value, page: 1 })}
+            value={safeFilters.priority}
+            onChange={(e) => handleFilterChange('priority', e.target.value)}
             size="small"
-            sx={{ minWidth: 120 }}
+            sx={{ minWidth: 140 }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -153,7 +169,7 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
             <MenuItem value="">All Priorities</MenuItem>
             {priorities.map((pri) => (
               <MenuItem key={pri} value={pri}>
-                {pri.charAt(0).toUpperCase() + pri.slice(1)}
+                {getPriorityLabel(pri)}
               </MenuItem>
             ))}
           </TextField>
@@ -162,8 +178,8 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
           <TextField
             select
             label="Status"
-            value={filters.status}
-            onChange={(e) => onFiltersChange({ status: e.target.value, page: 1 })}
+            value={safeFilters.status}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
             size="small"
             sx={{ minWidth: 120 }}
           >
@@ -178,33 +194,26 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
           <TextField
             select
             label="Sort By"
-            value={filters.sortBy}
-            onChange={(e) => onFiltersChange({ sortBy: e.target.value as any })}
+            value={safeFilters.sortBy}
+            onChange={(e) => handleFilterChange('sortBy', e.target.value)}
             size="small"
-            sx={{ minWidth: 120 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Sort fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
+            sx={{ minWidth: 160 }}
           >
-            <MenuItem value="updatedAt">Last Updated</MenuItem>
-            <MenuItem value="createdAt">Date Created</MenuItem>
-            <MenuItem value="title">Title</MenuItem>
-            <MenuItem value="priority">Priority</MenuItem>
-            <MenuItem value="category">Category</MenuItem>
+            {sortOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
           </TextField>
 
           {/* Sort Order */}
           <TextField
             select
             label="Order"
-            value={filters.sortOrder}
-            onChange={(e) => onFiltersChange({ sortOrder: e.target.value as any })}
+            value={safeFilters.sortOrder}
+            onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
             size="small"
-            sx={{ minWidth: 100 }}
+            sx={{ minWidth: 120 }}
           >
             <MenuItem value="desc">Descending</MenuItem>
             <MenuItem value="asc">Ascending</MenuItem>
@@ -218,7 +227,11 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
                 onClick={handleClearFilters}
                 sx={{
                   alignSelf: 'center',
-                  border: `1px solid ${theme.palette.divider}`,
+                  border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.error.main, 0.1),
+                    borderColor: theme.palette.error.main,
+                  },
                 }}
               >
                 <Clear />
@@ -230,33 +243,88 @@ export const NoteFilters: React.FC<NoteFiltersProps> = ({
 
       {/* Active Filters Chips */}
       {hasActiveFilters && (
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {filters.search && (
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary', mr: 1 }}>
+            Active filters:
+          </Box>
+          {safeFilters.search && (
             <Chip
-              label={`Search: ${filters.search}`}
+              label={`Search: "${safeFilters.search}"`}
               size="small"
-              onDelete={() => onFiltersChange({ search: '' })}
+              onDelete={() => handleFilterChange('search', '')}
+              sx={{ 
+                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                '& .MuiChip-deleteIcon': {
+                  color: theme.palette.primary.main,
+                  '&:hover': {
+                    color: theme.palette.primary.dark,
+                  }
+                }
+              }}
             />
           )}
-          {filters.category && (
+          {safeFilters.category && (
             <Chip
-              label={`Category: ${filters.category}`}
+              label={`Category: ${safeFilters.category}`}
               size="small"
-              onDelete={() => onFiltersChange({ category: '' })}
+              onDelete={() => handleFilterChange('category', '')}
+              sx={{ 
+                backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                '& .MuiChip-deleteIcon': {
+                  color: theme.palette.secondary.main,
+                  '&:hover': {
+                    color: theme.palette.secondary.dark,
+                  }
+                }
+              }}
             />
           )}
-          {filters.priority && (
+          {safeFilters.priority && (
             <Chip
-              label={`Priority: ${filters.priority}`}
+              label={`Priority: ${getPriorityLabel(safeFilters.priority as any)}`}
               size="small"
-              onDelete={() => onFiltersChange({ priority: '' })}
+              onDelete={() => handleFilterChange('priority', '')}
+              sx={{ 
+                backgroundColor: alpha(theme.palette.warning.main, 0.1),
+                '& .MuiChip-deleteIcon': {
+                  color: theme.palette.warning.main,
+                  '&:hover': {
+                    color: theme.palette.warning.dark,
+                  }
+                }
+              }}
             />
           )}
-          {filters.status !== 'active' && (
+          {safeFilters.status !== 'active' && (
             <Chip
-              label={`Status: ${filters.status}`}
+              label={`Status: ${safeFilters.status.charAt(0).toUpperCase() + safeFilters.status.slice(1)}`}
               size="small"
-              onDelete={() => onFiltersChange({ status: 'active' })}
+              onDelete={() => handleFilterChange('status', 'active')}
+              sx={{ 
+                backgroundColor: alpha(theme.palette.info.main, 0.1),
+                '& .MuiChip-deleteIcon': {
+                  color: theme.palette.info.main,
+                  '&:hover': {
+                    color: theme.palette.info.dark,
+                  }
+                }
+              }}
+            />
+          )}
+          {safeFilters.sortBy !== 'updatedAt' && (
+            <Chip
+              label={`Sorted by: ${sortOptions.find(opt => opt.value === safeFilters.sortBy)?.label || safeFilters.sortBy}`}
+              size="small"
+              onDelete={() => handleFilterChange('sortBy', 'updatedAt')}
+              sx={{ 
+                backgroundColor: alpha(theme.palette.success.main, 0.1),
+                '& .MuiChip-deleteIcon': {
+                  color: theme.palette.success.main,
+                  '&:hover': {
+                    color: theme.palette.success.dark,
+                  }
+                }
+              }}
             />
           )}
         </Box>

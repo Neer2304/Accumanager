@@ -26,14 +26,20 @@ const updateNoteSchema = createNoteSchema.partial();
 // GET /api/note - Get all notes with filters
 export async function GET(request: NextRequest) {
   try {
+    console.log('📝 GET /api/note - Starting...');
+    
     // Get token and verify
     const authToken = request.cookies.get('auth_token')?.value;
     if (!authToken) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      console.log('❌ No auth token found');
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const decoded = verifyToken(authToken);
+    console.log('👤 User ID:', decoded.userId);
+    
     await connectToDatabase();
+    console.log('✅ Database connected');
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -48,6 +54,9 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     const showShared = searchParams.get('shared') === 'true';
 
+    // Import mongoose for ObjectId
+    const mongoose = await import('mongoose');
+
     // Build base query
     const baseQuery: any[] = [
       { status: { $ne: 'deleted' } }
@@ -57,13 +66,13 @@ export async function GET(request: NextRequest) {
       // Get both owned and shared notes
       baseQuery.push({
         $or: [
-          { userId: decoded.userId },
-          { 'sharedWith.userId': decoded.userId }
+          { userId: new mongoose.Types.ObjectId(decoded.userId) },
+          { 'sharedWith.userId': new mongoose.Types.ObjectId(decoded.userId) }
         ]
       });
     } else {
       // Get only owned notes
-      baseQuery.push({ userId: decoded.userId });
+      baseQuery.push({ userId: new mongoose.Types.ObjectId(decoded.userId) });
     }
 
     if (status !== 'all') {
@@ -99,6 +108,9 @@ export async function GET(request: NextRequest) {
     const sort: any = {};
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
+    console.log('🔍 Query:', JSON.stringify(query));
+    console.log('📊 Page:', page, 'Limit:', limit);
+
     // Execute query
     const notes = await Notes.find(query)
       .sort(sort)
@@ -108,6 +120,8 @@ export async function GET(request: NextRequest) {
       .lean();
 
     const total = await Notes.countDocuments(query);
+
+    console.log(`✅ Found ${notes.length} notes out of ${total} total`);
 
     return NextResponse.json({
       success: true,
@@ -121,7 +135,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Get notes error:', error);
+    console.error('❌ Get notes error:', error);
     return NextResponse.json(
       { success: false, message: error.message || 'Internal server error' },
       { status: 500 }
@@ -132,25 +146,37 @@ export async function GET(request: NextRequest) {
 // POST /api/note - Create new note
 export async function POST(request: NextRequest) {
   try {
+    console.log('📝 POST /api/note - Creating new note...');
+    
     // Authentication
     const authToken = request.cookies.get('auth_token')?.value;
     if (!authToken) {
+      console.log('❌ No auth token');
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const decoded = verifyToken(authToken);
+    console.log('👤 User ID:', decoded.userId);
+    
     await connectToDatabase();
+    console.log('✅ Database connected');
 
     // Validate request body
     const body = await request.json();
+    console.log('📦 Request body:', body);
+    
     const validatedData = createNoteSchema.parse(body);
+
+    // Calculate word count and read time
+    const wordCount = validatedData.content.split(/\s+/).length;
+    const readTime = Math.ceil(wordCount / 200);
 
     // Create note
     const note = new Notes({
       ...validatedData,
       userId: decoded.userId,
-      wordCount: validatedData.content.split(/\s+/).length,
-      readTime: Math.ceil(validatedData.content.split(/\s+/).length / 200)
+      wordCount,
+      readTime
     });
 
     // Handle password protection
@@ -158,9 +184,11 @@ export async function POST(request: NextRequest) {
       const bcrypt = await import('bcryptjs');
       note.passwordHash = await bcrypt.hash(validatedData.password, 10);
       note.passwordProtected = true;
+      console.log('🔒 Password protection enabled');
     }
 
     await note.save();
+    console.log('✅ Note created successfully:', note._id);
 
     // Remove sensitive fields from response
     const noteResponse = note.toObject();
@@ -178,11 +206,15 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error: any) {
-    console.error('Create note error:', error);
+    console.error('❌ Create note error:', error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, message: 'Validation error', errors: error.message },
+        { 
+          success: false, 
+          message: 'Validation error', 
+          // errors: error.message.map(e => ({ path: e.path, message: e.message }))
+        },
         { status: 400 }
       );
     }

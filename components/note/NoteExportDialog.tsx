@@ -103,7 +103,7 @@ export const NoteExportDialog: React.FC<NoteExportDialogProps> = ({
         sx: { borderRadius: 3 },
       }}
     >
-      {/* <DialogTitle sx={{ p: 3, pb: 2 }}> */}
+      <DialogTitle sx={{ p: 3, pb: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h5" fontWeight="bold">
             Export Notes
@@ -115,7 +115,7 @@ export const NoteExportDialog: React.FC<NoteExportDialogProps> = ({
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           Export {noteIds.length} note{noteIds.length !== 1 ? 's' : ''}
         </Typography>
-      {/* </DialogContent> */}
+      </DialogContent>
 
       <DialogContent sx={{ p: 3 }}>
         {error && (

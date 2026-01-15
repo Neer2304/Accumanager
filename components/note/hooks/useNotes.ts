@@ -1,5 +1,61 @@
-import { useState, useCallback } from 'react';
-import { Note, NoteStats, NoteFilters } from '../types';
+"use client";
+
+import { useState, useCallback } from "react";
+
+export interface Note {
+  _id: string;
+  title: string;
+  content: string;
+  summary?: string;
+  userId: string;
+  tags: string[];
+  category: string;
+  priority: "low" | "medium" | "high" | "critical";
+  status: "draft" | "active" | "archived" | "deleted";
+  color: string;
+  icon: string;
+  isPublic: boolean;
+  passwordProtected: boolean;
+  wordCount: number;
+  readTime: number;
+  readCount: number;
+  editCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NoteFilters {
+  search: string;
+  category: string;
+  tag: string;
+  priority: string;
+  status: string;
+  sortBy: string;
+  sortOrder: "asc" | "desc";
+  showShared: boolean;
+  page: number;
+  limit: number;
+}
+
+export interface NoteStats {
+  totalNotes: number;
+  totalWords: number;
+  avgWords: number;
+  categories: Array<{ _id: string; count: number }>;
+  priorities: Array<{ _id: string; count: number }>;
+  statuses: Array<{ _id: string; count: number }>;
+  recentActivity: Array<{
+    _id: string;
+    title: string;
+    category: string;
+    priority: string;
+    updatedAt: string;
+    editCount: number;
+    readCount: number;
+  }>;
+  dailyNotes: Array<{ _id: string; count: number }>;
+  topTags: Array<{ tag: string; count: number }>;
+}
 
 export const useNotes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -11,73 +67,130 @@ export const useNotes = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
+        if (value !== undefined && value !== "" && value !== null) {
           queryParams.append(key, String(value));
         }
       });
 
-      const response = await fetch(`/api/note?${queryParams}`);
-      if (!response.ok) throw new Error('Failed to fetch notes');
-      
+      const response = await fetch(`/api/note?${queryParams}`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch notes: ${response.statusText}`);
+      }
+
       const data = await response.json();
       if (data.success) {
         setNotes(data.data);
       } else {
-        throw new Error(data.message);
+        throw new Error(data.message || "Failed to fetch notes");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch notes');
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch notes";
+      setError(errorMessage);
+      console.error("Fetch notes error:", err);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const fetchNote = useCallback(async (id: string, password?: string) => {
+  // In your hooks/useNotes.ts - check the fetchNote function
+ const fetchNote = useCallback(async (id: string, password?: string) => {
+  try {
+    console.log(`🔍 useNotes.fetchNote - Starting for ID: ${id}`);
+    setLoading(true);
+    setError(null);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (password) {
+      headers['x-note-password'] = password;
+      console.log(`🔐 Password included in request`);
+    }
+
+    console.log(`📤 Making request to: /api/note/${id}`);
+    
+    const response = await fetch(`/api/note/${id}`, { 
+      headers,
+      credentials: 'include',
+    });
+    
+    console.log(`📥 Response status: ${response.status}`);
+    console.log(`📥 Response ok: ${response.ok}`);
+    
+    // Check if response is empty
+    const responseText = await response.text();
+    console.log(`📥 Raw response (first 500 chars):`, responseText.substring(0, 500));
+    
+    if (!responseText) {
+      throw new Error('Empty response from server');
+    }
+    
+    let data;
     try {
-      setLoading(true);
-      setError(null);
-      
-      const headers: HeadersInit = {};
-      if (password) {
-        headers['x-note-password'] = password;
-      }
-
-      const response = await fetch(`/api/note/${id}`, { headers });
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message);
-      }
-      
-      return data.data;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch note');
-      throw err;
-    } finally {
-      setLoading(false);
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ Failed to parse JSON:', parseError);
+      console.error('❌ Raw response:', responseText);
+      throw new Error('Invalid JSON response from server');
     }
-  }, []);
+    
+    console.log(`📥 Parsed response data:`, data);
+    
+    if (!data.success) {
+      // Check for password-related errors
+      if (data.requiresPassword) {
+        throw new Error('Password required');
+      } else if (data.message && data.message.includes('Invalid password')) {
+        throw new Error('Invalid password');
+      } else {
+        throw new Error(data.message || `Failed to fetch note (${response.status})`);
+      }
+    }
+    
+    return data.data;
+  } catch (err: any) {
+    console.error(`❌ useNotes.fetchNote error:`, err);
+    const errorMessage = err instanceof Error ? err.message : 'Failed to fetch note';
+    setError(errorMessage);
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   const createNote = useCallback(async (noteData: Partial<Note>) => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await fetch('/api/note', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+
+      const response = await fetch("/api/note", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(noteData),
+        credentials: "include",
       });
-      
+
       const data = await response.json();
-      if (!data.success) throw new Error(data.message);
-      
+      if (!data.success) {
+        throw new Error(data.message || "Failed to create note");
+      }
+
       return data.data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create note');
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to create note";
+      setError(errorMessage);
+      console.error("Create note error:", err);
       throw err;
     } finally {
       setLoading(false);
@@ -88,19 +201,27 @@ export const useNotes = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch(`/api/note/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(updates),
+        credentials: "include",
       });
-      
+
       const data = await response.json();
-      if (!data.success) throw new Error(data.message);
-      
+      if (!data.success) {
+        throw new Error(data.message || "Failed to update note");
+      }
+
       return data.data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update note');
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to update note";
+      setError(errorMessage);
+      console.error("Update note error:", err);
       throw err;
     } finally {
       setLoading(false);
@@ -111,17 +232,23 @@ export const useNotes = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch(`/api/note/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
+        credentials: "include",
       });
-      
+
       const data = await response.json();
-      if (!data.success) throw new Error(data.message);
-      
+      if (!data.success) {
+        throw new Error(data.message || "Failed to delete note");
+      }
+
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete note');
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete note";
+      setError(errorMessage);
+      console.error("Delete note error:", err);
       throw err;
     } finally {
       setLoading(false);
@@ -132,17 +259,22 @@ export const useNotes = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await fetch('/api/note/stats');
+
+      const response = await fetch("/api/note/stats", {
+        credentials: "include",
+      });
       const data = await response.json();
-      
+
       if (data.success) {
         setStats(data.data);
       } else {
-        throw new Error(data.message);
+        throw new Error(data.message || "Failed to fetch stats");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch stats');
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch stats";
+      setError(errorMessage);
+      console.error("Fetch stats error:", err);
     } finally {
       setLoading(false);
     }
@@ -152,68 +284,98 @@ export const useNotes = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await fetch(`/api/note/search?q=${encodeURIComponent(query)}`);
+
+      const response = await fetch(
+        `/api/note/search?q=${encodeURIComponent(query)}`,
+        {
+          credentials: "include",
+        }
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         return data.data;
       } else {
-        throw new Error(data.message);
+        throw new Error(data.message || "Failed to search notes");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to search notes');
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to search notes";
+      setError(errorMessage);
+      console.error("Search notes error:", err);
       return [];
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const bulkAction = useCallback(async (noteIds: string[], action: string, data?: any) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch('/api/note/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ noteIds, action, data }),
-      });
-      
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message);
-      
-      return result.data;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to perform bulk action');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const bulkAction = useCallback(
+    async (noteIds: string[], action: string, data?: any) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const shareNote = useCallback(async (noteId: string, userIds: string[], role: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch(`/api/note/${noteId}/share`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userIds, role }),
-      });
-      
-      const data = await response.json();
-      if (!data.success) throw new Error(data.message);
-      
-      return data.data;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to share note');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const response = await fetch("/api/note/bulk", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ noteIds, action, data }),
+          credentials: "include",
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.message || "Failed to perform bulk action");
+        }
+
+        return result.data;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to perform bulk action";
+        setError(errorMessage);
+        console.error("Bulk action error:", err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  const shareNote = useCallback(
+    async (noteId: string, userIds: string[], role: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(`/api/note/${noteId}/share`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userIds, role }),
+          credentials: "include",
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.message || "Failed to share note");
+        }
+
+        return data.data;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to share note";
+        setError(errorMessage);
+        console.error("Share note error:", err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   return {
     notes,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Typography,
@@ -8,7 +8,7 @@ import {
   CircularProgress,
   useTheme,
   alpha,
-} from '@mui/material';
+} from "@mui/material";
 import {
   NoteAdd,
   AccessTime,
@@ -16,21 +16,24 @@ import {
   TrendingUp,
   Numbers,
   Timeline,
-} from '@mui/icons-material';
-import { NoteStats as NoteStatsType } from './types';
-import { getPriorityColor, getCategoryColor } from './utils';
+} from "@mui/icons-material";
+import { NoteStats as NoteStatsType } from "./types";
+import { getPriorityColor, getCategoryColor } from "./utils";
 
 interface NoteStatsProps {
   stats: NoteStatsType | null;
   loading?: boolean;
 }
 
-export const NoteStats: React.FC<NoteStatsProps> = ({ stats, loading = false }) => {
+export const NotesStats: React.FC<NoteStatsProps> = ({
+  stats,
+  loading = false,
+}) => {
   const theme = useTheme();
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
         <CircularProgress />
       </Box>
     );
@@ -38,33 +41,35 @@ export const NoteStats: React.FC<NoteStatsProps> = ({ stats, loading = false }) 
 
   if (!stats) return null;
 
+  // Inside your NotesStats component, update the statCards array:
+
   const statCards = [
     {
-      title: 'Total Notes',
+      title: "Total Notes",
       value: stats.totalNotes,
       icon: <NoteAdd />,
-      color: theme.palette.primary.main,
+      color: "#3b82f6", // Blue 500
       progress: 100,
     },
     {
-      title: 'Total Words',
-      value: stats.totalWords?.toLocaleString() || '0',
+      title: "Total Words",
+      value: stats.totalWords?.toLocaleString() || "0",
       icon: <Numbers />,
-      color: theme.palette.info.main,
+      color: "#10b981", // Green 500
       progress: 100,
     },
     {
-      title: 'Avg. Words',
+      title: "Avg. Words",
       value: stats.avgWords,
       icon: <AccessTime />,
-      color: theme.palette.success.main,
+      color: "#f59e0b", // Yellow 500
       progress: 100,
     },
     {
-      title: 'Categories',
+      title: "Categories",
       value: stats.categories?.length || 0,
       icon: <Category />,
-      color: theme.palette.warning.main,
+      color: "#8b5cf6", // Violet 500
       progress: 100,
     },
   ];
@@ -83,21 +88,21 @@ export const NoteStats: React.FC<NoteStatsProps> = ({ stats, loading = false }) 
               sx={{
                 p: 2.5,
                 borderRadius: 2,
-                position: 'relative',
-                overflow: 'hidden',
-                background: `linear-gradient(135deg, ${alpha(card.color, 0.1)} 0%, ${alpha(
+                position: "relative",
+                overflow: "hidden",
+                background: `linear-gradient(135deg, ${alpha(
                   card.color,
-                  0.05
-                )} 100%)`,
+                  0.1
+                )} 0%, ${alpha(card.color, 0.05)} 100%)`,
                 border: `1px solid ${alpha(card.color, 0.2)}`,
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  transform: "translateY(-2px)",
                   boxShadow: theme.shadows[4],
                 },
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                 <Box
                   sx={{
                     p: 1,
@@ -125,7 +130,7 @@ export const NoteStats: React.FC<NoteStatsProps> = ({ stats, loading = false }) 
                   height: 4,
                   borderRadius: 2,
                   bgcolor: alpha(card.color, 0.1),
-                  '& .MuiLinearProgress-bar': {
+                  "& .MuiLinearProgress-bar": {
                     bgcolor: card.color,
                   },
                 }}
@@ -148,18 +153,19 @@ export const NoteStats: React.FC<NoteStatsProps> = ({ stats, loading = false }) 
                 {stats.categories.map((category) => (
                   <Box
                     key={category._id}
-                    sx={{ display: 'flex', alignItems: 'center', mb: 2 }}
+                    sx={{ display: "flex", alignItems: "center", mb: 2 }}
                   >
                     <Box sx={{ flex: 1, mr: 2 }}>
                       <Box
                         sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
+                          display: "flex",
+                          justifyContent: "space-between",
                           mb: 0.5,
                         }}
                       >
                         <Typography variant="body2">
-                          {category._id.charAt(0).toUpperCase() + category._id.slice(1)}
+                          {category._id.charAt(0).toUpperCase() +
+                            category._id.slice(1)}
                         </Typography>
                         <Typography variant="body2" fontWeight="bold">
                           {category.count}
@@ -172,7 +178,7 @@ export const NoteStats: React.FC<NoteStatsProps> = ({ stats, loading = false }) 
                           height: 8,
                           borderRadius: 4,
                           bgcolor: alpha(getCategoryColor(category._id), 0.1),
-                          '& .MuiLinearProgress-bar': {
+                          "& .MuiLinearProgress-bar": {
                             bgcolor: getCategoryColor(category._id),
                           },
                         }}
@@ -196,18 +202,19 @@ export const NoteStats: React.FC<NoteStatsProps> = ({ stats, loading = false }) 
                 {stats.priorities.map((priority) => (
                   <Box
                     key={priority._id}
-                    sx={{ display: 'flex', alignItems: 'center', mb: 2 }}
+                    sx={{ display: "flex", alignItems: "center", mb: 2 }}
                   >
                     <Box sx={{ flex: 1, mr: 2 }}>
                       <Box
                         sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
+                          display: "flex",
+                          justifyContent: "space-between",
                           mb: 0.5,
                         }}
                       >
                         <Typography variant="body2">
-                          {priority._id.charAt(0).toUpperCase() + priority._id.slice(1)}
+                          {priority._id.charAt(0).toUpperCase() +
+                            priority._id.slice(1)}
                         </Typography>
                         <Typography variant="body2" fontWeight="bold">
                           {priority.count}
@@ -220,7 +227,7 @@ export const NoteStats: React.FC<NoteStatsProps> = ({ stats, loading = false }) 
                           height: 8,
                           borderRadius: 4,
                           bgcolor: alpha(getPriorityColor(priority._id), 0.1),
-                          '& .MuiLinearProgress-bar': {
+                          "& .MuiLinearProgress-bar": {
                             bgcolor: getPriorityColor(priority._id),
                           },
                         }}
@@ -249,7 +256,7 @@ export const NoteStats: React.FC<NoteStatsProps> = ({ stats, loading = false }) 
                           p: 2,
                           borderRadius: 2,
                           border: `1px solid ${theme.palette.divider}`,
-                          '&:hover': {
+                          "&:hover": {
                             bgcolor: alpha(theme.palette.action.hover, 0.5),
                           },
                         }}
@@ -259,16 +266,17 @@ export const NoteStats: React.FC<NoteStatsProps> = ({ stats, loading = false }) 
                           fontWeight="medium"
                           gutterBottom
                           sx={{
-                            display: '-webkit-box',
+                            display: "-webkit-box",
                             WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
                           }}
                         >
                           {note.title}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Updated: {new Date(note.updatedAt).toLocaleDateString()}
+                          Updated:{" "}
+                          {new Date(note.updatedAt).toLocaleDateString()}
                         </Typography>
                       </Paper>
                     </Grid>

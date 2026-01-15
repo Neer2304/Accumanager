@@ -13,9 +13,9 @@ import { NoteCard } from './NoteCard';
 import { Note } from './types';
 
 interface NoteGridProps {
-  notes: Note[];
+  notes?: Note[];  // Make optional
   loading: boolean;
-  selectedNotes: string[];
+  selectedNotes?: string[];  // Make optional
   viewMode?: 'grid' | 'list';
   emptyMessage?: string;
   onNoteSelect?: (note: Note) => void;
@@ -27,9 +27,9 @@ interface NoteGridProps {
 }
 
 export const NoteGrid: React.FC<NoteGridProps> = ({
-  notes,
+  notes = [],  // Default to empty array
   loading,
-  selectedNotes,
+  selectedNotes = [],  // Default to empty array
   viewMode = 'grid',
   emptyMessage = 'No notes found',
   onNoteSelect,
@@ -61,7 +61,8 @@ export const NoteGrid: React.FC<NoteGridProps> = ({
     );
   }
 
-  if (notes.length === 0) {
+  // Check if notes is undefined/null or empty
+  if (!notes || notes.length === 0) {
     return (
       <Box
         sx={{
@@ -95,26 +96,29 @@ export const NoteGrid: React.FC<NoteGridProps> = ({
           <Typography variant="body2" color="text.secondary" sx={{ mb: 4, maxWidth: 400, mx: 'auto' }}>
             Create your first note to start organizing your thoughts, ideas, and important information.
           </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<Add />}
-            onClick={onCreateNote}
-            sx={{
-              borderRadius: 3,
-              px: 4,
-              py: 1.5,
-              fontSize: '1rem',
-              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-            }}
-          >
-            Create New Note
-          </Button>
+          {onCreateNote && (
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<Add />}
+              onClick={onCreateNote}
+              sx={{
+                borderRadius: 3,
+                px: 4,
+                py: 1.5,
+                fontSize: '1rem',
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+              }}
+            >
+              Create New Note
+            </Button>
+          )}
         </Paper>
       </Box>
     );
   }
 
+  // List view
   if (viewMode === 'list') {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -134,6 +138,7 @@ export const NoteGrid: React.FC<NoteGridProps> = ({
     );
   }
 
+  // Grid view (default)
   return (
     <Box
       sx={{
@@ -162,3 +167,11 @@ export const NoteGrid: React.FC<NoteGridProps> = ({
     </Box>
   );
 };
+
+// Optional: Add a default props configuration
+// NoteGrid.defaultProps = {
+//   notes: [],
+//   selectedNotes: [],
+//   viewMode: 'grid',
+//   emptyMessage: 'No notes found',
+// };

@@ -10,9 +10,10 @@ const bulkActionSchema = z.object({
   data: z.record(z.any()).optional()
 });
 
-// POST /api/note/bulk - Bulk actions on notes
 export async function POST(request: NextRequest) {
   try {
+    console.log('📦 POST /api/note/bulk - Starting bulk action...');
+    
     const authToken = request.cookies.get('auth_token')?.value;
     if (!authToken) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -23,6 +24,11 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { noteIds, action, data } = bulkActionSchema.parse(body);
+
+    console.log(`📦 Processing ${noteIds.length} notes, action: ${action}`);
+
+    // Import mongoose for ObjectId
+    const mongoose = await import('mongoose');
 
     // Filter valid note IDs
     const validNoteIds = noteIds.filter(id => 
@@ -83,10 +89,12 @@ export async function POST(request: NextRequest) {
     const result = await Notes.updateMany(
       {
         _id: { $in: validNoteIds },
-        userId: decoded.userId
+        userId: new mongoose.Types.ObjectId(decoded.userId)
       },
       updateQuery
     );
+
+    console.log(`✅ Bulk action completed: ${result.modifiedCount} notes modified`);
 
     return NextResponse.json({
       success: true,
@@ -98,11 +106,15 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Bulk action error:', error);
+    console.error('❌ Bulk action error:', error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, message: 'Validation error', errors: error.message },
+        { 
+          success: false, 
+          message: 'Validation error', 
+          // errors: error.errors.map(e => ({ path: e.path, message: e.message }))
+        },
         { status: 400 }
       );
     }
