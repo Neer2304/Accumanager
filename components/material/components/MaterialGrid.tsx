@@ -7,9 +7,8 @@ import {
   Paper,
   useTheme,
   alpha,
-  Grid,
 } from '@mui/material';
-import { Add, Inventory, SearchOff } from '@mui/icons-material';
+import { Add, Inventory } from '@mui/icons-material';
 import { MaterialCard } from './MaterialCard';
 import { Material } from '../types/material.types';
 
@@ -141,30 +140,33 @@ export const MaterialGrid: React.FC<MaterialGridProps> = ({
     );
   }
 
-  // Grid view (default)
+  // Grid view (default) - Using CSS Grid instead of MUI Grid
   return (
-    <Grid container spacing={3}>
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: 'repeat(2, 1fr)',
+          md: 'repeat(3, 1fr)',
+          lg: 'repeat(4, 1fr)',
+        },
+        gap: 3,
+      }}
+    >
       {materials.map((material) => (
-        <Grid item xs={12} sm={6} md={4} lg={3} key={material._id}>
-          <MaterialCard
-            material={material}
-            isSelected={selectedMaterials.includes(material._id)}
-            onSelect={onMaterialSelect}
-            onEdit={onMaterialEdit}
-            onDelete={onMaterialDelete}
-            onUse={onMaterialUse}
-            onRestock={onMaterialRestock}
-            onViewDetails={onViewDetails}
-          />
-        </Grid>
+        <MaterialCard
+          key={material._id}
+          material={material}
+          isSelected={selectedMaterials.includes(material._id)}
+          onSelect={onMaterialSelect}
+          onEdit={onMaterialEdit}
+          onDelete={onMaterialDelete}
+          onUse={onMaterialUse}
+          onRestock={onMaterialRestock}
+          onViewDetails={onViewDetails}
+        />
       ))}
-    </Grid>
+    </Box>
   );
-};
-
-MaterialGrid.defaultProps = {
-  materials: [],
-  selectedMaterials: [],
-  viewMode: 'grid',
-  emptyMessage: 'No materials found',
 };

@@ -6,7 +6,6 @@ import {
   FormControl,
   InputLabel,
   Select,
-  Grid,
   Paper,
   Typography,
   Divider,
@@ -14,8 +13,6 @@ import {
   Stack,
   FormControlLabel,
   Switch,
-  IconButton,
-  Tooltip,
   alpha,
   useTheme,
   InputAdornment,
@@ -23,7 +20,6 @@ import {
 } from '@mui/material';
 import {
   Add,
-  Delete,
   AttachMoney,
   Inventory,
   Numbers,
@@ -227,9 +223,21 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      {/* Form Sections - Using flexbox instead of Grid */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        gap: 3,
+        mb: 3 
+      }}>
         {sections.map((section, sectionIndex) => (
-          <Grid item xs={12} md={6} key={sectionIndex}>
+          <Box 
+            key={sectionIndex} 
+            sx={{ 
+              flex: { xs: '1 1 100%', md: '1 1 calc(50% - 12px)' },
+              minWidth: { xs: '100%', md: '300px' }
+            }}
+          >
             <Paper
               sx={{
                 p: 3,
@@ -278,32 +286,41 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
                 />
               )}
             </Paper>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
 
       {/* Action Buttons */}
       <Paper
         sx={{
           p: 3,
-          mt: 3,
           borderRadius: 2,
           border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
           backgroundColor: alpha(theme.palette.background.paper, 0.8),
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'stretch', sm: 'center' },
+          gap: 2 
+        }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 1, sm: 0 } }}>
             Fields marked with * are required
           </Typography>
 
-          <Stack direction="row" spacing={2}>
+          <Stack 
+            direction={{ xs: 'column', sm: 'row' }} 
+            spacing={2}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
             {onCancel && (
               <Button
                 variant="outlined"
                 onClick={onCancel}
                 disabled={loading}
-                sx={{ borderRadius: 2, px: 4 }}
+                sx={{ borderRadius: 2, flex: { xs: 1, sm: 'auto' } }}
               >
                 Cancel
               </Button>
@@ -314,7 +331,11 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
               onClick={handleSubmit}
               disabled={loading}
               startIcon={<Add />}
-              sx={{ borderRadius: 2, px: 4 }}
+              sx={{ 
+                borderRadius: 2, 
+                flex: { xs: 1, sm: 'auto' },
+                minWidth: { sm: 160 }
+              }}
             >
               {loading ? 'Processing...' : isEdit ? 'Update Material' : 'Create Material'}
             </Button>

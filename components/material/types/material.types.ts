@@ -28,8 +28,8 @@ export interface Material {
   
   // Status tracking
   status: MaterialStatus;
-  lastRestocked?: string;
-  lastUsed?: string;
+  lastRestocked?: Date | string;
+  lastUsed?: Date | string;
   
   // History tracking
   usageHistory: Array<{
@@ -37,7 +37,7 @@ export interface Material {
     usedBy: string;
     project?: string;
     note?: string;
-    usedAt: string;
+    usedAt: Date | string;
     cost: number;
   }>;
   
@@ -48,7 +48,7 @@ export interface Material {
     unitCost: number;
     totalCost: number;
     note?: string;
-    restockedAt: string;
+    restockedAt: Date | string;
   }>;
   
   // Analytics
@@ -59,7 +59,7 @@ export interface Material {
   
   // Alerts
   lowStockAlert: boolean;
-  expirationDate?: string;
+  expirationDate?: Date | string;
   batchNumber?: string;
   
   // Attachments
@@ -72,8 +72,9 @@ export interface Material {
   
   // Metadata
   userId: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  __v?: number;
 }
 
 export interface MaterialFilters {
@@ -94,7 +95,7 @@ export interface MaterialFormData {
   description: string;
   category: MaterialCategory;
   unit: UnitType;
-  initialStock: number;
+  currentStock?: number; // Changed from initialStock
   minimumStock: number;
   maximumStock?: number;
   unitCost: number;
@@ -108,11 +109,18 @@ export interface MaterialFormData {
   lowStockAlert: boolean;
   expirationDate?: string;
   batchNumber?: string;
+  // Add these fields to match your MongoDB schema
+  totalValue?: number;
+  totalQuantityAdded?: number;
+  totalQuantityUsed?: number;
+  averageMonthlyUsage?: number;
+  reorderPoint?: number;
 }
 
 export interface UseMaterialRequest {
   materialId: string;
   quantity: number;
+  usedBy: string; // Add this
   project?: string;
   note?: string;
 }
@@ -190,10 +198,15 @@ export const defaultMaterialFormData: MaterialFormData = {
   description: '',
   category: 'raw',
   unit: 'pcs',
-  initialStock: 0,
   minimumStock: 10,
   unitCost: 0,
   lowStockAlert: true,
+  // Initialize calculated fields
+  totalValue: 0,
+  totalQuantityAdded: 0,
+  totalQuantityUsed: 0,
+  averageMonthlyUsage: 0,
+  reorderPoint: 20,
 };
 
 // Categories with labels and colors
@@ -261,6 +274,23 @@ export const getUnitLabel = (unit: UnitType): string => {
   return unitObj?.label || unit;
 };
 
+// Calculate status based on stock levels
+export const calculateMaterialStatus = (
+  currentStock: number,
+  minimumStock: number,
+  maximumStock?: number
+): MaterialStatus => {
+  if (currentStock === 0) return 'out-of-stock';
+  if (currentStock <= minimumStock) return 'low-stock';
+  if (maximumStock && currentStock >= maximumStock * 0.9) return 'in-stock'; // Consider 90% as full
+  return 'in-stock';
+};
+
+// Calculate total value
+export const calculateTotalValue = (currentStock: number, unitCost: number): number => {
+  return currentStock * unitCost;
+};
+
 // Validation
 export interface ValidationResult {
   valid: boolean;
@@ -280,8 +310,8 @@ export const validateMaterial = (material: Partial<MaterialFormData>): Validatio
     errors.push('SKU must be less than 50 characters');
   }
 
-  if (material.initialStock !== undefined && material.initialStock < 0) {
-    errors.push('Initial stock cannot be negative');
+  if (material.currentStock !== undefined && material.currentStock < 0) {
+    errors.push('Current stock cannot be negative');
   }
 
   if (material.minimumStock !== undefined && material.minimumStock < 0) {
@@ -305,5 +335,27 @@ export const validateMaterial = (material: Partial<MaterialFormData>): Validatio
   return {
     valid: errors.length === 0,
     errors,
+  };
+};
+
+// Transform form data to match MongoDB schema
+export const transformMaterialFormData = (formData: MaterialFormData): any => {
+  const currentStock = formData.currentStock || 0;
+  const unitCost = formData.unitCost || 0;
+  
+  return {
+    ...formData,
+    currentStock,
+    totalValue: calculateTotalValue(currentStock, unitCost),
+    totalQuantityAdded: currentStock, // Initial stock counts as added
+    totalQuantityUsed: 0,
+    averageMonthlyUsage: 0,
+    reorderPoint: formData.reorderPoint || formData.minimumStock * 2, // Default reorder point
+    status: calculateMaterialStatus(currentStock, formData.minimumStock, formData.maximumStock),
+    usageHistory: [],
+    restockHistory: [],
+    images: [],
+    documents: [],
+    __v: 0,
   };
 };

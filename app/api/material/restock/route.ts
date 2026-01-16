@@ -61,7 +61,19 @@ export async function POST(request: NextRequest) {
     material.currentStock += quantity;
     material.totalQuantityAdded += quantity;
     material.unitCost = restockUnitCost; // Update unit cost if provided
+    material.totalValue = material.currentStock * material.unitCost;
     material.lastRestocked = new Date();
+    
+    // Update status
+    if (material.currentStock <= material.minimumStock) {
+      material.status = 'low-stock';
+    } else {
+      material.status = 'in-stock';
+    }
+    
+    // Update average monthly usage
+    const daysSinceCreation = Math.max(1, (Date.now() - new Date(material.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+    material.averageMonthlyUsage = (material.totalQuantityUsed / daysSinceCreation) * 30;
     
     // Add to restock history
     material.restockHistory.push({

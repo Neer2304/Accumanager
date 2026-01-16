@@ -19,16 +19,15 @@ export async function POST(request: NextRequest) {
     
     const decoded = verifyToken(authToken);
     const userId = decoded.userId;
-    const userName = decoded.name || 'System';
     
     // Parse request body
     const body = await request.json();
-    const { materialId, quantity, project, note } = body;
+    const { materialId, quantity, project, note, usedBy } = body;
     
     // Validate input
-    if (!materialId || !quantity || quantity <= 0) {
+    if (!materialId || !quantity || quantity <= 0 || !usedBy) {
       return NextResponse.json(
-        { success: false, message: 'Material ID and valid quantity are required' },
+        { success: false, message: 'Material ID, quantity, and usedBy are required' },
         { status: 400 }
       );
     }
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Check if enough stock
+    // Check if enough stock is available
     if (material.currentStock < quantity) {
       return NextResponse.json(
         { 
@@ -71,26 +70,31 @@ export async function POST(request: NextRequest) {
     // Update material
     material.currentStock -= quantity;
     material.totalQuantityUsed += quantity;
+    material.totalValue = material.currentStock * material.unitCost;
     material.lastUsed = new Date();
+    
+    // Update status based on new stock level
+    if (material.currentStock === 0) {
+      material.status = 'out-of-stock';
+    } else if (material.currentStock <= material.minimumStock) {
+      material.status = 'low-stock';
+    } else {
+      material.status = 'in-stock';
+    }
+    
+    // Calculate average monthly usage (simplified - in real app, track actual monthly usage)
+    const daysSinceCreation = Math.max(1, (Date.now() - new Date(material.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+    material.averageMonthlyUsage = (material.totalQuantityUsed / daysSinceCreation) * 30;
     
     // Add to usage history
     material.usageHistory.push({
       quantity,
-      usedBy: userName,
+      usedBy,
       project,
       note,
       usedAt: new Date(),
-      cost
+      cost,
     });
-    
-    // Recalculate average monthly usage (simplified)
-    const daysSinceFirstUse = (material.usageHistory.length > 1) 
-      ? (new Date().getTime() - new Date(material.usageHistory[0].usedAt).getTime()) / (1000 * 60 * 60 * 24)
-      : 30;
-    
-    if (daysSinceFirstUse > 0) {
-      material.averageMonthlyUsage = (material.totalQuantityUsed / daysSinceFirstUse) * 30;
-    }
     
     await material.save();
     

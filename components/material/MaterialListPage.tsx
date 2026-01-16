@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -20,7 +22,6 @@ import {
   GridView,
   ViewList,
   Delete,
-  Archive,
   Refresh,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
@@ -53,7 +54,6 @@ export const MaterialListPage: React.FC = () => {
     restockMaterial,
     bulkAction,
     toggleMaterialSelection,
-    selectAllMaterials,
     clearSelection,
     setError,
   } = useMaterials();
@@ -109,7 +109,7 @@ export const MaterialListPage: React.FC = () => {
         setDeleteDialogOpen(false);
         setSelectedMaterial(null);
       } catch (err) {
-        // Error is handled by hook
+        console.error('Error deleting material:', err);
       }
     }
   };
@@ -121,7 +121,7 @@ export const MaterialListPage: React.FC = () => {
       setUseDialogOpen(false);
       setSelectedMaterial(null);
     } catch (err) {
-      // Error is handled by hook
+      console.error('Error using material:', err);
     }
   };
 
@@ -132,7 +132,7 @@ export const MaterialListPage: React.FC = () => {
       setRestockDialogOpen(false);
       setSelectedMaterial(null);
     } catch (err) {
-      // Error is handled by hook
+      console.error('Error restocking material:', err);
     }
   };
 
@@ -144,7 +144,7 @@ export const MaterialListPage: React.FC = () => {
       setSuccessMessage(`${selectedMaterials.length} materials deleted successfully`);
       clearSelection();
     } catch (err) {
-      // Error is handled by hook
+      console.error('Error in bulk delete:', err);
     }
   };
 
@@ -317,7 +317,7 @@ export const MaterialListPage: React.FC = () => {
       <MaterialGrid
         materials={materials}
         loading={loading}
-        selectedMaterials={selectedMaterials}
+        selectedNotes={selectedMaterials}
         viewMode={viewMode}
         onMaterialSelect={toggleMaterialSelection}
         onMaterialEdit={handleEditMaterial}
@@ -401,7 +401,7 @@ export const MaterialListPage: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete "{selectedMaterial?.name}"? This action cannot be undone.
+            Are you sure you want to delete &quot;{selectedMaterial?.name}&quot;? This action cannot be undone.
           </Typography>
           {selectedMaterial?.currentStock > 0 && (
             <Alert severity="warning" sx={{ mt: 2 }}>

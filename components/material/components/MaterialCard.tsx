@@ -43,7 +43,7 @@ interface MaterialCardProps {
 
 export const MaterialCard: React.FC<MaterialCardProps> = ({
   material,
-  isSelected = false,
+  isSelected = false, // Default value in function parameters
   onSelect,
   onEdit,
   onDelete,
@@ -440,6 +440,4 @@ export const MaterialCard: React.FC<MaterialCardProps> = ({
   );
 };
 
-MaterialCard.defaultProps = {
-  isSelected: false,
-};
+// Remove the defaultProps line at the end since we're using default parameters

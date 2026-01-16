@@ -1,45 +1,45 @@
-import { Schema, model, models, Document } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
-export type MaterialStatus = 'in-stock' | 'low-stock' | 'out-of-stock' | 'discontinued';
-export type MaterialCategory = 'raw' | 'packaging' | 'tool' | 'consumable' | 'electronic' | 'mechanical' | 'chemical' | 'other';
-export type UnitType = 'pcs' | 'kg' | 'g' | 'lb' | 'oz' | 'l' | 'ml' | 'm' | 'cm' | 'mm' | 'box' | 'pack' | 'roll';
-
+// Interface for Material document
 export interface IMaterial extends Document {
+  // Basic Information
   name: string;
   sku: string;
   description?: string;
-  category: MaterialCategory;
-  unit: UnitType;
+  category: 'raw' | 'packaging' | 'tool' | 'consumable' | 'electronic' | 'mechanical' | 'chemical' | 'other';
+  unit: 'pcs' | 'kg' | 'g' | 'lb' | 'oz' | 'l' | 'ml' | 'm' | 'cm' | 'mm' | 'box' | 'pack' | 'roll';
+  
+  // Stock Information
   currentStock: number;
   minimumStock: number;
   maximumStock?: number;
   unitCost: number;
   totalValue: number;
   
-  // Supplier information
+  // Supplier Information
   supplierName?: string;
   supplierCode?: string;
   supplierContact?: string;
-  leadTime?: number; // in days
+  leadTime?: number;
   
-  // Location tracking
+  // Location Information
   storageLocation?: string;
   shelf?: string;
   bin?: string;
   
-  // Status tracking
-  status: MaterialStatus;
+  // Status Information
+  status: 'in-stock' | 'low-stock' | 'out-of-stock' | 'discontinued';
   lastRestocked?: Date;
   lastUsed?: Date;
   
-  // History tracking
+  // History
   usageHistory: Array<{
     quantity: number;
     usedBy: string;
     project?: string;
     note?: string;
     usedAt: Date;
-    cost: number; // quantity * unitCost
+    cost: number;
   }>;
   
   restockHistory: Array<{
@@ -58,191 +58,240 @@ export interface IMaterial extends Document {
   averageMonthlyUsage: number;
   reorderPoint: number;
   
-  // Alerts
+  // Alerts & Additional Info
   lowStockAlert: boolean;
   expirationDate?: Date;
   batchNumber?: string;
   
   // Attachments
-  images?: string[];
-  documents?: Array<{
+  images: string[];
+  documents: Array<{
     name: string;
     url: string;
     type: string;
+    uploadedAt: Date;
   }>;
   
   // Metadata
-  userId: Schema.Types.ObjectId;
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const MaterialSchema = new Schema<IMaterial>({
-  name: { 
-    type: String, 
+  // Basic Information
+  name: {
+    type: String,
     required: [true, 'Material name is required'],
     trim: true,
-    index: true
   },
   sku: {
     type: String,
     required: [true, 'SKU is required'],
-    unique: true,
-    trim: true,
     uppercase: true,
-    index: true
+    trim: true,
   },
   description: {
     type: String,
-    trim: true
+    default: '',
   },
   category: {
     type: String,
     enum: ['raw', 'packaging', 'tool', 'consumable', 'electronic', 'mechanical', 'chemical', 'other'],
-    default: 'raw',
-    required: true
+    default: 'other',
   },
   unit: {
     type: String,
     enum: ['pcs', 'kg', 'g', 'lb', 'oz', 'l', 'ml', 'm', 'cm', 'mm', 'box', 'pack', 'roll'],
     default: 'pcs',
-    required: true
   },
+  
+  // Stock Information
   currentStock: {
     type: Number,
     required: true,
+    min: [0, 'Stock cannot be negative'],
     default: 0,
-    min: 0
   },
   minimumStock: {
     type: Number,
     required: true,
+    min: [0, 'Minimum stock cannot be negative'],
     default: 10,
-    min: 0
   },
   maximumStock: {
     type: Number,
-    min: 0
+    min: [0, 'Maximum stock cannot be negative'],
   },
   unitCost: {
     type: Number,
     required: true,
+    min: [0, 'Unit cost cannot be negative'],
     default: 0,
-    min: 0
   },
   totalValue: {
     type: Number,
+    required: true,
+    min: [0, 'Total value cannot be negative'],
     default: 0,
-    min: 0
   },
   
-  // Supplier
+  // Supplier Information
   supplierName: String,
   supplierCode: String,
   supplierContact: String,
-  leadTime: Number,
+  leadTime: {
+    type: Number,
+    min: [0, 'Lead time cannot be negative'],
+  },
   
-  // Location
+  // Location Information
   storageLocation: String,
   shelf: String,
   bin: String,
   
-  // Status
+  // Status Information
   status: {
     type: String,
     enum: ['in-stock', 'low-stock', 'out-of-stock', 'discontinued'],
-    default: 'in-stock'
+    default: 'in-stock',
   },
   lastRestocked: Date,
   lastUsed: Date,
   
   // History
   usageHistory: [{
-    quantity: { type: Number, required: true, min: 0.01 },
-    usedBy: { type: String, required: true },
+    quantity: {
+      type: Number,
+      required: true,
+      min: [0.01, 'Usage quantity must be positive'],
+    },
+    usedBy: {
+      type: String,
+      required: true,
+    },
     project: String,
     note: String,
-    usedAt: { type: Date, default: Date.now },
-    cost: { type: Number, required: true, min: 0 }
+    usedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    cost: {
+      type: Number,
+      required: true,
+      min: [0, 'Cost cannot be negative'],
+    },
   }],
   
   restockHistory: [{
-    quantity: { type: Number, required: true, min: 0.01 },
+    quantity: {
+      type: Number,
+      required: true,
+      min: [0.01, 'Restock quantity must be positive'],
+    },
     supplier: String,
     purchaseOrder: String,
-    unitCost: { type: Number, required: true, min: 0 },
-    totalCost: { type: Number, required: true, min: 0 },
+    unitCost: {
+      type: Number,
+      required: true,
+      min: [0.01, 'Unit cost must be positive'],
+    },
+    totalCost: {
+      type: Number,
+      required: true,
+      min: [0, 'Total cost cannot be negative'],
+    },
     note: String,
-    restockedAt: { type: Date, default: Date.now }
+    restockedAt: {
+      type: Date,
+      default: Date.now,
+    },
   }],
   
   // Analytics
   totalQuantityAdded: {
     type: Number,
+    required: true,
+    min: [0, 'Total added cannot be negative'],
     default: 0,
-    min: 0
   },
   totalQuantityUsed: {
     type: Number,
+    required: true,
+    min: [0, 'Total used cannot be negative'],
     default: 0,
-    min: 0
   },
   averageMonthlyUsage: {
     type: Number,
+    required: true,
+    min: [0, 'Average usage cannot be negative'],
     default: 0,
-    min: 0
   },
   reorderPoint: {
     type: Number,
+    required: true,
+    min: [0, 'Reorder point cannot be negative'],
     default: 20,
-    min: 0
   },
   
-  // Alerts
+  // Alerts & Additional Info
   lowStockAlert: {
     type: Boolean,
-    default: true
+    default: true,
   },
   expirationDate: Date,
   batchNumber: String,
   
   // Attachments
-  images: [String],
+  images: [{
+    type: String,
+  }],
   documents: [{
     name: String,
     url: String,
-    type: String
+    type: String,
+    uploadedAt: {
+      type: Date,
+      default: Date.now,
+    },
   }],
   
   // Metadata
   userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
-    index: true
-  }
+    index: true,
+  },
 }, {
-  timestamps: true
+  timestamps: true,
+  // Transform ObjectId to string when converting to JSON
+  toJSON: {
+    transform: function(doc, ret) {
+      ret._id = ret._id.toString();
+      return ret;
+    }
+  },
+  toObject: {
+    transform: function(doc, ret) {
+      ret._id = ret._id.toString();
+      return ret;
+    }
+  }
 });
 
-// Virtual for available stock
-MaterialSchema.virtual('availableStock').get(function() {
-  return this.currentStock;
-});
+// Indexes for better query performance
+MaterialSchema.index({ userId: 1, sku: 1 }, { unique: true });
+MaterialSchema.index({ userId: 1, status: 1 });
+MaterialSchema.index({ userId: 1, category: 1 });
+MaterialSchema.index({ userId: 1, currentStock: 1 });
+MaterialSchema.index({ userId: 1, 'restockHistory.restockedAt': -1 });
+MaterialSchema.index({ userId: 1, 'usageHistory.usedAt': -1 });
 
-// Virtual for stock status color
-MaterialSchema.virtual('stockStatus').get(function() {
-  if (this.currentStock === 0) return 'error';
-  if (this.currentStock <= this.minimumStock) return 'warning';
-  return 'success';
-});
-
-// Pre-save middleware to update total value and status
+// Pre-save middleware to calculate totalValue and update status
 MaterialSchema.pre('save', function(next) {
-  // Calculate total value
   this.totalValue = this.currentStock * this.unitCost;
   
-  // Update status based on stock level
+  // Update status based on stock
   if (this.currentStock === 0) {
     this.status = 'out-of-stock';
   } else if (this.currentStock <= this.minimumStock) {
@@ -254,11 +303,6 @@ MaterialSchema.pre('save', function(next) {
   next();
 });
 
-// Indexes for better query performance
-MaterialSchema.index({ userId: 1, category: 1 });
-MaterialSchema.index({ userId: 1, status: 1 });
-MaterialSchema.index({ userId: 1, currentStock: 1 });
-MaterialSchema.index({ sku: 1 }, { unique: true });
-MaterialSchema.index({ name: 'text', description: 'text', sku: 'text' });
+const Material = mongoose.models.Material || mongoose.model<IMaterial>('Material', MaterialSchema);
 
-export default models.Material || model<IMaterial>('Material', MaterialSchema);
+export default Material;

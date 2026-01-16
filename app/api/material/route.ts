@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Material from '@/models/Material';
 import { verifyToken } from '@/lib/jwt';
+import mongoose from 'mongoose';
 
-// GET - List materials with filters
+// GET - Get all materials with filters
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -24,54 +25,63 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const category = searchParams.get('category');
-    const status = searchParams.get('status');
-    const search = searchParams.get('search');
+    const search = searchParams.get('search') || '';
+    const category = searchParams.get('category') || '';
+    const status = searchParams.get('status') || '';
     const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const lowStockOnly = searchParams.get('lowStockOnly') === 'true';
+    const outOfStockOnly = searchParams.get('outOfStockOnly') === 'true';
     
-    // Build query
-    const query: any = { userId };
-    
-    if (category && category !== 'all') {
-      query.category = category;
-    }
-    
-    if (status && status !== 'all') {
-      query.status = status;
-    }
+    // Build filter
+    const filter: any = { userId };
     
     if (search) {
-      query.$or = [
+      filter.$or = [
         { name: { $regex: search, $options: 'i' } },
         { sku: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
-        { supplierName: { $regex: search, $options: 'i' } }
       ];
     }
     
-    // Calculate pagination
+    if (category) {
+      filter.category = category;
+    }
+    
+    if (status) {
+      filter.status = status;
+    }
+    
+    if (lowStockOnly) {
+      filter.status = 'low-stock';
+    }
+    
+    if (outOfStockOnly) {
+      filter.status = 'out-of-stock';
+    }
+    
+    // Calculate skip for pagination
     const skip = (page - 1) * limit;
     
-    // Execute query
-    const [materials, total] = await Promise.all([
-      Material.find(query)
-        .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Material.countDocuments(query)
-    ]);
+    // Get total count for pagination
+    const total = await Material.countDocuments(filter);
+    
+    // Get materials with pagination
+    const materials = await Material.find(filter)
+      .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
     
     // Calculate stats
-    const lowStockCount = await Material.countDocuments({
-      userId,
-      status: 'low-stock'
+    const lowStockCount = await Material.countDocuments({ 
+      userId, 
+      status: 'low-stock' 
     });
     
-    const outOfStockCount = await Material.countDocuments({
-      userId,
-      status: 'out-of-stock'
+    const outOfStockCount = await Material.countDocuments({ 
+      userId, 
+      status: 'out-of-stock' 
     });
     
     return NextResponse.json({
@@ -82,14 +92,14 @@ export async function GET(request: NextRequest) {
           page,
           limit,
           total,
-          pages: Math.ceil(total / limit)
+          pages: Math.ceil(total / limit),
         },
         stats: {
           lowStockCount,
           outOfStockCount,
-          totalCount: total
-        }
-      }
+          totalCount: total,
+        },
+      },
     });
     
   } catch (error: any) {
@@ -118,47 +128,64 @@ export async function POST(request: NextRequest) {
     const decoded = verifyToken(authToken);
     const userId = decoded.userId;
     
-    // Parse request body
     const body = await request.json();
     
     // Validate required fields
-    if (!body.name || !body.sku || !body.category || !body.unit) {
+    if (!body.name || !body.sku) {
       return NextResponse.json(
-        { success: false, message: 'Missing required fields' },
+        { success: false, message: 'Name and SKU are required' },
         { status: 400 }
       );
     }
     
     // Check if SKU already exists
-    const existingMaterial = await Material.findOne({ sku: body.sku.toUpperCase(), userId });
-    if (existingMaterial) {
+    body.sku = body.sku.toUpperCase();
+    const existing = await Material.findOne({
+      sku: body.sku,
+      userId
+    });
+    
+    if (existing) {
       return NextResponse.json(
         { success: false, message: 'SKU already exists' },
         { status: 400 }
       );
     }
     
-    // Create material
-    const materialData = {
-      ...body,
-      sku: body.sku.toUpperCase(),
-      userId,
-      currentStock: body.initialStock || 0,
-      totalQuantityAdded: body.initialStock || 0,
-      totalQuantityUsed: 0,
-      unitCost: body.unitCost || 0,
-      minimumStock: body.minimumStock || 10,
-      lowStockAlert: body.lowStockAlert !== false
-    };
+    // Calculate derived fields
+    const currentStock = body.currentStock || 0;
+    const unitCost = body.unitCost || 0;
+    const totalValue = currentStock * unitCost;
     
-    const material = new Material(materialData);
-    await material.save();
+    // Determine status
+    let status = 'in-stock';
+    if (currentStock === 0) {
+      status = 'out-of-stock';
+    } else if (currentStock <= (body.minimumStock || 10)) {
+      status = 'low-stock';
+    }
+    
+    // Create material
+    const material = await Material.create({
+      ...body,
+      userId,
+      totalValue,
+      status,
+      totalQuantityAdded: currentStock,
+      totalQuantityUsed: 0,
+      averageMonthlyUsage: 0,
+      reorderPoint: body.reorderPoint || (body.minimumStock || 10) * 2,
+      usageHistory: [],
+      restockHistory: [],
+      images: body.images || [],
+      documents: body.documents || [],
+    });
     
     return NextResponse.json({
       success: true,
       data: material,
       message: 'Material created successfully'
-    }, { status: 201 });
+    });
     
   } catch (error: any) {
     console.error('Create material error:', error);

@@ -12,10 +12,10 @@ import {
   alpha,
   FormControlLabel,
   Switch,
-  Button,
   Select,
   FormControl,
   InputLabel,
+  Typography,
 } from '@mui/material';
 import {
   Search,
@@ -26,17 +26,18 @@ import {
   Download,
   Upload,
   LowPriority,
-  Inventory,
+  Warning,
+  Error as ErrorIcon,
 } from '@mui/icons-material';
 import { 
-  MaterialFilters, 
+  MaterialFilters as MaterialFiltersType, 
   MATERIAL_CATEGORIES, 
   getStatusLabel 
 } from '../types/material.types';
 
 interface MaterialFiltersProps {
-  filters: MaterialFilters;
-  onFiltersChange: (filters: Partial<MaterialFilters>) => void;
+  filters: MaterialFiltersType;
+  onFiltersChange: (filters: Partial<MaterialFiltersType>) => void;
   onExport?: () => void;
   onImport?: () => void;
   sx?: any;
@@ -329,7 +330,7 @@ export const MaterialFilters: React.FC<MaterialFiltersProps> = ({
           }
           label={
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Error fontSize="small" sx={{ color: theme.palette.error.main }} />
+              <ErrorIcon fontSize="small" sx={{ color: theme.palette.error.main }} />
               Show Out of Stock Only
             </Box>
           }

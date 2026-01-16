@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import Material from '@/models/Material';
+import Material, { IMaterial } from '@/models/Material';
 import { verifyToken } from '@/lib/jwt';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 // GET - Get single material
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
+    console.log('🔍 GET /api/material/[id] - Starting...');
     
     // Get user ID from token
     const authToken = request.cookies.get('auth_token')?.value;
     if (!authToken) {
+      console.log('⚠️ No auth token found');
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -23,26 +25,75 @@ export async function GET(
     
     const decoded = verifyToken(authToken);
     const userId = decoded.userId;
+    const { id: materialId } = await params;
     
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    console.log('👤 User ID:', userId);
+    console.log('🎯 Material ID:', materialId);
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(materialId)) {
+      console.log('❌ Invalid ObjectId format:', materialId);
       return NextResponse.json(
-        { success: false, message: 'Invalid material ID' },
+        { 
+          success: false, 
+          message: 'Invalid material ID format',
+          debug: { materialId, userId }
+        },
         { status: 400 }
       );
     }
     
-    const material = await Material.findOne({
-      _id: params.id,
-      userId
-    }).lean();
+    // Try to find the material using Mongoose
+    console.log('📊 Querying database...');
     
+    // Method 1: Using Mongoose findOne with proper ObjectId
+    const material = await Material.findOne({
+      _id: new mongoose.Types.ObjectId(materialId),
+      userId: userId
+    });
+    
+    // If not found, try alternative methods
     if (!material) {
-      return NextResponse.json(
-        { success: false, message: 'Material not found' },
-        { status: 404 }
+      console.log('❌ Material not found with direct query');
+      
+      // Method 2: Try with string comparison
+      const allMaterials = await Material.find({ userId: userId });
+      console.log(`📦 Found ${allMaterials.length} materials for user`);
+      
+      const foundMaterial = allMaterials.find(mat => 
+        String(mat._id) === String(materialId) ||
+        mat._id.equals(new mongoose.Types.ObjectId(materialId))
       );
+      
+      if (foundMaterial) {
+        console.log('✅ Material found using alternative method');
+        return NextResponse.json({
+          success: true,
+          data: foundMaterial
+        });
+      }
+      
+      // Method 3: Debug - Log all material IDs for this user
+      console.log('📋 User material IDs:');
+      allMaterials.forEach((mat, index) => {
+        console.log(`  ${index + 1}. ${mat._id} (${mat.name})`);
+      });
+      
+      console.log('❌ Material not found in user collection');
+      return NextResponse.json({
+        success: false,
+        message: 'Material not found',
+        debug: {
+          materialId,
+          userId,
+          note: 'Material ID exists but user ID might not match',
+          userMaterialCount: allMaterials.length,
+          searchedId: materialId
+        }
+      }, { status: 404 });
     }
+    
+    console.log(`✅ Found material: ${material.name}`);
     
     return NextResponse.json({
       success: true,
@@ -50,9 +101,12 @@ export async function GET(
     });
     
   } catch (error: any) {
-    console.error('Get material error:', error);
+    console.error('❌ Get material error:', error);
     return NextResponse.json(
-      { success: false, message: error.message || 'Internal server error' },
+      { 
+        success: false, 
+        message: error.message || 'Internal server error'
+      },
       { status: 500 }
     );
   }
@@ -61,7 +115,7 @@ export async function GET(
 // PUT - Update material
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -77,16 +131,17 @@ export async function PUT(
     
     const decoded = verifyToken(authToken);
     const userId = decoded.userId;
+    const { id: materialId } = await params;
+    
+    const body = await request.json();
     
     // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(materialId)) {
       return NextResponse.json(
-        { success: false, message: 'Invalid material ID' },
+        { success: false, message: 'Invalid material ID format' },
         { status: 400 }
       );
     }
-    
-    const body = await request.json();
     
     // Check if SKU is being changed and if it already exists
     if (body.sku) {
@@ -94,7 +149,7 @@ export async function PUT(
       const existing = await Material.findOne({
         sku: body.sku,
         userId,
-        _id: { $ne: params.id }
+        _id: { $ne: new mongoose.Types.ObjectId(materialId) }
       });
       
       if (existing) {
@@ -106,22 +161,33 @@ export async function PUT(
     }
     
     // Update material
-    const material = await Material.findOneAndUpdate(
-      { _id: params.id, userId },
+    const updatedMaterial = await Material.findOneAndUpdate(
+      { 
+        _id: new mongoose.Types.ObjectId(materialId), 
+        userId 
+      },
       { $set: body },
-      { new: true, runValidators: true }
+      { 
+        new: true, 
+        runValidators: true,
+        context: 'query'
+      }
     );
     
-    if (!material) {
+    if (!updatedMaterial) {
       return NextResponse.json(
-        { success: false, message: 'Material not found' },
+        { 
+          success: false, 
+          message: 'Material not found or access denied',
+          debug: { materialId, userId }
+        },
         { status: 404 }
       );
     }
     
     return NextResponse.json({
       success: true,
-      data: material,
+      data: updatedMaterial,
       message: 'Material updated successfully'
     });
     
@@ -145,7 +211,7 @@ export async function PUT(
 // DELETE - Delete material
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -161,31 +227,37 @@ export async function DELETE(
     
     const decoded = verifyToken(authToken);
     const userId = decoded.userId;
+    const { id: materialId } = await params;
     
     // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(materialId)) {
       return NextResponse.json(
-        { success: false, message: 'Invalid material ID' },
+        { success: false, message: 'Invalid material ID format' },
         { status: 400 }
       );
     }
     
     // Delete material
-    const material = await Material.findOneAndDelete({
-      _id: params.id,
-      userId
+    const deletedMaterial = await Material.findOneAndDelete({ 
+      _id: new mongoose.Types.ObjectId(materialId), 
+      userId 
     });
     
-    if (!material) {
+    if (!deletedMaterial) {
       return NextResponse.json(
-        { success: false, message: 'Material not found' },
+        { 
+          success: false, 
+          message: 'Material not found or access denied',
+          debug: { materialId, userId }
+        },
         { status: 404 }
       );
     }
     
     return NextResponse.json({
       success: true,
-      message: 'Material deleted successfully'
+      message: 'Material deleted successfully',
+      data: { id: materialId }
     });
     
   } catch (error: any) {

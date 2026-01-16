@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.totalQuantityUsed - a.totalQuantityUsed)
       .slice(0, 10)
       .map(mat => ({
-        id: mat._id,
+        id: mat._id.toString(),
         name: mat.name,
         sku: mat.sku,
         totalUsed: mat.totalQuantityUsed,
@@ -65,7 +65,8 @@ export async function GET(request: NextRequest) {
     for (const material of materials.slice(0, 20)) {
       if (material.usageHistory && material.usageHistory.length > 0) {
         const latestUsage = material.usageHistory[material.usageHistory.length - 1];
-        if (latestUsage.usedAt > startDate) {
+        const usageDate = new Date(latestUsage.usedAt);
+        if (usageDate > startDate) {
           recentActivity.push({
             type: 'usage',
             materialName: material.name,
@@ -74,7 +75,8 @@ export async function GET(request: NextRequest) {
             unit: material.unit,
             user: latestUsage.usedBy,
             project: latestUsage.project,
-            date: latestUsage.usedAt,
+            cost: latestUsage.cost,
+            date: usageDate.toISOString(),
             color: 'error'
           });
         }
@@ -82,7 +84,8 @@ export async function GET(request: NextRequest) {
       
       if (material.restockHistory && material.restockHistory.length > 0) {
         const latestRestock = material.restockHistory[material.restockHistory.length - 1];
-        if (latestRestock.restockedAt > startDate) {
+        const restockDate = new Date(latestRestock.restockedAt);
+        if (restockDate > startDate) {
           recentActivity.push({
             type: 'restock',
             materialName: material.name,
@@ -91,7 +94,7 @@ export async function GET(request: NextRequest) {
             unit: material.unit,
             supplier: latestRestock.supplier,
             cost: latestRestock.totalCost,
-            date: latestRestock.restockedAt,
+            date: restockDate.toISOString(),
             color: 'success'
           });
         }
