@@ -43,7 +43,7 @@ interface MaterialCardProps {
 
 export const MaterialCard: React.FC<MaterialCardProps> = ({
   material,
-  isSelected = false, // Default value in function parameters
+  isSelected = false,
   onSelect,
   onEdit,
   onDelete,
@@ -53,11 +53,15 @@ export const MaterialCard: React.FC<MaterialCardProps> = ({
 }) => {
   const theme = useTheme();
 
-  const handleSelect = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.stopPropagation();
     if (onSelect) {
       onSelect(material);
     }
+  };
+
+  const handleCheckboxClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
   };
 
   const handleEdit = (e: React.MouseEvent) => {
@@ -90,6 +94,21 @@ export const MaterialCard: React.FC<MaterialCardProps> = ({
 
   const handleViewDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (onViewDetails) {
+      onViewDetails(material);
+    }
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger card click if clicking on checkbox or action buttons
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('.MuiCheckbox-root') ||
+      target.closest('.MuiIconButton-root') ||
+      target.closest('.MuiChip-root')
+    ) {
+      return;
+    }
     if (onViewDetails) {
       onViewDetails(material);
     }
@@ -133,6 +152,7 @@ export const MaterialCard: React.FC<MaterialCardProps> = ({
         backgroundColor: alpha(theme.palette.background.paper, 0.95),
         position: 'relative',
         overflow: 'visible',
+        cursor: onViewDetails ? 'pointer' : 'default',
         '&:hover': {
           transform: 'translateY(-4px)',
           boxShadow: theme.shadows[8],
@@ -143,24 +163,28 @@ export const MaterialCard: React.FC<MaterialCardProps> = ({
           backgroundColor: alpha(theme.palette.primary.main, 0.05),
         }),
       }}
+      onClick={handleCardClick}
     >
       {/* Selection checkbox */}
       {onSelect && (
-        <Checkbox
-          checked={isSelected}
-          onChange={handleSelect}
-          onClick={handleSelect}
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 1,
-            backgroundColor: alpha(theme.palette.background.paper, 0.8),
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.background.paper, 0.9),
-            },
-          }}
-        />
+        <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
+          <Checkbox
+            checked={isSelected}
+            onChange={handleSelect}
+            onClick={handleCheckboxClick}
+            className="MuiCheckbox-root"
+            sx={{
+              backgroundColor: alpha(theme.palette.background.paper, 0.8),
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.background.paper, 0.9),
+              },
+              '&.Mui-checked': {
+                color: theme.palette.primary.main,
+              },
+            }}
+            inputProps={{ 'aria-label': 'Select material' }}
+          />
+        </Box>
       )}
 
       <CardContent sx={{ flexGrow: 1, pt: 4 }}>
@@ -439,5 +463,3 @@ export const MaterialCard: React.FC<MaterialCardProps> = ({
     </Card>
   );
 };
-
-// Remove the defaultProps line at the end since we're using default parameters
