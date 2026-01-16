@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
   Box,
   Typography,
   Button,
@@ -16,6 +15,7 @@ import {
   DialogActions,
   Alert,
   Snackbar,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add,
@@ -25,6 +25,7 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+import { MainLayout } from '@/components/Layout/MainLayout';
 import { MaterialGrid } from './components/MaterialGrid';
 import { MaterialFilters } from './components/MaterialFilters';
 import { MaterialUseDialog } from './components/MaterialUseDialog';
@@ -65,10 +66,11 @@ export const MaterialListPage: React.FC = () => {
   const [restockDialogOpen, setRestockDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchMaterials(filters);
-  }, [filters]);
+  }, [filters, fetchMaterials]);
 
   const handleFiltersChange = (newFilters: Partial<FiltersType>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -102,15 +104,18 @@ export const MaterialListPage: React.FC = () => {
   };
 
   const confirmDeleteMaterial = async () => {
-    if (selectedMaterial) {
-      try {
-        await deleteMaterial(selectedMaterial._id);
-        setSuccessMessage('Material deleted successfully');
-        setDeleteDialogOpen(false);
-        setSelectedMaterial(null);
-      } catch (err) {
-        console.error('Error deleting material:', err);
-      }
+    if (!selectedMaterial) return;
+    
+    try {
+      setDeleting(true);
+      await deleteMaterial(selectedMaterial._id);
+      setSuccessMessage('Material deleted successfully');
+      setDeleteDialogOpen(false);
+      setSelectedMaterial(null);
+    } catch (err) {
+      console.error('Error deleting material:', err);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -162,276 +167,327 @@ export const MaterialListPage: React.FC = () => {
     console.log('Import materials');
   };
 
+  // Loading state
+  if (loading && !materials.length) {
+    return (
+      <MainLayout title="Material Inventory">
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '60vh' 
+        }}>
+          <CircularProgress />
+        </Box>
+      </MainLayout>
+    );
+  }
+
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      {/* Header */}
-      <Paper
-        sx={{
-          p: 3,
-          mb: 3,
-          borderRadius: 2,
-          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-          border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-        }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box>
-            <Typography variant="h4" fontWeight="bold" color="primary">
-              Material Inventory
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Manage and track your materials, stock levels, and usage
-            </Typography>
+    <MainLayout title="Material Inventory">
+      <Box sx={{ 
+        p: { xs: 2, sm: 3 }, 
+        maxWidth: 1400, 
+        margin: '0 auto',
+        minHeight: '100vh',
+      }}>
+        {/* Header */}
+        <Paper
+          sx={{
+            p: 3,
+            mb: 3,
+            borderRadius: 2,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+          }}
+        >
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: 2,
+            mb: 2 
+          }}>
+            <Box>
+              <Typography variant="h4" fontWeight="bold" color="primary">
+                Material Inventory
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Manage and track your materials, stock levels, and usage
+              </Typography>
+            </Box>
+
+            <Stack direction="row" spacing={2}>
+              <Button
+                startIcon={<Refresh />}
+                onClick={handleRefresh}
+                variant="outlined"
+                disabled={loading}
+                sx={{ borderRadius: 2 }}
+              >
+                Refresh
+              </Button>
+              <Button
+                startIcon={<Add />}
+                onClick={handleCreateMaterial}
+                variant="contained"
+                sx={{ borderRadius: 2 }}
+              >
+                Add Material
+              </Button>
+            </Stack>
           </Box>
 
-          <Stack direction="row" spacing={2}>
+          {/* Quick Stats */}
+          <Box sx={{ display: 'flex', gap: 3, mt: 2, flexWrap: 'wrap' }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Total Materials
+              </Typography>
+              <Typography variant="h6" fontWeight={600}>
+                {pagination.total}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Selected
+              </Typography>
+              <Typography variant="h6" fontWeight={600} color="primary">
+                {selectedMaterials.length}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Page {pagination.page} of {pagination.pages}
+              </Typography>
+              <Typography variant="h6" fontWeight={600}>
+                {pagination.limit} per page
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+
+        {/* Bulk Actions */}
+        {selectedMaterials.length > 0 && (
+          <Paper
+            sx={{
+              p: 2,
+              mb: 3,
+              borderRadius: 2,
+              backgroundColor: alpha(theme.palette.primary.main, 0.05),
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body1" fontWeight={600}>
+                {selectedMaterials.length} material(s) selected
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  startIcon={<Delete />}
+                  onClick={handleBulkDelete}
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  sx={{ borderRadius: 2 }}
+                >
+                  Delete Selected
+                </Button>
+                <Button
+                  onClick={clearSelection}
+                  variant="text"
+                  size="small"
+                  sx={{ borderRadius: 2 }}
+                >
+                  Clear Selection
+                </Button>
+              </Stack>
+            </Box>
+          </Paper>
+        )}
+
+        {/* Filters */}
+        <MaterialFilters
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onExport={handleExport}
+          onImport={handleImport}
+        />
+
+        {/* View Mode Toggle */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          mb: 3,
+          gap: 2
+        }}>
+          <Typography variant="body1" color="text.secondary">
+            Showing {materials.length} of {pagination.total} materials
+          </Typography>
+          <Stack direction="row" spacing={1}>
             <Button
-              startIcon={<Refresh />}
-              onClick={handleRefresh}
-              variant="outlined"
-              disabled={loading}
+              startIcon={<GridView />}
+              onClick={() => setViewMode('grid')}
+              variant={viewMode === 'grid' ? 'contained' : 'outlined'}
+              size="small"
+              sx={{ borderRadius: 2 }}
             >
-              Refresh
+              Grid
             </Button>
             <Button
-              startIcon={<Add />}
-              onClick={handleCreateMaterial}
-              variant="contained"
+              startIcon={<ViewList />}
+              onClick={() => setViewMode('list')}
+              variant={viewMode === 'list' ? 'contained' : 'outlined'}
+              size="small"
+              sx={{ borderRadius: 2 }}
             >
-              Add Material
+              List
             </Button>
           </Stack>
         </Box>
 
-        {/* Quick Stats */}
-        <Box sx={{ display: 'flex', gap: 3, mt: 2 }}>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Total Materials
-            </Typography>
-            <Typography variant="h6" fontWeight={600}>
-              {pagination.total}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Selected
-            </Typography>
-            <Typography variant="h6" fontWeight={600} color="primary">
-              {selectedMaterials.length}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
+        {/* Error Alert */}
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ mb: 3, borderRadius: 2 }}
+            onClose={() => setError(null)}
+          >
+            {typeof error === 'string' ? error : 'An error occurred'}
+          </Alert>
+        )}
+
+        {/* Material Grid */}
+        <MaterialGrid
+          materials={materials}
+          loading={loading}
+          selectedNotes={selectedMaterials}
+          viewMode={viewMode}
+          onMaterialSelect={toggleMaterialSelection}
+          onMaterialEdit={handleEditMaterial}
+          onMaterialDelete={handleDeleteMaterial}
+          onMaterialUse={handleUseMaterial}
+          onMaterialRestock={handleRestockMaterial}
+          onViewDetails={handleViewDetails}
+          onCreateMaterial={handleCreateMaterial}
+          emptyMessage="No materials found. Add your first material to get started."
+        />
+
+        {/* Pagination */}
+        {pagination.pages > 1 && (
+          <Paper
+            sx={{
+              p: 2,
+              mt: 3,
+              borderRadius: 2,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 2,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Button
+              onClick={() => handleFiltersChange({ page: pagination.page - 1 })}
+              disabled={pagination.page === 1 || loading}
+              variant="outlined"
+              size="small"
+              sx={{ borderRadius: 2 }}
+            >
+              Previous
+            </Button>
+            
+            <Typography variant="body2" color="text.secondary">
               Page {pagination.page} of {pagination.pages}
             </Typography>
-            <Typography variant="h6" fontWeight={600}>
-              {pagination.limit} per page
-            </Typography>
-          </Box>
-        </Box>
-      </Paper>
+            
+            <Button
+              onClick={() => handleFiltersChange({ page: pagination.page + 1 })}
+              disabled={pagination.page === pagination.pages || loading}
+              variant="outlined"
+              size="small"
+              sx={{ borderRadius: 2 }}
+            >
+              Next
+            </Button>
+          </Paper>
+        )}
 
-      {/* Bulk Actions */}
-      {selectedMaterials.length > 0 && (
-        <Paper
-          sx={{
-            p: 2,
-            mb: 3,
-            borderRadius: 2,
-            backgroundColor: alpha(theme.palette.primary.main, 0.05),
-            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+        {/* Dialogs */}
+        <MaterialUseDialog
+          open={useDialogOpen}
+          material={selectedMaterial}
+          onClose={() => {
+            setUseDialogOpen(false);
+            setSelectedMaterial(null);
           }}
+          onSubmit={confirmUseMaterial}
+          loading={loading}
+        />
+
+        <MaterialRestockDialog
+          open={restockDialogOpen}
+          material={selectedMaterial}
+          onClose={() => {
+            setRestockDialogOpen(false);
+            setSelectedMaterial(null);
+          }}
+          onSubmit={confirmRestockMaterial}
+          loading={loading}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="body1" fontWeight={600}>
-              {selectedMaterials.length} material(s) selected
+          <DialogTitle>
+            Delete Material
+          </DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete &quot;{selectedMaterial?.name || 'this material'}&quot;? This action cannot be undone.
             </Typography>
-            <Stack direction="row" spacing={1}>
-              <Button
-                startIcon={<Delete />}
-                onClick={handleBulkDelete}
-                variant="outlined"
-                color="error"
-                size="small"
-              >
-                Delete Selected
-              </Button>
-              <Button
-                onClick={clearSelection}
-                variant="text"
-                size="small"
-              >
-                Clear Selection
-              </Button>
-            </Stack>
-          </Box>
-        </Paper>
-      )}
+            {selectedMaterial?.currentStock && selectedMaterial.currentStock > 0 && (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                This material still has {selectedMaterial.currentStock} {selectedMaterial.unit} in stock.
+                Deleting it will remove all stock and usage history.
+              </Alert>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmDeleteMaterial}
+              variant="contained"
+              color="error"
+              disabled={deleting}
+              startIcon={deleting ? <CircularProgress size={16} color="inherit" /> : null}
+            >
+              {deleting ? 'Deleting...' : 'Delete Material'}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-      {/* Filters */}
-      <MaterialFilters
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        onExport={handleExport}
-        onImport={handleImport}
-      />
-
-      {/* View Mode Toggle */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="body1" color="text.secondary">
-          Showing {materials.length} of {pagination.total} materials
-        </Typography>
-        <Stack direction="row" spacing={1}>
-          <Button
-            startIcon={<GridView />}
-            onClick={() => setViewMode('grid')}
-            variant={viewMode === 'grid' ? 'contained' : 'outlined'}
-            size="small"
-          >
-            Grid
-          </Button>
-          <Button
-            startIcon={<ViewList />}
-            onClick={() => setViewMode('list')}
-            variant={viewMode === 'list' ? 'contained' : 'outlined'}
-            size="small"
-          >
-            List
-          </Button>
-        </Stack>
+        {/* Success Snackbar */}
+        <Snackbar
+          open={!!successMessage}
+          autoHideDuration={6000}
+          onClose={() => setSuccessMessage('')}
+          message={successMessage}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        />
       </Box>
-
-      {/* Error Alert */}
-      {error && (
-        <Alert 
-          severity="error" 
-          sx={{ mb: 3, borderRadius: 2 }}
-          onClose={() => setError(null)}
-        >
-          {error}
-        </Alert>
-      )}
-
-      {/* Material Grid */}
-      <MaterialGrid
-        materials={materials}
-        loading={loading}
-        selectedNotes={selectedMaterials}
-        viewMode={viewMode}
-        onMaterialSelect={toggleMaterialSelection}
-        onMaterialEdit={handleEditMaterial}
-        onMaterialDelete={handleDeleteMaterial}
-        onMaterialUse={handleUseMaterial}
-        onMaterialRestock={handleRestockMaterial}
-        onViewDetails={handleViewDetails}
-        onCreateMaterial={handleCreateMaterial}
-        emptyMessage="No materials found. Add your first material to get started."
-      />
-
-      {/* Pagination */}
-      {pagination.pages > 1 && (
-        <Paper
-          sx={{
-            p: 2,
-            mt: 3,
-            borderRadius: 2,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <Button
-            onClick={() => handleFiltersChange({ page: pagination.page - 1 })}
-            disabled={pagination.page === 1 || loading}
-            variant="outlined"
-            size="small"
-          >
-            Previous
-          </Button>
-          
-          <Typography variant="body2" color="text.secondary">
-            Page {pagination.page} of {pagination.pages}
-          </Typography>
-          
-          <Button
-            onClick={() => handleFiltersChange({ page: pagination.page + 1 })}
-            disabled={pagination.page === pagination.pages || loading}
-            variant="outlined"
-            size="small"
-          >
-            Next
-          </Button>
-        </Paper>
-      )}
-
-      {/* Dialogs */}
-      <MaterialUseDialog
-        open={useDialogOpen}
-        material={selectedMaterial}
-        onClose={() => {
-          setUseDialogOpen(false);
-          setSelectedMaterial(null);
-        }}
-        onSubmit={confirmUseMaterial}
-        loading={loading}
-      />
-
-      <MaterialRestockDialog
-        open={restockDialogOpen}
-        material={selectedMaterial}
-        onClose={() => {
-          setRestockDialogOpen(false);
-          setSelectedMaterial(null);
-        }}
-        onSubmit={confirmRestockMaterial}
-        loading={loading}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          Delete Material
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete &quot;{selectedMaterial?.name}&quot;? This action cannot be undone.
-          </Typography>
-          {selectedMaterial?.currentStock > 0 && (
-            <Alert severity="warning" sx={{ mt: 2 }}>
-              This material still has {selectedMaterial.currentStock} {selectedMaterial.unit} in stock.
-              Deleting it will remove all stock and usage history.
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={confirmDeleteMaterial}
-            variant="contained"
-            color="error"
-            disabled={loading}
-          >
-            {loading ? 'Deleting...' : 'Delete Material'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Success Snackbar */}
-      <Snackbar
-        open={!!successMessage}
-        autoHideDuration={6000}
-        onClose={() => setSuccessMessage('')}
-        message={successMessage}
-      />
-    </Container>
+    </MainLayout>
   );
 };

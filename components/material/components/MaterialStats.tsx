@@ -1,7 +1,8 @@
+'use client';
+
 import React from 'react';
 import {
   Box,
-  Grid,
   Paper,
   Typography,
   Card,
@@ -9,23 +10,18 @@ import {
   LinearProgress,
   Stack,
   Chip,
-  useTheme,
-  alpha,
   IconButton,
   Tooltip,
 } from '@mui/material';
 import {
-  TrendingUp,
-  TrendingDown,
   Inventory,
   AttachMoney,
   Warning,
   Error,
-  CheckCircle,
-  Category,
-  PieChart,
   Refresh,
   Download,
+  RemoveShoppingCart,
+  AddShoppingCart,
 } from '@mui/icons-material';
 import { MaterialStats as StatsType } from '../types/material.types';
 import { Doughnut, Bar } from 'react-chartjs-2';
@@ -40,6 +36,7 @@ import {
   Legend,
 } from 'chart.js';
 
+// Register ChartJS components outside the component
 ChartJS.register(
   ArcElement,
   CategoryScale,
@@ -63,7 +60,31 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
   onRefresh,
   onExport,
 }) => {
-  const theme = useTheme();
+  // Use a simple theme fallback without hooks
+  const theme = {
+    palette: {
+      primary: { main: '#1976d2' },
+      secondary: { main: '#9c27b0' },
+      success: { main: '#2e7d32' },
+      warning: { main: '#ed6c02' },
+      error: { main: '#d32f2f' },
+      grey: { 
+        50: '#fafafa',
+        300: '#e0e0e0',
+        500: '#9e9e9e'
+      },
+      text: { secondary: 'rgba(0, 0, 0, 0.6)' },
+      background: { paper: '#ffffff' },
+      divider: 'rgba(0, 0, 0, 0.12)'
+    },
+    shadows: Array(25).fill('none')
+  } as any;
+
+  // Helper function to create alpha colors
+  const alpha = (color: string, opacity: number) => {
+    // Simple alpha function - in real app, use MUI's alpha function
+    return color + Math.round(opacity * 255).toString(16).padStart(2, '0');
+  };
 
   if (!stats) {
     return (
@@ -72,7 +93,7 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
           p: 4,
           textAlign: 'center',
           borderRadius: 2,
-          backgroundColor: alpha(theme.palette.background.paper, 0.8),
+          backgroundColor: 'background.paper',
         }}
       >
         <Typography variant="body1" color="text.secondary">
@@ -124,7 +145,7 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
     ],
   };
 
-  // Recent activity chart
+  // Recent activity chart (simplified for now)
   const activityChartData = {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
@@ -177,7 +198,7 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
   };
 
   return (
-    <Box>
+    <Box sx={{ p: 3 }}>
       {/* Header */}
       <Paper
         sx={{
@@ -188,7 +209,13 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
           border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          gap: 2 
+        }}>
           <Box>
             <Typography variant="h5" fontWeight={600} gutterBottom>
               Material Analytics
@@ -232,11 +259,20 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
       </Paper>
 
       {/* Overview Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        gap: 3, 
+        mb: 3 
+      }}>
+        {/* Total Materials Card */}
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' },
+          minWidth: { xs: '100%', sm: '200px' }
+        }}>
           <Card sx={{ height: '100%', borderRadius: 2 }}>
             <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Total Materials
@@ -257,15 +293,19 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
                 >
                   <Inventory sx={{ color: theme.palette.primary.main }} />
                 </Box>
-              </Stack>
+              </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6} md={3}>
+        {/* Total Stock Value Card */}
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' },
+          minWidth: { xs: '100%', sm: '200px' }
+        }}>
           <Card sx={{ height: '100%', borderRadius: 2 }}>
             <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Total Stock Value
@@ -286,15 +326,19 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
                 >
                   <AttachMoney sx={{ color: theme.palette.success.main }} />
                 </Box>
-              </Stack>
+              </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6} md={3}>
+        {/* Low Stock Card */}
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' },
+          minWidth: { xs: '100%', sm: '200px' }
+        }}>
           <Card sx={{ height: '100%', borderRadius: 2 }}>
             <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Low Stock
@@ -318,15 +362,19 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
                 >
                   <Warning sx={{ color: theme.palette.warning.main }} />
                 </Box>
-              </Stack>
+              </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6} md={3}>
+        {/* Out of Stock Card */}
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' },
+          minWidth: { xs: '100%', sm: '200px' }
+        }}>
           <Card sx={{ height: '100%', borderRadius: 2 }}>
             <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Out of Stock
@@ -350,36 +398,11 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
                 >
                   <Error sx={{ color: theme.palette.error.main }} />
                 </Box>
-              </Stack>
+              </Box>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
-      {/* Charts Section */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, borderRadius: 2, height: 400 }}>
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              Category Distribution
-            </Typography>
-            <Box sx={{ height: 300, mt: 2 }}>
-              <Doughnut data={categoryChartData} options={chartOptions} />
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, borderRadius: 2, height: 400 }}>
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              Status Distribution
-            </Typography>
-            <Box sx={{ height: 300, mt: 2 }}>
-              <Bar data={statusChartData} options={barChartOptions} />
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* Most Used Materials */}
       <Paper sx={{ p: 3, borderRadius: 2, mb: 3 }}>
@@ -397,21 +420,26 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
                 backgroundColor: index % 2 === 0 ? alpha(theme.palette.grey[50], 0.5) : 'transparent',
               }}
             >
-              <Grid container alignItems="center">
-                <Grid item xs={4}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 2 
+              }}>
+                <Box sx={{ flex: 1, minWidth: '200px' }}>
                   <Typography variant="subtitle2" fontWeight={600}>
                     {material.name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {material.sku}
                   </Typography>
-                </Grid>
-                <Grid item xs={4}>
+                </Box>
+                <Box sx={{ flex: 1, minWidth: '150px' }}>
                   <Typography variant="body2">
                     Total Used: <strong>{material.totalUsed}</strong> {material.unit}
                   </Typography>
-                </Grid>
-                <Grid item xs={4}>
+                </Box>
+                <Box sx={{ flex: 1, minWidth: '150px' }}>
                   <LinearProgress
                     variant="determinate"
                     value={Math.min((material.totalUsed / Math.max(...mostUsed.map(m => m.totalUsed))) * 100, 100)}
@@ -425,8 +453,8 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
                       },
                     }}
                   />
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </Box>
           ))}
         </Stack>
@@ -450,44 +478,49 @@ export const MaterialStats: React.FC<MaterialStatsProps> = ({
                   : alpha(theme.palette.success.main, 0.05),
               }}
             >
-              <Grid container alignItems="center">
-                <Grid item xs={1}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 2 
+              }}>
+                <Box sx={{ width: 40, display: 'flex', justifyContent: 'center' }}>
                   {activity.type === 'usage' ? (
                     <RemoveShoppingCart sx={{ color: theme.palette.error.main }} />
                   ) : (
                     <AddShoppingCart sx={{ color: theme.palette.success.main }} />
                   )}
-                </Grid>
-                <Grid item xs={4}>
+                </Box>
+                <Box sx={{ flex: 1, minWidth: '200px' }}>
                   <Typography variant="subtitle2" fontWeight={600}>
                     {activity.materialName}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {activity.sku}
                   </Typography>
-                </Grid>
-                <Grid item xs={3}>
+                </Box>
+                <Box sx={{ flex: 1, minWidth: '150px' }}>
                   <Chip
                     label={`${activity.quantity} ${activity.unit}`}
                     size="small"
                     color={activity.type === 'usage' ? 'error' : 'success'}
                     variant="outlined"
                   />
-                </Grid>
-                <Grid item xs={3}>
+                </Box>
+                <Box sx={{ flex: 1, minWidth: '150px' }}>
                   <Typography variant="body2">
                     {activity.type === 'usage' 
                       ? `Used by ${activity.user}`
                       : `From ${activity.supplier}`
                     }
                   </Typography>
-                </Grid>
-                <Grid item xs={1}>
+                </Box>
+                <Box sx={{ flex: 1, minWidth: '100px', textAlign: 'right' }}>
                   <Typography variant="caption" color="text.secondary">
                     {new Date(activity.date).toLocaleDateString()}
                   </Typography>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </Box>
           ))}
         </Stack>

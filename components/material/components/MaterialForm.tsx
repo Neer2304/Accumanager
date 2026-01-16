@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   TextField,
@@ -17,7 +17,7 @@ import {
   useTheme,
   InputAdornment,
   Button,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Add,
   AttachMoney,
@@ -29,13 +29,13 @@ import {
   Schedule,
   LocalShipping,
   Security,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 import {
   MaterialFormData,
   MATERIAL_CATEGORIES,
   MATERIAL_UNITS,
   validateMaterial,
-} from '../types/material.types';
+} from "../types/material.types";
 
 interface MaterialFormProps {
   formData: MaterialFormData;
@@ -62,7 +62,7 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
   const handleSubmit = () => {
     const validation = validateMaterial(formData);
     setValidationErrors(validation.errors);
-    
+
     if (validation.valid) {
       onSubmit();
     }
@@ -70,7 +70,7 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
 
   const handleFieldChange = (field: keyof MaterialFormData, value: any) => {
     onChange(field, value);
-    
+
     // Clear validation errors for this field
     if (validationErrors.length > 0) {
       setValidationErrors([]);
@@ -79,88 +79,194 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
 
   const sections = [
     {
-      title: 'Basic Information',
+      title: "Basic Information",
       icon: <Inventory />,
       fields: [
-        { name: 'name', label: 'Material Name *', type: 'text', icon: <Inventory fontSize="small" /> },
-        { name: 'sku', label: 'SKU Code *', type: 'text', icon: <Numbers fontSize="small" /> },
-        { name: 'description', label: 'Description', type: 'textarea', icon: <Description fontSize="small" /> },
+        {
+          name: "name",
+          label: "Material Name *",
+          type: "text",
+          icon: <Inventory fontSize="small" />,
+        },
+        {
+          name: "sku",
+          label: "SKU Code *",
+          type: "text",
+          icon: <Numbers fontSize="small" />,
+        },
+        {
+          name: "description",
+          label: "Description",
+          type: "textarea",
+          icon: <Description fontSize="small" />,
+        },
       ],
     },
     {
-      title: 'Stock & Pricing',
+      title: "Stock & Pricing",
       icon: <AttachMoney />,
       fields: [
-        { name: 'initialStock', label: 'Initial Stock', type: 'number', icon: <Inventory fontSize="small" /> },
-        { name: 'minimumStock', label: 'Minimum Stock Level *', type: 'number', icon: <Security fontSize="small" /> },
-        { name: 'maximumStock', label: 'Maximum Stock Level', type: 'number', icon: <Inventory fontSize="small" /> },
-        { name: 'unitCost', label: 'Unit Cost *', type: 'number', icon: <AttachMoney fontSize="small" /> },
+        {
+          name: "initialStock",
+          label: "Initial Stock",
+          type: "number",
+          icon: <Inventory fontSize="small" />,
+        },
+        {
+          name: "minimumStock",
+          label: "Minimum Stock Level *",
+          type: "number",
+          icon: <Security fontSize="small" />,
+        },
+        {
+          name: "maximumStock",
+          label: "Maximum Stock Level",
+          type: "number",
+          icon: <Inventory fontSize="small" />,
+        },
+        {
+          name: "unitCost",
+          label: "Unit Cost *",
+          type: "number",
+          icon: <AttachMoney fontSize="small" />,
+        },
       ],
     },
     {
-      title: 'Classification',
+      title: "Classification",
       icon: <Business />,
       fields: [
-        { name: 'category', label: 'Category *', type: 'select', options: MATERIAL_CATEGORIES, icon: <Business fontSize="small" /> },
-        { name: 'unit', label: 'Unit of Measurement *', type: 'select', options: MATERIAL_UNITS, icon: <Inventory fontSize="small" /> },
+        {
+          name: "category",
+          label: "Category *",
+          type: "select",
+          options: MATERIAL_CATEGORIES,
+          icon: <Business fontSize="small" />,
+        },
+        {
+          name: "unit",
+          label: "Unit of Measurement *",
+          type: "select",
+          options: MATERIAL_UNITS,
+          icon: <Inventory fontSize="small" />,
+        },
       ],
     },
     {
-      title: 'Supplier Information',
+      title: "Supplier Information",
       icon: <LocalShipping />,
       fields: [
-        { name: 'supplierName', label: 'Supplier Name', type: 'text', icon: <Business fontSize="small" /> },
-        { name: 'supplierCode', label: 'Supplier Code', type: 'text', icon: <Numbers fontSize="small" /> },
-        { name: 'supplierContact', label: 'Contact Information', type: 'text', icon: <Description fontSize="small" /> },
-        { name: 'leadTime', label: 'Lead Time (days)', type: 'number', icon: <Schedule fontSize="small" /> },
+        {
+          name: "supplierName",
+          label: "Supplier Name",
+          type: "text",
+          icon: <Business fontSize="small" />,
+        },
+        {
+          name: "supplierCode",
+          label: "Supplier Code",
+          type: "text",
+          icon: <Numbers fontSize="small" />,
+        },
+        {
+          name: "supplierContact",
+          label: "Contact Information",
+          type: "text",
+          icon: <Description fontSize="small" />,
+        },
+        {
+          name: "leadTime",
+          label: "Lead Time (days)",
+          type: "number",
+          icon: <Schedule fontSize="small" />,
+        },
       ],
     },
     {
-      title: 'Storage & Location',
+      title: "Storage & Location",
       icon: <LocationOn />,
       fields: [
-        { name: 'storageLocation', label: 'Storage Location', type: 'text', icon: <LocationOn fontSize="small" /> },
-        { name: 'shelf', label: 'Shelf Number', type: 'text', icon: <Inventory fontSize="small" /> },
-        { name: 'bin', label: 'Bin Number', type: 'text', icon: <Inventory fontSize="small" /> },
+        {
+          name: "storageLocation",
+          label: "Storage Location",
+          type: "text",
+          icon: <LocationOn fontSize="small" />,
+        },
+        {
+          name: "shelf",
+          label: "Shelf Number",
+          type: "text",
+          icon: <Inventory fontSize="small" />,
+        },
+        {
+          name: "bin",
+          label: "Bin Number",
+          type: "text",
+          icon: <Inventory fontSize="small" />,
+        },
       ],
     },
     {
-      title: 'Additional Information',
+      title: "Additional Information",
       icon: <Security />,
       fields: [
-        { name: 'expirationDate', label: 'Expiration Date', type: 'date', icon: <Schedule fontSize="small" /> },
-        { name: 'batchNumber', label: 'Batch/Lot Number', type: 'text', icon: <Numbers fontSize="small" /> },
+        {
+          name: "expirationDate",
+          label: "Expiration Date",
+          type: "date",
+          icon: <Schedule fontSize="small" />,
+        },
+        {
+          name: "batchNumber",
+          label: "Batch/Lot Number",
+          type: "text",
+          icon: <Numbers fontSize="small" />,
+        },
       ],
     },
   ];
 
   const renderField = (field: any) => {
-    const commonProps = {
+    const baseProps = {
       fullWidth: true,
-      size: 'small' as const,
-      value: formData[field.name as keyof MaterialFormData] || '',
-      onChange: (e: React.ChangeEvent<HTMLInputElement>) => 
-        handleFieldChange(field.name as keyof MaterialFormData, field.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value),
-      InputProps: {
-        startAdornment: (
-          <InputAdornment position="start">
-            {field.icon}
-          </InputAdornment>
+      size: "small" as const,
+      value: formData[field.name as keyof MaterialFormData] || "",
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+        handleFieldChange(
+          field.name as keyof MaterialFormData,
+          field.type === "number"
+            ? parseFloat(e.target.value) || 0
+            : e.target.value
         ),
-      },
       sx: { mb: 2 },
     };
 
+    const textFieldProps = {
+      ...baseProps,
+      InputProps: {
+        startAdornment: (
+          <InputAdornment position="start">{field.icon}</InputAdornment>
+        ),
+      },
+    };
+
     switch (field.type) {
-      case 'select':
+      case "select":
         return (
           <FormControl fullWidth size="small" key={field.name} sx={{ mb: 2 }}>
             <InputLabel>{field.label}</InputLabel>
             <Select
-              {...commonProps}
               label={field.label}
-              value={formData[field.name as keyof MaterialFormData] || ''}
-              onChange={(e) => handleFieldChange(field.name as keyof MaterialFormData, e.target.value)}
+              value={formData[field.name as keyof MaterialFormData] || ""}
+              onChange={(e) =>
+                handleFieldChange(
+                  field.name as keyof MaterialFormData,
+                  e.target.value
+                )
+              }
+              startAdornment={
+                <InputAdornment position="start">{field.icon}</InputAdornment>
+              }
             >
               {field.options?.map((option: any) => (
                 <MenuItem key={option.value} value={option.value}>
@@ -171,10 +277,10 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
           </FormControl>
         );
 
-      case 'textarea':
+      case "textarea":
         return (
           <TextField
-            {...commonProps}
+            {...textFieldProps}
             key={field.name}
             label={field.label}
             multiline
@@ -182,10 +288,10 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
           />
         );
 
-      case 'date':
+      case "date":
         return (
           <TextField
-            {...commonProps}
+            {...textFieldProps}
             key={field.name}
             label={field.label}
             type="date"
@@ -196,11 +302,11 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
       default:
         return (
           <TextField
-            {...commonProps}
+            {...textFieldProps}
             key={field.name}
             label={field.label}
             type={field.type}
-            inputProps={field.type === 'number' ? { min: 0, step: 0.01 } : {}}
+            inputProps={field.type === "number" ? { min: 0, step: 0.01 } : {}}
           />
         );
     }
@@ -210,56 +316,59 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
     <Box>
       {/* Error Display */}
       {(error || validationErrors.length > 0) && (
-        <Alert 
-          severity="error" 
+        <Alert
+          severity="error"
           sx={{ mb: 3, borderRadius: 2 }}
           onClose={() => {
             setValidationErrors([]);
           }}
         >
-          {error || validationErrors.map((err, index) => (
-            <div key={index}>{err}</div>
-          ))}
+          {error ||
+            validationErrors.map((err, index) => <div key={index}>{err}</div>)}
         </Alert>
       )}
 
       {/* Form Sections - Using flexbox instead of Grid */}
-      <Box sx={{ 
-        display: 'flex', 
-        flexWrap: 'wrap', 
-        gap: 3,
-        mb: 3 
-      }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 3,
+          mb: 3,
+        }}
+      >
         {sections.map((section, sectionIndex) => (
-          <Box 
-            key={sectionIndex} 
-            sx={{ 
-              flex: { xs: '1 1 100%', md: '1 1 calc(50% - 12px)' },
-              minWidth: { xs: '100%', md: '300px' }
+          <Box
+            key={sectionIndex}
+            sx={{
+              flex: { xs: "1 1 100%", md: "1 1 calc(50% - 12px)" },
+              minWidth: { xs: "100%", md: "300px" },
             }}
           >
             <Paper
               sx={{
                 p: 3,
-                height: '100%',
+                height: "100%",
                 borderRadius: 2,
                 border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
                 backgroundColor: alpha(theme.palette.background.paper, 0.8),
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}
+              >
                 <Box
                   sx={{
                     p: 1,
-                    borderRadius: '50%',
+                    borderRadius: "50%",
                     backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
                   {React.cloneElement(section.icon, {
-                    sx: { color: theme.palette.primary.main, fontSize: 20 }
+                    sx: { color: theme.palette.primary.main, fontSize: 20 },
                   })}
                 </Box>
                 <Typography variant="h6" fontWeight={600}>
@@ -277,7 +386,9 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
                   control={
                     <Switch
                       checked={formData.lowStockAlert}
-                      onChange={(e) => handleFieldChange('lowStockAlert', e.target.checked)}
+                      onChange={(e) =>
+                        handleFieldChange("lowStockAlert", e.target.checked)
+                      }
                       color="primary"
                     />
                   }
@@ -299,45 +410,55 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({
           backgroundColor: alpha(theme.palette.background.paper, 0.8),
         }}
       >
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: { xs: 'column', sm: 'row' },
-          justifyContent: 'space-between', 
-          alignItems: { xs: 'stretch', sm: 'center' },
-          gap: 2 
-        }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 1, sm: 0 } }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            justifyContent: "space-between",
+            alignItems: { xs: "stretch", sm: "center" },
+            gap: 2,
+          }}
+        >
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mb: { xs: 1, sm: 0 } }}
+          >
             Fields marked with * are required
           </Typography>
 
-          <Stack 
-            direction={{ xs: 'column', sm: 'row' }} 
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
             spacing={2}
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             {onCancel && (
               <Button
                 variant="outlined"
                 onClick={onCancel}
                 disabled={loading}
-                sx={{ borderRadius: 2, flex: { xs: 1, sm: 'auto' } }}
+                sx={{ borderRadius: 2, flex: { xs: 1, sm: "auto" } }}
               >
                 Cancel
               </Button>
             )}
-            
+
             <Button
               variant="contained"
               onClick={handleSubmit}
               disabled={loading}
               startIcon={<Add />}
-              sx={{ 
-                borderRadius: 2, 
-                flex: { xs: 1, sm: 'auto' },
-                minWidth: { sm: 160 }
+              sx={{
+                borderRadius: 2,
+                flex: { xs: 1, sm: "auto" },
+                minWidth: { sm: 160 },
               }}
             >
-              {loading ? 'Processing...' : isEdit ? 'Update Material' : 'Create Material'}
+              {loading
+                ? "Processing..."
+                : isEdit
+                ? "Update Material"
+                : "Create Material"}
             </Button>
           </Stack>
         </Box>
