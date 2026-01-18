@@ -1,4 +1,4 @@
-// components/contacts/SupportHours.tsx
+// components/contacts/SupportHours.tsx - SIMPLER FIX
 "use client";
 
 import React from 'react';
@@ -100,12 +100,9 @@ export const SupportHours: React.FC = () => {
           }}
         >
           <SupportAgent fontSize="small" />
-          <Box>
-            <Typography component="span" fontWeight={700}>
-              Emergency Support:
-            </Typography>{' '}
-            Available 24/7 for critical issues
-          </Box>
+          <span>
+            <span style={{ fontWeight: 700 }}>Emergency Support:</span> Available 24/7 for critical issues
+          </span>
         </Typography>
       </Box>
     </Paper>

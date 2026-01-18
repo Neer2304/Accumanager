@@ -1,14 +1,13 @@
-// components/contacts/ContactForm.tsx
+// components/contacts/ContactForm.tsx - UPDATED WITH API CALL
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Paper,
   Typography,
   TextField,
   Button,
-  Grid,
   Alert,
   CircularProgress,
   useTheme,
@@ -92,8 +91,18 @@ export const ContactForm: React.FC<ContactFormProps> = ({
         )}
         
         <form onSubmit={onSubmit}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+              },
+              gap: 3,
+            }}
+          >
+            {/* Name */}
+            <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
               <TextField
                 fullWidth
                 label="Your Name *"
@@ -116,9 +125,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                   },
                 }}
               />
-            </Grid>
+            </Box>
             
-            <Grid item xs={12} sm={6}>
+            {/* Email */}
+            <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
               <TextField
                 fullWidth
                 label="Your Email *"
@@ -139,9 +149,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                   },
                 }}
               />
-            </Grid>
+            </Box>
             
-            <Grid item xs={12} sm={6}>
+            {/* Phone */}
+            <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
               <TextField
                 fullWidth
                 label="Phone Number"
@@ -160,9 +171,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                   },
                 }}
               />
-            </Grid>
+            </Box>
             
-            <Grid item xs={12} sm={6}>
+            {/* Company */}
+            <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
               <TextField
                 fullWidth
                 label="Company"
@@ -181,9 +193,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                   },
                 }}
               />
-            </Grid>
+            </Box>
             
-            <Grid item xs={12}>
+            {/* Subject */}
+            <Box sx={{ gridColumn: 'span 2' }}>
               <TextField
                 fullWidth
                 label="Subject"
@@ -198,9 +211,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                   },
                 }}
               />
-            </Grid>
+            </Box>
             
-            <Grid item xs={12}>
+            {/* Message */}
+            <Box sx={{ gridColumn: 'span 2' }}>
               <TextField
                 fullWidth
                 label="Your Message *"
@@ -221,9 +235,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                   },
                 }}
               />
-            </Grid>
+            </Box>
             
-            <Grid item xs={12}>
+            {/* Submit Button */}
+            <Box sx={{ gridColumn: 'span 2' }}>
               <Button
                 type="submit"
                 variant="contained"
@@ -249,8 +264,8 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               >
                 {loading ? 'Sending...' : 'Send Message'}
               </Button>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </form>
       </Box>
     </Paper>

@@ -64,7 +64,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             }}
           >
             {React.cloneElement(icon as React.ReactElement, {
-              sx: { fontSize: 28, color: theme.palette.primary.main },
+            //   sx: { fontSize: 28, color: theme.palette.primary.main },
             })}
           </Box>
           <Box sx={{ flex: 1 }}>
