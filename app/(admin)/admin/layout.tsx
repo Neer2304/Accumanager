@@ -31,8 +31,11 @@ import {
   Description,
   AdminPanelSettings,
   BarChart,
+  AnalyticsSharp,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import { ProductIcon } from '@/components/common';
+import { Support } from '@/assets/icons/HelpSupportIcons';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -99,6 +102,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       text: 'Legal Documents', 
       icon: <Description />, 
       path: '/admin/legal' 
+    },
+    {
+      text: 'Analysis',
+      icon: <AnalyticsSharp />,
+      path: '/admin/analysis'
+    },
+    {
+      text: 'Products',
+      icon: <ProductIcon />,
+      path: '/admin/products'
+    },
+    {
+      text: 'Support',
+      icon: <Support/>,
+      path: '/admin/support'
     },
     { 
       text: 'Settings', 
