@@ -1,4 +1,4 @@
-// app/admin/dashboard/page.tsx - UPDATED VERSION
+// app/admin/dashboard/page.tsx - COMPLETE VERSION
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -47,6 +47,8 @@ import {
   Storage,
   Warning,
   CheckCircle,
+  Security,
+  Email,
 } from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
 
@@ -264,6 +266,222 @@ export default function AdminAnalysissPage() {
     )
   }
 
+  // Function to render user analysis
+  const renderUserAnalysis = () => {
+    if (!data?.userAnalysis) return null
+
+    return (
+      <Stack spacing={3}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(2, 1fr)'
+            },
+            gap: 3
+          }}
+        >
+          {/* Users by Role */}
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <People />
+                Users by Role
+              </Typography>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Role</TableCell>
+                      <TableCell align="right">Count</TableCell>
+                      <TableCell align="right">Percentage</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {data.userAnalysis.usersByRole?.map((role: any, index: number) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <Chip 
+                            label={role._id || 'Unknown'} 
+                            size="small"
+                            color={
+                              role._id === 'admin' ? 'primary' : 
+                              role._id === 'user' ? 'secondary' : 'default'
+                            }
+                          />
+                        </TableCell>
+                        <TableCell align="right">{role.count}</TableCell>
+                        <TableCell align="right">
+                          {Math.round((role.count / data.systemOverview.databaseStats.totalUsers) * 100)}%
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+
+          {/* Users by Status */}
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Security />
+                Users by Status
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {data.userAnalysis.usersByStatus?.map((status: any, index: number) => (
+                  <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
+                          backgroundColor: status._id ? theme.palette.success.main : theme.palette.error.main
+                        }}
+                      />
+                      <Typography>{status._id ? 'Active' : 'Inactive'}</Typography>
+                    </Box>
+                    <Typography fontWeight="bold">{status.count} users</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Daily User Signups */}
+        <Card elevation={2} sx={{ borderRadius: 2 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Assessment />
+              Daily User Signups (Last 14 Days)
+            </Typography>
+            <Box sx={{ height: 200, display: 'flex', alignItems: 'flex-end', gap: 1, p: 2 }}>
+              {data.userAnalysis.newUsersByDay?.slice(-14).map((day: any, index: number) => (
+                <Box
+                  key={index}
+                  sx={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: '80%',
+                      height: `${Math.min(day.count * 20, 150)}px`,
+                      backgroundColor: theme.palette.primary.main,
+                      borderRadius: 1,
+                      mb: 1,
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ transform: 'rotate(-45deg)', whiteSpace: 'nowrap' }}>
+                    {day._id.split('-')[2]}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
+      </Stack>
+    )
+  }
+
+  // Function to render notes analysis
+  const renderNotesAnalysis = () => {
+    if (!data?.notesAnalysis) return null
+
+    return (
+      <Stack spacing={3}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(2, 1fr)'
+            },
+            gap: 3
+          }}
+        >
+          {/* Notes by Category */}
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Notes />
+                Notes by Category
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {data.notesAnalysis.notesByCategory?.map((category: any, index: number) => (
+                  <Box 
+                    key={index} 
+                    sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      p: 1.5,
+                      borderRadius: 1,
+                      backgroundColor: alpha(theme.palette.primary.main, 0.05)
+                    }}
+                  >
+                    <Chip label={category._id || 'Uncategorized'} size="small" />
+                    <Typography fontWeight="bold">{category.count} notes</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Top Users by Notes */}
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Assessment />
+                Top Users by Notes
+              </Typography>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>User</TableCell>
+                      <TableCell align="right">Notes</TableCell>
+                      <TableCell align="right">Last Created</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {data.notesAnalysis.topUsersByNotes?.slice(0, 5).map((user: any, index: number) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium">
+                              {user.name || user.email}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {user.email}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Chip label={user.noteCount} size="small" color="primary" />
+                        </TableCell>
+                        <TableCell align="right">
+                          {new Date(user.lastCreated).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Box>
+      </Stack>
+    )
+  }
+
   // Function to render materials analysis
   const renderMaterialsAnalysis = () => {
     if (materialsLoading) {
@@ -447,7 +665,7 @@ export default function AdminAnalysissPage() {
                       <Box sx={{ flex: 1, height: 8, bgcolor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
                         <Box
                           sx={{
-                            width: `${(materialsData.userEngagement.usersWithNoMaterials[0].count / data?.systemOverview.databaseStats.totalUsers || 1) * 100}%`,
+                            // width: `${(materialsData.userEngagement.usersWithNoMaterials[0].count / data?.systemOverview.databaseStats.totalUsers || 1) * 100}%`,
                             height: '100%',
                             bgcolor: theme.palette.info.main,
                           }}
@@ -469,7 +687,7 @@ export default function AdminAnalysissPage() {
                       <Box sx={{ flex: 1, height: 8, bgcolor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
                         <Box
                           sx={{
-                            width: `${(materialsData.userEngagement.usersWithManyMaterials[0].count / data?.systemOverview.databaseStats.totalUsers || 1) * 100}%`,
+                            // width: `${(materialsData.userEngagement.usersWithManyMaterials[0].count / data?.systemOverview.databaseStats.totalUsers || 1) * 100}%`,
                             height: '100%',
                             bgcolor: theme.palette.success.main,
                           }}
@@ -485,6 +703,175 @@ export default function AdminAnalysissPage() {
             </CardContent>
           </Card>
         )}
+      </Stack>
+    )
+  }
+
+  // Function to render engagement analysis
+  const renderEngagementAnalysis = () => {
+    if (!data?.engagementAnalysis) return null
+
+    return (
+      <Stack spacing={3}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(2, 1fr)'
+            },
+            gap: 3
+          }}
+        >
+          {/* User Engagement Tiers */}
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                User Engagement Tiers
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {data.engagementAnalysis.usersWithNoNotes?.[0] && (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      👶 Beginners (No notes)
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box sx={{ flex: 1, height: 8, bgcolor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                        <Box
+                          sx={{
+                            width: `${(data.engagementAnalysis.usersWithNoNotes[0].count / data.systemOverview.databaseStats.activeUsers) * 100}%`,
+                            height: '100%',
+                            bgcolor: theme.palette.info.main,
+                          }}
+                        />
+                      </Box>
+                      <Typography fontWeight="bold">
+                        {data.engagementAnalysis.usersWithNoNotes[0].count} users
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+
+                {data.engagementAnalysis.usersWithManyNotes?.[0] && (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      🏆 Power Users (20+ notes)
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box sx={{ flex: 1, height: 8, bgcolor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                        <Box
+                          sx={{
+                            width: `${(data.engagementAnalysis.usersWithManyNotes[0].count / data.systemOverview.databaseStats.activeUsers) * 100}%`,
+                            height: '100%',
+                            bgcolor: theme.palette.success.main,
+                          }}
+                        />
+                      </Box>
+                      <Typography fontWeight="bold">
+                        {data.engagementAnalysis.usersWithManyNotes[0].count} users
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Engagement Score Breakdown */}
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Engagement Score Breakdown
+              </Typography>
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Box
+                  sx={{
+                    position: 'relative',
+                    display: 'inline-flex',
+                    mb: 2,
+                  }}
+                >
+                  <CircularProgress
+                    variant="determinate"
+                    value={data?.summary.engagementScore || 0}
+                    size={120}
+                    thickness={4}
+                    sx={{
+                      color: 
+                        (data?.summary.engagementScore || 0) >= 70 ? theme.palette.success.main :
+                        (data?.summary.engagementScore || 0) >= 40 ? theme.palette.warning.main :
+                        theme.palette.error.main
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      top: 0,
+                      left: 0,
+                      bottom: 0,
+                      right: 0,
+                      position: 'absolute',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography variant="h4" component="div" fontWeight="bold">
+                      {data?.summary.engagementScore || 0}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Based on active users and note creation rate
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Growth Metrics */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)'
+            },
+            gap: 3
+          }}
+        >
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {data?.summary.growthRate >= 0 ? <TrendingUp color="success" /> : <TrendingDown color="error" />}
+                Growth Rate
+              </Typography>
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="h1" component="div" fontWeight="bold" color={data?.summary.growthRate >= 0 ? 'success.main' : 'error.main'}>
+                  {data?.summary.growthRate || 0}%
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  User growth in the last {timeframe} days
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Notes per Active User
+              </Typography>
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="h1" component="div" fontWeight="bold" color="primary">
+                  {data?.summary.notesPerActiveUser || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Average notes created per active user
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
       </Stack>
     )
   }
@@ -559,19 +946,13 @@ export default function AdminAnalysissPage() {
           
           <Box sx={{ p: 3 }}>
             {/* User Analysis Tab */}
-            {activeTab === 0 && data?.userAnalysis && (
-              <Stack spacing={3}>
-                {/* User Analysis content from original */}
-                {/* Add your existing user analysis content here */}
-              </Stack>
+            {activeTab === 0 && (
+              renderUserAnalysis()
             )}
 
             {/* Notes Analysis Tab */}
-            {activeTab === 1 && data?.notesAnalysis && (
-              <Stack spacing={3}>
-                {/* Notes Analysis content from original */}
-                {/* Add your existing notes analysis content here */}
-              </Stack>
+            {activeTab === 1 && (
+              renderNotesAnalysis()
             )}
 
             {/* Materials Analysis Tab */}
@@ -581,10 +962,7 @@ export default function AdminAnalysissPage() {
 
             {/* Engagement Tab */}
             {activeTab === 3 && (
-              <Stack spacing={3}>
-                {/* Engagement content from original */}
-                {/* Add your existing engagement content here */}
-              </Stack>
+              renderEngagementAnalysis()
             )}
           </Box>
         </Paper>
