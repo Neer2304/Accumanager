@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -16,8 +16,6 @@ import {
   TextField,
   Button,
   Chip,
-  IconButton,
-  Grid,
   Alert,
   CircularProgress,
   Dialog,
@@ -25,7 +23,13 @@ import {
   DialogContent,
   DialogActions,
   TextareaAutosize,
-} from '@mui/material';
+  Stack,
+  Avatar,
+  IconButton,
+  InputAdornment,
+  Badge,
+  Divider,
+} from "@mui/material";
 import {
   Support as SupportIcon,
   Search as SearchIcon,
@@ -34,7 +38,13 @@ import {
   Chat as ChatIcon,
   Email as EmailIcon,
   PriorityHigh as PriorityIcon,
-} from '@mui/icons-material';
+  Person,
+  AccessTime,
+  Forum,
+  FilterList,
+  Clear,
+  CheckCircle,
+} from "@mui/icons-material";
 
 interface SupportTicket {
   _id: string;
@@ -43,8 +53,8 @@ interface SupportTicket {
   userEmail: string;
   subject: string;
   message: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'open' | 'in-progress' | 'resolved' | 'closed';
+  priority: "low" | "medium" | "high" | "urgent";
+  status: "open" | "in-progress" | "resolved" | "closed";
   createdAt: string;
   updatedAt: string;
   replies: Array<{
@@ -57,13 +67,15 @@ interface SupportTicket {
 export default function AdminSupportPage() {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  const [replyMessage, setReplyMessage] = useState('');
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(
+    null,
+  );
+  const [replyMessage, setReplyMessage] = useState("");
 
   useEffect(() => {
     fetchTickets();
@@ -72,16 +84,19 @@ export default function AdminSupportPage() {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/support');
-      
+      setError("");
+
+      // Use real API endpoint
+      const response = await fetch("/api/admin/support");
+
       if (!response.ok) {
-        throw new Error('Failed to fetch tickets');
+        throw new Error("Failed to fetch tickets");
       }
 
       const data = await response.json();
       setTickets(data.tickets || []);
     } catch (err: any) {
-      setError(err.message || 'Failed to load support tickets');
+      setError(err.message || "Failed to load support tickets");
     } finally {
       setLoading(false);
     }
@@ -96,77 +111,95 @@ export default function AdminSupportPage() {
     if (!selectedTicket || !replyMessage.trim()) return;
 
     try {
-      const response = await fetch(`/api/admin/support/${selectedTicket._id}/reply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: replyMessage }),
-      });
+      const response = await fetch(
+        `/api/admin/support/${selectedTicket._id}/reply`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: replyMessage }),
+        },
+      );
 
-      if (response.ok) {
-        setReplyMessage('');
-        fetchTickets(); // Refresh tickets
-        // Refresh the selected ticket
-        const updatedTicket = await response.json();
-        setSelectedTicket(updatedTicket.ticket);
+      if (!response.ok) {
+        throw new Error("Failed to send reply");
       }
-    } catch (err) {
-      setError('Failed to send reply');
+
+      const data = await response.json();
+      setReplyMessage("");
+      setSelectedTicket(data.ticket);
+
+      // Refresh tickets list
+      fetchTickets();
+    } catch (err: any) {
+      setError(err.message || "Failed to send reply");
     }
   };
 
   const handleUpdateStatus = async (ticketId: string, status: string) => {
     try {
-      const response = await fetch(`/api/admin/support/${ticketId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(`/api/admin/support/${ticketId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
 
-      if (response.ok) {
-        fetchTickets(); // Refresh
-        if (selectedTicket?._id === ticketId) {
-          setSelectedTicket({ ...selectedTicket, status } as any);
-        }
+      if (!response.ok) {
+        throw new Error("Failed to update ticket status");
       }
-    } catch (err) {
-      setError('Failed to update ticket status');
+
+      const data = await response.json();
+
+      // Update in tickets list
+      setTickets((prev) =>
+        prev.map((t) => (t._id === ticketId ? data.ticket : t)),
+      );
+
+      // Update selected ticket if open
+      if (selectedTicket?._id === ticketId) {
+        setSelectedTicket(data.ticket);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to update ticket status");
     }
   };
 
-  const getPriorityChip = (priority: string) => {
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent':
-        return <Chip label="Urgent" color="error" size="small" icon={<PriorityIcon />} />;
-      case 'high':
-        return <Chip label="High" color="warning" size="small" />;
-      case 'medium':
-        return <Chip label="Medium" color="info" size="small" />;
-      case 'low':
-        return <Chip label="Low" color="success" size="small" />;
+      case "urgent":
+        return "#dc2626";
+      case "high":
+        return "#ea580c";
+      case "medium":
+        return "#2563eb";
+      case "low":
+        return "#16a34a";
       default:
-        return <Chip label={priority} size="small" />;
+        return "#6b7280";
     }
   };
 
-  const getStatusChip = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'open':
-        return <Chip label="Open" color="primary" size="small" />;
-      case 'in-progress':
-        return <Chip label="In Progress" color="warning" size="small" />;
-      case 'resolved':
-        return <Chip label="Resolved" color="success" size="small" icon={<ResolveIcon />} />;
-      case 'closed':
-        return <Chip label="Closed" color="default" size="small" />;
+      case "open":
+        return "#3b82f6";
+      case "in-progress":
+        return "#f59e0b";
+      case "resolved":
+        return "#10b981";
+      case "closed":
+        return "#6b7280";
       default:
-        return <Chip label={status} size="small" />;
+        return "#6b7280";
     }
   };
 
-  const filteredTickets = tickets.filter(ticket => {
-    if (search && !ticket.subject.toLowerCase().includes(search.toLowerCase()) && 
-        !ticket.userName.toLowerCase().includes(search.toLowerCase()) &&
-        !ticket.userEmail.toLowerCase().includes(search.toLowerCase())) {
+  const filteredTickets = tickets.filter((ticket) => {
+    if (
+      search &&
+      !ticket.subject.toLowerCase().includes(search.toLowerCase()) &&
+      !ticket.userName.toLowerCase().includes(search.toLowerCase()) &&
+      !ticket.userEmail.toLowerCase().includes(search.toLowerCase())
+    ) {
       return false;
     }
     if (statusFilter && ticket.status !== statusFilter) {
@@ -178,188 +211,404 @@ export default function AdminSupportPage() {
     return true;
   });
 
+  // Calculate statistics
+  const stats = {
+    open: tickets.filter((t) => t.status === "open").length,
+    inProgress: tickets.filter((t) => t.status === "in-progress").length,
+    resolved: tickets.filter((t) => t.status === "resolved").length,
+    urgent: tickets.filter((t) => t.priority === "urgent").length,
+    total: tickets.length,
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+        }}
+      >
         <Box>
-          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-            <SupportIcon sx={{ mr: 2, verticalAlign: 'middle' }} />
-            Support Tickets
+          <Typography
+            variant="h4"
+            component="h1"
+            fontWeight="bold"
+            gutterBottom
+            sx={{ display: "flex", alignItems: "center", gap: 2 }}
+          >
+            <SupportIcon sx={{ fontSize: 36 }} />
+            Support Center
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Manage user support requests
+            Manage user inquiries and support requests
           </Typography>
         </Box>
-        <Button 
-          variant="outlined" 
+        <Button
+          variant="contained"
           startIcon={<RefreshIcon />}
           onClick={fetchTickets}
           disabled={loading}
+          sx={{
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            "&:hover": {
+              background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+            },
+          }}
         >
           Refresh
         </Button>
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+        <Alert
+          severity="error"
+          sx={{ mb: 3, borderRadius: 2 }}
+          onClose={() => setError("")}
+          action={
+            <Button color="inherit" size="small" onClick={fetchTickets}>
+              Retry
+            </Button>
+          }
+        >
           {error}
         </Alert>
       )}
 
-      {/* Stats */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} sm={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary">
-                {tickets.filter(t => t.status === 'open').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Open Tickets
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main">
-                {tickets.filter(t => t.status === 'in-progress').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                In Progress
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main">
-                {tickets.filter(t => t.status === 'resolved').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Resolved
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4">
-                {tickets.filter(t => t.priority === 'urgent').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Urgent
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Stats Cards - Using Stack instead of Grid */}
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        sx={{ mb: 4, flexWrap: "wrap" }}
+      >
+        <Card sx={{ flex: 1, minWidth: 200 }}>
+          <CardContent>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar sx={{ bgcolor: "#3b82f620", color: "#3b82f6" }}>
+                <Forum />
+              </Avatar>
+              <Box>
+                <Typography variant="h3" fontWeight="bold" color="#3b82f6">
+                  {stats.total}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Total Tickets
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
 
-      {/* Filters */}
-      <Card sx={{ mb: 3 }}>
+        <Card sx={{ flex: 1, minWidth: 200 }}>
+          <CardContent>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar sx={{ bgcolor: "#dc262620", color: "#dc2626" }}>
+                <PriorityIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="h3" fontWeight="bold" color="#dc2626">
+                  {stats.urgent}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Urgent Priority
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ flex: 1, minWidth: 200 }}>
+          <CardContent>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar sx={{ bgcolor: "#3b82f620", color: "#3b82f6" }}>
+                <ChatIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="h3" fontWeight="bold" color="#3b82f6">
+                  {stats.open}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Open Tickets
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ flex: 1, minWidth: 200 }}>
+          <CardContent>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar sx={{ bgcolor: "#10b98120", color: "#10b981" }}>
+                <CheckCircle />
+              </Avatar>
+              <Box>
+                <Typography variant="h3" fontWeight="bold" color="#10b981">
+                  {stats.resolved}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Resolved
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Stack>
+
+      {/* Search and Filters */}
+      <Card sx={{ mb: 3, borderRadius: 2 }}>
         <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={2}
+            alignItems="center"
+          >
+            <Box sx={{ flex: 1, minWidth: 300 }}>
               <TextField
                 fullWidth
-                placeholder="Search tickets..."
+                placeholder="Search tickets by user, subject, or email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 InputProps={{
-                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: search && (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setSearch("")}>
+                        <Clear fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
                 }}
+                size="small"
               />
-            </Grid>
-            <Grid item xs={6} md={2}>
+            </Box>
+
+            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
               <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => {
-                  setSearch('');
-                  setStatusFilter('');
-                  setPriorityFilter('');
-                }}
+                variant={statusFilter === "" ? "contained" : "outlined"}
+                size="small"
+                onClick={() => setStatusFilter("")}
               >
-                Clear Filters
+                All Status
               </Button>
-            </Grid>
-          </Grid>
+              <Button
+                variant={statusFilter === "open" ? "contained" : "outlined"}
+                color="primary"
+                size="small"
+                onClick={() => setStatusFilter("open")}
+              >
+                Open
+              </Button>
+              <Button
+                variant={
+                  statusFilter === "in-progress" ? "contained" : "outlined"
+                }
+                color="warning"
+                size="small"
+                onClick={() => setStatusFilter("in-progress")}
+              >
+                In Progress
+              </Button>
+              <Button
+                variant={statusFilter === "resolved" ? "contained" : "outlined"}
+                color="success"
+                size="small"
+                onClick={() => setStatusFilter("resolved")}
+              >
+                Resolved
+              </Button>
+            </Stack>
+
+            <Button
+              variant="outlined"
+              startIcon={<FilterList />}
+              onClick={() => {
+                setSearch("");
+                setStatusFilter("");
+                setPriorityFilter("");
+              }}
+              size="small"
+            >
+              Clear All
+            </Button>
+          </Stack>
         </CardContent>
       </Card>
 
       {/* Tickets Table */}
-      <Card>
+      <Card sx={{ borderRadius: 2, overflow: "hidden" }}>
         <CardContent sx={{ p: 0 }}>
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h6" fontWeight="bold">
-              Support Tickets ({filteredTickets.length})
-            </Typography>
+          <Box sx={{ p: 3, pb: 2, borderBottom: 1, borderColor: "divider" }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography variant="h6" fontWeight="bold">
+                Support Tickets
+                <Typography
+                  component="span"
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ ml: 1 }}
+                >
+                  ({filteredTickets.length} of {tickets.length})
+                </Typography>
+              </Typography>
+              <Badge badgeContent={stats.open} color="primary" showZero>
+                <Typography variant="body2" color="text.secondary">
+                  Open Tickets
+                </Typography>
+              </Badge>
+            </Stack>
           </Box>
 
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow>
-                  <TableCell>User</TableCell>
-                  <TableCell>Subject</TableCell>
-                  <TableCell>Priority</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Created</TableCell>
-                  <TableCell>Replies</TableCell>
-                  <TableCell align="right">Actions</TableCell>
+                <TableRow sx={{ backgroundColor: "action.hover" }}>
+                  <TableCell width="250">User</TableCell>
+                  <TableCell>Subject & Message</TableCell>
+                  <TableCell width="120">Priority</TableCell>
+                  <TableCell width="120">Status</TableCell>
+                  <TableCell width="120">Created</TableCell>
+                  <TableCell width="100" align="right">
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
                       <CircularProgress />
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 2 }}
+                      >
+                        Loading support tickets...
+                      </Typography>
                     </TableCell>
                   </TableRow>
                 ) : filteredTickets.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
-                      <Typography color="text.secondary">No tickets found</Typography>
+                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                      <ChatIcon
+                        sx={{ fontSize: 48, color: "text.disabled", mb: 2 }}
+                      />
+                      <Typography variant="h6" color="text.secondary">
+                        No support tickets found
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 1 }}
+                      >
+                        {search || statusFilter
+                          ? "Try changing your search criteria"
+                          : "No support requests yet"}
+                      </Typography>
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredTickets.map((ticket) => (
-                    <TableRow key={ticket._id} hover>
+                    <TableRow
+                      key={ticket._id}
+                      hover
+                      sx={{
+                        "&:hover": { backgroundColor: "action.hover" },
+                        cursor: "pointer",
+                      }}
+                      onClick={() => handleViewTicket(ticket)}
+                    >
                       <TableCell>
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          {ticket.userName}
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Avatar
+                            sx={{ bgcolor: getPriorityColor(ticket.priority) }}
+                          >
+                            <Person />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="subtitle2" fontWeight="bold">
+                              {ticket.userName}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {ticket.userEmail}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          {ticket.subject}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {ticket.userEmail}
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            maxWidth: 400,
+                          }}
+                        >
+                          {ticket.message}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="subtitle2">{ticket.subject}</Typography>
-                        <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 200 }}>
-                          {ticket.message.substring(0, 50)}...
-                        </Typography>
+                        <Chip
+                          label={ticket.priority}
+                          size="small"
+                          sx={{
+                            bgcolor: `${getPriorityColor(ticket.priority)}20`,
+                            color: getPriorityColor(ticket.priority),
+                            fontWeight: "bold",
+                          }}
+                        />
                       </TableCell>
                       <TableCell>
-                        {getPriorityChip(ticket.priority)}
+                        <Chip
+                          label={ticket.status}
+                          size="small"
+                          sx={{
+                            bgcolor: `${getStatusColor(ticket.status)}20`,
+                            color: getStatusColor(ticket.status),
+                            fontWeight: "medium",
+                          }}
+                        />
                       </TableCell>
                       <TableCell>
-                        {getStatusChip(ticket.status)}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(ticket.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {ticket.replies.length}
+                        <Stack spacing={0.5}>
+                          <Typography variant="caption">
+                            {new Date(ticket.createdAt).toLocaleDateString()}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(ticket.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </Typography>
+                        </Stack>
                       </TableCell>
                       <TableCell align="right">
                         <Button
                           size="small"
-                          onClick={() => handleViewTicket(ticket)}
+                          variant="outlined"
                           startIcon={<ChatIcon />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewTicket(ticket);
+                          }}
                         >
                           View
                         </Button>
@@ -374,31 +623,33 @@ export default function AdminSupportPage() {
       </Card>
 
       {/* Ticket Details Dialog */}
-      <TicketDetailsDialog
-        open={viewDialogOpen}
-        ticket={selectedTicket}
-        replyMessage={replyMessage}
-        onReplyChange={setReplyMessage}
-        onSendReply={handleSendReply}
-        onUpdateStatus={handleUpdateStatus}
-        onClose={() => {
-          setViewDialogOpen(false);
-          setSelectedTicket(null);
-          setReplyMessage('');
-        }}
-      />
+      {selectedTicket && (
+        <TicketDetailsDialog
+          open={viewDialogOpen}
+          ticket={selectedTicket}
+          replyMessage={replyMessage}
+          onReplyChange={setReplyMessage}
+          onSendReply={handleSendReply}
+          onUpdateStatus={handleUpdateStatus}
+          onClose={() => {
+            setViewDialogOpen(false);
+            setSelectedTicket(null);
+            setReplyMessage("");
+          }}
+        />
+      )}
     </Box>
   );
 }
 
-function TicketDetailsDialog({ 
-  open, 
-  ticket, 
-  replyMessage, 
-  onReplyChange, 
-  onSendReply, 
-  onUpdateStatus, 
-  onClose 
+function TicketDetailsDialog({
+  open,
+  ticket,
+  replyMessage,
+  onReplyChange,
+  onSendReply,
+  onUpdateStatus,
+  onClose,
 }: any) {
   if (!ticket) return null;
 
@@ -409,131 +660,219 @@ function TicketDetailsDialog({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        <Typography variant="h6" fontWeight="bold">
-          Support Ticket #{ticket._id.substring(0, 8)}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          From: {ticket.userName} ({ticket.userEmail})
-        </Typography>
-      </DialogTitle>
-      
-      <DialogContent>
-        {/* Ticket Info */}
-        <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-            {ticket.subject}
+        <Stack spacing={1}>
+          <Typography variant="h6" fontWeight="bold">
+            Support Ticket #{ticket._id.substring(0, 8)}
           </Typography>
-          <Typography variant="body1" paragraph>
-            {ticket.message}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Chip label={`Priority: ${ticket.priority}`} />
-            <Chip label={`Status: ${ticket.status}`} />
-            <Typography variant="caption" color="text.secondary">
-              Created: {new Date(ticket.createdAt).toLocaleString()}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Status Actions */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Update Status:
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {ticket.status !== 'in-progress' && (
-              <Button 
-                size="small" 
-                variant="outlined"
-                onClick={() => handleStatusChange('in-progress')}
-              >
-                Mark as In Progress
-              </Button>
-            )}
-            {ticket.status !== 'resolved' && (
-              <Button 
-                size="small" 
-                variant="outlined" 
-                color="success"
-                onClick={() => handleStatusChange('resolved')}
-              >
-                Mark as Resolved
-              </Button>
-            )}
-            {ticket.status !== 'closed' && (
-              <Button 
-                size="small" 
-                variant="outlined" 
-                color="default"
-                onClick={() => handleStatusChange('closed')}
-              >
-                Close Ticket
-              </Button>
-            )}
-          </Box>
-        </Box>
-
-        {/* Conversation */}
-        <Typography variant="subtitle2" gutterBottom>
-          Conversation:
-        </Typography>
-        <Box sx={{ maxHeight: 300, overflow: 'auto', mb: 3 }}>
-          {ticket.replies.map((reply: any, index: number) => (
-            <Box
-              key={index}
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Chip
+              label={`Priority: ${ticket.priority}`}
+              size="small"
               sx={{
-                p: 2,
-                mb: 1,
-                bgcolor: reply.isAdmin ? '#e3f2fd' : '#f5f5f5',
-                borderRadius: 1,
-                borderLeft: `4px solid ${reply.isAdmin ? '#1976d2' : '#757575'}`,
+                bgcolor: `${getPriorityColor(ticket.priority)}20`,
+                color: getPriorityColor(ticket.priority),
+                fontWeight: "bold",
               }}
-            >
-              <Typography variant="body2" fontWeight={reply.isAdmin ? 'bold' : 'normal'}>
-                {reply.isAdmin ? 'Admin' : ticket.userName}
-              </Typography>
-              <Typography variant="body1">{reply.message}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {new Date(reply.createdAt).toLocaleString()}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
+            />
+            <Chip
+              label={`Status: ${ticket.status}`}
+              size="small"
+              sx={{
+                bgcolor: `${getStatusColor(ticket.status)}20`,
+                color: getStatusColor(ticket.status),
+                fontWeight: "medium",
+              }}
+            />
+          </Stack>
+        </Stack>
+      </DialogTitle>
 
-        {/* Reply Box */}
-        <Box>
-          <Typography variant="subtitle2" gutterBottom>
-            Reply to User:
-          </Typography>
-          <TextareaAutosize
-            minRows={3}
-            value={replyMessage}
-            onChange={(e) => onReplyChange(e.target.value)}
-            placeholder="Type your reply here..."
-            style={{
-              width: '100%',
-              padding: '12px',
-              borderRadius: '4px',
-              border: '1px solid #ddd',
-              fontFamily: 'inherit',
-              fontSize: '14px',
-              marginBottom: '12px',
-            }}
-          />
-          <Button
-            variant="contained"
-            onClick={onSendReply}
-            disabled={!replyMessage.trim()}
-            startIcon={<EmailIcon />}
-          >
-            Send Reply
-          </Button>
-        </Box>
+      <DialogContent>
+        <Stack spacing={3}>
+          {/* User Info */}
+          <Card variant="outlined">
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ bgcolor: "primary.main" }}>
+                  <Person />
+                </Avatar>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    {ticket.userName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {ticket.userEmail}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                  >
+                    <AccessTime fontSize="small" />
+                    Created: {new Date(ticket.createdAt).toLocaleString()}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          {/* Ticket Content */}
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" gutterBottom color="primary">
+                {ticket.subject}
+              </Typography>
+              <Typography variant="body1" paragraph>
+                {ticket.message}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* Status Actions */}
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Typography variant="subtitle2" gutterBottom fontWeight="bold">
+              Update Status:
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+              {["in-progress", "resolved", "closed"].map(
+                (status) =>
+                  ticket.status !== status && (
+                    <Button
+                      key={status}
+                      size="small"
+                      variant="outlined"
+                      // color={
+                      //   status === 'in-progress' ? 'warning' :
+                      //   status === 'resolved' ? 'success' : 'default'
+                      // }
+                      onClick={() => handleStatusChange(status)}
+                      sx={{ textTransform: "capitalize" }}
+                    >
+                      Mark as {status.replace("-", " ")}
+                    </Button>
+                  ),
+              )}
+            </Stack>
+          </Paper>
+
+          {/* Conversation */}
+          {ticket.replies.length > 0 && (
+            <Box>
+              <Typography variant="subtitle2" gutterBottom fontWeight="bold">
+                Conversation ({ticket.replies.length} replies):
+              </Typography>
+              <Stack spacing={2}>
+                {ticket.replies.map((reply: any, index: number) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      bgcolor: reply.isAdmin ? "#e3f2fd" : "#f5f5f5",
+                      borderLeft: `4px solid ${reply.isAdmin ? "#1976d2" : "#757575"}`,
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                    >
+                      <Typography variant="subtitle2" fontWeight="bold">
+                        {reply.isAdmin ? "📌 Admin" : "👤 User"}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(reply.createdAt).toLocaleString()}
+                      </Typography>
+                    </Stack>
+                    <Typography variant="body1" sx={{ mt: 1 }}>
+                      {reply.message}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+          )}
+
+          {/* Reply Box */}
+          <Box>
+            <Typography variant="subtitle2" gutterBottom fontWeight="bold">
+              Send Reply:
+            </Typography>
+            <TextareaAutosize
+              minRows={4}
+              value={replyMessage}
+              onChange={(e) => onReplyChange(e.target.value)}
+              placeholder="Type your response to the user here..."
+              style={{
+                width: "100%",
+                padding: "16px",
+                borderRadius: "8px",
+                border: "2px solid #e5e7eb",
+                fontFamily: "inherit",
+                fontSize: "14px",
+                marginBottom: "12px",
+                resize: "vertical",
+                transition: "border 0.2s",
+                // '&:focus': {
+                //   outline: 'none',
+                //   borderColor: '#667eea',
+                // }
+              }}
+            />
+            <Button
+              variant="contained"
+              onClick={onSendReply}
+              disabled={!replyMessage.trim()}
+              startIcon={<EmailIcon />}
+              sx={{
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                "&:hover": {
+                  background:
+                    "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                },
+              }}
+              fullWidth
+            >
+              Send Reply to User
+            </Button>
+          </Box>
+        </Stack>
       </DialogContent>
-      
-      <DialogActions>
+
+      <DialogActions sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );
+}
+
+// Helper functions moved outside
+function getPriorityColor(priority: string) {
+  switch (priority) {
+    case "urgent":
+      return "#dc2626";
+    case "high":
+      return "#ea580c";
+    case "medium":
+      return "#2563eb";
+    case "low":
+      return "#16a34a";
+    default:
+      return "#6b7280";
+  }
+}
+
+function getStatusColor(status: string) {
+  switch (status) {
+    case "open":
+      return "#3b82f6";
+    case "in-progress":
+      return "#f59e0b";
+    case "resolved":
+      return "#10b981";
+    case "closed":
+      return "#6b7280";
+    default:
+      return "#6b7280";
+  }
 }
