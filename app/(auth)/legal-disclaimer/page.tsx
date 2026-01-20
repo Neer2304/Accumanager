@@ -1,4 +1,4 @@
-// app/(auth)/legal-disclaimer/page.tsx - FIXED VERSION
+// app/(auth)/legal-disclaimer/page.tsx - PREMIUM DESIGN
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -25,6 +25,8 @@ import {
   Chip,
   LinearProgress,
   Collapse,
+  Card,
+  CardContent,
 } from '@mui/material';
 import {
   Warning,
@@ -41,62 +43,74 @@ import {
   CheckCircle,
   ExpandMore,
   ExpandLess,
+  Shield,
+  Lock,
+  Download,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { AnimatedBackground } from '@/components/common';
+import { FileText, User2 } from 'lucide-react';
 
 const steps = ['Read Disclaimer', 'Accept Terms', 'Access Granted'];
 
-// Legal disclaimer content with color mapping
+// Updated color scheme
+const premiumColors = {
+  primary: '#6366F1',
+  warning: '#F59E0B',
+  error: '#EF4444',
+  success: '#10B981',
+  darkBg: '#0F172A',
+  cardBg: '#1E293B',
+};
+
 const disclaimerContent = {
-  title: "⚠️ IMPORTANT LEGAL DISCLAIMER",
-  subtitle: "Development Preview - Not For Production Use",
+  title: "Legal Disclaimer",
+  subtitle: "Development Preview • Handle with Care",
   
   criticalWarnings: [
-    "THIS IS A DEVELOPMENT PREVIEW SYSTEM",
-    "NOT FOR COMMERCIAL OR PRODUCTION USE",
-    "DO NOT ENTER REAL CUSTOMER OR FINANCIAL DATA",
-    "DATA MAY BE PERIODICALLY WIPED DURING UPDATES",
-    "FEATURES MAY BE INCOMPLETE OR UNSTABLE"
+    "DEVELOPMENT PREVIEW SYSTEM",
+    "NOT FOR COMMERCIAL USE",
+    "TEST DATA ONLY - NO REAL INFORMATION",
+    "PERIODIC DATA RESETS POSSIBLE",
+    "FEATURES MAY BE UNSTABLE"
   ],
   
   points: [
     {
-      icon: <Warning color="warning" />,
-      color: '#ff9800', // Orange
-      title: "Development Preview Only",
-      description: "This application is actively under development and is presented as a preview/demo version only.",
+      icon: <Warning sx={{ color: premiumColors.warning }} />,
+      color: premiumColors.warning,
+      title: "Preview Status",
+      description: "Actively under development - preview/demo version only.",
     },
     {
-      icon: <Security color="error" />,
-      color: '#f44336', // Red
-      title: "No Real Data Policy",
-      description: "Never enter real customer information, financial data, or sensitive business information. Use only test/dummy data.",
+      icon: <Security sx={{ color: premiumColors.error }} />,
+      color: premiumColors.error,
+      title: "Test Data Policy",
+      description: "Use only test/dummy data. No real customer or financial information.",
     },
     {
-      icon: <Gavel color="action" />,
-      color: '#757575', // Grey
+      icon: <Gavel sx={{ color: '#94A3B8' }} />,
+      color: '#94A3B8',
       title: "No Liability",
-      description: "This software is provided 'AS IS' without warranties. Developers assume no liability for data loss or issues.",
+      description: "Provided 'AS IS' - no warranties or liability for data loss.",
     },
     {
-      icon: <BugReport color="secondary" />,
-      color: '#9c27b0', // Purple
-      title: "Expect Instability",
-      description: "Features may be buggy, incomplete, or removed without notice. Do not rely on this for critical operations.",
+      icon: <BugReport sx={{ color: '#8B5CF6' }} />,
+      color: '#8B5CF6',
+      title: "Expect Bugs",
+      description: "Features may be buggy, incomplete, or removed without notice.",
     },
     {
-      icon: <Code color="info" />,
-      color: '#2196f3', // Blue
+      icon: <Code sx={{ color: '#0EA5E9' }} />,
+      color: '#0EA5E9',
       title: "Feedback Welcome",
-      description: "We welcome bug reports and feature suggestions via appropriate channels.",
+      description: "Bug reports and suggestions via appropriate channels.",
     },
     {
-      icon: <Info color="primary" />,
-      color: '#1976d2', // Dark Blue
-      title: "Educational Purpose",
-      description: "This system is for demonstration, testing, and educational purposes only.",
+      icon: <Info sx={{ color: premiumColors.primary }} />,
+      color: premiumColors.primary,
+      title: "Educational Use",
+      description: "For demonstration, testing, and educational purposes only.",
     },
   ],
 
@@ -145,7 +159,6 @@ export default function LegalDisclaimerPage() {
         if (response.ok) {
           const data = await response.json();
           if (data.accepted) {
-            // Already accepted, redirect to dashboard
             router.push('/dashboard');
           }
         }
@@ -267,23 +280,40 @@ export default function LegalDisclaimerPage() {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  const downloadDisclaimer = () => {
+    const text = `LEGAL DISCLAIMER ACCEPTANCE\n\nAccepted by: ${user?.name}\nEmail: ${user?.email}\nDate: ${new Date().toLocaleString()}\n\n${disclaimerContent.acknowledgment}\n\nVersion: 2.0.0`;
+    
+    const element = document.createElement('a');
+    const file = new Blob([text], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = 'disclaimer-acceptance.txt';
+    document.body.appendChild(element);
+    element.click();
+  };
+
   if (isLoading) {
     return (
-      <AnimatedBackground showRadial>
-        <Container sx={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: '100vh',
-          flexDirection: 'column',
-          gap: 3
-        }}>
-          <CircularProgress size={60} thickness={4} />
-          <Typography variant="h6" color="text.secondary">
+      <Box sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: `linear-gradient(135deg, ${premiumColors.darkBg} 0%, #1E293B 100%)`,
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress 
+            size={60} 
+            thickness={4}
+            sx={{ 
+              color: premiumColors.primary,
+              animation: 'pulse 2s ease-in-out infinite',
+            }}
+          />
+          <Typography variant="h6" sx={{ mt: 3, color: '#CBD5E1', fontWeight: 500 }}>
             Loading legal disclaimer...
           </Typography>
-        </Container>
-      </AnimatedBackground>
+        </Box>
+      </Box>
     );
   }
 
@@ -292,20 +322,92 @@ export default function LegalDisclaimerPage() {
   }
 
   return (
-    <AnimatedBackground showRadial>
-      <Container maxWidth="md" sx={{ py: { xs: 2, md: 4 } }}>
+    <Box sx={{
+      minHeight: '100vh',
+      background: `linear-gradient(135deg, ${premiumColors.darkBg} 0%, #1E293B 100%)`,
+      position: 'relative',
+      overflow: 'hidden',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: `radial-gradient(circle at 20% 80%, ${alpha(premiumColors.primary, 0.15)} 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, ${alpha(premiumColors.success, 0.1)} 0%, transparent 50%)`,
+        pointerEvents: 'none',
+      },
+    }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 2, md: 4 }, position: 'relative', zIndex: 1 }}>
+        {/* User Info Bar */}
+        <Card sx={{
+          mb: 3,
+          background: alpha(premiumColors.cardBg, 0.8),
+          backdropFilter: 'blur(20px)',
+          border: '1px solid',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderRadius: 3,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+        }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  background: `linear-gradient(135deg, ${premiumColors.primary} 0%, #8B5CF6 100%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <User2/>
+                </Box>
+                <Box>
+                  <Typography sx={{ color: 'white', fontWeight: 600 }}>
+                    {user?.name}
+                  </Typography>
+                  <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem' }}>
+                    {user?.email}
+                  </Typography>
+                </Box>
+              </Box>
+              <IconButton
+                onClick={handleDecline}
+                sx={{
+                  color: premiumColors.error,
+                  '&:hover': {
+                    backgroundColor: alpha(premiumColors.error, 0.1),
+                  },
+                }}
+              >
+                <Close />
+              </IconButton>
+            </Box>
+          </CardContent>
+        </Card>
+
         {/* Error Alert */}
         {error && (
           <Zoom in={!!error}>
             <Alert 
-              severity="error" 
-              sx={{ mb: 3, borderRadius: 2 }}
+              severity="error"
+              sx={{ 
+                mb: 3,
+                borderRadius: 2,
+                background: alpha(premiumColors.error, 0.1),
+                border: '1px solid',
+                borderColor: alpha(premiumColors.error, 0.3),
+                color: '#FCA5A5',
+                '& .MuiAlert-icon': { color: premiumColors.error },
+              }}
               action={
                 <IconButton
                   aria-label="close"
-                  color="inherit"
                   size="small"
                   onClick={() => setError(null)}
+                  sx={{ color: '#FCA5A5' }}
                 >
                   <Close fontSize="inherit" />
                 </IconButton>
@@ -320,96 +422,143 @@ export default function LegalDisclaimerPage() {
         {success && (
           <Zoom in={success}>
             <Alert 
-              severity="success" 
-              sx={{ mb: 3, borderRadius: 2 }}
-              icon={<CheckCircle />}
+              severity="success"
+              sx={{ 
+                mb: 3,
+                borderRadius: 2,
+                background: alpha(premiumColors.success, 0.1),
+                border: '1px solid',
+                borderColor: alpha(premiumColors.success, 0.3),
+                color: '#86EFAC',
+                '& .MuiAlert-icon': { color: premiumColors.success },
+              }}
             >
-              <Typography variant="subtitle1" fontWeight="bold">
-                ✅ Disclaimer Accepted Successfully
-              </Typography>
-              <Typography variant="body2">
-                Redirecting to dashboard...
-              </Typography>
+              <Box>
+                <Typography sx={{ fontWeight: 600, color: 'inherit' }}>
+                  ✅ Disclaimer Accepted
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'inherit', opacity: 0.9 }}>
+                  Redirecting to dashboard...
+                </Typography>
+              </Box>
             </Alert>
           </Zoom>
         )}
 
         <Zoom in={true} style={{ transitionDelay: '100ms' }}>
           <Paper
-            elevation={8}
+            elevation={0}
             sx={{
-              borderRadius: 3,
+              borderRadius: 4,
               overflow: 'hidden',
-              border: '2px solid',
-              borderColor: 'warning.main',
-              backgroundColor: 'background.paper',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+              background: alpha(premiumColors.cardBg, 0.8),
+              backdropFilter: 'blur(20px)',
+              border: '1px solid',
+              borderColor: 'rgba(255,255,255,0.1)',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: `linear-gradient(90deg, ${premiumColors.primary} 0%, ${premiumColors.success} 100%)`,
+              },
             }}
           >
             {/* Header */}
             <Box
               sx={{
-                background: 'linear-gradient(135deg, #ff9800 0%, #ff5722 100%)',
-                p: { xs: 2, md: 3 },
+                p: { xs: 3, md: 4 },
                 textAlign: 'center',
-                color: 'white',
-                position: 'relative',
+                borderBottom: '1px solid',
+                borderColor: 'rgba(255,255,255,0.1)',
+                background: `linear-gradient(135deg, ${alpha(premiumColors.primary, 0.2)} 0%, ${alpha(premiumColors.darkBg, 0.5)} 100%)`,
               }}
             >
-              <IconButton
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
-                  color: 'white',
-                }}
-                onClick={handleDecline}
-              >
-                <Close />
-              </IconButton>
-              
               <Box sx={{ 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center', 
                 gap: 2, 
-                mb: 1,
+                mb: 2,
                 flexWrap: 'wrap'
               }}>
-                <Warning sx={{ fontSize: { xs: 32, md: 40 } }} />
-                <Typography variant="h4" component="h1" fontWeight="bold">
-                  {disclaimerContent.title}
-                </Typography>
+                <Box sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${premiumColors.warning} 0%, #F97316 100%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: `0 0 20px ${alpha(premiumColors.warning, 0.3)}`,
+                }}>
+                  <Warning sx={{ fontSize: 28, color: 'white' }} />
+                </Box>
+                <Box>
+                  <Typography variant="h3" component="h1" sx={{ 
+                    fontWeight: 700,
+                    background: `linear-gradient(135deg, #FFF 0%, #CBD5E1 100%)`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    mb: 0.5,
+                  }}>
+                    {disclaimerContent.title}
+                  </Typography>
+                  <Typography variant="h6" sx={{ 
+                    color: '#94A3B8',
+                    fontWeight: 500,
+                  }}>
+                    {disclaimerContent.subtitle}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="subtitle1" sx={{ opacity: 0.9, mb: 1 }}>
-                {disclaimerContent.subtitle}
-              </Typography>
               
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', mt: 2 }}>
-                {user && (
-                  <Chip 
-                    label={`User: ${user.name}`} 
-                    size="small" 
-                    sx={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}
-                  />
-                )}
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', mt: 3 }}>
                 <Chip 
+                  icon={<Shield sx={{ fontSize: 16 }} />}
                   label="DEVELOPMENT PREVIEW" 
-                  size="small" 
-                  color="warning"
-                  sx={{ fontWeight: 'bold' }}
+                  size="small"
+                  sx={{ 
+                    background: alpha(premiumColors.warning, 0.2),
+                    color: premiumColors.warning,
+                    fontWeight: 600,
+                    border: '1px solid',
+                    borderColor: alpha(premiumColors.warning, 0.3),
+                  }}
                 />
                 <Chip 
+                  icon={<Lock sx={{ fontSize: 16 }} />}
                   label="TEST DATA ONLY" 
-                  size="small" 
-                  color="error"
-                  sx={{ fontWeight: 'bold' }}
+                  size="small"
+                  sx={{ 
+                    background: alpha(premiumColors.error, 0.2),
+                    color: premiumColors.error,
+                    fontWeight: 600,
+                    border: '1px solid',
+                    borderColor: alpha(premiumColors.error, 0.3),
+                  }}
+                />
+                <Chip 
+                  icon={<FileText/>}
+                  label="VERSION 2.0.0" 
+                  size="small"
+                  sx={{ 
+                    background: alpha(premiumColors.primary, 0.2),
+                    color: premiumColors.primary,
+                    fontWeight: 600,
+                    border: '1px solid',
+                    borderColor: alpha(premiumColors.primary, 0.3),
+                  }}
                 />
               </Box>
             </Box>
 
             {/* Stepper */}
-            <Box sx={{ p: 3, bgcolor: alpha('#ff9800', 0.05) }}>
+            <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'rgba(255,255,255,0.1)' }}>
               <Stepper activeStep={activeStep} alternativeLabel>
                 {steps.map((label, index) => (
                   <Step key={label}>
@@ -418,7 +567,20 @@ export default function LegalDisclaimerPage() {
                         '& .MuiStepLabel-label': {
                           fontWeight: 600,
                           fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                        }
+                          color: activeStep >= index ? 'white' : '#64748B',
+                          '&.Mui-active, &.Mui-completed': {
+                            color: 'white',
+                          },
+                        },
+                        '& .MuiStepIcon-root': {
+                          color: activeStep > index ? premiumColors.success : '#334155',
+                          '&.Mui-active': {
+                            color: premiumColors.primary,
+                          },
+                          '&.Mui-completed': {
+                            color: premiumColors.success,
+                          },
+                        },
                       }}
                     >
                       {label}
@@ -433,36 +595,50 @@ export default function LegalDisclaimerPage() {
                 value={(activeStep + 1) * 33.33} 
                 sx={{ 
                   mt: 2, 
-                  height: 4, 
-                  borderRadius: 2,
-                  bgcolor: alpha('#ff9800', 0.2),
+                  height: 6, 
+                  borderRadius: 3,
+                  background: alpha('#334155', 0.5),
                   '& .MuiLinearProgress-bar': {
-                    background: 'linear-gradient(90deg, #ff9800 0%, #ff5722 100%)',
+                    background: `linear-gradient(90deg, ${premiumColors.primary} 0%, ${premiumColors.success} 100%)`,
+                    borderRadius: 3,
                   }
                 }}
               />
             </Box>
 
             {/* Content */}
-            <Box sx={{ p: { xs: 2, md: 3 } }}>
+            <Box sx={{ p: { xs: 3, md: 4 } }}>
               {/* Critical Warnings */}
               <Alert 
-                severity="error" 
-                icon={<Warning />}
+                severity="error"
+                icon={<Warning sx={{ fontSize: 24 }} />}
                 sx={{ 
-                  mb: 3,
+                  mb: 4,
                   borderRadius: 2,
-                  border: '2px solid #f44336',
-                  '& .MuiAlert-icon': { fontSize: 28 }
+                  background: alpha(premiumColors.error, 0.1),
+                  border: '1px solid',
+                  borderColor: alpha(premiumColors.error, 0.3),
+                  color: '#FCA5A5',
+                  '& .MuiAlert-icon': { 
+                    color: premiumColors.error,
+                    alignItems: 'center',
+                  }
                 }}
               >
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: 'inherit' }}>
                   🚨 CRITICAL WARNINGS
                 </Typography>
                 <Box component="ul" sx={{ pl: 2, m: 0 }}>
                   {disclaimerContent.criticalWarnings.map((warning, index) => (
-                    <Box component="li" key={index} sx={{ mb: 1 }}>
-                      <Typography variant="body2" fontWeight="bold">
+                    <Box component="li" key={index} sx={{ mb: 1, display: 'flex', alignItems: 'flex-start' }}>
+                      <Typography variant="body2" sx={{ 
+                        fontWeight: 600, 
+                        color: 'inherit',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1,
+                      }}>
+                        <span style={{ color: premiumColors.error, minWidth: '1.5em' }}>•</span>
                         {warning}
                       </Typography>
                     </Box>
@@ -470,306 +646,412 @@ export default function LegalDisclaimerPage() {
                 </Box>
               </Alert>
 
-              {/* Expandable Sections */}
-              {disclaimerContent.points.map((point, index) => (
-                <Collapse key={index} in={expandedSection === `point-${index}` || expandedSection === null}>
-                  <Paper
+              {/* Info Grid */}
+              <Box sx={{ 
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
+                gap: 2,
+                mb: 4,
+              }}>
+                {disclaimerContent.points.map((point, index) => (
+                  <Card
+                    key={index}
                     variant="outlined"
                     sx={{
-                      p: 2,
-                      mb: 2,
+                      p: 2.5,
                       borderRadius: 2,
-                      bgcolor: alpha(point.color || '#2196f3', 0.05),
-                      borderColor: alpha(point.color || '#2196f3', 0.3),
+                      background: alpha(point.color, 0.05),
+                      border: '1px solid',
+                      borderColor: alpha(point.color, 0.2),
                       cursor: 'pointer',
+                      transition: 'all 0.2s ease',
                       '&:hover': {
-                        bgcolor: alpha(point.color || '#2196f3', 0.1),
-                      }
+                        background: alpha(point.color, 0.1),
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 8px 24px ${alpha(point.color, 0.15)}`,
+                      },
                     }}
                     onClick={() => toggleSection(`point-${index}`)}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                       <Box sx={{ 
-                        bgcolor: alpha(point.color || '#2196f3', 0.1), 
-                        p: 1, 
+                        p: 1.5,
                         borderRadius: 2,
+                        background: alpha(point.color, 0.15),
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        flexShrink: 0,
                       }}>
                         {point.icon}
                       </Box>
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                        <Typography variant="subtitle2" sx={{ 
+                          fontWeight: 700, 
+                          mb: 0.5,
+                          color: point.color,
+                        }}>
                           {point.title}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{ 
+                          color: '#94A3B8',
+                          fontSize: '0.875rem',
+                        }}>
                           {point.description}
                         </Typography>
                       </Box>
-                      <IconButton size="small">
-                        {expandedSection === `point-${index}` ? <ExpandLess /> : <ExpandMore />}
-                      </IconButton>
                     </Box>
-                  </Paper>
-                </Collapse>
-              ))}
+                  </Card>
+                ))}
+              </Box>
 
               {/* Prohibited Items */}
-              <Paper 
+              <Card 
                 variant="outlined" 
                 sx={{ 
                   p: 3, 
-                  mb: 3, 
+                  mb: 4, 
                   borderRadius: 2,
-                  bgcolor: alpha('#f44336', 0.05),
-                  borderColor: alpha('#f44336', 0.3),
-                  borderWidth: 2,
+                  background: alpha(premiumColors.error, 0.05),
+                  border: '2px solid',
+                  borderColor: alpha(premiumColors.error, 0.3),
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '"🚫"',
+                    position: 'absolute',
+                    top: -20,
+                    right: -20,
+                    fontSize: '4rem',
+                    opacity: 0.1,
+                  },
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <Security sx={{ color: '#f44336' }} />
-                  <Typography variant="h6" fontWeight="bold" color="error.main">
-                    🚫 ABSOLUTELY PROHIBITED
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                  <Security sx={{ 
+                    fontSize: 28, 
+                    color: premiumColors.error,
+                  }} />
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 700, 
+                    color: premiumColors.error,
+                    fontSize: '1.25rem',
+                  }}>
+                    ABSOLUTELY PROHIBITED
                   </Typography>
                 </Box>
                 <Box component="ul" sx={{ pl: 2, m: 0 }}>
                   {disclaimerContent.prohibitedItems.map((item, index) => (
-                    <Box component="li" key={index} sx={{ mb: 1, display: 'flex', alignItems: 'flex-start' }}>
-                      <Typography variant="body2" sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                        <span style={{ color: '#f44336', fontWeight: 'bold', minWidth: '1.5em' }}>•</span>
+                    <Box component="li" key={index} sx={{ 
+                      mb: 2, 
+                      display: 'flex', 
+                      alignItems: 'flex-start',
+                      padding: 1.5,
+                      borderRadius: 1,
+                      background: index % 2 === 0 ? alpha('#000', 0.02) : 'transparent',
+                    }}>
+                      <Typography variant="body2" sx={{ 
+                        display: 'flex', 
+                        alignItems: 'flex-start', 
+                        gap: 2,
+                        color: '#E2E8F0',
+                      }}>
+                        <Box sx={{ 
+                          width: 6, 
+                          height: 6, 
+                          borderRadius: '50%', 
+                          background: premiumColors.error,
+                          mt: 0.75,
+                          flexShrink: 0,
+                        }} />
                         {item}
                       </Typography>
                     </Box>
                   ))}
                 </Box>
-              </Paper>
+              </Card>
 
-              <Divider sx={{ my: 3 }}>
-                <Chip label="FINAL ACKNOWLEDGMENT" color="primary" />
+              <Divider sx={{ my: 4, borderColor: 'rgba(255,255,255,0.1)' }}>
+                <Chip 
+                  label="FINAL ACKNOWLEDGMENT" 
+                  sx={{ 
+                    background: alpha(premiumColors.primary, 0.2),
+                    color: premiumColors.primary,
+                    fontWeight: 600,
+                    border: '1px solid',
+                    borderColor: alpha(premiumColors.primary, 0.3),
+                  }}
+                />
               </Divider>
-            </Box>
 
-            {/* Scrollable acknowledgment section */}
-            <Box
-              ref={scrollRef}
-              onScroll={handleScroll}
-              sx={{
-                maxHeight: 200,
-                overflow: 'auto',
-                p: 3,
-                borderTop: '1px solid',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'grey.50',
-                '&::-webkit-scrollbar': {
-                  width: '8px',
-                },
-                '&::-webkit-scrollbar-track': {
-                  background: '#f1f1f1',
-                  borderRadius: '10px',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  background: '#888',
-                  borderRadius: '10px',
-                  '&:hover': {
-                    background: '#555',
+              {/* Scrollable acknowledgment section */}
+              <Box
+                ref={scrollRef}
+                onScroll={handleScroll}
+                sx={{
+                  maxHeight: 200,
+                  overflow: 'auto',
+                  p: 3,
+                  borderRadius: 2,
+                  background: alpha('#000', 0.2),
+                  border: '1px solid',
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  mb: 4,
+                  '&::-webkit-scrollbar': {
+                    width: '6px',
                   },
-                },
-              }}
-            >
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                {disclaimerContent.acknowledgment}
-              </Typography>
-              
-              {/* Scroll indicator */}
-              {!scrolledToBottom && (
-                <Fade in={!scrolledToBottom}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      mt: 2,
-                      p: 1.5,
-                      bgcolor: alpha('#ff9800', 0.1),
-                      borderRadius: 2,
-                      border: '1px dashed',
-                      borderColor: 'warning.main',
-                    }}
-                  >
-                    <Visibility sx={{ fontSize: 18, mr: 1.5, color: 'warning.main' }} />
-                    <Typography variant="caption" fontWeight="bold" color="warning.main">
-                      Scroll to the bottom to continue
-                    </Typography>
-                    <Button
-                      size="small"
-                      variant="text"
-                      onClick={scrollToBottom}
-                      sx={{ ml: 2, color: 'warning.main', minWidth: 'auto' }}
-                    >
-                      Skip to bottom
-                    </Button>
-                  </Box>
-                </Fade>
-              )}
-            </Box>
-
-            {/* Acceptance Section */}
-            <Box sx={{ p: { xs: 2, md: 3 } }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={checked}
-                    onChange={(e) => {
-                      setChecked(e.target.checked);
-                      if (e.target.checked && activeStep === 1) {
-                        setActiveStep(2);
-                      }
-                    }}
-                    disabled={!scrolledToBottom || loading}
-                    color="primary"
-                    sx={{
-                      '&.Mui-checked': {
-                        color: 'primary.main',
-                      },
-                      '& .MuiSvgIcon-root': {
-                        fontSize: 32,
-                      }
-                    }}
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="h6" fontWeight="bold" color={checked ? 'primary.main' : 'text.primary'}>
-                      ✅ I HAVE READ, UNDERSTOOD, AND AGREE TO ALL TERMS
-                    </Typography>
-                    {!scrolledToBottom && !loading && (
-                      <Typography variant="caption" color="warning.main" display="block" sx={{ mt: 0.5 }}>
-                        (Please scroll to the bottom of the acknowledgment text to enable this checkbox)
-                      </Typography>
-                    )}
-                  </Box>
-                }
-                sx={{ 
-                  mb: 3,
-                  alignItems: 'flex-start',
-                  '& .MuiFormControlLabel-label': {
-                    flex: 1,
-                  }
-                }}
-              />
-
-              {/* Action Buttons */}
-              <Box sx={{ 
-                display: 'flex', 
-                gap: 2, 
-                flexDirection: { xs: 'column', sm: 'row' },
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={handleDecline}
-                  startIcon={<ArrowBack />}
-                  size="large"
-                  fullWidth={isMobile}
-                  disabled={loading}
-                  sx={{ 
-                    minHeight: 48,
-                    borderRadius: 2,
-                    borderWidth: 2,
+                  '&::-webkit-scrollbar-track': {
+                    background: alpha('#000', 0.2),
+                    borderRadius: '10px',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    background: alpha(premiumColors.primary, 0.5),
+                    borderRadius: '10px',
                     '&:hover': {
-                      borderWidth: 2,
-                      bgcolor: 'error.light',
-                    }
-                  }}
-                >
-                  I DO NOT ACCEPT - LOGOUT
-                </Button>
-
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleAccept}
-                  disabled={!checked || loading}
-                  endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <VerifiedUser />}
-                  size="large"
-                  fullWidth={isMobile}
-                  sx={{ 
-                    minHeight: 48,
-                    borderRadius: 2,
-                    background: checked && !loading 
-                      ? 'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)'
-                      : undefined,
-                    '&:hover': checked && !loading ? {
-                      background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
-                      boxShadow: '0 4px 12px rgba(33, 150, 243, 0.4)',
-                    } : undefined,
-                    '&.Mui-disabled': {
-                      background: '#e0e0e0',
-                      color: '#9e9e9e',
-                    }
-                  }}
-                >
-                  {loading ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CircularProgress size={16} color="inherit" />
-                      PROCESSING ACCEPTANCE...
+                      background: alpha(premiumColors.primary, 0.7),
+                    },
+                  },
+                }}
+              >
+                <Typography variant="body2" sx={{ 
+                  color: '#CBD5E1', 
+                  lineHeight: 1.7,
+                  fontSize: '0.95rem',
+                }}>
+                  {disclaimerContent.acknowledgment}
+                </Typography>
+                
+                {/* Scroll indicator */}
+                {!scrolledToBottom && (
+                  <Fade in={!scrolledToBottom}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mt: 3,
+                        p: 2,
+                        background: alpha(premiumColors.warning, 0.1),
+                        borderRadius: 2,
+                        border: '1px dashed',
+                        borderColor: alpha(premiumColors.warning, 0.3),
+                      }}
+                    >
+                      <Visibility sx={{ fontSize: 18, mr: 1.5, color: premiumColors.warning }} />
+                      <Typography variant="caption" sx={{ 
+                        fontWeight: 600, 
+                        color: premiumColors.warning,
+                        fontSize: '0.875rem',
+                      }}>
+                        Scroll to the bottom to continue
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="text"
+                        onClick={scrollToBottom}
+                        sx={{ 
+                          ml: 2, 
+                          color: premiumColors.warning,
+                          minWidth: 'auto',
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Skip to bottom
+                      </Button>
                     </Box>
-                  ) : (
-                    'I ACCEPT & PROCEED TO DASHBOARD'
-                  )}
-                </Button>
+                  </Fade>
+                )}
               </Box>
 
-              {/* Step Navigation */}
-              {!isMobile && (
+              {/* Acceptance Section */}
+              <Box sx={{ p: 3, borderRadius: 2, background: alpha(premiumColors.primary, 0.05), border: '1px solid', borderColor: alpha(premiumColors.primary, 0.2) }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={checked}
+                      onChange={(e) => {
+                        setChecked(e.target.checked);
+                        if (e.target.checked && activeStep === 1) {
+                          setActiveStep(2);
+                        }
+                      }}
+                      disabled={!scrolledToBottom || loading}
+                      sx={{
+                        '&.Mui-checked': {
+                          color: premiumColors.success,
+                        },
+                        '& .MuiSvgIcon-root': {
+                          fontSize: 32,
+                        },
+                        '&.Mui-disabled': {
+                          color: '#64748B',
+                        }
+                      }}
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="h6" sx={{ 
+                        fontWeight: 700,
+                        color: checked ? premiumColors.success : 'white',
+                        fontSize: '1.125rem',
+                      }}>
+                        ✅ I HAVE READ, UNDERSTOOD, AND AGREE TO ALL TERMS
+                      </Typography>
+                      {!scrolledToBottom && !loading && (
+                        <Typography variant="caption" sx={{ 
+                          color: premiumColors.warning, 
+                          display: 'block', 
+                          mt: 0.5,
+                          fontSize: '0.875rem',
+                        }}>
+                          (Please scroll to the bottom of the acknowledgment text to enable this checkbox)
+                        </Typography>
+                      )}
+                    </Box>
+                  }
+                  sx={{ 
+                    mb: 4,
+                    alignItems: 'flex-start',
+                    '& .MuiFormControlLabel-label': {
+                      flex: 1,
+                    }
+                  }}
+                />
+
+                {/* Action Buttons */}
                 <Box sx={{ 
                   display: 'flex', 
-                  justifyContent: 'space-between', 
-                  mt: 3,
-                  pt: 2,
-                  borderTop: '1px solid',
-                  borderColor: 'divider',
+                  gap: 3, 
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
                 }}>
                   <Button
-                    disabled={activeStep === 0 || loading}
-                    onClick={() => setActiveStep(activeStep - 1)}
-                    size="small"
-                    variant="text"
-                  >
-                    ← Previous Step
-                  </Button>
-                  <Button
-                    disabled={activeStep === 2 || (activeStep === 0 && !scrolledToBottom) || (activeStep === 1 && !checked) || loading}
-                    onClick={() => setActiveStep(activeStep + 1)}
                     variant="outlined"
-                    size="small"
+                    onClick={handleDecline}
+                    startIcon={<ArrowBack />}
+                    size="large"
+                    fullWidth={isMobile}
+                    disabled={loading}
+                    sx={{ 
+                      minHeight: 56,
+                      borderRadius: 2,
+                      border: '2px solid',
+                      borderColor: premiumColors.error,
+                      color: premiumColors.error,
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      px: 4,
+                      '&:hover': {
+                        borderWidth: 2,
+                        background: alpha(premiumColors.error, 0.1),
+                      },
+                      '&.Mui-disabled': {
+                        borderColor: '#64748B',
+                        color: '#64748B',
+                      }
+                    }}
                   >
-                    Next Step →
+                    I DO NOT ACCEPT - LOGOUT
+                  </Button>
+
+                  <Button
+                    variant="contained"
+                    onClick={handleAccept}
+                    disabled={!checked || loading}
+                    endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <VerifiedUser />}
+                    size="large"
+                    fullWidth={isMobile}
+                    sx={{ 
+                      minHeight: 56,
+                      borderRadius: 2,
+                      background: checked && !loading 
+                        ? `linear-gradient(135deg, ${premiumColors.primary} 0%, ${premiumColors.success} 100%)`
+                        : '#475569',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      px: 4,
+                      '&:hover': checked && !loading ? {
+                        background: `linear-gradient(135deg, ${premiumColors.primary} 0%, ${premiumColors.success} 100%)`,
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 12px 24px ${alpha(premiumColors.primary, 0.3)}`,
+                      } : undefined,
+                      '&.Mui-disabled': {
+                        background: '#475569',
+                        color: '#94A3B8',
+                      }
+                    }}
+                  >
+                    {loading ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <CircularProgress size={16} color="inherit" />
+                        PROCESSING ACCEPTANCE...
+                      </Box>
+                    ) : (
+                      'I ACCEPT & PROCEED TO DASHBOARD'
+                    )}
                   </Button>
                 </Box>
-              )}
+
+                {/* Additional Actions */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  mt: 3,
+                  pt: 3,
+                  borderTop: '1px solid',
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  gap: 2,
+                }}>
+                  <Button
+                    startIcon={<Download />}
+                    onClick={downloadDisclaimer}
+                    sx={{
+                      color: '#94A3B8',
+                      '&:hover': {
+                        color: 'white',
+                        background: alpha(premiumColors.primary, 0.1),
+                      },
+                    }}
+                  >
+                    Download Copy
+                  </Button>
+                  <Button
+                    onClick={() => window.print()}
+                    sx={{
+                      color: '#94A3B8',
+                      '&:hover': {
+                        color: 'white',
+                        background: alpha(premiumColors.primary, 0.1),
+                      },
+                    }}
+                  >
+                    Print
+                  </Button>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Footer */}
+            <Box sx={{ 
+              p: 3, 
+              borderTop: '1px solid',
+              borderColor: 'rgba(255,255,255,0.1)',
+              background: alpha('#000', 0.2),
+              textAlign: 'center',
+            }}>
+              <Typography variant="caption" sx={{ 
+                color: '#64748B',
+                fontSize: '0.875rem',
+              }}>
+                Version 2.0.0 • Last Updated: {new Date().toLocaleDateString()} • User ID: {user?.id?.substring(0, 8) || 'N/A'}
+              </Typography>
             </Box>
           </Paper>
         </Zoom>
-
-        {/* Footer Info */}
-        <Box sx={{ mt: 3, textAlign: 'center' }}>
-          <Typography variant="caption" color="text.secondary">
-            Version 2.0.0 • Last Updated: {new Date().toLocaleDateString()} • 
-            <Button 
-              size="small" 
-              sx={{ ml: 1, fontSize: '0.75rem' }}
-              onClick={() => window.print()}
-            >
-              Print Disclaimer
-            </Button>
-          </Typography>
-        </Box>
       </Container>
-    </AnimatedBackground>
+    </Box>
   );
 }

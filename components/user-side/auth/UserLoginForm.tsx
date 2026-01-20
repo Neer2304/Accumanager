@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react';
 import {
   Box,
@@ -7,6 +9,9 @@ import {
   Link,
   Typography,
   Alert,
+  Divider,
+  Button,
+  alpha
 } from '@mui/material';
 import {
   Visibility,
@@ -15,14 +20,16 @@ import {
   Lock,
   ArrowForward,
   Security,
+  Google as GoogleIcon,
 } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 // Common Components
-import { PrimaryButton, SecondaryButton } from '@/components/common';
+import { PrimaryButton } from '@/components/common';
 import { Icons } from '@/components/common/icons';
+import { useRouter } from 'next/navigation';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -49,6 +56,7 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
   onRegister,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const {
     register,
@@ -59,6 +67,11 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
   });
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
+  const handleGoogleRedirect = () => {
+    // Redirects to the isolated google-login folder we created
+    router.push('/google-login');
+  };
 
   return (
     <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -148,11 +161,10 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
         type="submit"
         fullWidth
         loading={loading}
-        // loadingText="Signing In..."
         endIcon={<ArrowForward />}
         sx={{
           py: 1.5,
-          mb: 3,
+          mb: 2,
           fontSize: '1.1rem',
           fontWeight: 'bold',
         }}
@@ -160,11 +172,46 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
         Sign In to Dashboard
       </PrimaryButton>
 
+      {/* --- GOOGLE LOGIN SECTION --- */}
+      <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+        <Divider sx={{ flex: 1 }} />
+        <Typography variant="body2" color="text.secondary" sx={{ px: 2, fontWeight: 500 }}>
+          OR
+        </Typography>
+        <Divider sx={{ flex: 1 }} />
+      </Box>
+
+      <Button
+        fullWidth
+        variant="outlined"
+        startIcon={<GoogleIcon sx={{ color: '#DB4437' }} />}
+        onClick={handleGoogleRedirect}
+        sx={{
+          py: 1.5,
+          borderRadius: 2,
+          textTransform: 'none',
+          fontSize: '1rem',
+          fontWeight: 600,
+          borderColor: alpha('#000', 0.1),
+          color: 'text.primary',
+          transition: 'all 0.2s',
+          '&:hover': {
+            bgcolor: alpha('#000', 0.02),
+            borderColor: alpha('#000', 0.2),
+            transform: 'translateY(-1px)',
+          },
+        }}
+      >
+        Continue with Google
+      </Button>
+      {/* ---------------------------- */}
+
       {/* Demo Info */}
       <Alert 
         severity="info" 
         variant="outlined"
         sx={{ 
+          mt: 3,
           mb: 3,
           borderRadius: 2,
           bgcolor: 'info.lighter',
@@ -172,7 +219,7 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
         icon={<Icons.Info />}
       >
         <Typography variant="body2" fontWeight="500">
-          Use your registered credentials to access your active subscription dashboard.
+          Use your registered credentials or social login to access your dashboard.
         </Typography>
       </Alert>
 
@@ -204,9 +251,9 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
           variant="caption" 
           color="text.secondary" 
           align="center"
-          sx={{ display: 'block', lineHeight: 1.5 }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}
         >
-          <Security /> Your login is secured with 256-bit SSL encryption
+          <Security sx={{ fontSize: '0.9rem' }} /> Your login is secured with 256-bit SSL encryption
         </Typography>
       </Box>
     </Box>
