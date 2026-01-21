@@ -47,7 +47,8 @@ import {
   Security as SecurityIcon,
   Settings as SettingsIcon,
   TaskAlt as TaskIcon,
-  Gavel as TermsIcon
+  Gavel as TermsIcon,
+  SportsEsports
 } from '@mui/icons-material'
 import { useAuth } from '@/hooks/useAuth'
 import { useUser } from '@/contexts/UserContext' // Add this import
@@ -102,6 +103,9 @@ const menuItems = [
   { text: 'Privacy Policy', icon: <PrivacyIcon />, path: '/privacy-policy' },
   { text: 'Cookie Policy', icon: <CookieIcon />, path: '/cookie-policy' },
   { text: 'Terms of Service', icon: <TermsIcon />, path: '/terms-of-service' },
+
+  // --- Games --- 
+  { text: 'Breakroom', icon: <SportsEsports />, path: '/breakroom' },
 ];
 
 export default function Layout({ children }: LayoutProps) {

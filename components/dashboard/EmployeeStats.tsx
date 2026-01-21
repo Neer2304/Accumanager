@@ -398,7 +398,7 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                     variant="caption" 
                     sx={{ 
                       color: `${status.color}.main`,
-                      bgcolor: alpha(theme.palette[status.color].main, 0.1),
+                      // bgcolor: alpha(theme.palette[status.color].main, 0.1),
                       px: 0.5,
                       py: 0.25,
                       borderRadius: 0.5,
