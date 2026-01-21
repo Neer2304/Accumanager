@@ -31,7 +31,23 @@ import {
   Event as EventsIcon,
   Analytics as AnalyticsIcon,
   Business as BusinessIcon,
-  Star as StarIcon
+  Star as StarIcon,
+  Construction as MaterialsIcon,
+  TouchApp as ActionsIcon,
+  SupportAgent as SupportIcon,
+  ContactSupport as ContactIcon,
+  Cookie as CookieIcon,
+  Warehouse as InventoryIcon,
+  PriceCheck as ExpenseIcon,
+  LiveHelp as HelpIcon,
+  StickyNote2 as NoteIcon,
+  LocalOffer as PricingIcon,
+  Email as MessageIcon,
+  Policy as PrivacyIcon,
+  Security as SecurityIcon,
+  Settings as SettingsIcon,
+  TaskAlt as TaskIcon,
+  Gavel as TermsIcon
 } from '@mui/icons-material'
 import { useAuth } from '@/hooks/useAuth'
 import { useUser } from '@/contexts/UserContext' // Add this import
@@ -44,18 +60,49 @@ interface LayoutProps {
 }
 
 const menuItems = [
+  // --- Core Business ---
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-  { text: 'Products', icon: <ProductsIcon />, path: '/products' },
-  { text: 'Customers', icon: <CustomersIcon />, path: '/customers' },
-  { text: 'Billing', icon: <BillingIcon />, path: '/billing' },
-  { text: 'Attendance', icon: <AttendanceIcon />, path: '/attendance' },
-  { text: 'Employees', icon: <EmployeesIcon />, path: '/employees' },
-  { text: 'Projects', icon: <ProjectsIcon />, path: '/projects' },
-  { text: 'Events', icon: <EventsIcon />, path: '/events' },
+  { text: 'All Actions', icon: <ActionsIcon />, path: '/dashboard/all-actions' },
   { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
-  { text: 'Business', icon: <BusinessIcon />, path: '/business-setup' },
-  { text: 'Reviews', icon: <StarIcon />, path: '/reviews' }
-]
+  
+  // --- Inventory & Resources ---
+  { text: 'Products', icon: <ProductsIcon />, path: '/products' },
+  { text: 'Inventory', icon: <InventoryIcon />, path: '/inventory' },
+  { text: 'Materials', icon: <MaterialsIcon />, path: '/materials' },
+  
+  // --- CRM & People ---
+  { text: 'Customers', icon: <CustomersIcon />, path: '/customers' },
+  { text: 'Employees', icon: <EmployeesIcon />, path: '/employees' },
+  { text: 'Attendance', icon: <AttendanceIcon />, path: '/attendance' },
+  
+  // --- Operations ---
+  { text: 'Projects', icon: <ProjectsIcon />, path: '/projects' },
+  { text: 'Tasks', icon: <TaskIcon />, path: '/tasks' },
+  { text: 'Events', icon: <EventsIcon />, path: '/events' },
+  { text: 'Messages', icon: <MessageIcon />, path: '/messages' },
+  
+  // --- Finance ---
+  { text: 'Billing', icon: <BillingIcon />, path: '/billing' },
+  { text: 'Expense', icon: <ExpenseIcon />, path: '/expense' },
+  { text: 'Pricing', icon: <PricingIcon />, path: '/pricing' },
+  
+  // --- Feedback & Setup ---
+  { text: 'Reviews', icon: <StarIcon />, path: '/reviews' },
+  { text: 'Notes', icon: <NoteIcon />, path: '/note' },
+  { text: 'Business Setup', icon: <BusinessIcon />, path: '/business-setup' },
+  { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+
+  // --- Support & Help ---
+  { text: 'Help & Support', icon: <HelpIcon />, path: '/help-support' },
+  { text: 'Support Request', icon: <SupportIcon />, path: '/dashboard/support' },
+  { text: 'Contact', icon: <ContactIcon />, path: '/contact' },
+
+  // --- Legal & Security ---
+  { text: 'Security', icon: <SecurityIcon />, path: '/security' },
+  { text: 'Privacy Policy', icon: <PrivacyIcon />, path: '/privacy-policy' },
+  { text: 'Cookie Policy', icon: <CookieIcon />, path: '/cookie-policy' },
+  { text: 'Terms of Service', icon: <TermsIcon />, path: '/terms-of-service' },
+];
 
 export default function Layout({ children }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = React.useState(false)

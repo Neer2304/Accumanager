@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  Box, 
-  Typography, 
-  CircularProgress, 
+import {
+  Box,
+  Typography,
+  CircularProgress,
   Alert,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
 } from "@mui/material";
 import { useAuth } from "@/hooks/useAuth";
 import { useUser } from "@/contexts/UserContext";
@@ -27,10 +27,10 @@ import { DashboardStats, SalesChartData, ProductSalesData } from "@/types";
 
 export default function Dashboard() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
-  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
-  
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+
   const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth();
   const { user: contextUser, isLoading: userLoading } = useUser();
   const { products, isLoading: productsLoading } = useProducts();
@@ -58,23 +58,25 @@ export default function Dashboard() {
 
   const [salesData, setSalesData] = useState<SalesChartData[]>([]);
   const [topProducts, setTopProducts] = useState<ProductSalesData[]>([]);
-  const [timeRange, setTimeRange] = useState<"week" | "month" | "year">("month");
+  const [timeRange, setTimeRange] = useState<"week" | "month" | "year">(
+    "month",
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const getDisplayName = () => {
-    if (!user) return 'User'
-    
+    if (!user) return "User";
+
     if (user.name) {
-      return user.name
+      return user.name;
     }
-    
+
     if (user.email) {
-      return user.email.split('@')[0]
+      return user.email.split("@")[0];
     }
-    
-    return 'User'
-  }
+
+    return "User";
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -132,7 +134,8 @@ export default function Dashboard() {
         employeesData = await employeesRes.json();
         statsData.totalEmployees = employeesData.length || 0;
         statsData.presentEmployees =
-          employeesData?.filter((emp: any) => emp.status === "active").length || 0;
+          employeesData?.filter((emp: any) => emp.status === "active").length ||
+          0;
       }
 
       let eventsData = [];
@@ -148,7 +151,7 @@ export default function Dashboard() {
         const totalStock =
           product.variations?.reduce(
             (sum: number, variation: any) => sum + (variation.stock || 0),
-            0
+            0,
           ) || 0;
         return totalStock < 10;
       }).length;
@@ -157,8 +160,11 @@ export default function Dashboard() {
 
       let totalSales = 0;
       let totalRevenue = 0;
-      const productSalesMap = new Map<string, { sales: number; revenue: number }>();
-      
+      const productSalesMap = new Map<
+        string,
+        { sales: number; revenue: number }
+      >();
+
       if (Array.isArray(ordersData)) {
         ordersData.forEach((order: any) => {
           if (order.items && Array.isArray(order.items)) {
@@ -167,7 +173,7 @@ export default function Dashboard() {
               const quantity = item.quantity || 0;
               const price = item.price || 0;
               const revenue = quantity * price;
-              
+
               totalSales += quantity;
               totalRevenue += revenue;
 
@@ -211,7 +217,7 @@ export default function Dashboard() {
         const totalStock =
           product.variations?.reduce(
             (sum: number, variation: any) => sum + (variation.stock || 0),
-            0
+            0,
           ) || 0;
         return totalStock < 10;
       }).length;
@@ -274,58 +280,68 @@ export default function Dashboard() {
   }
 
   return (
-    <Box sx={{ 
-      p: { xs: 1, sm: 2, md: 3 } 
-    }}>
+    <Box
+      sx={{
+        p: { xs: 1, sm: 2, md: 3 },
+        pt: { xs: 0, sm: 0, md: 0 }, // Explicitly remove top padding
+      }}
+    >
       {/* Header */}
-      <Box sx={{ mb: { xs: 2, sm: 3, md: 4 } }}>
-        <Typography 
-          variant={isMobile ? "h5" : isTablet ? "h4" : "h4"} 
-          gutterBottom 
+      <Box sx={{mb: { xs: 2, sm: 3 } }}>
+        <Typography
+          variant={isMobile ? "h5" : isTablet ? "h4" : "h4"}
+          gutterBottom
           fontWeight="bold"
-          sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' } }}
+          sx={{
+            mt: 0, // Ensure no margin top on the text itself
+            mb: 0.5, // Small gap between Welcome and the secondary text
+            fontWeight: "bold",
+            fontSize: { xs: "1.5rem", sm: "2rem" },
+          }}
         >
-          Welcome back, {getDisplayName()}! 👋
+          Welcome, {getDisplayName()}! 👋
         </Typography>
-        <Typography 
-          variant="body1" 
+        <Typography
+          variant="body1"
           color="text.secondary"
-          sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+          sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}
         >
           Here's what's happening with your business today.
         </Typography>
 
         {/* Subscription Status */}
         {subscription && (
-          <Box sx={{ 
-            mt: 1, 
-            display: "flex", 
-            alignItems: "center", 
-            gap: 1,
-            flexWrap: 'wrap' 
-          }}>
+          <Box
+            sx={{
+              mt: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              flexWrap: "wrap",
+            }}
+          >
             <Typography
               variant="caption"
               color="primary.main"
               fontWeight="medium"
-              sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+              sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
             >
               {subscription.plan.toUpperCase()} PLAN
             </Typography>
             {subscription.status === "trial" && (
-              <Typography 
-                variant="caption" 
+              <Typography
+                variant="caption"
                 color="warning.main"
-                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
               >
                 • Trial ends in {subscription.daysRemaining} days
               </Typography>
             )}
             {usage && (
-              <Typography 
-                variant="caption" 
+              <Typography
+                variant="caption"
                 color="text.secondary"
-                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
               >
                 • {usage.invoices || 0}/{subscription.limits?.invoices || 0}{" "}
                 invoices used
@@ -348,7 +364,7 @@ export default function Dashboard() {
 
       {/* Stats Cards */}
       <Box sx={{ mb: { xs: 2, sm: 3, md: 4 } }}>
-        <StatsCards 
+        <StatsCards
           stats={dashboardStats}
           salesData={salesData}
           topProducts={topProducts}
@@ -356,23 +372,29 @@ export default function Dashboard() {
       </Box>
 
       {/* Charts and Tables Grid */}
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        gap: { xs: 2, sm: 3 },
-      }}>
-        {/* Row 1: Charts */}
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: { xs: 'column', md: 'row' },
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
           gap: { xs: 2, sm: 3 },
-        }}>
+        }}
+      >
+        {/* Row 1: Charts */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            gap: { xs: 2, sm: 3 },
+          }}
+        >
           {/* Sales Chart */}
-          <Box sx={{ 
-            flex: 1,
-            minWidth: 0,
-            order: { xs: 1, md: 1 }
-          }}>
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              order: { xs: 1, md: 1 },
+            }}
+          >
             <SalesChart
               data={salesData}
               timeRange={timeRange}
@@ -381,35 +403,51 @@ export default function Dashboard() {
           </Box>
 
           {/* Top Products */}
-          <Box sx={{ 
-            flex: 1,
-            minWidth: 0,
-            order: { xs: 2, md: 2 }
-          }}>
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              order: { xs: 2, md: 2 },
+            }}
+          >
             <TopProductsChart data={topProducts} />
           </Box>
         </Box>
 
         {/* Row 2: Quick Info Cards */}
-        <Box sx={{ 
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          flexWrap: 'wrap',
-          gap: { xs: 2, sm: 3 },
-        }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            flexWrap: "wrap",
+            gap: { xs: 2, sm: 3 },
+          }}
+        >
           {/* Quick Actions */}
-          <Box sx={{ 
-            flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 12px)' },
-            minWidth: 0,
-          }}>
+          <Box
+            sx={{
+              flex: {
+                xs: "1 1 100%",
+                sm: "1 1 calc(50% - 12px)",
+                md: "1 1 calc(25% - 12px)",
+              },
+              minWidth: 0,
+            }}
+          >
             <QuickActions />
           </Box>
 
           {/* Employee Stats */}
-          <Box sx={{ 
-            flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 12px)' },
-            minWidth: 0,
-          }}>
+          <Box
+            sx={{
+              flex: {
+                xs: "1 1 100%",
+                sm: "1 1 calc(50% - 12px)",
+                md: "1 1 calc(25% - 12px)",
+              },
+              minWidth: 0,
+            }}
+          >
             <EmployeeStats
               totalEmployees={dashboardStats.totalEmployees}
               presentEmployees={dashboardStats.presentEmployees}
@@ -417,27 +455,41 @@ export default function Dashboard() {
           </Box>
 
           {/* Project Progress */}
-          <Box sx={{ 
-            flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 12px)' },
-            minWidth: 0,
-          }}>
+          <Box
+            sx={{
+              flex: {
+                xs: "1 1 100%",
+                sm: "1 1 calc(50% - 12px)",
+                md: "1 1 calc(25% - 12px)",
+              },
+              minWidth: 0,
+            }}
+          >
             <ProjectProgress activeProjects={dashboardStats.activeProjects} />
           </Box>
 
           {/* Upcoming Events */}
-          <Box sx={{ 
-            flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 12px)' },
-            minWidth: 0,
-          }}>
+          <Box
+            sx={{
+              flex: {
+                xs: "1 1 100%",
+                sm: "1 1 calc(50% - 12px)",
+                md: "1 1 calc(25% - 12px)",
+              },
+              minWidth: 0,
+            }}
+          >
             <EventCalendar upcomingEvents={dashboardStats.upcomingEvents} />
           </Box>
         </Box>
 
         {/* Row 3: Recent Activity */}
-        <Box sx={{ 
-          flex: '1 1 100%',
-          minWidth: 0,
-        }}>
+        <Box
+          sx={{
+            flex: "1 1 100%",
+            minWidth: 0,
+          }}
+        >
           <RecentActivity />
         </Box>
       </Box>
