@@ -89,19 +89,19 @@ const QuickActions: React.FC = () => {
       label: 'Delivery',
       icon: <DeliveryIcon fontSize="small" />,
       href: '/delivery',
-      color: theme.palette.purple?.[500] || theme.palette.secondary.dark
+      color: theme.palette.augmentColor.name?.[500] || theme.palette.secondary.dark
     },
     {
       label: 'Customers',
       icon: <People fontSize="small" />,
       href: '/customers',
-      color: theme.palette.blue?.[500] || theme.palette.info.dark
+      color: theme.palette.divider?.[500] || theme.palette.info.dark
     },
     {
       label: 'Inventory',
       icon: <InventoryOutlined fontSize="small" />,
       href: '/inventory',
-      color: theme.palette.orange?.[500] || theme.palette.warning.dark
+      color: theme.palette.divider?.[500] || theme.palette.warning.dark
     }
   ]
 
@@ -270,10 +270,10 @@ const QuickActions: React.FC = () => {
               }}
               component={Link}
               href="/dashboard/all-actions"
-              sx={{ 
-                textDecoration: 'none',
-                '&:hover': { textDecoration: 'underline' }
-              }}
+              // sx={{ 
+              //   textDecoration: 'none',
+              //   '&:hover': { textDecoration: 'underline' }
+              // }}
             >
               View all <ArrowIcon sx={{ fontSize: 12 }} />
             </Typography>

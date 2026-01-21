@@ -72,7 +72,7 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
       setLoading(true)
       setError(null)
       
-      console.log('🔍 Fetching projects for user:', user.id || user._id)
+      // console.log('🔍 Fetching projects for user:', user.id || user._id)
       
       const response = await fetch('/api/projects', {
         credentials: 'include',

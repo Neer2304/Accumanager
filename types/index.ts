@@ -257,6 +257,9 @@ export interface SalesChartData {
   date: string
   sales: number
   revenue: number
+  totalItems?: number
+  orders?: number
+  avgOrderValue?: number
 }
 
 export interface ProductSalesData {

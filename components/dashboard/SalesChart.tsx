@@ -1,4 +1,4 @@
-// components/dashboard/SalesChart.tsx - SUPER RESPONSIVE FIXED VERSION
+// components/dashboard/SalesChart.tsx
 import React, { useState, useEffect, useRef } from 'react'
 import {
   Card,
@@ -20,9 +20,6 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Paper,
-  Grid,
-  Tab,
-  Tabs,
   Fade,
   Button
 } from '@mui/material'
@@ -56,22 +53,19 @@ import DownloadIcon from '@mui/icons-material/Download'
 import FilterAltIcon from '@mui/icons-material/FilterAlt'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import CalendarViewWeekIcon from '@mui/icons-material/CalendarViewWeek'
+import Tab from '@mui/material/Tab'
+import Tabs from '@mui/material/Tabs'
+import { SalesChartData as SalesChartDataType } from '@/types' // Import the type from your types file
 
-interface SalesChartData {
-  date: string
-  sales: number
-  revenue: number
-  totalItems: number
-  orders: number
-  avgOrderValue?: number
-}
-
+// Remove the local interface and use the imported one
 interface SalesChartProps {
+  data: SalesChartDataType[] // Use the imported type
   timeRange: 'week' | 'month' | 'quarter' | 'year'
-  onTimeRangeChange?: (range: 'week' | 'month' | 'quarter' | 'year') => void
+  onTimeRangeChange: (range: 'week' | 'month' | 'quarter' | 'year') => void
 }
 
 const SalesChart: React.FC<SalesChartProps> = ({ 
+  data = [],
   timeRange = 'week', 
   onTimeRangeChange 
 }) => {
@@ -80,11 +74,9 @@ const SalesChart: React.FC<SalesChartProps> = ({
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
   
-  const [data, setData] = useState<SalesChartData[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [includeDrafts, setIncludeDrafts] = useState(false)
-  const [chartView, setChartView] = useState<'combined' | 'revenue' | 'orders' | 'comparison'>('combined')
   const [chartType, setChartType] = useState<'line' | 'bar' | 'area'>('line')
   const [activeTab, setActiveTab] = useState(0)
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -108,27 +100,18 @@ const SalesChart: React.FC<SalesChartProps> = ({
         const salesData = await response.json()
         
         if (salesData && Array.isArray(salesData)) {
-          // Add calculated fields
-          const enhancedData = salesData.map((item: any) => ({
-            ...item,
-            avgOrderValue: item.sales > 0 ? Math.round(item.revenue / item.sales) : 0,
-            orders: item.sales || 0
-          }))
-          
-          setData(enhancedData)
+          // Data is already set by parent, just validate
+          console.log('Sales data received:', salesData.length, 'records')
         } else {
-          setData([])
           setError('Invalid data format received')
         }
       } else {
         const errorText = await response.text()
         console.error('Failed to fetch sales data:', errorText)
-        setData([])
         setError(`Error ${response.status}: ${errorText || 'Failed to load data'}`)
       }
     } catch (error) {
       console.error('Error fetching sales data:', error)
-      setData([])
       setError('Network error. Please check your connection.')
     } finally {
       setLoading(false)
@@ -139,19 +122,13 @@ const SalesChart: React.FC<SalesChartProps> = ({
     fetchSalesData(timeRange, includeDrafts)
   }, [timeRange, includeDrafts])
 
-  const handleTimeRangeChange = (newRange: 'week' | 'month' | 'quarter' | 'year') => {
-    if (onTimeRangeChange) {
-      onTimeRangeChange(newRange)
-    }
-    fetchSalesData(newRange, includeDrafts)
-  }
-
   const handleRefresh = () => {
     fetchSalesData(timeRange, includeDrafts)
   }
 
   const handleExportData = () => {
-    // Export data as CSV
+    if (!data || data.length === 0) return
+    
     const csvContent = "data:text/csv;charset=utf-8," 
       + "Date,Orders,Revenue,Items,Avg Order Value\n"
       + data.map(d => `${d.date},${d.orders},${d.revenue},${d.totalItems},${d.avgOrderValue || 0}`).join("\n")
@@ -281,326 +258,11 @@ const SalesChart: React.FC<SalesChartProps> = ({
     return null
   }
 
-  // Render different chart types
-  const renderChart = () => {
-    const commonProps = {
-      data: data,
-      margin: {
-        top: isMobile ? 10 : 20,
-        right: isMobile ? 5 : 10,
-        left: isMobile ? 5 : 20,
-        bottom: isMobile ? 30 : 40,
-      }
-    }
-
-    switch (chartView) {
-      case 'revenue':
-        if (chartType === 'bar') {
-          return (
-            <BarChart {...commonProps}>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke={alpha(theme.palette.divider, 0.3)} 
-                vertical={false} 
-              />
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={formatXAxis}
-                tick={{ fontSize: isMobile ? 9 : 11 }}
-                axisLine={false}
-                tickLine={false}
-                interval={getXTickInterval()}
-                height={isMobile ? 30 : 40}
-              />
-              <YAxis 
-                tick={{ fontSize: isMobile ? 9 : 11 }}
-                axisLine={false}
-                tickLine={false}
-                width={isMobile ? 40 : 60}
-                tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend 
-                wrapperStyle={{ 
-                  fontSize: isMobile ? 10 : 12, 
-                  paddingTop: 5,
-                  display: isMobile ? 'none' : 'block'
-                }} 
-              />
-              <Bar 
-                dataKey="revenue" 
-                name="Revenue"
-                fill={theme.palette.primary.main}
-                radius={[4, 4, 0, 0]}
-                barSize={isMobile ? 15 : 30}
-              />
-            </BarChart>
-          )
-        }
-        return (
-          <LineChart {...commonProps}>
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke={alpha(theme.palette.divider, 0.3)} 
-              vertical={false} 
-            />
-            <XAxis 
-              dataKey="date" 
-              tickFormatter={formatXAxis}
-              tick={{ fontSize: isMobile ? 9 : 11 }}
-              axisLine={false}
-              tickLine={false}
-              interval={getXTickInterval()}
-              height={isMobile ? 30 : 40}
-            />
-            <YAxis 
-              tick={{ fontSize: isMobile ? 9 : 11 }}
-              axisLine={false}
-              tickLine={false}
-              width={isMobile ? 40 : 60}
-              tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              wrapperStyle={{ 
-                fontSize: isMobile ? 10 : 12, 
-                paddingTop: 5,
-                display: isMobile ? 'none' : 'block'
-              }} 
-            />
-            <Line
-              type="monotone"
-              dataKey="revenue"
-              name="Revenue"
-              stroke={theme.palette.primary.main}
-              strokeWidth={isMobile ? 1.5 : 2}
-              dot={isMobile ? false : { r: 3 }}
-              activeDot={{ r: isMobile ? 3 : 5 }}
-            />
-          </LineChart>
-        )
-
-      case 'orders':
-        if (chartType === 'bar') {
-          return (
-            <BarChart {...commonProps}>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke={alpha(theme.palette.divider, 0.3)} 
-                vertical={false} 
-              />
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={formatXAxis}
-                tick={{ fontSize: isMobile ? 9 : 11 }}
-                axisLine={false}
-                tickLine={false}
-                interval={getXTickInterval()}
-                height={isMobile ? 30 : 40}
-              />
-              <YAxis 
-                tick={{ fontSize: isMobile ? 9 : 11 }}
-                axisLine={false}
-                tickLine={false}
-                width={isMobile ? 40 : 60}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend 
-                wrapperStyle={{ 
-                  fontSize: isMobile ? 10 : 12, 
-                  paddingTop: 5,
-                  display: isMobile ? 'none' : 'block'
-                }} 
-              />
-              <Bar 
-                dataKey="orders" 
-                name="Orders"
-                fill={theme.palette.secondary.main}
-                radius={[4, 4, 0, 0]}
-                barSize={isMobile ? 15 : 30}
-              />
-            </BarChart>
-          )
-        }
-        return (
-          <LineChart {...commonProps}>
-            <defs>
-              <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={theme.palette.secondary.main} stopOpacity={0.3}/>
-                <stop offset="95%" stopColor={theme.palette.secondary.main} stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke={alpha(theme.palette.divider, 0.3)} 
-              vertical={false} 
-            />
-            <XAxis 
-              dataKey="date" 
-              tickFormatter={formatXAxis}
-              tick={{ fontSize: isMobile ? 9 : 11 }}
-              axisLine={false}
-              tickLine={false}
-              interval={getXTickInterval()}
-              height={isMobile ? 30 : 40}
-            />
-            <YAxis 
-              tick={{ fontSize: isMobile ? 9 : 11 }}
-              axisLine={false}
-              tickLine={false}
-              width={isMobile ? 40 : 60}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              wrapperStyle={{ 
-                fontSize: isMobile ? 10 : 12, 
-                paddingTop: 5,
-                display: isMobile ? 'none' : 'block'
-              }} 
-            />
-            <Area
-              type="monotone"
-              dataKey="orders"
-              name="Orders"
-              stroke={theme.palette.secondary.main}
-              fill="url(#ordersGradient)"
-              strokeWidth={isMobile ? 1.5 : 2}
-              activeDot={{ r: isMobile ? 3 : 5 }}
-            />
-          </LineChart>
-        )
-
-      case 'comparison':
-        return (
-          <ComposedChart {...commonProps}>
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke={alpha(theme.palette.divider, 0.3)} 
-              vertical={false} 
-            />
-            <XAxis 
-              dataKey="date" 
-              tickFormatter={formatXAxis}
-              tick={{ fontSize: isMobile ? 9 : 11 }}
-              axisLine={false}
-              tickLine={false}
-              interval={getXTickInterval()}
-              height={isMobile ? 30 : 40}
-            />
-            <YAxis 
-              yAxisId="left"
-              tick={{ fontSize: isMobile ? 9 : 11 }}
-              axisLine={false}
-              tickLine={false}
-              width={isMobile ? 40 : 60}
-            />
-            <YAxis 
-              yAxisId="right" 
-              orientation="right"
-              tick={{ fontSize: isMobile ? 9 : 11 }}
-              axisLine={false}
-              tickLine={false}
-              width={isMobile ? 40 : 60}
-              tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              wrapperStyle={{ 
-                fontSize: isMobile ? 10 : 12, 
-                paddingTop: 5,
-                display: isMobile ? 'none' : 'block'
-              }} 
-            />
-            <Bar
-              yAxisId="left"
-              dataKey="orders"
-              name="Orders"
-              fill={alpha(theme.palette.secondary.main, 0.3)}
-              radius={[4, 4, 0, 0]}
-              barSize={isMobile ? 15 : 30}
-            />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="revenue"
-              name="Revenue"
-              stroke={theme.palette.primary.main}
-              strokeWidth={isMobile ? 1.5 : 2}
-              dot={isMobile ? false : { r: 3 }}
-              activeDot={{ r: isMobile ? 3 : 5 }}
-            />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="avgOrderValue"
-              name="Avg Order Value"
-              stroke={theme.palette.success.main}
-              strokeWidth={isMobile ? 1.5 : 2}
-              strokeDasharray="5 5"
-              dot={false}
-            />
-          </ComposedChart>
-        )
-
-      default: // combined
-        return (
-          <ComposedChart {...commonProps}>
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke={alpha(theme.palette.divider, 0.3)} 
-              vertical={false} 
-            />
-            <XAxis 
-              dataKey="date" 
-              tickFormatter={formatXAxis}
-              tick={{ fontSize: isMobile ? 9 : 11 }}
-              axisLine={false}
-              tickLine={false}
-              interval={getXTickInterval()}
-              height={isMobile ? 30 : 40}
-            />
-            <YAxis 
-              tick={{ fontSize: isMobile ? 9 : 11 }}
-              axisLine={false}
-              tickLine={false}
-              width={isMobile ? 40 : 60}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              wrapperStyle={{ 
-                fontSize: isMobile ? 10 : 12, 
-                paddingTop: 5,
-                display: isMobile ? 'none' : 'block'
-              }} 
-            />
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              name="Revenue"
-              stroke={theme.palette.primary.main}
-              fill={alpha(theme.palette.primary.main, 0.1)}
-              strokeWidth={isMobile ? 1.5 : 2}
-              activeDot={{ r: isMobile ? 3 : 5 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="orders"
-              name="Orders"
-              stroke={theme.palette.secondary.main}
-              strokeWidth={isMobile ? 1.5 : 2}
-              strokeDasharray="5 5"
-              dot={false}
-            />
-          </ComposedChart>
-        )
-    }
-  }
-
-  // Calculate statistics
+  // Calculate statistics - handle missing properties
   const totalRevenue = data.reduce((sum, item) => sum + (item.revenue || 0), 0)
   const totalOrders = data.reduce((sum, item) => sum + (item.orders || 0), 0)
   const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0
-  const totalItems = data.reduce((sum, item) => sum + (item.totalItems || 0), 0)
+  const totalItems = data.reduce((sum, item) => sum + ((item as any).totalItems || 0), 0) // Use type assertion for totalItems
 
   // Calculate growth percentage
   const calculateGrowth = () => {
@@ -635,101 +297,102 @@ const SalesChart: React.FC<SalesChartProps> = ({
     theme.palette.grey[500],
   ]
 
+  // Render mini stats cards without Grid
   const renderMiniCharts = () => (
-    <Grid container spacing={1} sx={{ mt: { xs: 1, sm: 2 } }}>
-      <Grid item xs={6} sm={6} md={3}>
-        <Paper sx={{ 
-          p: { xs: 1, sm: 1.5, md: 2 }, 
-          textAlign: 'center', 
-          borderRadius: 2,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <Typography variant="caption" color="text.secondary">
-            Daily Avg
-          </Typography>
-          <Typography 
-            variant={isMobile ? "body1" : "h6"} 
-            color="primary.main" 
-            fontWeight={700}
-            sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
-          >
-            ₹{Math.round(totalRevenue / Math.max(data.length, 1)).toLocaleString()}
-          </Typography>
-        </Paper>
-      </Grid>
-      <Grid item xs={6} sm={6} md={3}>
-        <Paper sx={{ 
-          p: { xs: 1, sm: 1.5, md: 2 }, 
-          textAlign: 'center', 
-          borderRadius: 2,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <Typography variant="caption" color="text.secondary">
-            Peak Day
-          </Typography>
-          <Typography 
-            variant={isMobile ? "body1" : "h6"} 
-            color="secondary.main" 
-            fontWeight={700}
-            sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
-          >
-            ₹{data.length > 0 ? Math.max(...data.map(d => d.revenue)).toLocaleString() : '0'}
-          </Typography>
-        </Paper>
-      </Grid>
-      <Grid item xs={6} sm={6} md={3}>
-        <Paper sx={{ 
-          p: { xs: 1, sm: 1.5, md: 2 }, 
-          textAlign: 'center', 
-          borderRadius: 2,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <Typography variant="caption" color="text.secondary">
-            Items/Day
-          </Typography>
-          <Typography 
-            variant={isMobile ? "body1" : "h6"} 
-            color="success.main" 
-            fontWeight={700}
-            sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
-          >
-            {Math.round(totalItems / Math.max(data.length, 1)).toLocaleString()}
-          </Typography>
-        </Paper>
-      </Grid>
-      <Grid item xs={6} sm={6} md={3}>
-        <Paper sx={{ 
-          p: { xs: 1, sm: 1.5, md: 2 }, 
-          textAlign: 'center', 
-          borderRadius: 2,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <Typography variant="caption" color="text.secondary">
-            Conversion
-          </Typography>
-          <Typography 
-            variant={isMobile ? "body1" : "h6"} 
-            color="info.main" 
-            fontWeight={700}
-            sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
-          >
-            {totalItems > 0 ? ((totalOrders / totalItems) * 100).toFixed(1) + '%' : '0%'}
-          </Typography>
-        </Paper>
-      </Grid>
-    </Grid>
+    <Box sx={{ 
+      display: 'flex', 
+      flexWrap: 'wrap', 
+      gap: 1, 
+      mt: { xs: 1, sm: 2 },
+      '& > *': {
+        flex: '1 1 calc(50% - 8px)',
+        minWidth: 0,
+        '@media (min-width: 600px)': {
+          flex: '1 1 calc(25% - 12px)'
+        }
+      }
+    }}>
+      <Paper sx={{ 
+        p: { xs: 1, sm: 1.5, md: 2 }, 
+        textAlign: 'center', 
+        borderRadius: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        <Typography variant="caption" color="text.secondary">
+          Daily Avg
+        </Typography>
+        <Typography 
+          variant={isMobile ? "body1" : "h6"} 
+          color="primary.main" 
+          fontWeight={700}
+          sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
+        >
+          ₹{Math.round(totalRevenue / Math.max(data.length, 1)).toLocaleString()}
+        </Typography>
+      </Paper>
+      <Paper sx={{ 
+        p: { xs: 1, sm: 1.5, md: 2 }, 
+        textAlign: 'center', 
+        borderRadius: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        <Typography variant="caption" color="text.secondary">
+          Peak Day
+        </Typography>
+        <Typography 
+          variant={isMobile ? "body1" : "h6"} 
+          color="secondary.main" 
+          fontWeight={700}
+          sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
+        >
+          ₹{data.length > 0 ? Math.max(...data.map(d => d.revenue)).toLocaleString() : '0'}
+        </Typography>
+      </Paper>
+      <Paper sx={{ 
+        p: { xs: 1, sm: 1.5, md: 2 }, 
+        textAlign: 'center', 
+        borderRadius: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        <Typography variant="caption" color="text.secondary">
+          Items/Day
+        </Typography>
+        <Typography 
+          variant={isMobile ? "body1" : "h6"} 
+          color="success.main" 
+          fontWeight={700}
+          sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
+        >
+          {Math.round(totalItems / Math.max(data.length, 1)).toLocaleString()}
+        </Typography>
+      </Paper>
+      <Paper sx={{ 
+        p: { xs: 1, sm: 1.5, md: 2 }, 
+        textAlign: 'center', 
+        borderRadius: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        <Typography variant="caption" color="text.secondary">
+          Conversion
+        </Typography>
+        <Typography 
+          variant={isMobile ? "body1" : "h6"} 
+          color="info.main" 
+          fontWeight={700}
+          sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
+        >
+          {totalItems > 0 ? ((totalOrders / totalItems) * 100).toFixed(1) + '%' : '0%'}
+        </Typography>
+      </Paper>
+    </Box>
   )
 
   // Render different chart based on active tab
@@ -1068,7 +731,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    // label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                     outerRadius={isMobile ? 70 : isTablet ? 80 : 100}
                     fill="#8884d8"
                     dataKey="value"
@@ -1217,7 +880,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
               <Select
                 value={timeRange}
                 label="Period"
-                onChange={(e) => handleTimeRangeChange(e.target.value as any)}
+                onChange={(e) => onTimeRangeChange(e.target.value as any)}
                 size="small"
               >
                 <MenuItem value="week" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Weekly</MenuItem>
@@ -1229,11 +892,11 @@ const SalesChart: React.FC<SalesChartProps> = ({
           </Stack>
         </Box>
 
-        {/* Main Stats - CHANGED FROM 4 TO 3 ITEMS */}
+        {/* Main Stats */}
         {!loading && !error && data.length > 0 && (
           <Box sx={{ 
-            display: 'grid',
-            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
+            display: 'flex',
+            flexWrap: 'wrap',
             gap: 1
           }}>
             <Paper 
@@ -1242,7 +905,9 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 p: { xs: 1, sm: 1.5 },
                 borderRadius: { xs: 1, sm: 1.5 },
                 bgcolor: alpha(theme.palette.primary.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                flex: '1 1 calc(33.333% - 8px)',
+                minWidth: 0
               }}
             >
               <Typography 
@@ -1277,7 +942,9 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 p: { xs: 1, sm: 1.5 },
                 borderRadius: { xs: 1, sm: 1.5 },
                 bgcolor: alpha(theme.palette.secondary.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`
+                border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+                flex: '1 1 calc(33.333% - 8px)',
+                minWidth: 0
               }}
             >
               <Typography 
@@ -1310,7 +977,9 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 p: { xs: 1, sm: 1.5 },
                 borderRadius: { xs: 1, sm: 1.5 },
                 bgcolor: alpha(theme.palette.success.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`
+                border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+                flex: '1 1 calc(33.333% - 8px)',
+                minWidth: 0
               }}
             >
               <Typography 

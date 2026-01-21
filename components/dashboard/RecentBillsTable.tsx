@@ -127,8 +127,8 @@ const RecentBillsTable: React.FC = () => {
               </Box>
               <Box 
                 sx={{ 
-                  backgroundColor: theme.palette[getStatusColor(bill.status)].light,
-                  color: theme.palette[getStatusColor(bill.status)].dark,
+                  // backgroundColor: theme.palette[getStatusColor(bill.status)].light,
+                  // color: theme.palette[getStatusColor(bill.status)].dark,
                   px: 1,
                   py: 0.5,
                   borderRadius: 1,

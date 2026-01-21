@@ -58,9 +58,9 @@ export default function Dashboard() {
 
   const [salesData, setSalesData] = useState<SalesChartData[]>([]);
   const [topProducts, setTopProducts] = useState<ProductSalesData[]>([]);
-  const [timeRange, setTimeRange] = useState<"week" | "month" | "year">(
-    "month",
-  );
+  const [timeRange, setTimeRange] = useState<
+    "week" | "month" | "year" | "quarter"
+  >("month");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -233,6 +233,12 @@ export default function Dashboard() {
     }
   };
 
+  const handleTimeRangeChange = (
+    range: "week" | "month" | "year" | "quarter",
+  ) => {
+    setTimeRange(range);
+  };
+
   useEffect(() => {
     if (
       isAuthenticated &&
@@ -251,10 +257,6 @@ export default function Dashboard() {
     customersLoading,
     timeRange,
   ]);
-
-  const handleTimeRangeChange = (range: "week" | "month" | "year") => {
-    setTimeRange(range);
-  };
 
   if (authLoading || userLoading || loading) {
     return (
@@ -287,7 +289,7 @@ export default function Dashboard() {
       }}
     >
       {/* Header */}
-      <Box sx={{mb: { xs: 2, sm: 3 } }}>
+      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
         <Typography
           variant={isMobile ? "h5" : isTablet ? "h4" : "h4"}
           gutterBottom
