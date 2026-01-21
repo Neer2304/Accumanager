@@ -69,6 +69,28 @@ export const authService = {
 
     return response.json();
   },
+
+  // Add this inside the authService object in services/authService.ts
+  async githubLogin(payload: {
+    email: string;
+    name: string;
+    image?: string;
+    githubId: string;
+  }) {
+    const response = await fetch("/api/auth/github", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // Essential for setting the auth_token cookie
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "GitHub Login failed");
+    }
+
+    return response.json();
+  },
   // NEW: Check authentication status
   async checkAuth() {
     const response = await fetch("/api/auth/me", {

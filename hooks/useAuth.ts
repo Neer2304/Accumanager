@@ -129,6 +129,33 @@ export const useAuth = () => {
     },
   });
 
+  const githubLoginMutation = useMutation({
+    mutationFn: authService.githubLogin,
+    onSuccess: (data) => {
+      const userData = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role,
+        shopName: data.user.shopName,
+      };
+
+      dispatch(setCredentials({ user: userData }));
+      offlineStorage.setItem("auth", { ...data, user: userData });
+
+      // Check legal disclaimer logic
+      if (localStorage.getItem("legal_disclaimer_accepted")) {
+        router.push("/dashboard");
+      } else {
+        setLoginSuccessData({ user: userData, authData: data });
+        setShowLegalDisclaimer(true);
+      }
+    },
+    onError: (error: Error) => {
+      dispatch(setError(error.message));
+    },
+  });
+
   // Function to handle disclaimer acceptance
   const handleAcceptDisclaimer = () => {
     if (loginSuccessData) {
@@ -249,6 +276,8 @@ export const useAuth = () => {
     handleRejectDisclaimer,
     loginWithGoogle: googleLoginMutation.mutate,
     isGoogleLoading: googleLoginMutation.isPending,
+    loginWithGithub: githubLoginMutation.mutate,
+    isGithubLoading: githubLoginMutation.isPending,
     // Helper
     getUserDisplayName,
   };

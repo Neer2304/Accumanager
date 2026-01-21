@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   TextField,
@@ -11,8 +11,9 @@ import {
   Alert,
   Divider,
   Button,
-  alpha
-} from '@mui/material';
+  alpha,
+  Stack,
+} from "@mui/material";
 import {
   Visibility,
   VisibilityOff,
@@ -21,19 +22,20 @@ import {
   ArrowForward,
   Security,
   Google as GoogleIcon,
-} from '@mui/icons-material';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+  GitHub as GitHubIcon,
+} from "@mui/icons-material";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 // Common Components
-import { PrimaryButton } from '@/components/common';
-import { Icons } from '@/components/common/icons';
-import { useRouter } from 'next/navigation';
+import { PrimaryButton } from "@/components/common";
+import { Icons } from "@/components/common/icons";
+import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -68,17 +70,15 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  const handleGoogleRedirect = () => {
-    // Redirects to the isolated google-login folder we created
-    router.push('/google-login');
-  };
+  const handleGoogleRedirect = () => router.push("/google-login");
+  const handleGithubRedirect = () => router.push("/github-login");
 
   return (
     <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
       {error && (
-        <Alert 
-          severity="error" 
-          sx={{ mb: 3 }} 
+        <Alert
+          severity="error"
+          sx={{ mb: 3, borderRadius: 2 }}
           onClose={onClearError}
           variant="outlined"
         >
@@ -88,14 +88,14 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
 
       {/* Email Field */}
       <TextField
-        {...register('email')}
+        {...register("email")}
         fullWidth
         label="Email Address"
         variant="outlined"
         margin="normal"
         error={!!errors.email}
         helperText={errors.email?.message}
-        sx={{ mb: 2 }}
+        sx={{ mb: 1 }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -107,15 +107,15 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
 
       {/* Password Field */}
       <TextField
-        {...register('password')}
+        {...register("password")}
         fullWidth
         label="Password"
-        type={showPassword ? 'text' : 'password'}
+        type={showPassword ? "text" : "password"}
         variant="outlined"
         margin="normal"
         error={!!errors.password}
         helperText={errors.password?.message}
-        sx={{ mb: 2 }}
+        sx={{ mb: 1 }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -124,11 +124,7 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
           ),
           endAdornment: (
             <InputAdornment position="end">
-              <IconButton
-                onClick={togglePasswordVisibility}
-                edge="end"
-                size="medium"
-              >
+              <IconButton onClick={togglePasswordVisibility} edge="end">
                 {showPassword ? <VisibilityOff /> : <Visibility />}
               </IconButton>
             </InputAdornment>
@@ -138,18 +134,16 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
 
       {/* Forgot Password Link */}
       <Box textAlign="right" mb={3}>
-        <Link 
+        <Link
           component="button"
           type="button"
           onClick={onForgotPassword}
-          sx={{ 
-            fontSize: '0.95rem',
+          sx={{
+            fontSize: "0.875rem",
             fontWeight: 500,
-            textDecoration: 'none',
-            color: 'primary.main',
-            '&:hover': {
-              textDecoration: 'underline',
-            },
+            textDecoration: "none",
+            color: "primary.main",
+            "&:hover": { textDecoration: "underline" },
           }}
         >
           Forgot your password?
@@ -164,80 +158,90 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
         endIcon={<ArrowForward />}
         sx={{
           py: 1.5,
-          mb: 2,
-          fontSize: '1.1rem',
-          fontWeight: 'bold',
+          mb: 3,
+          fontSize: "1rem",
+          fontWeight: "bold",
+          borderRadius: 2,
         }}
       >
         Sign In to Dashboard
       </PrimaryButton>
 
-      {/* --- GOOGLE LOGIN SECTION --- */}
-      <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+      {/* Divider */}
+      <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
         <Divider sx={{ flex: 1 }} />
-        <Typography variant="body2" color="text.secondary" sx={{ px: 2, fontWeight: 500 }}>
-          OR
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ px: 2, fontWeight: 600, fontSize: "0.75rem", letterSpacing: 1 }}
+        >
+          OR CONTINUE WITH
         </Typography>
         <Divider sx={{ flex: 1 }} />
       </Box>
 
-      <Button
-        fullWidth
-        variant="outlined"
-        startIcon={<GoogleIcon sx={{ color: '#DB4437' }} />}
-        onClick={handleGoogleRedirect}
-        sx={{
-          py: 1.5,
-          borderRadius: 2,
-          textTransform: 'none',
-          fontSize: '1rem',
-          fontWeight: 600,
-          borderColor: alpha('#000', 0.1),
-          color: 'text.primary',
-          transition: 'all 0.2s',
-          '&:hover': {
-            bgcolor: alpha('#000', 0.02),
-            borderColor: alpha('#000', 0.2),
-            transform: 'translateY(-1px)',
-          },
-        }}
-      >
-        Continue with Google
-      </Button>
-      {/* ---------------------------- */}
+      {/* Social Login Buttons */}
+      <Stack direction="row" spacing={2} mb={4}>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<GoogleIcon />}
+          onClick={handleGoogleRedirect}
+          sx={{
+            py: 1.2,
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 600,
+            color: "#DB4437",
+            borderColor: alpha("#DB4437", 0.3),
+            "&:hover": {
+              borderColor: "#DB4437",
+              bgcolor: alpha("#DB4437", 0.04),
+              transform: "translateY(-1px)",
+            },
+            transition: "all 0.2s",
+          }}
+        >
+          Google
+        </Button>
 
-      {/* Demo Info */}
-      <Alert 
-        severity="info" 
-        variant="outlined"
-        sx={{ 
-          mt: 3,
-          mb: 3,
-          borderRadius: 2,
-          bgcolor: 'info.lighter',
-        }}
-        icon={<Icons.Info />}
-      >
-        <Typography variant="body2" fontWeight="500">
-          Use your registered credentials or social login to access your dashboard.
-        </Typography>
-      </Alert>
+        <Button
+          fullWidth
+          variant="contained"
+          startIcon={<GitHubIcon />}
+          onClick={handleGithubRedirect}
+          sx={{
+            py: 1.2,
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 600,
+            bgcolor: "#24292e",
+            color: "white",
+            "&:hover": {
+              bgcolor: "#1b1f23",
+              transform: "translateY(-1px)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            },
+            transition: "all 0.2s",
+          }}
+        >
+          GitHub
+        </Button>
+      </Stack>
 
       {/* Sign Up Link */}
-      <Box sx={{ textAlign: 'center', mt: 3 }}>
+      <Box sx={{ textAlign: "center", mb: 3 }}>
         <Typography variant="body2" color="text.secondary">
-          Don't have an account?{' '}
-          <Link 
+          Don't have an account?{" "}
+          <Link
             component="button"
             type="button"
             onClick={onRegister}
-            sx={{ 
-              fontWeight: 'bold',
-              textDecoration: 'none',
-              color: 'primary.main',
-              '&:hover': {
-                textDecoration: 'underline',
-              },
+            sx={{
+              fontWeight: "bold",
+              textDecoration: "none",
+              color: "primary.main",
+              "&:hover": { textDecoration: "underline" },
             }}
           >
             Start Free Trial
@@ -246,15 +250,13 @@ const UserLoginForm: React.FC<UserLoginFormProps> = ({
       </Box>
 
       {/* Security Note */}
-      <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
-        <Typography 
-          variant="caption" 
-          color="text.secondary" 
-          align="center"
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}
-        >
-          <Security sx={{ fontSize: '0.9rem' }} /> Your login is secured with 256-bit SSL encryption
-        </Typography>
+      <Box sx={{ pt: 2, borderTop: 1, borderColor: alpha("#000", 0.05) }}>
+        <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
+          <Security sx={{ fontSize: "0.85rem", color: "text.secondary" }} />
+          <Typography variant="caption" color="text.secondary">
+            Secure 256-bit SSL Encrypted Access
+          </Typography>
+        </Stack>
       </Box>
     </Box>
   );
