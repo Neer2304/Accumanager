@@ -1,71 +1,42 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Card, CardContent, Button, Stack, Fade } from '@mui/material';
-import { triggerCelebration } from '@/utils/rewardService';
-import { getDailySpark } from '@/data/entertainmentData';
-import { MainLayout } from '@/components/Layout/MainLayout';
-import { SelfImprovement, Celebration, Psychology } from '@mui/icons-material';
+import React from 'react'
+import { Box, Typography, Stack } from '@mui/material'
+import { MainLayout } from '@/components/Layout/MainLayout'
+import { Coffee, AutoGraph } from '@mui/icons-material'
+// Using the advanced Market Dashboard instead of the simple MarketGame
+import TradeDashboard from '@/components/trading/TradeDashboard'
 
 export default function BreakroomPage() {
-  const [spark, setSpark] = useState<any>(null);
-
-  useEffect(() => {
-    setSpark(getDailySpark());
-  }, []);
-
   return (
-    <MainLayout title="Employee Breakroom">
-      <Box sx={{ maxWidth: 800, mx: 'auto', mt: 4, textAlign: 'center' }}>
-        <Typography variant="h3" fontWeight="bold" gutterBottom>
-          Take a Moment. ☕
-        </Typography>
-        <Typography variant="body1" color="text.secondary" mb={6}>
-          A quick break boosts productivity by up to 20%. Enjoy a daily insight or a small celebration.
-        </Typography>
-
-        <Stack spacing={4}>
-          {/* Daily Spark Card */}
-          {spark && (
-            <Fade in timeout={1000}>
-              <Card sx={{ bgcolor: 'primary.dark', color: 'white', borderRadius: 4, p: 2 }}>
-                <CardContent>
-                  <Psychology sx={{ fontSize: 40, mb: 2, opacity: 0.8 }} />
-                  <Typography variant="h5" italic sx={{ mb: 2, fontStyle: 'italic' }}>
-                    "{spark.content}"
-                  </Typography>
-                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                    — {spark.author}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Fade>
-          )}
-
-          {/* Interactive Buttons */}
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
-            <Button 
-              variant="contained" 
-              size="large" 
-              startIcon={<Celebration />}
-              onClick={triggerCelebration}
-              sx={{ borderRadius: 3, py: 2, px: 4, bgcolor: '#ff4757', '&:hover': { bgcolor: '#ff6b81' } }}
-            >
-              Celebrate Success
-            </Button>
-            
-            <Button 
-              variant="outlined" 
-              size="large" 
-              startIcon={<SelfImprovement />}
-              sx={{ borderRadius: 3, py: 2, px: 4 }}
-              onClick={() => alert("Deep breath in... and out. You're doing great!")}
-            >
-              Start Zen Minute
-            </Button>
+    <MainLayout title="AccuTrade Terminal">
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 64px)' }}>
+        
+        {/* Header Section */}
+        <Box sx={{ textAlign: 'center', py: 4, px: 2, bgcolor: '#0b0e11', borderBottom: '1px solid #2b3139' }}>
+          <Stack direction="row" justifyContent="center" alignItems="center" spacing={2} mb={1}>
+            <AutoGraph sx={{ fontSize: 40, color: '#2ebd85' }} />
+            <Typography variant="h3" fontWeight="900" color="white">
+              AccuTrade <span style={{ color: '#2ebd85' }}>Pro</span>
+            </Typography>
           </Stack>
-        </Stack>
+          <Typography variant="body1" color="#848e9c">
+            Real-time market simulation. Sharpen your trading instincts.
+          </Typography>
+        </Box>
+
+        {/* Game/Trading Area - No Grid, uses full width Flex */}
+        <Box sx={{ flexGrow: 1, position: 'relative' }}>
+           <TradeDashboard />
+        </Box>
+
+        {/* Footer Hint */}
+        <Box sx={{ p: 2, textAlign: 'center', bgcolor: '#0b0e11', color: '#474d57' }}>
+          <Typography variant="caption">
+            Trading involves virtual risk. Your business data is not affected by market performance.
+          </Typography>
+        </Box>
       </Box>
     </MainLayout>
-  );
+  )
 }

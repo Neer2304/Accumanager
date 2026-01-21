@@ -32,6 +32,7 @@
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
+    "lightweight-charts": "^5.1.0",
     "localforage": "^1.10.0",
     "lru-cache": "^11.2.4",
     "lucide-react": "^0.554.0",
