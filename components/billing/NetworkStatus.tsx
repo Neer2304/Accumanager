@@ -17,15 +17,8 @@ interface NetworkStatusProps {
   isOnline: boolean;
   offlineBillsCount: number;
   onSyncClick: () => void;
-  subscription?: {
-    plan?: string;
-    limits?: {
-      invoices?: number;
-    };
-  };
-  usage?: {
-    invoices?: number;
-  };
+  subscription?: any; // Accept any type
+  usage?: any; // Accept any type
 }
 
 export const NetworkStatus: React.FC<NetworkStatusProps> = ({
@@ -35,6 +28,17 @@ export const NetworkStatus: React.FC<NetworkStatusProps> = ({
   subscription,
   usage,
 }) => {
+  // Safely extract values with fallbacks
+  const plan = subscription?.plan;
+  const invoiceLimit = 
+    subscription?.limits?.invoices || 
+    subscription?.features?.invoices || 
+    0;
+  const invoiceCount = 
+    usage?.invoices || 
+    usage?.invoiceCount || 
+    0;
+
   return (
     <Paper sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: 'background.default' }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -70,7 +74,7 @@ export const NetworkStatus: React.FC<NetworkStatusProps> = ({
           )}
         </Box>
         
-        {subscription?.plan && (
+        {plan && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box 
               component="span" 
@@ -83,10 +87,10 @@ export const NetworkStatus: React.FC<NetworkStatusProps> = ({
                 fontWeight: 600
               }}
             >
-              {subscription.plan.toUpperCase()}
+              {typeof plan === 'string' ? plan.toUpperCase() : 'PLAN'}
             </Box>
             <Typography variant="caption" color="text.secondary">
-              {usage?.invoices || 0} / {subscription.limits?.invoices || 0} invoices
+              {invoiceCount} / {invoiceLimit} invoices
             </Typography>
           </Box>
         )}

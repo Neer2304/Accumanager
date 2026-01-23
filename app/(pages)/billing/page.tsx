@@ -15,7 +15,6 @@ import { useProducts } from "@/hooks/useProducts";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useSubscription } from "@/hooks/useSubscription";
 import { offlineStorage } from "@/utils/offlineStorage";
-import { Product } from "@/types";
 import { useRouter } from "next/navigation";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -36,11 +35,13 @@ import {
   BillItem,
   BillCustomer,
   Business,
+  Product,
   OfflineBill,
   Customer,
   SearchProductOptional,
   ProductGstDetails,
 } from "@/types/billing";
+import { Subscription, Usage } from "@/types/billing";
 
 export default function BillingPage() {
   const router = useRouter();
@@ -505,7 +506,7 @@ export default function BillingPage() {
           price: product.price,
           quantity: 1,
           discount: 0,
-          taxableAmount: product.price,
+          // taxableAmount is included in calculateGST spread
           ...calculateGST(
             { price: product.price, discount: 0, quantity: 1 },
             customer.isInterState,
@@ -1022,7 +1023,7 @@ export default function BillingPage() {
             offlineBillsCount={offlineBillsCount}
             onSyncClick={syncOfflineBills}
             subscription={subscription || undefined}
-            usage={usage}
+            usage={usage || undefined}
           />
 
           {/* Subscription Status */}
