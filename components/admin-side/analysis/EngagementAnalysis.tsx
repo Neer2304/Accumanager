@@ -1,468 +1,258 @@
-// components/admin-side/analysis/EngagementAnalysis.tsx
+// components/admin-side/analysis/EngagementAnalysis.tsx - FIXED VERSION
+import React from 'react'
 import { 
-  Stack, 
   Box, 
-  Card, 
-  CardContent, 
   Typography, 
-  CircularProgress,
+  Paper, 
+  alpha,
+  useTheme,
+  useMediaQuery,
   LinearProgress,
-  alpha 
+  Stack
 } from '@mui/material'
 import { 
-  Timeline,
-  TrendingUp,
-  TrendingDown,
-  Assessment,
-  People,
-  Equalizer,
-  BarChart,
-  EmojiEvents
+  TrendingUp, 
+  People, 
+  AccessTime, 
+  NoteAdd,
+  ArrowUpward,
+  ArrowDownward
 } from '@mui/icons-material'
-import { useTheme } from '@mui/material/styles'
 import { AnalysisData } from '../types'
 
 interface EngagementAnalysisProps {
   data: AnalysisData | null
 }
 
-export const EngagementAnalysis = ({ data }: EngagementAnalysisProps) => {
+const EngagementAnalysis: React.FC<EngagementAnalysisProps> = ({ data }) => {
   const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
-  if (!data?.engagementAnalysis || !data?.summary) {
+  if (!data?.engagement) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        py: 8,
-        textAlign: 'center'
-      }}>
-        <Timeline sx={{ fontSize: 64, color: theme.palette.text.disabled, mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          No Engagement Data Available
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Engagement analytics will appear here once users start creating content
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography color="text.secondary">
+          No engagement data available
         </Typography>
       </Box>
     )
   }
 
-  const {
-    engagementScore,
-    growthRate,
-    notesPerActiveUser,
-    activeUserPercentage
-  } = data.summary
-
-  const usersWithNoNotes = data.engagementAnalysis.usersWithNoNotes?.[0]?.count || 0
-  const usersWithManyNotes = data.engagementAnalysis.usersWithManyNotes?.[0]?.count || 0
+  const engagement = data.engagement
+  
+  // Calculate metrics safely
   const activeUsers = data.systemOverview?.databaseStats?.activeUsers || 0
-
-  // Calculate regular users
-  const regularUsers = activeUsers - usersWithNoNotes - usersWithManyNotes
-
-  // Engagement metrics
-  const getEngagementLevel = (score: number) => {
-    if (score >= 80) return { level: 'Excellent', color: 'success.main', emoji: '🏆' }
-    if (score >= 60) return { level: 'Good', color: 'warning.main', emoji: '👍' }
-    return { level: 'Needs Improvement', color: 'error.main', emoji: '📈' }
+  const totalNotes = data.systemOverview?.databaseStats?.totalNotes || 0
+  
+  // Safely calculate notes per active user
+  const notesPerActiveUser = activeUsers > 0 ? totalNotes / activeUsers : 0
+  
+  // Convert to numbers and format safely
+  const formatNumber = (value: any, decimals: number = 1): string => {
+    const num = Number(value)
+    return isNaN(num) ? '0.0' : num.toFixed(decimals)
   }
 
-  const engagementLevel = getEngagementLevel(engagementScore)
+  const metrics = [
+    {
+      label: 'Avg. Engagement Rate',
+      value: `${formatNumber(engagement.averageEngagementRate)}%`,
+      icon: <TrendingUp />,
+      color: theme.palette.primary.main,
+      progress: Number(engagement.averageEngagementRate) || 0
+    },
+    {
+      label: 'Avg. Session Duration',
+      value: `${formatNumber(engagement.averageSessionDuration)}m`,
+      icon: <AccessTime />,
+      color: theme.palette.success.main,
+      progress: Math.min((Number(engagement.averageSessionDuration) || 0) / 10 * 100, 100)
+    },
+    {
+      label: 'Daily Active Users',
+      value: engagement.dailyActiveUsers?.toLocaleString() || '0',
+      icon: <People />,
+      color: theme.palette.info.main,
+      progress: Math.min((engagement.dailyActiveUsers || 0) / 1000 * 100, 100)
+    },
+    {
+      label: 'Notes per Active User',
+      value: formatNumber(notesPerActiveUser),
+      icon: <NoteAdd />,
+      color: theme.palette.warning.main,
+      progress: Math.min(notesPerActiveUser / 5 * 100, 100)
+    }
+  ]
 
   return (
-    <Stack spacing={3}>
-      {/* Engagement Score Card */}
-      <Card elevation={1} sx={{ borderRadius: 2 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-            <Equalizer />
-            Overall Engagement Score
-          </Typography>
-          
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: 4 }}>
-            {/* Circular Progress */}
-            <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-              <CircularProgress
-                variant="determinate"
-                value={engagementScore}
-                size={160}
-                thickness={4}
-                sx={{
-                  color: engagementLevel.color
-                }}
-              />
-              <Box
-                sx={{
-                  top: 0,
-                  left: 0,
-                  bottom: 0,
-                  right: 0,
-                  position: 'absolute',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Typography variant="h1" component="div" fontWeight="bold">
-                  {engagementScore}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  /100
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Engagement Details */}
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {engagementLevel.emoji} {engagementLevel.level}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                Based on active users, note creation rate, and user participation metrics.
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 3 }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Active Users
-                  </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={activeUserPercentage}
-                    sx={{
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                      '& .MuiLinearProgress-bar': {
-                        borderRadius: 3,
-                        backgroundColor: theme.palette.primary.main
-                      }
-                    }}
-                  />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {activeUsers} active users
-                    </Typography>
-                    <Typography variant="caption" fontWeight="bold">
-                      {activeUserPercentage}%
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Notes per User
-                  </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={Math.min(notesPerActiveUser * 10, 100)}
-                    sx={{
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: alpha(theme.palette.success.main, 0.1),
-                      '& .MuiLinearProgress-bar': {
-                        borderRadius: 3,
-                        backgroundColor: theme.palette.success.main
-                      }
-                    }}
-                  />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Average notes per user
-                    </Typography>
-                    <Typography variant="caption" fontWeight="bold">
-                      {notesPerActiveUser.toFixed(1)}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Growth and Performance Metrics */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            lg: 'repeat(4, 1fr)'
-          },
-          gap: 3
-        }}
-      >
-        {/* Growth Rate */}
-        <Card elevation={1} sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ textAlign: 'center', p: 3 }}>
-            <Box sx={{ 
-              width: 60, 
-              height: 60, 
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: alpha(
-                growthRate >= 0 ? theme.palette.success.main : theme.palette.error.main, 
-                0.1
-              ),
-              color: growthRate >= 0 ? theme.palette.success.main : theme.palette.error.main,
-              margin: '0 auto 16px'
-            }}>
-              {growthRate >= 0 ? <TrendingUp /> : <TrendingDown />}
-            </Box>
-            <Typography variant="h3" component="div" fontWeight="bold" color={
-              growthRate >= 0 ? 'success.main' : 'error.main'
-            }>
-              {growthRate}%
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              User Growth Rate
-            </Typography>
-          </CardContent>
-        </Card>
-
-        {/* Active Users Percentage */}
-        <Card elevation={1} sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ textAlign: 'center', p: 3 }}>
-            <Box sx={{ 
-              width: 60, 
-              height: 60, 
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: alpha(theme.palette.primary.main, 0.1),
-              color: theme.palette.primary.main,
-              margin: '0 auto 16px'
-            }}>
-              <People />
-            </Box>
-            <Typography variant="h3" component="div" fontWeight="bold" color="primary.main">
-              {activeUserPercentage}%
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Active Users
-            </Typography>
-          </CardContent>
-        </Card>
-
-        {/* Notes per User */}
-        <Card elevation={1} sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ textAlign: 'center', p: 3 }}>
-            <Box sx={{ 
-              width: 60, 
-              height: 60, 
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: alpha(theme.palette.success.main, 0.1),
-              color: theme.palette.success.main,
-              margin: '0 auto 16px'
-            }}>
-              <Assessment />
-            </Box>
-            <Typography variant="h3" component="div" fontWeight="bold" color="success.main">
-              {notesPerActiveUser.toFixed(1)}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Notes per User
-            </Typography>
-          </CardContent>
-        </Card>
-
-        {/* Engagement Score */}
-        <Card elevation={1} sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ textAlign: 'center', p: 3 }}>
-            <Box sx={{ 
-              width: 60, 
-              height: 60, 
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: alpha(engagementLevel.color, 0.1),
-              color: engagementLevel.color,
-              margin: '0 auto 16px'
-            }}>
-              <EmojiEvents />
-            </Box>
-            <Typography variant="h3" component="div" fontWeight="bold" color={engagementLevel.color}>
-              {engagementScore}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Engagement Score
-            </Typography>
-          </CardContent>
-        </Card>
+    <Box>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h6" fontWeight={600} gutterBottom>
+          Engagement Metrics
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          User interaction and activity patterns
+        </Typography>
       </Box>
 
-      {/* User Engagement Tiers */}
-      <Card elevation={1} sx={{ borderRadius: 2 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-            <BarChart />
-            User Engagement Tiers
-          </Typography>
-          
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {/* Beginners - No notes */}
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ 
-                    width: 24, 
-                    height: 24, 
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: alpha(theme.palette.info.main, 0.1),
-                    color: theme.palette.info.main
-                  }}>
-                    👶
-                  </Box>
-                  Beginners (No notes)
+      {/* Metrics Grid - Using Stack instead of Grid */}
+      <Box sx={{ 
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
+        flexWrap: 'wrap',
+        gap: 2,
+        mb: 4
+      }}>
+        {metrics.map((metric, index) => (
+          <Paper
+            key={index}
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 2.5 },
+              borderRadius: 2,
+              flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 16px)', md: '1 1 calc(25% - 24px)' },
+              minWidth: { xs: '100%', sm: '200px' },
+              border: `1px solid ${alpha(metric.color, 0.1)}`,
+              background: alpha(metric.color, 0.03),
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: `0 8px 24px ${alpha(metric.color, 0.15)}`
+              }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  {metric.label}
                 </Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {usersWithNoNotes} users
+                <Typography variant="h4" fontWeight={700} sx={{ 
+                  fontSize: { xs: '1.5rem', sm: '1.75rem' },
+                  color: metric.color
+                }}>
+                  {metric.value}
                 </Typography>
               </Box>
-              <Box sx={{ 
-                height: 8, 
-                borderRadius: 4,
-                backgroundColor: alpha(theme.palette.info.main, 0.1),
-                overflow: 'hidden'
-              }}>
-                <Box
-                  sx={{
-                    height: '100%',
-                    width: `${(usersWithNoNotes / activeUsers) * 100}%`,
-                    backgroundColor: theme.palette.info.main,
-                    borderRadius: 4
-                  }}
-                />
+              <Box
+                sx={{
+                  p: 1,
+                  borderRadius: 1.5,
+                  background: alpha(metric.color, 0.1),
+                  color: metric.color,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {metric.icon}
               </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                {activeUsers > 0 ? Math.round((usersWithNoNotes / activeUsers) * 100) : 0}% of active users
-              </Typography>
             </Box>
+            
+            <LinearProgress
+              variant="determinate"
+              value={metric.progress}
+              sx={{
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: alpha(metric.color, 0.1),
+                '& .MuiLinearProgress-bar': {
+                  backgroundColor: metric.color,
+                  borderRadius: 3
+                }
+              }}
+            />
+          </Paper>
+        ))}
+      </Box>
 
-            {/* Regular Users */}
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ 
-                    width: 24, 
-                    height: 24, 
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                    color: theme.palette.primary.main
-                  }}>
-                    👤
-                  </Box>
-                  Regular Users (1-19 notes)
-                </Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {regularUsers} users
-                </Typography>
-              </Box>
-              <Box sx={{ 
-                height: 8, 
-                borderRadius: 4,
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                overflow: 'hidden'
-              }}>
-                <Box
-                  sx={{
-                    height: '100%',
-                    width: `${(regularUsers / activeUsers) * 100}%`,
-                    backgroundColor: theme.palette.primary.main,
-                    borderRadius: 4
-                  }}
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                {activeUsers > 0 ? Math.round((regularUsers / activeUsers) * 100) : 0}% of active users
-              </Typography>
-            </Box>
-
-            {/* Power Users */}
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ 
-                    width: 24, 
-                    height: 24, 
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: alpha(theme.palette.success.main, 0.1),
-                    color: theme.palette.success.main
-                  }}>
-                    🏆
-                  </Box>
-                  Power Users (20+ notes)
-                </Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {usersWithManyNotes} users
-                </Typography>
-              </Box>
-              <Box sx={{ 
-                height: 8, 
-                borderRadius: 4,
-                backgroundColor: alpha(theme.palette.success.main, 0.1),
-                overflow: 'hidden'
-              }}>
-                <Box
-                  sx={{
-                    height: '100%',
-                    width: `${(usersWithManyNotes / activeUsers) * 100}%`,
-                    backgroundColor: theme.palette.success.main,
-                    borderRadius: 4
-                  }}
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                {activeUsers > 0 ? Math.round((usersWithManyNotes / activeUsers) * 100) : 0}% of active users
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Legend */}
+      {/* Detailed Stats */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 2, sm: 3 },
+          borderRadius: 2,
+          background: alpha(theme.palette.primary.main, 0.02),
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+          Performance Indicators
+        </Typography>
+        
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2
+        }}>
+          {/* Retention Rate */}
           <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            gap: 3,
-            mt: 4,
-            flexWrap: 'wrap'
+            flex: 1,
+            p: { xs: 1.5, sm: 2 },
+            borderRadius: 1.5,
+            background: alpha(theme.palette.success.main, 0.05),
+            border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`
           }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+              30-day Retention Rate
+            </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'info.main' }} />
-              <Typography variant="caption">Beginners</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'primary.main' }} />
-              <Typography variant="caption">Regular Users</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'success.main' }} />
-              <Typography variant="caption">Power Users</Typography>
+              <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                {formatNumber(engagement.retentionRate)}%
+              </Typography>
+              {Number(engagement.retentionRate) > 50 ? (
+                <ArrowUpward sx={{ color: 'success.main', fontSize: { xs: 16, sm: 20 } }} />
+              ) : (
+                <ArrowDownward sx={{ color: 'error.main', fontSize: { xs: 16, sm: 20 } }} />
+              )}
             </Box>
           </Box>
-        </CardContent>
-      </Card>
-    </Stack>
+
+          {/* Bounce Rate */}
+          <Box sx={{ 
+            flex: 1,
+            p: { xs: 1.5, sm: 2 },
+            borderRadius: 1.5,
+            background: alpha(theme.palette.error.main, 0.05),
+            border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`
+          }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+              Bounce Rate
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                {formatNumber(engagement.bounceRate)}%
+              </Typography>
+              {Number(engagement.bounceRate) < 30 ? (
+                <ArrowDownward sx={{ color: 'success.main', fontSize: { xs: 16, sm: 20 } }} />
+              ) : (
+                <ArrowUpward sx={{ color: 'error.main', fontSize: { xs: 16, sm: 20 } }} />
+              )}
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Summary */}
+        {engagement.summary && (
+          <Box sx={{ 
+            mt: 3, 
+            p: { xs: 1.5, sm: 2 },
+            borderRadius: 1.5,
+            background: alpha(theme.palette.info.main, 0.05),
+            border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`
+          }}>
+            <Typography variant="body2" sx={{ 
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              color: theme.palette.info.main,
+              fontStyle: 'italic'
+            }}>
+              {engagement.summary}
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+    </Box>
   )
 }
+
+export default EngagementAnalysis

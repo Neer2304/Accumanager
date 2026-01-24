@@ -1,6 +1,6 @@
-// components/admin-side/analysis/AnalysisHeader.tsx
-import { Box, Typography, Button, FormControl, InputLabel, Select, MenuItem, alpha } from '@mui/material'
-import { Analytics, Refresh } from '@mui/icons-material'
+// components/admin-side/analysis/AnalysisHeader.tsx - UPDATED VERSION
+import { Box, Typography, Button, FormControl, InputLabel, Select, MenuItem, alpha, IconButton } from '@mui/material'
+import { Analytics, Refresh, FilterAlt } from '@mui/icons-material'
 import { useTheme } from '@mui/material/styles'
 
 interface AnalysisHeaderProps {
@@ -10,6 +10,7 @@ interface AnalysisHeaderProps {
   loading: boolean
   error?: string
   onErrorClose?: () => void
+  compact?: boolean // Added compact prop
 }
 
 export const AnalysisHeader = ({
@@ -17,10 +18,50 @@ export const AnalysisHeader = ({
   onTimeframeChange,
   onRefresh,
   loading,
-  error
+  error,
+  compact = false
 }: AnalysisHeaderProps) => {
   const theme = useTheme()
 
+  // If compact mode, show simplified version
+  if (compact) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <Select
+            value={timeframe}
+            onChange={(e) => onTimeframeChange(e.target.value)}
+            displayEmpty
+            size="small"
+            sx={{ 
+              '& .MuiSelect-select': { py: 0.75 },
+              borderRadius: 1.5
+            }}
+          >
+            <MenuItem value="7">7 days</MenuItem>
+            <MenuItem value="30">30 days</MenuItem>
+            <MenuItem value="90">90 days</MenuItem>
+            <MenuItem value="365">1 year</MenuItem>
+          </Select>
+        </FormControl>
+        
+        <IconButton
+          onClick={onRefresh}
+          disabled={loading}
+          size="small"
+          sx={{
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 1.5,
+            p: 0.75
+          }}
+        >
+          <Refresh fontSize="small" />
+        </IconButton>
+      </Box>
+    )
+  }
+
+  // Normal mode
   return (
     <Box sx={{ mb: { xs: 3, md: 4 } }}>
       <Box sx={{ 
@@ -75,6 +116,7 @@ export const AnalysisHeader = ({
               value={timeframe}
               label="Timeframe"
               onChange={(e) => onTimeframeChange(e.target.value)}
+              size="small"
             >
               <MenuItem value="7">Last 7 days</MenuItem>
               <MenuItem value="30">Last 30 days</MenuItem>
@@ -89,13 +131,14 @@ export const AnalysisHeader = ({
             startIcon={<Refresh />}
             onClick={onRefresh}
             disabled={loading}
-            fullWidth={window.innerWidth < 600}
+            size="small"
             sx={{
               borderRadius: 2,
               borderWidth: 2,
               '&:hover': {
                 borderWidth: 2
-              }
+              },
+              minHeight: { xs: 40, sm: 36 }
             }}
           >
             Refresh Data

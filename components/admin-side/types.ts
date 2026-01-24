@@ -1,4 +1,4 @@
-// components/admin-side/types.ts
+// components/admin-side/types.ts - UPDATED
 export interface DatabaseStats {
   totalUsers: number
   totalNotes: number
@@ -36,7 +36,9 @@ export interface AnalysisData {
     notesPerActiveUser: number
     growthRate: number
     engagementScore: number
+    lastUpdated?: string // Added this
   }
+  engagement: any
 }
 
 export interface MaterialsAnalysisData {
@@ -64,5 +66,6 @@ export interface MaterialsAnalysisData {
     avgMaterialsPerUser: number
     materialGrowthRate: number
     activeMaterialUsers: number
+    lastUpdated?: string // Added this
   }
 }

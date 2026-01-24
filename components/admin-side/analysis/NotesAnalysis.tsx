@@ -1,19 +1,5 @@
-// components/admin-side/analysis/NotesAnalysis.tsx
-import { 
-  Stack, 
-  Box, 
-  Card, 
-  CardContent, 
-  Typography, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Chip,
-  alpha 
-} from '@mui/material'
+// components/admin-side/analysis/NotesAnalysis.tsx - UPDATED RESPONSIVE
+import { Box, Card, CardContent, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, alpha } from '@mui/material'
 import { 
   Notes, 
   Assessment,
@@ -39,14 +25,14 @@ export const NotesAnalysis = ({ data }: NotesAnalysisProps) => {
         flexDirection: 'column', 
         alignItems: 'center', 
         justifyContent: 'center', 
-        py: 8,
+        py: { xs: 4, sm: 6, md: 8 },
         textAlign: 'center'
       }}>
-        <Notes sx={{ fontSize: 64, color: theme.palette.text.disabled, mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" gutterBottom>
+        <Notes sx={{ fontSize: { xs: 48, sm: 56, md: 64 }, color: theme.palette.text.disabled, mb: 2 }} />
+        <Typography variant="h6" color="text.secondary" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
           No Notes Data Available
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
           Notes analytics will appear here once notes are created by users
         </Typography>
       </Box>
@@ -69,217 +55,328 @@ export const NotesAnalysis = ({ data }: NotesAnalysisProps) => {
     percentage: totalNotes > 0 ? Math.round((category.count / totalNotes) * 100) : 0
   }))
 
+  // Summary cards
+  const summaryCards = [
+    { title: 'Total Notes', value: totalNotes, color: 'primary' },
+    { title: 'Recent Notes', value: recentNotes, color: 'success' },
+    { title: 'Shared Notes', value: sharedNotes, color: 'info' },
+    { title: 'Avg per User', value: notesPerUser, color: 'warning' }
+  ]
+
   return (
-    <Stack spacing={3}>
-      {/* Summary Stats */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(4, 1fr)'
-          },
-          gap: 2
-        }}
-      >
-        <Card elevation={1} sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ textAlign: 'center', p: 2 }}>
-            <Typography variant="h3" fontWeight="bold" color="primary">
-              {totalNotes}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Total Notes
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card elevation={1} sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ textAlign: 'center', p: 2 }}>
-            <Typography variant="h3" fontWeight="bold" color="success.main">
-              {recentNotes}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Recent Notes
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card elevation={1} sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ textAlign: 'center', p: 2 }}>
-            <Typography variant="h3" fontWeight="bold" color="info.main">
-              {sharedNotes}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Shared Notes
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card elevation={1} sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ textAlign: 'center', p: 2 }}>
-            <Typography variant="h3" fontWeight="bold" color="warning.main">
-              {notesPerUser}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Avg per User
-            </Typography>
-          </CardContent>
-        </Card>
+    <Box>
+      {/* Summary Stats - Responsive Flex Layout */}
+      <Box sx={{ 
+        display: 'flex',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: { xs: 1.5, sm: 2 },
+        mb: { xs: 3, sm: 4 }
+      }}>
+        {summaryCards.map((card, index) => (
+          <Box 
+            key={index}
+            sx={{ 
+              flex: {
+                xs: '1 1 calc(50% - 12px)',  // 2 per row on mobile
+                sm: '1 1 calc(50% - 16px)',   // 2 per row on tablet
+                md: '1 1 calc(25% - 18px)'    // 4 per row on desktop
+              },
+              minWidth: {
+                xs: 'calc(50% - 12px)',
+                sm: 'calc(50% - 16px)',
+                md: 'calc(25% - 18px)'
+              }
+            }}
+          >
+            <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                p: { xs: 1.5, sm: 2 }
+              }}>
+                <Typography 
+                  variant="h3" 
+                  fontWeight="bold" 
+                  color={`${card.color}.main`}
+                  sx={{ 
+                    fontSize: { 
+                      xs: '1.5rem', 
+                      sm: '1.75rem', 
+                      md: '2rem',
+                      lg: '2.25rem'
+                    } 
+                  }}
+                >
+                  {card.value}
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    mt: 0.5
+                  }}
+                >
+                  {card.title}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        ))}
       </Box>
 
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            lg: 'repeat(2, 1fr)'
-          },
-          gap: 3
-        }}
-      >
+      {/* Main Content Area */}
+      <Box sx={{ 
+        display: 'flex',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: { xs: 2, sm: 3 },
+        mb: { xs: 3, sm: 4 }
+      }}>
         {/* Notes by Category */}
-        <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-              <Category />
-              Notes by Category
-            </Typography>
-            
-            {categoriesWithPercentages.length > 0 ? (
-              <Stack spacing={2}>
-                {categoriesWithPercentages.map((category, index) => (
-                  <Box key={index}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="body2" fontWeight="medium">
-                        {category._id || 'Uncategorized'}
-                      </Typography>
-                      <Typography variant="body2" fontWeight="bold">
-                        {category.count} ({category.percentage}%)
-                      </Typography>
-                    </Box>
-                    <Box sx={{ 
-                      height: 6, 
-                      borderRadius: 3,
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                      overflow: 'hidden'
-                    }}>
-                      <Box
-                        sx={{
-                          height: '100%',
-                          width: `${category.percentage}%`,
-                          backgroundColor: theme.palette.primary.main,
-                          borderRadius: 3
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                ))}
-              </Stack>
-            ) : (
-              <Box sx={{ 
+        <Box sx={{ 
+          flex: {
+            xs: '1 1 100%',  // Full width on mobile
+            lg: '1 1 calc(50% - 12px)' // Half width on desktop
+          },
+          minWidth: {
+            xs: '100%',
+            lg: 'calc(50% - 12px)'
+          }
+        }}>
+          <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ 
                 display: 'flex', 
-                flexDirection: 'column', 
                 alignItems: 'center', 
-                justifyContent: 'center', 
-                py: 4
+                gap: 1, 
+                mb: 3,
+                fontSize: { xs: '0.95rem', sm: '1rem' }
               }}>
-                <InsertChart sx={{ fontSize: 48, color: theme.palette.text.disabled, mb: 2 }} />
-                <Typography variant="body2" color="text.secondary">
-                  No categories data available
-                </Typography>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
+                <Category />
+                Notes by Category
+              </Typography>
+              
+              {categoriesWithPercentages.length > 0 ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {categoriesWithPercentages.map((category, index) => (
+                    <Box key={index}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        mb: 0.5,
+                        flexWrap: 'wrap',
+                        gap: 0.5
+                      }}>
+                        <Typography 
+                          variant="body2" 
+                          fontWeight="medium"
+                          sx={{ 
+                            fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                            maxWidth: '60%',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {category._id || 'Uncategorized'}
+                        </Typography>
+                        <Typography 
+                          variant="body2" 
+                          fontWeight="bold"
+                          sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                        >
+                          {category.count} ({category.percentage}%)
+                        </Typography>
+                      </Box>
+                      <Box sx={{ 
+                        height: 6, 
+                        borderRadius: 3,
+                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                        overflow: 'hidden'
+                      }}>
+                        <Box
+                          sx={{
+                            height: '100%',
+                            width: `${category.percentage}%`,
+                            backgroundColor: theme.palette.primary.main,
+                            borderRadius: 3,
+                            transition: 'width 0.5s ease'
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  py: { xs: 3, sm: 4 }
+                }}>
+                  <InsertChart sx={{ 
+                    fontSize: { xs: 40, sm: 48 }, 
+                    color: theme.palette.text.disabled, 
+                    mb: 1.5 
+                  }} />
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                  >
+                    No categories data available
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
 
         {/* Top Users by Notes */}
-        <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-              <Assessment />
-              Top Users by Notes
-            </Typography>
-            
-            {topUsersByNotes.length > 0 ? (
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>User</TableCell>
-                      <TableCell align="right">Notes</TableCell>
-                      <TableCell align="right">Last Created</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {topUsersByNotes.slice(0, 5).map((user, index) => (
-                      <TableRow 
-                        key={index}
-                        sx={{
-                          '&:hover': {
-                            backgroundColor: alpha(theme.palette.primary.main, 0.02)
-                          }
-                        }}
-                      >
-                        <TableCell>
-                          <Box>
-                            <Typography variant="body2" fontWeight="medium" noWrap>
-                              {user.name || user.email}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" noWrap>
-                              {user.email}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Chip 
-                            label={user.noteCount} 
-                            size="small" 
-                            color="primary"
-                            sx={{ fontWeight: 'bold' }}
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(user.lastCreated).toLocaleDateString()}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Box sx={{ 
+        <Box sx={{ 
+          flex: {
+            xs: '1 1 100%',  // Full width on mobile
+            lg: '1 1 calc(50% - 12px)' // Half width on desktop
+          },
+          minWidth: {
+            xs: '100%',
+            lg: 'calc(50% - 12px)'
+          }
+        }}>
+          <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ 
                 display: 'flex', 
-                flexDirection: 'column', 
                 alignItems: 'center', 
-                justifyContent: 'center', 
-                py: 4
+                gap: 1, 
+                mb: 3,
+                fontSize: { xs: '0.95rem', sm: '1rem' }
               }}>
-                <BarChart sx={{ fontSize: 48, color: theme.palette.text.disabled, mb: 2 }} />
-                <Typography variant="body2" color="text.secondary">
-                  No users data available
-                </Typography>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
+                <Assessment />
+                Top Users by Notes
+              </Typography>
+              
+              {topUsersByNotes.length > 0 ? (
+                <TableContainer sx={{ maxHeight: { xs: 250, sm: 300 } }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>User</TableCell>
+                        <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Notes</TableCell>
+                        <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Last Created</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {topUsersByNotes.slice(0, 5).map((user, index) => (
+                        <TableRow 
+                          key={index}
+                          sx={{
+                            '&:hover': {
+                              backgroundColor: alpha(theme.palette.primary.main, 0.02)
+                            }
+                          }}
+                        >
+                          <TableCell>
+                            <Box>
+                              <Typography 
+                                variant="body2" 
+                                fontWeight="medium" 
+                                noWrap
+                                sx={{ 
+                                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                                  maxWidth: { xs: 100, sm: 150 }
+                                }}
+                              >
+                                {user.name || user.email}
+                              </Typography>
+                              <Typography 
+                                variant="caption" 
+                                color="text.secondary" 
+                                noWrap
+                                sx={{ 
+                                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                                  maxWidth: { xs: 100, sm: 150 }
+                                }}
+                              >
+                                {user.email}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Chip 
+                              label={user.noteCount} 
+                              size="small" 
+                              color="primary"
+                              sx={{ 
+                                fontWeight: 'bold',
+                                fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                                height: { xs: 20, sm: 24 }
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography 
+                              variant="caption" 
+                              color="text.secondary"
+                              sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                            >
+                              {new Date(user.lastCreated).toLocaleDateString()}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  py: { xs: 3, sm: 4 }
+                }}>
+                  <BarChart sx={{ 
+                    fontSize: { xs: 40, sm: 48 }, 
+                    color: theme.palette.text.disabled, 
+                    mb: 1.5 
+                  }} />
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                  >
+                    No users data available
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
 
       {/* Category Distribution Visualization */}
       {categoriesWithPercentages.length > 0 && (
         <Card elevation={1} sx={{ borderRadius: 2 }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" gutterBottom sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              fontSize: { xs: '0.95rem', sm: '1rem' }
+            }}>
               <TrendingUp />
               Category Distribution
             </Typography>
             
             <Box sx={{ 
               display: 'flex', 
+              flexDirection: 'row',
               flexWrap: 'wrap', 
-              gap: 2,
+              gap: { xs: 1.5, sm: 2 },
               justifyContent: 'center',
               mt: 2
             }}>
@@ -302,13 +399,30 @@ export const NotesAnalysis = ({ data }: NotesAnalysisProps) => {
                       display: 'flex', 
                       flexDirection: 'column', 
                       alignItems: 'center',
-                      width: { xs: '45%', sm: '30%', md: '20%', lg: '15%' }
+                      flex: {
+                        xs: '1 1 calc(33.333% - 10px)', // 3 per row on mobile
+                        sm: '1 1 calc(25% - 16px)',     // 4 per row on tablet
+                        md: '1 1 calc(20% - 16px)',     // 5 per row on medium
+                        lg: '1 1 calc(16.666% - 20px)'  // 6 per row on large
+                      },
+                      minWidth: {
+                        xs: 'calc(33.333% - 10px)',
+                        sm: 'calc(25% - 16px)',
+                        md: 'calc(20% - 16px)',
+                        lg: 'calc(16.666% - 20px)'
+                      },
+                      maxWidth: {
+                        xs: 'calc(33.333% - 10px)',
+                        sm: 'calc(25% - 16px)',
+                        md: 'calc(20% - 16px)',
+                        lg: 'calc(16.666% - 20px)'
+                      }
                     }}
                   >
                     <Box
                       sx={{
-                        width: 60,
-                        height: 60,
+                        width: { xs: 45, sm: 50, md: 55, lg: 60 },
+                        height: { xs: 45, sm: 50, md: 55, lg: 60 },
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
@@ -316,16 +430,30 @@ export const NotesAnalysis = ({ data }: NotesAnalysisProps) => {
                         backgroundColor: alpha(color, 0.1),
                         color: color,
                         mb: 1,
-                        fontSize: '1.5rem',
+                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem', lg: '1.3rem' },
                         fontWeight: 'bold'
                       }}
                     >
                       {category.count}
                     </Box>
-                    <Typography variant="body2" align="center" noWrap>
+                    <Typography 
+                      variant="body2" 
+                      align="center" 
+                      noWrap
+                      sx={{ 
+                        fontSize: { xs: '0.75rem', sm: '0.8rem', md: '0.875rem' },
+                        width: '100%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}
+                    >
                       {category._id || 'Uncategorized'}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography 
+                      variant="caption" 
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                    >
                       {category.percentage}%
                     </Typography>
                   </Box>
@@ -335,6 +463,6 @@ export const NotesAnalysis = ({ data }: NotesAnalysisProps) => {
           </CardContent>
         </Card>
       )}
-    </Stack>
+    </Box>
   )
 }

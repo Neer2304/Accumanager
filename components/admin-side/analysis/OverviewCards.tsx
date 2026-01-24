@@ -1,4 +1,4 @@
-// components/admin-side/analysis/OverviewCards.tsx
+// components/admin-side/analysis/OverviewCards.tsx - UPDATED SUPER RESPONSIVE
 import { Box } from '@mui/material'
 import { 
   People, 
@@ -7,9 +7,8 @@ import {
   Inventory, 
   AttachMoney, 
   Equalizer,
-  TrendingUp,
-  Warning,
-  CheckCircle
+  CheckCircle,
+  Warning
 } from '@mui/icons-material'
 import { StatsCard } from './StatsCard'
 import { AnalysisData, MaterialsAnalysisData } from '../types'
@@ -99,32 +98,52 @@ export const OverviewCards = ({ data, materialsData }: OverviewCardsProps) => {
 
   return (
     <>
-      {/* Main Stats Cards */}
+      {/* Main Stats Cards - Responsive Flex Layout */}
       <Box 
         sx={{ 
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(3, 1fr)',
-            lg: 'repeat(6, 1fr)'
-          },
-          gap: { xs: 2, md: 3 },
-          mb: 4
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: { xs: 1.5, sm: 2, md: 3 },
+          mb: { xs: 3, sm: 4 },
+          justifyContent: 'center'
         }}
       >
         {cards.map((card, index) => (
-          <StatsCard
+          <Box 
             key={index}
-            title={card.title}
-            value={card.value}
-            subValue={card.subValue}
-            icon={card.icon}
-            color={card.color}
-            trend={card.trend}
-            showTrend={card.showTrend}
-            showProgress={card.showProgress}
-          />
+            sx={{ 
+              flex: {
+                xs: '1 1 calc(50% - 12px)',  // 2 per row on mobile
+                sm: '1 1 calc(33.333% - 16px)', // 3 per row on tablet
+                md: '1 1 calc(25% - 18px)', // 4 per row on medium
+                lg: '1 1 calc(16.666% - 20px)' // 6 per row on large
+              },
+              minWidth: {
+                xs: 'calc(50% - 12px)',
+                sm: 'calc(33.333% - 16px)',
+                md: 'calc(25% - 18px)',
+                lg: 'calc(16.666% - 20px)'
+              },
+              maxWidth: {
+                xs: 'calc(50% - 12px)',
+                sm: 'calc(33.333% - 16px)',
+                md: 'calc(25% - 18px)',
+                lg: 'calc(16.666% - 20px)'
+              }
+            }}
+          >
+            <StatsCard
+              title={card.title}
+              value={card.value}
+              subValue={card.subValue}
+              icon={card.icon}
+              color={card.color}
+              trend={card.trend}
+              showTrend={card.showTrend}
+              showProgress={card.showProgress}
+            />
+          </Box>
         ))}
       </Box>
 
@@ -132,25 +151,43 @@ export const OverviewCards = ({ data, materialsData }: OverviewCardsProps) => {
       {materialsData && (
         <Box 
           sx={{ 
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(4, 1fr)'
-            },
-            gap: { xs: 2, md: 3 },
-            mb: 4
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: { xs: 1.5, sm: 2, md: 3 },
+            mb: { xs: 3, sm: 4 },
+            justifyContent: 'center'
           }}
         >
           {stockStatusCards.map((card, index) => (
-            <StatsCard
+            <Box 
               key={index}
-              title={card.title}
-              value={card.value}
-              icon={card.icon}
-              color={card.color}
-              compact
-            />
+              sx={{ 
+                flex: {
+                  xs: '1 1 calc(50% - 12px)',  // 2 per row on mobile
+                  sm: '1 1 calc(50% - 16px)',   // 2 per row on tablet
+                  md: '1 1 calc(25% - 18px)'    // 4 per row on desktop
+                },
+                minWidth: {
+                  xs: 'calc(50% - 12px)',
+                  sm: 'calc(50% - 16px)',
+                  md: 'calc(25% - 18px)'
+                },
+                maxWidth: {
+                  xs: 'calc(50% - 12px)',
+                  sm: 'calc(50% - 16px)',
+                  md: 'calc(25% - 18px)'
+                }
+              }}
+            >
+              <StatsCard
+                title={card.title}
+                value={card.value}
+                icon={card.icon}
+                color={card.color}
+                compact
+              />
+            </Box>
           ))}
         </Box>
       )}

@@ -5,7 +5,7 @@ import { People, Notes, Inventory, Timeline } from '@mui/icons-material'
 interface AnalysisTabsProps {
   activeTab: number
   onTabChange: (value: number) => void
-  children: React.ReactNode
+  children?: React.ReactNode // Make children optional
 }
 
 export const AnalysisTabs = ({ activeTab, onTabChange, children }: AnalysisTabsProps) => {
@@ -60,12 +60,22 @@ export const AnalysisTabs = ({ activeTab, onTabChange, children }: AnalysisTabsP
         />
       </Tabs>
       
-      <Box sx={{ 
-        p: { xs: 2, sm: 3 },
-        minHeight: 400
-      }}>
-        {children}
-      </Box>
+      {/* Render children if provided, otherwise render empty content area */}
+      {children ? (
+        <Box sx={{ 
+          p: { xs: 2, sm: 3 },
+          minHeight: 400
+        }}>
+          {children}
+        </Box>
+      ) : (
+        <Box sx={{ 
+          p: { xs: 2, sm: 3 },
+          minHeight: 400
+        }}>
+          {/* Empty state or loading */}
+        </Box>
+      )}
     </Paper>
   )
 }
