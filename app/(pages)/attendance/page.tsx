@@ -1,3 +1,4 @@
+// app/attendance/page.tsx - UPDATED MAIN PAGE
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -7,17 +8,8 @@ import {
   Paper,
   TextField,
   Button,
-  Card,
-  CardContent,
-  Chip,
   Alert,
   CircularProgress,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Stepper,
   Step,
   StepLabel,
@@ -27,20 +19,21 @@ import {
   useMediaQuery,
   useTheme,
   alpha,
-  Avatar,
-  Badge,
-  CardActions,
-  Stack,
   Divider,
   LinearProgress,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Chip
 } from "@mui/material";
 import {
   PersonAdd as PersonAddIcon,
-  Visibility as VisibilityIcon,
   ExpandMore as ExpandMoreIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
@@ -55,17 +48,13 @@ import {
   Security as SecurityIcon,
   Person as PersonIcon,
   TrendingUp as TrendingUpIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  MoreVert as MoreVertIcon,
-  Star as StarIcon,
-  StarBorder as StarBorderIcon,
   AccessTime as AccessTimeIcon,
-  Today as TodayIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 import { MainLayout } from "@/components/Layout/MainLayout";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { EmployeeCard } from "@/components/attendance/EmployeeCard";
+import { CustomSelect } from "@/components/attendance/CustomSelect";
 
 interface Day {
   date: string;
@@ -120,585 +109,6 @@ const departments = [
   "Finance", "Operations", "Support", "Management", "Other"
 ];
 
-// Custom Select Component
-function CustomSelect({ label, value, onChange, options, error, helperText, required }: any) {
-  const theme = useTheme();
-  
-  return (
-    <FormControl fullWidth error={!!error} required={required}>
-      <InputLabel>{label}</InputLabel>
-      <Select
-        value={value}
-        onChange={onChange}
-        label={label}
-        MenuProps={{
-          PaperProps: {
-            sx: {
-              borderRadius: 2,
-              mt: 1,
-              boxShadow: theme.shadows[3],
-            }
-          }
-        }}
-      >
-        <MenuItem value=""><em>Select {label}</em></MenuItem>
-        {options.map((option: any) => (
-          <MenuItem key={option.value} value={option.value}>
-            {option.label}
-          </MenuItem>
-        ))}
-      </Select>
-      {helperText && (
-        <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
-          {helperText}
-        </Typography>
-      )}
-    </FormControl>
-  );
-}
-
-// Department Chip Component
-function DepartmentChip({ department }: { department: string }) {
-  const theme = useTheme();
-  
-  // Color mapping based on department
-  const getDepartmentColor = (dept: string) => {
-    const colors: Record<string, { bg: string, text: string }> = {
-      Sales: { bg: theme.palette.info.main, text: theme.palette.info.contrastText },
-      Marketing: { bg: theme.palette.secondary.main, text: theme.palette.secondary.contrastText },
-      Development: { bg: '#3b82f6', text: '#ffffff' },
-      Design: { bg: '#8b5cf6', text: '#ffffff' },
-      HR: { bg: '#ec4899', text: '#ffffff' },
-      Finance: { bg: theme.palette.success.main, text: theme.palette.success.contrastText },
-      Operations: { bg: '#f97316', text: '#ffffff' },
-      Support: { bg: '#0ea5e9', text: '#ffffff' },
-      Management: { bg: '#1e293b', text: '#ffffff' },
-      Other: { bg: theme.palette.grey[600], text: theme.palette.grey[100] },
-    };
-    
-    return colors[dept] || { bg: theme.palette.grey[500], text: theme.palette.grey[100] };
-  };
-
-  const color = getDepartmentColor(department);
-
-  return (
-    <Chip
-      label={department}
-      size="small"
-      sx={{
-        bgcolor: alpha(color.bg, 0.15),
-        color: color.bg,
-        fontWeight: 600,
-        borderRadius: 1.5,
-        border: `1px solid ${alpha(color.bg, 0.3)}`,
-        '&:hover': {
-          bgcolor: alpha(color.bg, 0.25),
-        }
-      }}
-    />
-  );
-}
-
-// Attendance Day Component
-function AttendanceDay({ 
-  day, 
-  employeeId, 
-  toggleStatus, 
-  submitting 
-}: { 
-  day: Day; 
-  employeeId: string; 
-  toggleStatus: Function; 
-  submitting: boolean;
-}) {
-  const theme = useTheme();
-  const date = new Date(day.date);
-  const dayNumber = date.getDate();
-  const isToday = date.toDateString() === new Date().toDateString();
-  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-  const isPresent = day.status === "Present";
-
-  const getDayTooltip = () => {
-    const formattedDate = date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
-    
-    let tooltip = `${formattedDate} - ${day.status}`;
-    if (isToday) tooltip += ' (Today)';
-    if (isWeekend) tooltip += ' (Weekend)';
-    if (day.checkIn && day.checkOut) {
-      tooltip += `\n${day.checkIn} - ${day.checkOut}`;
-    }
-    if (day.workHours) {
-      tooltip += `\n${day.workHours.toFixed(1)} hours`;
-      if (day.overtime) {
-        tooltip += ` (${day.overtime.toFixed(1)} overtime)`;
-      }
-    }
-    return tooltip;
-  };
-
-  return (
-    <Tooltip title={getDayTooltip()} arrow>
-      <Box
-        sx={{
-          width: 40,
-          height: 40,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 2,
-          cursor: submitting ? "not-allowed" : "pointer",
-          backgroundColor: isPresent
-            ? theme.palette.success.main
-            : theme.palette.error.main,
-          color: theme.palette.common.white,
-          fontSize: "0.875rem",
-          fontWeight: "bold",
-          opacity: submitting ? 0.6 : 1,
-          transition: "all 0.2s ease",
-          border: isToday ? `2px solid ${theme.palette.warning.main}` : 'none',
-          boxShadow: theme.shadows[1],
-          position: 'relative',
-          "&:hover": {
-            opacity: submitting ? 0.6 : 0.9,
-            transform: submitting ? "none" : "scale(1.05)",
-            boxShadow: theme.shadows[2],
-          },
-          "&::after": isWeekend ? {
-            content: '""',
-            position: 'absolute',
-            top: -2,
-            right: -2,
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            backgroundColor: theme.palette.secondary.main,
-            border: `1px solid ${theme.palette.background.paper}`,
-          } : {}
-        }}
-        onClick={() => !submitting && toggleStatus(employeeId, day.date, day.status)}
-      >
-        {dayNumber}
-        {day.workHours && day.workHours > 8 && (
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: -4,
-              right: -4,
-              width: 12,
-              height: 12,
-              borderRadius: '50%',
-              backgroundColor: theme.palette.warning.main,
-              border: `1px solid ${theme.palette.background.paper}`,
-            }}
-          />
-        )}
-      </Box>
-    </Tooltip>
-  );
-}
-
-// Employee Card Component
-function EmployeeCard({ 
-  employee, 
-  toggleStatus, 
-  submitting 
-}: { 
-  employee: Employee; 
-  toggleStatus: Function; 
-  submitting: boolean;
-}) {
-  const theme = useTheme();
-  const router = useRouter();
-  
-  const getPresentCount = () => {
-    return employee.days.filter((day) => day.status === "Present").length;
-  };
-
-  const getAbsentCount = () => {
-    return employee.days.filter((day) => day.status === "Absent").length;
-  };
-
-  const getAttendancePercentage = () => {
-    if (employee.days.length === 0) return 0;
-    return Math.round((getPresentCount() / employee.days.length) * 100);
-  };
-
-  const getSalaryDisplay = () => {
-    if (!employee.salary) return "Not specified";
-    return `₹${employee.salary.toLocaleString()}/${employee.salaryType}`;
-  };
-
-  const getTotalWorkHours = () => {
-    return employee.days
-      .filter(day => day.status === "Present")
-      .reduce((total, day) => total + (day.workHours || 0), 0)
-      .toFixed(1);
-  };
-
-  const getTotalOvertime = () => {
-    return employee.days
-      .filter(day => day.status === "Present")
-      .reduce((total, day) => total + (day.overtime || 0), 0)
-      .toFixed(1);
-  };
-
-  const handleViewDetails = () => {
-    router.push(`/attendance/${employee._id}`);
-  };
-
-  return (
-    <Card 
-      sx={{
-        borderRadius: 3,
-        boxShadow: theme.shadows[3],
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-        '&:hover': {
-          boxShadow: theme.shadows[6],
-          transform: 'translateY(-4px)',
-          borderColor: alpha(theme.palette.primary.main, 0.3),
-        },
-      }}
-    >
-      <CardContent sx={{ p: 3, flex: 1 }}>
-        {/* Header with Avatar and Actions */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          mb: 3,
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Badge
-              overlap="circular"
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              badgeContent={
-                <Box
-                  sx={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: '50%',
-                    bgcolor: employee.isActive ? theme.palette.success.main : theme.palette.error.main,
-                    border: `2px solid ${theme.palette.background.paper}`,
-                    boxShadow: theme.shadows[1],
-                  }}
-                />
-              }
-            >
-              <Avatar
-                sx={{
-                  width: 64,
-                  height: 64,
-                  bgcolor: theme.palette.primary.main,
-                  color: theme.palette.primary.contrastText,
-                  fontSize: 26,
-                  fontWeight: 'bold',
-                  boxShadow: theme.shadows[2],
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                    transition: 'transform 0.3s',
-                  }
-                }}
-              >
-                {employee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-              </Avatar>
-            </Badge>
-            
-            <Box sx={{ minWidth: 0 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ wordBreak: 'break-word' }}>
-                {employee.name}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Chip
-                  icon={<WorkIcon />}
-                  label={employee.role}
-                  size="small"
-                  sx={{
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    color: theme.palette.primary.main,
-                    fontWeight: 600,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                  }}
-                />
-                {employee.department && (
-                  <DepartmentChip department={employee.department} />
-                )}
-              </Box>
-            </Box>
-          </Box>
-
-          <IconButton
-            onClick={handleViewDetails}
-            size="small"
-            sx={{
-              color: theme.palette.primary.main,
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.2),
-                transform: 'rotate(15deg)',
-              },
-              transition: 'all 0.3s',
-            }}
-          >
-            <VisibilityIcon fontSize="small" />
-          </IconButton>
-        </Box>
-
-        {/* Contact & Salary Info */}
-        <Stack spacing={1.5} mb={3}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PhoneIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
-              {employee.phone}
-            </Typography>
-          </Box>
-          
-          {employee.email && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <EmailIcon fontSize="small" color="action" />
-              <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-all' }}>
-                {employee.email}
-              </Typography>
-            </Box>
-          )}
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <MoneyIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
-              {getSalaryDisplay()}
-            </Typography>
-          </Box>
-          
-          {employee.joiningDate && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CalendarIcon fontSize="small" color="action" />
-              <Typography variant="body2" color="text.secondary">
-                Joined: {new Date(employee.joiningDate).toLocaleDateString()}
-              </Typography>
-            </Box>
-          )}
-        </Stack>
-
-        {/* Detailed Stats */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            mb: 3,
-            bgcolor: alpha(theme.palette.primary.main, 0.03),
-            borderRadius: 2,
-            border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-          }}
-        >
-          <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrendingUpIcon fontSize="small" />
-            Performance Metrics
-          </Typography>
-          
-          <Grid container spacing={1.5}>
-            <Grid item xs={6}>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" fontWeight="bold" color="primary">
-                  {getAttendancePercentage()}%
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Attendance
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6}>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" fontWeight="bold" color="success.main">
-                  {getTotalWorkHours()}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Work Hours
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6}>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" fontWeight="bold" color="warning.main">
-                  {getTotalOvertime()}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Overtime
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6}>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" fontWeight="bold" color="info.main">
-                  {employee.leaveBalance}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Leave Days
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-          
-          <LinearProgress
-            variant="determinate"
-            value={getAttendancePercentage()}
-            sx={{
-              mt: 2,
-              height: 8,
-              borderRadius: 3,
-              bgcolor: alpha(theme.palette.grey[500], 0.1),
-              '& .MuiLinearProgress-bar': {
-                bgcolor: getAttendancePercentage() > 80 ? theme.palette.success.main : 
-                         getAttendancePercentage() > 60 ? theme.palette.warning.main : 
-                         theme.palette.error.main,
-                borderRadius: 3,
-              },
-            }}
-          />
-          
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              {getPresentCount()} Present
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {getAbsentCount()} Absent
-            </Typography>
-          </Box>
-        </Paper>
-
-        {/* Monthly Attendance Grid */}
-        <Box>
-          <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TodayIcon fontSize="small" />
-            This Month's Attendance
-          </Typography>
-          <Box sx={{ 
-            display: 'flex', 
-            flexWrap: 'wrap', 
-            gap: 1,
-            p: 2,
-            bgcolor: alpha(theme.palette.action.hover, 0.3),
-            borderRadius: 2,
-            border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
-            minHeight: 120,
-            justifyContent: employee.days.length === 0 ? 'center' : 'flex-start',
-            alignItems: employee.days.length === 0 ? 'center' : 'flex-start',
-          }}>
-            {employee.days.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center', width: '100%' }}>
-                No attendance records yet
-              </Typography>
-            ) : (
-              employee.days.map((day) => (
-                <AttendanceDay
-                  key={day.date}
-                  day={day}
-                  employeeId={employee._id}
-                  toggleStatus={toggleStatus}
-                  submitting={submitting}
-                />
-              ))
-            )}
-          </Box>
-          
-          {employee.days.length > 0 && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.success.main }} />
-                <Typography variant="caption" color="text.secondary">Present</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.error.main }} />
-                <Typography variant="caption" color="text.secondary">Absent</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.warning.main, border: `1px solid ${theme.palette.divider}` }} />
-                <Typography variant="caption" color="text.secondary">Overtime</Typography>
-              </Box>
-            </Box>
-          )}
-        </Box>
-      </CardContent>
-      
-      <CardActions sx={{ 
-        p: 2, 
-        pt: 0,
-        borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-      }}>
-        <Button
-          fullWidth
-          onClick={handleViewDetails}
-          variant="outlined"
-          size="small"
-          startIcon={<VisibilityIcon />}
-          sx={{
-            borderRadius: 2,
-            fontWeight: 600,
-            '&:hover': {
-              transform: 'translateY(-1px)',
-              boxShadow: theme.shadows[2],
-            },
-            transition: 'all 0.2s',
-          }}
-        >
-          View Full Details
-        </Button>
-      </CardActions>
-    </Card>
-  );
-}
-
-// Grid component for layout
-const Grid = ({ children, container, item, spacing, xs, sm, md, lg, sx }: any) => {
-  if (container) {
-    return (
-      <Box sx={{ 
-        display: 'grid', 
-        gap: spacing || 2,
-        ...(sx || {})
-      }}>
-        {children}
-      </Box>
-    );
-  }
-  
-  if (item) {
-    return (
-      <Box sx={{ 
-        gridColumn: getGridColumn({ xs, sm, md, lg }),
-        ...(sx || {})
-      }}>
-        {children}
-      </Box>
-    );
-  }
-  
-  return <Box sx={sx}>{children}</Box>;
-};
-
-const getGridColumn = ({ xs, sm, md, lg }: any) => {
-  const columns = { xs: 12, sm: 12, md: 12, lg: 12 };
-  if (xs) columns.xs = xs;
-  if (sm) columns.sm = sm;
-  if (md) columns.md = md;
-  if (lg) columns.lg = lg;
-  
-  return {
-    xs: `span ${columns.xs}`,
-    sm: `span ${columns.sm}`,
-    md: `span ${columns.md}`,
-    lg: `span ${columns.lg}`,
-  };
-};
-
-// Main Attendance Page Component
 export default function AttendancePage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -1045,8 +455,13 @@ export default function AttendancePage() {
               }
               options={departments.map(dept => ({ value: dept, label: dept }))}
             />
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+            
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2 
+            }}>
+              <Box sx={{ flex: 1 }}>
                 <TextField
                   fullWidth
                   label="Salary"
@@ -1066,8 +481,8 @@ export default function AttendancePage() {
                     ),
                   }}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
+              </Box>
+              <Box sx={{ flex: 1 }}>
                 <CustomSelect
                   label="Salary Type"
                   value={basicInfo.salaryType}
@@ -1076,8 +491,9 @@ export default function AttendancePage() {
                   }
                   options={salaryTypes}
                 />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
+            
             <TextField
               fullWidth
               label="Joining Date"
@@ -1110,7 +526,7 @@ export default function AttendancePage() {
                 </Typography>
               </AccordionSummary>
               <AccordionDetails sx={{ pt: 2 }}>
-                <Stack spacing={2}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <TextField
                     fullWidth
                     label="Address"
@@ -1132,24 +548,28 @@ export default function AttendancePage() {
                     onChange={(e) => setAdvancedInfo(prev => ({ ...prev, emergencyContactName: e.target.value }))}
                   />
                   
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2 
+                  }}>
+                    <Box sx={{ flex: 1 }}>
                       <TextField
                         fullWidth
                         label="Contact Phone"
                         value={advancedInfo.emergencyContactPhone}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, emergencyContactPhone: e.target.value }))}
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
                       <TextField
                         fullWidth
                         label="Relation"
                         value={advancedInfo.emergencyContactRelation}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, emergencyContactRelation: e.target.value }))}
                       />
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                   
                   <Divider>Bank Details</Divider>
                   
@@ -1163,24 +583,28 @@ export default function AttendancePage() {
                     }}
                   />
                   
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2 
+                  }}>
+                    <Box sx={{ flex: 1 }}>
                       <TextField
                         fullWidth
                         label="Bank Name"
                         value={advancedInfo.bankName}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, bankName: e.target.value }))}
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
                       <TextField
                         fullWidth
                         label="IFSC Code"
                         value={advancedInfo.ifscCode}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, ifscCode: e.target.value.toUpperCase() }))}
                       />
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                   
                   <TextField
                     fullWidth
@@ -1191,24 +615,28 @@ export default function AttendancePage() {
                   
                   <Divider>Documents</Divider>
                   
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2 
+                  }}>
+                    <Box sx={{ flex: 1 }}>
                       <TextField
                         fullWidth
                         label="Aadhaar Number"
                         value={advancedInfo.aadhaar}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, aadhaar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
                       <TextField
                         fullWidth
                         label="PAN Number"
                         value={advancedInfo.pan}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, pan: e.target.value.toUpperCase() }))}
                       />
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                   
                   <TextField
                     fullWidth
@@ -1216,7 +644,7 @@ export default function AttendancePage() {
                     value={advancedInfo.license}
                     onChange={(e) => setAdvancedInfo(prev => ({ ...prev, license: e.target.value }))}
                   />
-                </Stack>
+                </Box>
               </AccordionDetails>
             </Accordion>
           </Box>
@@ -1268,24 +696,12 @@ export default function AttendancePage() {
             boxShadow: theme.shadows[4],
             position: 'relative',
             overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'url(/pattern.svg)',
-              opacity: 0.1,
-            }
           }}
         >
           <Box sx={{ 
             display: 'flex', 
             alignItems: 'center', 
             gap: 3,
-            position: 'relative',
-            zIndex: 1,
             flexDirection: { xs: 'column', sm: 'row' },
             textAlign: { xs: 'center', sm: 'left' }
           }}>
@@ -1313,7 +729,6 @@ export default function AttendancePage() {
                 sx={{ 
                   fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' },
                   color: theme.palette.common.white,
-                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
                 }}
               >
                 Employee Management
@@ -1323,7 +738,12 @@ export default function AttendancePage() {
                 {employees.length} Employee{employees.length !== 1 ? 's' : ''}
               </Typography>
               
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 2, 
+                flexWrap: 'wrap', 
+                justifyContent: { xs: 'center', sm: 'flex-start' } 
+              }}>
                 <Chip
                   icon={<CheckCircleIcon />}
                   label={`${employees.reduce((sum, emp) => sum + emp.days.filter(d => d.status === 'Present').length, 0)} Present Today`}
@@ -1353,7 +773,6 @@ export default function AttendancePage() {
             sx={{ 
               mb: 3, 
               borderRadius: 2,
-              boxShadow: theme.shadows[1],
             }} 
             onClose={() => setError(null)}
             action={
@@ -1413,7 +832,6 @@ export default function AttendancePage() {
                     boxShadow: theme.shadows[4],
                     transform: 'translateY(-2px)',
                   },
-                  transition: 'all 0.3s',
                 }}
               >
                 Add Employee
@@ -1434,7 +852,7 @@ export default function AttendancePage() {
           </Box>
         </Paper>
 
-        {/* Employees Grid */}
+        {/* Employees Grid - Using responsive flexbox layout */}
         {employees.length > 0 ? (
           <Box sx={{ 
             display: 'grid',
@@ -1465,8 +883,6 @@ export default function AttendancePage() {
                 p: 6,
                 bgcolor: alpha(theme.palette.action.hover, 0.3),
                 border: `2px dashed ${alpha(theme.palette.divider, 0.5)}`,
-                position: 'relative',
-                overflow: 'hidden',
               }}
             >
               <Box sx={{ 
@@ -1506,7 +922,6 @@ export default function AttendancePage() {
                     transform: 'translateY(-2px)',
                     boxShadow: theme.shadows[4],
                   },
-                  transition: 'all 0.3s',
                 }}
               >
                 Add Your First Employee
@@ -1532,20 +947,32 @@ export default function AttendancePage() {
         <DialogTitle sx={{ 
           borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
           bgcolor: alpha(theme.palette.primary.main, 0.05),
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Add New Employee
-          </Typography>
-          <Stepper 
-            activeStep={activeStep} 
-            sx={{ mt: 2 }}
+          <Box>
+            <Typography variant="h4" fontWeight="bold" gutterBottom>
+              Add New Employee
+            </Typography>
+            <Stepper 
+              activeStep={activeStep} 
+              sx={{ mt: 2 }}
+            >
+              {steps.map((label) => (
+                <Step key={label}>
+                  <StepLabel>{label}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+          </Box>
+          <IconButton
+            onClick={() => !submitting && setAddDialogOpen(false)}
+            disabled={submitting}
+            size="small"
           >
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
 
         <DialogContent sx={{ p: 3, overflowY: 'auto' }}>
