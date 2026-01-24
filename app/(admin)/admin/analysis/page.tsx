@@ -1,4 +1,4 @@
-// app/admin/dashboard/page.tsx - COMPLETE VERSION
+// app/admin/analysis/page.tsx - COMPLETE VERSION
 'use client'
 
 import React, { useState, useEffect } from 'react'
