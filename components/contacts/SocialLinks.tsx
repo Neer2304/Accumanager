@@ -21,25 +21,25 @@ const socialLinks = [
   { 
     icon: <Twitter />, 
     label: 'Twitter', 
-    link: 'https://twitter.com/accumanage',
+    // link: 'https://twitter.com/accumanage',
     color: '#1DA1F2',
   },
   { 
     icon: <LinkedIn />, 
     label: 'LinkedIn', 
-    link: 'https://linkedin.com/company/accumanage',
+    // link: 'https://linkedin.com/company/accumanage',
     color: '#0077B5',
   },
   { 
     icon: <Facebook />, 
     label: 'Facebook', 
-    link: 'https://facebook.com/accumanage',
+    // link: 'https://facebook.com/accumanage',
     color: '#4267B2',
   },
   { 
     icon: <Instagram />, 
     label: 'Instagram', 
-    link: 'https://instagram.com/accumanage',
+    link: 'https://instagram.com/',
     color: '#E4405F',
   },
 ];

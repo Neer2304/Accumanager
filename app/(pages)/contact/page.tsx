@@ -36,41 +36,41 @@ export default function ContactPage() {
   const [responseData, setResponseData] = useState<any>(null);
 
   const contactInfo = [
-    {
-      icon: <LocationOn />,
-      title: 'Corporate Office',
-      details: 'Bengaluru, Karnataka, India',
-      description: 'Tech Hub of India',
-      action: 'View on Map',
-      actionIcon: <Map />,
-      link: 'https://maps.google.com/?q=Bengaluru,+Karnataka,+India',
-    },
+    // {
+    //   icon: <LocationOn />,
+    //   title: 'Corporate Office',
+    //   details: 'Bengaluru, Karnataka, India',
+    //   description: 'Tech Hub of India',
+    //   action: 'View on Map',
+    //   actionIcon: <Map />,
+    //   link: 'https://maps.google.com/?q=Bengaluru,+Karnataka,+India',
+    // },
     {
       icon: <Phone />,
       title: 'Call Us',
-      details: '+91 98765 43210',
+      details: '+91 9313202038',
       description: 'Mon-Fri, 9 AM - 6 PM IST',
       action: 'Call Now',
       actionIcon: <Phone />,
-      link: 'tel:+919876543210',
+      link: 'tel:+919313202038',
     },
     {
       icon: <Email />,
       title: 'Email Us',
-      details: 'support@accumanage.com',
+      details: 'mehtaneer143@gmail.com',
       description: 'Response within 24 hours',
       action: 'Send Email',
       actionIcon: <Email />,
-      link: 'mailto:support@accumanage.com',
+      link: 'mailto:mehtaneer143@gmail.com',
     },
     {
       icon: <WhatsApp />,
       title: 'WhatsApp Support',
-      details: '+91 98765 43210',
+      details: '+91 9313202038',
       description: 'Quick chat support',
       action: 'Start Chat',
       actionIcon: <Message />,
-      link: 'https://wa.me/919876543210',
+      link: 'https://wa.me/9313202038',
     },
   ];
 
