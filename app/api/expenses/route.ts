@@ -17,6 +17,11 @@ export async function GET(request: NextRequest) {
     const decoded = verifyToken(authToken);
     console.log('User ID:', decoded.userId);
     
+    if (!decoded.userId) {
+      console.log('Invalid user ID in token');
+      return NextResponse.json({ error: 'Invalid user token' }, { status: 401 });
+    }
+    
     await connectToDatabase();
     console.log('Connected to database');
 
@@ -55,7 +60,7 @@ export async function GET(request: NextRequest) {
     if (startDate && endDate) {
       filter.date = {
         $gte: new Date(startDate),
-        $lte: new Date(endDate + 'T23:59:59.999Z') // Include entire end day
+        $lte: new Date(endDate + 'T23:59:59.999Z')
       };
     }
 
@@ -63,7 +68,7 @@ export async function GET(request: NextRequest) {
     const sortOptions: any = {};
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-    console.log('Filter:', JSON.stringify(filter));
+    console.log('Filter with userId:', JSON.stringify(filter));
 
     const expenses = await Expense.find(filter)
       .sort(sortOptions)
@@ -74,7 +79,7 @@ export async function GET(request: NextRequest) {
     const total = await Expense.countDocuments(filter);
     const totalPages = Math.ceil(total / limit);
 
-    console.log(`Found ${expenses.length} expenses out of ${total} total`);
+    console.log(`Found ${expenses.length} expenses for user ${decoded.userId}`);
 
     // Get summary stats
     const summary = await Expense.aggregate([
@@ -137,6 +142,11 @@ export async function POST(request: NextRequest) {
     const decoded = verifyToken(authToken);
     console.log('User ID:', decoded.userId);
     
+    if (!decoded.userId) {
+      console.log('Invalid user ID in token');
+      return NextResponse.json({ error: 'Invalid user token' }, { status: 401 });
+    }
+    
     await connectToDatabase();
     console.log('Connected to database');
 
@@ -188,13 +198,13 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    console.log('Cleaned expense data for saving:', JSON.stringify(cleanedExpenseData, null, 2));
+    console.log('Cleaned expense data with userId:', JSON.stringify(cleanedExpenseData, null, 2));
 
     // Create new expense
     const expense = new Expense(cleanedExpenseData);
     await expense.save();
 
-    console.log('Expense saved successfully with ID:', expense._id);
+    console.log('Expense saved successfully with ID:', expense._id, 'for user:', decoded.userId);
 
     return NextResponse.json({
       ...expense.toObject(),

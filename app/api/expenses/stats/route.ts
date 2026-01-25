@@ -17,6 +17,11 @@ export async function GET(request: NextRequest) {
     const decoded = verifyToken(authToken);
     console.log('User ID:', decoded.userId);
     
+    if (!decoded.userId) {
+      console.log('Invalid user ID in token');
+      return NextResponse.json({ error: 'Invalid user token' }, { status: 401 });
+    }
+    
     await connectToDatabase();
     console.log('Connected to database');
 

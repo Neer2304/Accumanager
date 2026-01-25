@@ -3,6 +3,61 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Expense from '@/models/Expense';
 import { verifyToken } from '@/lib/jwt';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    console.log('GET Single Expense API called for ID:', params.id);
+    
+    const authToken = request.cookies.get('auth_token')?.value;
+    
+    if (!authToken) {
+      console.log('No auth token found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(authToken);
+    console.log('User ID:', decoded.userId);
+    
+    if (!decoded.userId) {
+      console.log('Invalid user ID in token');
+      return NextResponse.json({ error: 'Invalid user token' }, { status: 401 });
+    }
+    
+    await connectToDatabase();
+    console.log('Connected to database');
+
+    const expenseId = params.id;
+
+    // Find expense and verify ownership
+    const expense = await Expense.findOne({ 
+      _id: expenseId, 
+      userId: decoded.userId 
+    });
+
+    if (!expense) {
+      console.log('Expense not found or not owned by user');
+      return NextResponse.json(
+        { error: 'Expense not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      ...expense.toObject(),
+      _id: expense._id.toString()
+    });
+
+  } catch (error: any) {
+    console.error('Get expense error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch expense' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -19,6 +74,11 @@ export async function PUT(
 
     const decoded = verifyToken(authToken);
     console.log('User ID:', decoded.userId);
+    
+    if (!decoded.userId) {
+      console.log('Invalid user ID in token');
+      return NextResponse.json({ error: 'Invalid user token' }, { status: 401 });
+    }
     
     await connectToDatabase();
     console.log('Connected to database');
@@ -74,7 +134,7 @@ export async function PUT(
     Object.assign(expense, cleanedUpdateData);
     await expense.save();
 
-    console.log('Expense updated successfully');
+    console.log('Expense updated successfully for user:', decoded.userId);
 
     return NextResponse.json({
       ...expense.toObject(),
@@ -118,25 +178,31 @@ export async function DELETE(
     const decoded = verifyToken(authToken);
     console.log('User ID:', decoded.userId);
     
+    if (!decoded.userId) {
+      console.log('Invalid user ID in token');
+      return NextResponse.json({ error: 'Invalid user token' }, { status: 401 });
+    }
+    
     await connectToDatabase();
     console.log('Connected to database');
 
     const expenseId = params.id;
 
+    // Verify ownership and delete
     const expense = await Expense.findOneAndDelete({ 
       _id: expenseId, 
       userId: decoded.userId 
     });
 
     if (!expense) {
-      console.log('Expense not found or not owned by user');
+      console.log('Expense not found or not owned by user:', decoded.userId);
       return NextResponse.json(
         { error: 'Expense not found' },
         { status: 404 }
       );
     }
 
-    console.log('Expense deleted successfully');
+    console.log('Expense deleted successfully for user:', decoded.userId);
     
     return NextResponse.json({ 
       message: 'Expense deleted successfully',
