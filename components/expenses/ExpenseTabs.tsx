@@ -84,71 +84,71 @@ const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
   // Calculate totals for categories
   const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
-  // Category Card Component
-  const CategoryCard = ({ category, totalAmount }: { 
-    category: typeof expenseCategories[0]; 
-    totalAmount: number;
-  }) => {
-    const categoryExpenses = expenses.filter(e => e.category === category.value);
-    const total = categoryExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const percentage = totalAmount > 0 ? (total / totalAmount) * 100 : 0;
+  // Replace the CategoryCard component's prop type definition
+const CategoryCard = ({ category, totalAmount }: { 
+  category: { value: string; label: string; color: string; icon?: string };
+  totalAmount: number;
+}) => {
+  const categoryExpenses = expenses.filter(e => e.category === category.value);
+  const total = categoryExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const percentage = totalAmount > 0 ? (total / totalAmount) * 100 : 0;
 
-    return (
-      <Card sx={{ borderRadius: 3, height: '100%', overflow: 'hidden' }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Avatar
+  return (
+    <Card sx={{ borderRadius: 3, height: '100%', overflow: 'hidden' }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Avatar
+            sx={{
+              bgcolor: category.color,
+              width: 48,
+              height: 48,
+              fontSize: 24,
+            }}
+          >
+            {getCategoryIcon(category.value)}
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h6" fontWeight="bold">
+              {category.label}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {categoryExpenses.length} {categoryExpenses.length === 1 ? 'expense' : 'expenses'}
+            </Typography>
+          </Box>
+        </Box>
+        <Typography variant="h5" fontWeight="bold" color="primary">
+          ₹{total.toLocaleString()}
+        </Typography>
+        {expenses.length > 0 && (
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              {percentage.toFixed(1)}% of total
+            </Typography>
+            <Box
               sx={{
-                bgcolor: category.color,
-                width: 48,
-                height: 48,
-                fontSize: 24,
+                width: '100%',
+                height: 4,
+                bgcolor: 'grey.200',
+                borderRadius: 2,
+                mt: 0.5,
+                overflow: 'hidden',
               }}
             >
-              {getCategoryIcon(category.value)}
-            </Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h6" fontWeight="bold">
-                {category.label}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {categoryExpenses.length} {categoryExpenses.length === 1 ? 'expense' : 'expenses'}
-              </Typography>
-            </Box>
-          </Box>
-          <Typography variant="h5" fontWeight="bold" color="primary">
-            ₹{total.toLocaleString()}
-          </Typography>
-          {expenses.length > 0 && (
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                {percentage.toFixed(1)}% of total
-              </Typography>
               <Box
                 sx={{
-                  width: '100%',
-                  height: 4,
-                  bgcolor: 'grey.200',
-                  borderRadius: 2,
-                  mt: 0.5,
-                  overflow: 'hidden',
+                  width: `${percentage}%`,
+                  height: '100%',
+                  bgcolor: category.color,
+                  transition: 'width 0.3s',
                 }}
-              >
-                <Box
-                  sx={{
-                    width: `${percentage}%`,
-                    height: '100%',
-                    bgcolor: category.color,
-                    transition: 'width 0.3s',
-                  }}
-                />
-              </Box>
+              />
             </Box>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
   return (
     <>
