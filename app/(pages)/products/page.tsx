@@ -1,4 +1,3 @@
-// app/products/page.tsx - COMPLETE FIXED VERSION
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
@@ -24,8 +23,16 @@ import {
   alpha,
   LinearProgress,
   Fab,
+  Breadcrumbs,
+  Link as MuiLink,
+  Container,
+  Stack,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
   Add as AddIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
@@ -38,7 +45,9 @@ import {
   Refresh as RefreshIcon,
   FileDownload as FileDownloadIcon,
   Category as CategoryIcon,
+  MoreVert,
 } from "@mui/icons-material";
+import Link from "next/link";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import ProductCard from "@/components/products/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
@@ -63,6 +72,10 @@ function TabPanel(props: TabPanelProps) {
 
 export default function ProductsPage() {
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  
   const {
     products,
     isLoading,
@@ -90,6 +103,7 @@ export default function ProductsPage() {
   >("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
 
   // Load sync status
   useEffect(() => {
@@ -158,6 +172,10 @@ export default function ProductsPage() {
       console.error("Sync failed:", error);
       showSnackbar("Sync failed", "error");
     }
+  };
+
+  const handleBack = () => {
+    window.history.back();
   };
 
   // Get unique categories
@@ -298,6 +316,7 @@ export default function ProductsPage() {
     window.URL.revokeObjectURL(url);
 
     showSnackbar("Products exported to CSV", "success");
+    setMoreMenuAnchor(null);
   };
 
   // Reset all filters
@@ -312,185 +331,314 @@ export default function ProductsPage() {
   // Loading state
   if (isLoading && products.length === 0) {
     return (
-      <MainLayout title="Product Management">
-        <Box
-          sx={{
-            p: 3,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: 400,
-          }}
-        >
-          <CircularProgress size={60} sx={{ mb: 3 }} />
-          <Typography variant="h6" color="text.secondary">
-            Loading Products...
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {isOnline ? "Fetching from server" : "Loading from local storage"}
-          </Typography>
-        </Box>
+      <MainLayout title="Products">
+        <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            minHeight: 400 
+          }}>
+            <CircularProgress />
+          </Box>
+        </Container>
       </MainLayout>
     );
   }
 
   return (
-    <MainLayout title="Product Management">
-      <Box sx={{ maxWidth: "1400px", margin: "0 auto", px: { xs: 2, sm: 3 } }}>
-        {/* Status Bar */}
-        <Paper
-          sx={{
-            p: 2,
-            mb: 3,
-            borderRadius: 2,
-            bgcolor: "background.default",
-            position: "sticky",
-            top: 70,
-            zIndex: 1000,
-            boxShadow: 1,
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 2,
-            }}
+    <MainLayout title="Products">
+      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+        {/* Header - Same style as other pages */}
+        <Box sx={{ mb: 4 }}>
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBack}
+            sx={{ mb: 2 }}
+            size="small"
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {isOnline ? (
+            Back to Dashboard
+          </Button>
+
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none',
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              Dashboard
+            </MuiLink>
+            <Typography color="text.primary">Products</Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 3
+          }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                Product Catalog
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Manage your inventory and track products
+              </Typography>
+            </Box>
+
+            <Stack 
+              direction={{ xs: 'column', sm: 'row' }} 
+              spacing={1}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              sx={{ 
+                width: { xs: '100%', sm: 'auto' },
+                flexShrink: 0
+              }}
+            >
+              {/* Status Indicators */}
+              <Stack 
+                direction="row" 
+                spacing={1} 
+                alignItems="center"
+                sx={{ 
+                  order: { xs: 1, sm: 0 },
+                  mb: { xs: 1, sm: 0 }
+                }}
+              >
+                {!isOnline && (
+                  <Chip 
+                    label="Offline" 
+                    size="small" 
+                    color="warning" 
+                    variant="outlined"
+                    sx={{ height: 24 }}
+                  />
+                )}
+                {syncStatus?.pendingSyncCount > 0 && (
+                  <Chip 
+                    label={`${syncStatus.pendingSyncCount} pending`}
+                    size="small" 
+                    color="warning" 
+                    variant="filled"
+                    sx={{ height: 24 }}
+                  />
+                )}
+              </Stack>
+
+              {/* Action Buttons - Responsive */}
+              {isMobile ? (
                 <>
-                  <CloudQueueIcon color="success" fontSize="small" />
-                  <Typography variant="body2" color="success.main">
-                    Online
-                  </Typography>
+                  {/* Mobile: Show Add button and more menu */}
+                  <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => router.push("/products/add")}
+                      disabled={!isOnline}
+                      sx={{ 
+                        flex: 1,
+                        minHeight: 44,
+                        borderRadius: '8px'
+                      }}
+                      size="small"
+                    >
+                      Add Product
+                    </Button>
+                    
+                    <IconButton
+                      size="small"
+                      onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
+                      sx={{ 
+                        border: 1,
+                        borderColor: 'divider',
+                        borderRadius: '8px'
+                      }}
+                    >
+                      <MoreVert />
+                    </IconButton>
+                  </Stack>
+                </>
+              ) : isTablet ? (
+                <>
+                  {/* Tablet: Show both buttons with smaller size */}
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => router.push("/products/add")}
+                      disabled={!isOnline}
+                      sx={{ 
+                        minHeight: 40,
+                        borderRadius: '8px',
+                        px: 2
+                      }}
+                      size="small"
+                    >
+                      Add Product
+                    </Button>
+                    
+                    <Button
+                      variant="outlined"
+                      startIcon={<FileDownloadIcon />}
+                      onClick={exportToCSV}
+                      disabled={products.length === 0}
+                      sx={{ 
+                        minHeight: 40,
+                        borderRadius: '8px',
+                        px: 2
+                      }}
+                      size="small"
+                    >
+                      Export
+                    </Button>
+                  </Stack>
                 </>
               ) : (
                 <>
-                  <CloudOffIcon color="warning" fontSize="small" />
-                  <Typography variant="body2" color="warning.main">
-                    Offline
-                  </Typography>
+                  {/* Desktop: Full buttons */}
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<FileDownloadIcon />}
+                      onClick={exportToCSV}
+                      disabled={products.length === 0}
+                      sx={{ 
+                        minHeight: 48,
+                        borderRadius: '12px',
+                        px: 3
+                      }}
+                      size="medium"
+                    >
+                      Export CSV
+                    </Button>
+                    
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => router.push("/products/add")}
+                      disabled={!isOnline}
+                      sx={{ 
+                        minHeight: 48,
+                        borderRadius: '12px',
+                        px: 3,
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        "&:disabled": {
+                          bgcolor: alpha("#667eea", 0.5),
+                        },
+                      }}
+                      size="medium"
+                    >
+                      Add Product
+                    </Button>
+                  </Stack>
                 </>
               )}
-
-              {syncStatus?.pendingSyncCount > 0 && (
-                <Tooltip
-                  title={`${syncStatus.pendingSyncCount} items waiting to sync`}
-                >
-                  <Badge
-                    badgeContent={syncStatus.pendingSyncCount}
-                    color="warning"
-                    sx={{ ml: 1 }}
-                  >
-                    <IconButton
-                      size="small"
-                      onClick={handleManualSync}
-                      disabled={!isOnline}
-                      sx={{
-                        bgcolor: "warning.light",
-                        "&:hover": { bgcolor: "warning.main" },
-                      }}
-                    >
-                      <SyncIcon fontSize="small" />
-                    </IconButton>
-                  </Badge>
-                </Tooltip>
-              )}
-            </Box>
-
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Typography variant="caption" color="text.secondary">
-                Storage: {syncStatus?.storageUsage?.totalMB?.toFixed(1)} MB
-              </Typography>
-
-              {selectedCategories.length > 0 && (
-                <Chip
-                  label={`${selectedCategories.length} categories`}
-                  size="small"
-                  onDelete={() => setSelectedCategories([])}
-                />
-              )}
-            </Box>
+            </Stack>
           </Box>
-        </Paper>
+        </Box>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert
-            severity="error"
-            sx={{ mb: 3, borderRadius: 2 }}
-            action={
-              <Button color="inherit" size="small" onClick={clearError}>
-                Dismiss
-              </Button>
-            }
-          >
-            {error}
-          </Alert>
-        )}
-
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Box
+        {/* Main Content */}
+        <Box sx={{ maxWidth: "1400px", margin: "0 auto" }}>
+          {/* Status Bar */}
+          <Paper
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              p: 2,
               mb: 3,
-              flexWrap: "wrap",
-              gap: 2,
+              borderRadius: 2,
+              bgcolor: "background.default",
+              boxShadow: 1,
             }}
           >
-            <Box>
-              <Typography
-                variant="h4"
-                component="h1"
-                fontWeight="bold"
-                gutterBottom
-              >
-                📦 Product Catalog
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {isOnline
-                  ? "Manage your inventory in real-time"
-                  : "Offline Mode - Viewing local data"}
-              </Typography>
-            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {isOnline ? (
+                  <>
+                    <CloudQueueIcon color="success" fontSize="small" />
+                    <Typography variant="body2" color="success.main">
+                      Online
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <CloudOffIcon color="warning" fontSize="small" />
+                    <Typography variant="body2" color="warning.main">
+                      Offline
+                    </Typography>
+                  </>
+                )}
 
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-              <Button
-                variant="outlined"
-                startIcon={<FileDownloadIcon />}
-                onClick={exportToCSV}
-                disabled={products.length === 0}
-                size="small"
-              >
-                Export
-              </Button>
+                {syncStatus?.pendingSyncCount > 0 && (
+                  <Tooltip
+                    title={`${syncStatus.pendingSyncCount} items waiting to sync`}
+                  >
+                    <Badge
+                      badgeContent={syncStatus.pendingSyncCount}
+                      color="warning"
+                      sx={{ ml: 1 }}
+                    >
+                      <IconButton
+                        size="small"
+                        onClick={handleManualSync}
+                        disabled={!isOnline}
+                        sx={{
+                          bgcolor: "warning.light",
+                          "&:hover": { bgcolor: "warning.main" },
+                        }}
+                      >
+                        <SyncIcon fontSize="small" />
+                      </IconButton>
+                    </Badge>
+                  </Tooltip>
+                )}
+              </Box>
 
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => router.push("/products/add")}
-                sx={{
-                  borderRadius: "12px",
-                  px: 3,
-                  background:
-                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  "&:disabled": {
-                    bgcolor: alpha("#667eea", 0.5),
-                  },
-                }}
-                disabled={!isOnline}
-              >
-                Add Product
-              </Button>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Storage: {syncStatus?.storageUsage?.totalMB?.toFixed(1)} MB
+                </Typography>
+
+                {selectedCategories.length > 0 && (
+                  <Chip
+                    label={`${selectedCategories.length} categories`}
+                    size="small"
+                    onDelete={() => setSelectedCategories([])}
+                  />
+                )}
+              </Box>
             </Box>
-          </Box>
+          </Paper>
+
+          {/* Error Alert */}
+          {error && (
+            <Alert
+              severity="error"
+              sx={{ mb: 3, borderRadius: 2 }}
+              action={
+                <Button color="inherit" size="small" onClick={clearError}>
+                  Dismiss
+                </Button>
+              }
+            >
+              {error}
+            </Alert>
+          )}
 
           {/* Search and Filters */}
           <Paper
@@ -578,7 +726,7 @@ export default function ProductsPage() {
             )}
           </Paper>
 
-          {/* Stats Cards - Using Box instead of Grid */}
+          {/* Stats Cards */}
           <Box
             sx={{
               display: "flex",
@@ -702,59 +850,103 @@ export default function ProductsPage() {
               />
             </Tabs>
           </Paper>
-        </Box>
 
-        {/* Products Grid */}
-        <TabPanel value={tabValue} index={0}>
-          {filteredProducts.length === 0 ? (
-            <Paper sx={{ p: 6, textAlign: "center", borderRadius: 2 }}>
-              <InventoryIcon
-                sx={{
-                  fontSize: 64,
-                  color: "text.secondary",
-                  mb: 2,
-                  opacity: 0.5,
-                }}
-              />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No Products Found
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {searchTerm || selectedCategories.length > 0
-                  ? "Try adjusting your search or filters"
-                  : "Add your first product to get started"}
-              </Typography>
-              {!searchTerm && selectedCategories.length === 0 && (
-                <Button
-                  variant="contained"
-                  onClick={() => router.push("/products/add")}
-                  disabled={!isOnline}
+          {/* Products Grid */}
+          <TabPanel value={tabValue} index={0}>
+            {filteredProducts.length === 0 ? (
+              <Paper sx={{ p: 6, textAlign: "center", borderRadius: 2 }}>
+                <InventoryIcon
+                  sx={{
+                    fontSize: 64,
+                    color: "text.secondary",
+                    mb: 2,
+                    opacity: 0.5,
+                  }}
+                />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No Products Found
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  {searchTerm || selectedCategories.length > 0
+                    ? "Try adjusting your search or filters"
+                    : "Add your first product to get started"}
+                </Typography>
+                {!searchTerm && selectedCategories.length === 0 && (
+                  <Button
+                    variant="contained"
+                    onClick={() => router.push("/products/add")}
+                    disabled={!isOnline}
+                  >
+                    Add First Product
+                  </Button>
+                )}
+              </Paper>
+            ) : (
+              <>
+                {/* Results Summary */}
+                <Box
+                  sx={{
+                    mb: 2,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
-                  Add First Product
-                </Button>
-              )}
-            </Paper>
-          ) : (
-            <>
-              {/* Results Summary */}
-              <Box
-                sx={{
-                  mb: 2,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Showing {filteredProducts.length} of {products.length}{" "}
-                  products
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Sorted by: {sortBy} ({sortOrder})
-                </Typography>
-              </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Showing {filteredProducts.length} of {products.length}{" "}
+                    products
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Sorted by: {sortBy} ({sortOrder})
+                  </Typography>
+                </Box>
 
-              {/* Products Grid using Box instead of Grid */}
+                {/* Products Grid */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 3,
+                    "& > *": {
+                      flex: "1 1 300px",
+                      maxWidth: "100%",
+                      minWidth: { xs: "100%", sm: "300px" },
+                    },
+                  }}
+                >
+                  {filteredProducts.map((product: Product) => (
+                    <Box key={product._id}>
+                      <ProductCard
+                        product={product}
+                        isOnline={isOnline}
+                        onSync={handleManualSync}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              </>
+            )}
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={1}>
+            {lowStockProducts.length === 0 ? (
+              <Paper sx={{ p: 6, textAlign: "center", borderRadius: 2 }}>
+                <InventoryIcon
+                  sx={{
+                    fontSize: 64,
+                    color: "success.main",
+                    mb: 2,
+                    opacity: 0.5,
+                  }}
+                />
+                <Typography variant="h6" color="success.main" gutterBottom>
+                  All Stock Levels Good!
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  No products are currently low on stock.
+                </Typography>
+              </Paper>
+            ) : (
               <Box
                 sx={{
                   display: "flex",
@@ -767,7 +959,7 @@ export default function ProductsPage() {
                   },
                 }}
               >
-                {filteredProducts.map((product: Product) => (
+                {lowStockProducts.map((product: Product) => (
                   <Box key={product._id}>
                     <ProductCard
                       product={product}
@@ -777,343 +969,315 @@ export default function ProductsPage() {
                   </Box>
                 ))}
               </Box>
-            </>
-          )}
-        </TabPanel>
+            )}
+          </TabPanel>
 
-        <TabPanel value={tabValue} index={1}>
-          {lowStockProducts.length === 0 ? (
-            <Paper sx={{ p: 6, textAlign: "center", borderRadius: 2 }}>
-              <InventoryIcon
+          <TabPanel value={tabValue} index={2}>
+            {categories.length === 0 ? (
+              <Paper sx={{ p: 6, textAlign: "center", borderRadius: 2 }}>
+                <CategoryIcon
+                  sx={{
+                    fontSize: 64,
+                    color: "text.secondary",
+                    mb: 2,
+                    opacity: 0.5,
+                  }}
+                />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No Categories Found
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Add products to see categories.
+                </Typography>
+              </Paper>
+            ) : (
+              <Box
                 sx={{
-                  fontSize: 64,
-                  color: "success.main",
-                  mb: 2,
-                  opacity: 0.5,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 3,
+                  "& > *": {
+                    flex: "1 1 300px",
+                    maxWidth: "100%",
+                    minWidth: { xs: "100%", sm: "300px" },
+                  },
                 }}
-              />
-              <Typography variant="h6" color="success.main" gutterBottom>
-                All Stock Levels Good!
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                No products are currently low on stock.
-              </Typography>
-            </Paper>
-          ) : (
-            <Box
-              sx={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 3,
-                "& > *": {
-                  flex: "1 1 300px",
-                  maxWidth: "100%",
-                  minWidth: { xs: "100%", sm: "300px" },
-                },
-              }}
-            >
-              {lowStockProducts.map((product: Product) => (
-                <Box key={product._id}>
-                  <ProductCard
-                    product={product}
-                    isOnline={isOnline}
-                    onSync={handleManualSync}
-                  />
-                </Box>
-              ))}
-            </Box>
-          )}
-        </TabPanel>
+              >
+                {categories.map((category) => {
+                  const categoryProducts = products.filter(
+                    (p: Product) => p.category === category
+                  );
+                  const categoryStats = {
+                    totalProducts: categoryProducts.length,
+                    totalStock: categoryProducts.reduce(
+                      (sum: number, p: Product) =>
+                        sum +
+                        p.variations.reduce((vSum: number, v: any) => vSum + v.stock, 0),
+                      0
+                    ),
+                    totalValue: categoryProducts.reduce(
+                      (sum: number, p: Product) =>
+                        sum +
+                        p.variations.reduce((vSum: number, v: any) => vSum + v.price * v.stock, 0),
+                      0
+                    ),
+                    lowStock: categoryProducts.filter((p: Product) =>
+                      p.variations.some((v: any) => v.stock <= 10)
+                    ).length,
+                  };
 
-        <TabPanel value={tabValue} index={2}>
-          {categories.length === 0 ? (
-            <Paper sx={{ p: 6, textAlign: "center", borderRadius: 2 }}>
-              <CategoryIcon
-                sx={{
-                  fontSize: 64,
-                  color: "text.secondary",
-                  mb: 2,
-                  opacity: 0.5,
-                }}
-              />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No Categories Found
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Add products to see categories.
-              </Typography>
-            </Paper>
-          ) : (
-            <Box
-              sx={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 3,
-                "& > *": {
-                  flex: "1 1 300px",
-                  maxWidth: "100%",
-                  minWidth: { xs: "100%", sm: "300px" },
-                },
-              }}
-            >
-              {categories.map((category) => {
-                const categoryProducts = products.filter(
-                  (p: Product) => p.category === category
-                );
-                const categoryStats = {
-                  totalProducts: categoryProducts.length,
-                  totalStock: categoryProducts.reduce(
-                    (sum: number, p: Product) =>
-                      sum +
-                      p.variations.reduce((vSum: number, v: any) => vSum + v.stock, 0),
-                    0
-                  ),
-                  totalValue: categoryProducts.reduce(
-                    (sum: number, p: Product) =>
-                      sum +
-                      p.variations.reduce((vSum: number, v: any) => vSum + v.price * v.stock, 0),
-                    0
-                  ),
-                  lowStock: categoryProducts.filter((p: Product) =>
-                    p.variations.some((v: any) => v.stock <= 10)
-                  ).length,
-                };
-
-                return (
-                  <Box key={category} sx={{ flex: "1 1 300px" }}>
-                    <Card sx={{ p: 3, height: "100%" }}>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", mb: 2 }}
-                      >
-                        <CategoryIcon color="primary" sx={{ mr: 1 }} />
-                        <Typography variant="h6" fontWeight="bold">
-                          {category}
-                        </Typography>
-                      </Box>
-
-                      <Box sx={{ mb: 2 }}>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          gutterBottom
+                  return (
+                    <Box key={category} sx={{ flex: "1 1 300px" }}>
+                      <Card sx={{ p: 3, height: "100%" }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", mb: 2 }}
                         >
-                          {categoryProducts.length} Products
-                        </Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={Math.min(
-                            (categoryProducts.length / products.length) * 100,
-                            100
-                          )}
-                          sx={{ height: 6, borderRadius: 3 }}
-                        />
-                      </Box>
+                          <CategoryIcon color="primary" sx={{ mr: 1 }} />
+                          <Typography variant="h6" fontWeight="bold">
+                            {category}
+                          </Typography>
+                        </Box>
 
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                        <Box sx={{ flex: "1 1 100px" }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Total Stock
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {categoryStats.totalStock}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ flex: "1 1 100px" }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Total Value
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            ₹{categoryStats.totalValue.toLocaleString()}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ flex: "1 1 100px" }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Low Stock
-                          </Typography>
+                        <Box sx={{ mb: 2 }}>
                           <Typography
                             variant="body2"
-                            color="warning.main"
-                            fontWeight="bold"
+                            color="text.secondary"
+                            gutterBottom
                           >
-                            {categoryStats.lowStock}
+                            {categoryProducts.length} Products
                           </Typography>
+                          <LinearProgress
+                            variant="determinate"
+                            value={Math.min(
+                              (categoryProducts.length / products.length) * 100,
+                              100
+                            )}
+                            sx={{ height: 6, borderRadius: 3 }}
+                          />
                         </Box>
-                      </Box>
 
-                      <Button
-                        fullWidth
-                        variant="outlined"
-                        size="small"
-                        sx={{ mt: 2 }}
-                        onClick={() => {
-                          setSelectedCategories([category]);
-                          setTabValue(0);
-                        }}
-                      >
-                        View Products
-                      </Button>
-                    </Card>
-                  </Box>
-                );
-              })}
-            </Box>
-          )}
-        </TabPanel>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                          <Box sx={{ flex: "1 1 100px" }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Total Stock
+                            </Typography>
+                            <Typography variant="body2" fontWeight="bold">
+                              {categoryStats.totalStock}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ flex: "1 1 100px" }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Total Value
+                            </Typography>
+                            <Typography variant="body2" fontWeight="bold">
+                              ₹{categoryStats.totalValue.toLocaleString()}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ flex: "1 1 100px" }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Low Stock
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="warning.main"
+                              fontWeight="bold"
+                            >
+                              {categoryStats.lowStock}
+                            </Typography>
+                          </Box>
+                        </Box>
 
-        <TabPanel value={tabValue} index={3}>
-          {expiredProducts.length === 0 ? (
-            <Paper sx={{ p: 6, textAlign: "center", borderRadius: 2 }}>
-              <InventoryIcon
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          size="small"
+                          sx={{ mt: 2 }}
+                          onClick={() => {
+                            setSelectedCategories([category]);
+                            setTabValue(0);
+                          }}
+                        >
+                          View Products
+                        </Button>
+                      </Card>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={3}>
+            {expiredProducts.length === 0 ? (
+              <Paper sx={{ p: 6, textAlign: "center", borderRadius: 2 }}>
+                <InventoryIcon
+                  sx={{
+                    fontSize: 64,
+                    color: "success.main",
+                    mb: 2,
+                    opacity: 0.5,
+                  }}
+                />
+                <Typography variant="h6" color="success.main" gutterBottom>
+                  No Expired Products!
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  All product batches are up-to-date.
+                </Typography>
+              </Paper>
+            ) : (
+              <Box
                 sx={{
-                  fontSize: 64,
-                  color: "success.main",
-                  mb: 2,
-                  opacity: 0.5,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 3,
+                  "& > *": {
+                    flex: "1 1 300px",
+                    maxWidth: "100%",
+                    minWidth: { xs: "100%", sm: "300px" },
+                  },
                 }}
-              />
-              <Typography variant="h6" color="success.main" gutterBottom>
-                No Expired Products!
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                All product batches are up-to-date.
-              </Typography>
-            </Paper>
-          ) : (
-            <Box
-              sx={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 3,
-                "& > *": {
-                  flex: "1 1 300px",
-                  maxWidth: "100%",
-                  minWidth: { xs: "100%", sm: "300px" },
-                },
-              }}
-            >
-              {expiredProducts.map((product: Product) => (
-                <Box key={product._id}>
-                  <ProductCard
-                    product={product}
-                    isOnline={isOnline}
-                    onSync={handleManualSync}
-                  />
-                </Box>
-              ))}
-            </Box>
-          )}
-        </TabPanel>
+              >
+                {expiredProducts.map((product: Product) => (
+                  <Box key={product._id}>
+                    <ProductCard
+                      product={product}
+                      isOnline={isOnline}
+                      onSync={handleManualSync}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </TabPanel>
 
-        {/* Sort Menu */}
-        <Menu
-          anchorEl={sortAnchor}
-          open={Boolean(sortAnchor)}
-          onClose={() => setSortAnchor(null)}
-        >
-          <MenuItem
-            onClick={() => handleSortSelect("name")}
-            selected={sortBy === "name"}
+          {/* Sort Menu */}
+          <Menu
+            anchorEl={sortAnchor}
+            open={Boolean(sortAnchor)}
+            onClose={() => setSortAnchor(null)}
           >
-            Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
-          </MenuItem>
-          <MenuItem
-            onClick={() => handleSortSelect("price")}
-            selected={sortBy === "price"}
-          >
-            Price {sortBy === "price" && (sortOrder === "asc" ? "↑" : "↓")}
-          </MenuItem>
-          <MenuItem
-            onClick={() => handleSortSelect("stock")}
-            selected={sortBy === "stock"}
-          >
-            Stock Level{" "}
-            {sortBy === "stock" && (sortOrder === "asc" ? "↑" : "↓")}
-          </MenuItem>
-          <MenuItem
-            onClick={() => handleSortSelect("createdAt")}
-            selected={sortBy === "createdAt"}
-          >
-            Recently Added{" "}
-            {sortBy === "createdAt" && (sortOrder === "asc" ? "↑" : "↓")}
-          </MenuItem>
-        </Menu>
-
-        {/* Filter Menu */}
-        <Menu
-          anchorEl={filterAnchor}
-          open={Boolean(filterAnchor)}
-          onClose={() => setFilterAnchor(null)}
-          PaperProps={{ sx: { maxHeight: 300, width: 250 } }}
-        >
-          <MenuItem dense sx={{ fontWeight: "bold" }}>
-            Categories
-          </MenuItem>
-          <MenuItem dense onClick={() => setSelectedCategories([])}>
-            <Typography
-              variant="body2"
-              color={
-                selectedCategories.length === 0 ? "primary" : "text.secondary"
-              }
-            >
-              All Categories
-            </Typography>
-          </MenuItem>
-          {categories.map((category) => (
             <MenuItem
-              key={category}
-              dense
-              onClick={() => handleCategorySelect(category)}
-              sx={{ pl: 3 }}
+              onClick={() => handleSortSelect("name")}
+              selected={sortBy === "name"}
             >
+              Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => handleSortSelect("price")}
+              selected={sortBy === "price"}
+            >
+              Price {sortBy === "price" && (sortOrder === "asc" ? "↑" : "↓")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => handleSortSelect("stock")}
+              selected={sortBy === "stock"}
+            >
+              Stock Level{" "}
+              {sortBy === "stock" && (sortOrder === "asc" ? "↑" : "↓")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => handleSortSelect("createdAt")}
+              selected={sortBy === "createdAt"}
+            >
+              Recently Added{" "}
+              {sortBy === "createdAt" && (sortOrder === "asc" ? "↑" : "↓")}
+            </MenuItem>
+          </Menu>
+
+          {/* Filter Menu */}
+          <Menu
+            anchorEl={filterAnchor}
+            open={Boolean(filterAnchor)}
+            onClose={() => setFilterAnchor(null)}
+            PaperProps={{ sx: { maxHeight: 300, width: 250 } }}
+          >
+            <MenuItem dense sx={{ fontWeight: "bold" }}>
+              Categories
+            </MenuItem>
+            <MenuItem dense onClick={() => setSelectedCategories([])}>
               <Typography
                 variant="body2"
                 color={
-                  selectedCategories.includes(category)
-                    ? "primary"
-                    : "text.secondary"
+                  selectedCategories.length === 0 ? "primary" : "text.secondary"
                 }
               >
-                {category}
+                All Categories
               </Typography>
             </MenuItem>
-          ))}
-        </Menu>
+            {categories.map((category) => (
+              <MenuItem
+                key={category}
+                dense
+                onClick={() => handleCategorySelect(category)}
+                sx={{ pl: 3 }}
+              >
+                <Typography
+                  variant="body2"
+                  color={
+                    selectedCategories.includes(category)
+                      ? "primary"
+                      : "text.secondary"
+                  }
+                >
+                  {category}
+                </Typography>
+              </MenuItem>
+            ))}
+          </Menu>
 
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        >
-          <Alert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
+          {/* More Actions Menu (Mobile) */}
+          <Menu
+            anchorEl={moreMenuAnchor}
+            open={Boolean(moreMenuAnchor)}
+            onClose={() => setMoreMenuAnchor(null)}
           >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
+            <MenuItem onClick={exportToCSV} disabled={products.length === 0}>
+              <FileDownloadIcon fontSize="small" sx={{ mr: 1 }} />
+              Export to CSV
+            </MenuItem>
+            <MenuItem onClick={handleManualSync} disabled={!isOnline}>
+              <SyncIcon fontSize="small" sx={{ mr: 1 }} />
+              Sync Now
+            </MenuItem>
+          </Menu>
 
-        {/* Refresh Button */}
-        <Fab
-          color="primary"
-          size="medium"
-          onClick={() => refetch()}
-          sx={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            zIndex: 1000,
-            bgcolor: "primary.main",
-            "&:hover": {
-              bgcolor: "primary.dark",
-            },
-          }}
-        >
-          <RefreshIcon />
-        </Fab>
-      </Box>
+          {/* Snackbar */}
+          <Snackbar
+            open={snackbar.open}
+            autoHideDuration={6000}
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          >
+            <Alert
+              onClose={() => setSnackbar({ ...snackbar, open: false })}
+              severity={snackbar.severity}
+              sx={{ width: "100%" }}
+            >
+              {snackbar.message}
+            </Alert>
+          </Snackbar>
+
+          {/* Refresh Button */}
+          <Fab
+            color="primary"
+            size="medium"
+            onClick={() => refetch()}
+            sx={{
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              zIndex: 1000,
+              bgcolor: "primary.main",
+              "&:hover": {
+                bgcolor: "primary.dark",
+              },
+            }}
+          >
+            <RefreshIcon />
+          </Fab>
+        </Box>
+      </Container>
     </MainLayout>
   );
 }
