@@ -1,4 +1,3 @@
-// components/calculator/ProductCalculator.tsx - UPDATED WITH useProducts
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
@@ -34,9 +33,14 @@ import {
   useTheme,
   useMediaQuery,
   alpha,
-  CircularProgress
+  CircularProgress,
+  Breadcrumbs,
+  Link as MuiLink,
+  Container,
 } from '@mui/material'
 import {
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
   Calculate,
   Save,
   History,
@@ -63,6 +67,7 @@ import {
   Scale,
   Person
 } from '@mui/icons-material'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { useProducts } from '@/hooks/useProducts'
@@ -504,6 +509,10 @@ Break-even: ${result.breakEvenUnits} units
     setSnackbar({ open: true, message, severity })
   }, [])
 
+  const handleBack = () => {
+    window.history.back()
+  }
+
   // Filter products based on search and user
   const filteredProducts = products.filter(product => {
     // Check if product belongs to current user
@@ -524,14 +533,16 @@ Break-even: ${result.breakEvenUnits} units
   if (authLoading) {
     return (
       <MainLayout title="Profit Calculator">
-        <Box sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '60vh'
-        }}>
-          <CircularProgress />
-        </Box>
+        <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '60vh'
+          }}>
+            <CircularProgress />
+          </Box>
+        </Container>
       </MainLayout>
     )
   }
@@ -540,47 +551,114 @@ Break-even: ${result.breakEvenUnits} units
   if (!isAuthenticated) {
     return (
       <MainLayout title="Profit Calculator">
-        <Box sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '60vh'
-        }}>
-          <Card sx={{
-            maxWidth: 500,
-            p: 4,
-            textAlign: 'center',
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.1)'
+        <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '60vh'
           }}>
-            <MonetizationOn sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h4" fontWeight={700} gutterBottom>
-              Profit Calculator
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              Please login to use the calculator and access your products
-            </Typography>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={() => window.location.href = '/login'}
-              sx={{ borderRadius: 2, px: 4 }}
-            >
-              Login to Continue
-            </Button>
-          </Card>
-        </Box>
+            <Card sx={{
+              maxWidth: 500,
+              p: 4,
+              textAlign: 'center',
+              borderRadius: 3,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.1)'
+            }}>
+              <MonetizationOn sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                Profit Calculator
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Please login to use the calculator and access your products
+              </Typography>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => window.location.href = '/login'}
+                sx={{ borderRadius: 2, px: 4 }}
+              >
+                Login to Continue
+              </Button>
+            </Card>
+          </Box>
+        </Container>
       </MainLayout>
     )
   }
 
   return (
     <MainLayout title="Profit Calculator">
-      <Box sx={{
-        maxWidth: '1400px',
-        margin: '0 auto',
-        px: { xs: 1, sm: 2, md: 3 }
-      }}>
+      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+        {/* Header - New style added */}
+        <Box sx={{ mb: 4 }}>
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBack}
+            sx={{ mb: 2 }}
+            size="small"
+          >
+            Back to Dashboard
+          </Button>
+
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none',
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              Dashboard
+            </MuiLink>
+            <Typography color="text.primary">Calculator</Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 3
+          }}>
+            <Box>
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                Profit Calculator
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Calculate profits, margins, and ROI for your products
+              </Typography>
+            </Box>
+
+            <Stack 
+              direction={{ xs: 'column', sm: 'row' }} 
+              spacing={1}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
+              {!isOnline && (
+                <Chip 
+                  label="Offline Mode" 
+                  size="small" 
+                  color="warning" 
+                  variant="outlined"
+                  sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                />
+              )}
+              <Typography variant="caption" color="text.secondary" sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                Welcome, {getUserDisplayName()} • {products.length} Products
+              </Typography>
+            </Stack>
+          </Box>
+        </Box>
+
+        {/* Main Calculator Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -594,7 +672,7 @@ Break-even: ${result.breakEvenUnits} units
             background: theme.palette.background.paper,
             mt: 2
           }}>
-            {/* Header */}
+            {/* Header Card */}
             <Box sx={{
               p: { xs: 2, sm: 3, md: 4 },
               background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
@@ -629,7 +707,7 @@ Break-even: ${result.breakEvenUnits} units
                   </Box>
                   <Box>
                     <Typography variant={isMobile ? "h5" : "h4"} fontWeight={700} gutterBottom>
-                      Profit Calculator
+                      Advanced Calculator
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Person fontSize="small" />
@@ -1411,7 +1489,7 @@ Break-even: ${result.breakEvenUnits} units
             50% { transform: translateY(-10px); }
           }
         `}</style>
-      </Box>
+      </Container>
     </MainLayout>
   )
 }

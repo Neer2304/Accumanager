@@ -43,8 +43,13 @@ import {
   ListItemText,
   Avatar,
   Divider,
+  Breadcrumbs,
+  Link as MuiLink,
+  Container,
 } from '@mui/material';
 import {
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
   Add,
   MoreVert,
   Edit,
@@ -69,10 +74,12 @@ import {
   CalendarToday,
   ArrowForward,
 } from '@mui/icons-material';
+import Link from 'next/link';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useSubscription } from '@/hooks/useSubscription';
 
+// Define the Customer interface locally to avoid conflicts
 interface Customer {
   _id: string;
   name: string;
@@ -125,8 +132,8 @@ export default function CustomersPage() {
     setIsMounted(true);
   }, []);
 
-  // Safely handle customers data
-  const customersArray: Customer[] = Array.isArray(customers) ? customers : [];
+  // Fix the type error by casting the customers to our local Customer type
+  const customersArray: Customer[] = Array.isArray(customers) ? customers as unknown as Customer[] : [];
 
   // Filter customers based on search
   const filteredCustomers = customersArray.filter(customer => {
@@ -232,6 +239,10 @@ export default function CustomersPage() {
     setPage(0);
   };
 
+  const handleBack = () => {
+    window.history.back();
+  };
+
   // Pagination
   const paginatedCustomers = filteredCustomers.slice(
     page * rowsPerPage,
@@ -258,15 +269,16 @@ export default function CustomersPage() {
   if (!isMounted || isLoading || subscriptionLoading) {
     return (
       <MainLayout title="Customers">
-        <Box sx={{ 
-          p: 3, 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: 400 
-        }}>
-          <CircularProgress />
-        </Box>
+        <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            minHeight: 400 
+          }}>
+            <CircularProgress />
+          </Box>
+        </Container>
       </MainLayout>
     );
   }
@@ -346,110 +358,121 @@ export default function CustomersPage() {
 
   return (
     <MainLayout title="Customers">
-      <Box sx={{ 
-        p: { xs: 1.5, sm: 2, md: 3 },
-        minHeight: '100vh',
-      }}>
+      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+        {/* Header - Same style as other pages */}
+        <Box sx={{ mb: 4 }}>
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBack}
+            sx={{ mb: 2 }}
+            size="small"
+          >
+            Back to Dashboard
+          </Button>
+
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none',
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              Dashboard
+            </MuiLink>
+            <Typography color="text.primary">Customers</Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 3
+          }}>
+            <Box>
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                Customers
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Manage your customer database and contacts
+              </Typography>
+            </Box>
+
+            <Stack 
+              direction={{ xs: 'column', sm: 'row' }} 
+              spacing={1}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
+              {subscription?.status === 'trial' && (
+                <Chip 
+                  label={`Trial: ${subscription.daysRemaining} days left`} 
+                  size="small" 
+                  color="warning" 
+                  variant="outlined"
+                  sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                />
+              )}
+              {/* {!isOnline && (
+                <Chip 
+                  label="Offline Mode" 
+                  size="small" 
+                  color="warning" 
+                  variant="outlined"
+                  sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                />
+              )} */}
+            </Stack>
+          </Box>
+        </Box>
+
         {/* Mobile Filters Drawer */}
         <MobileFilters />
 
-        {/* Header */}
+        {/* Action Buttons */}
         <Box sx={{ 
           display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: { xs: 'flex-start', sm: 'center' }, 
+          alignItems: 'center', 
+          gap: 1,
           mb: 3,
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: { xs: 2, sm: 3 },
+          width: { xs: '100%', sm: 'auto' },
+          flexDirection: { xs: 'column', sm: 'row' }
         }}>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1, 
-              mb: 1,
-              flexWrap: 'wrap'
-            }}>
-              <Typography variant={isMobile ? "h5" : "h4"} component="h1" fontWeight="bold">
-                Customers
-              </Typography>
-              {subscription?.isActive && (
-                <Chip 
-                  label={`${subscription?.plan.toUpperCase()}`} 
-                  color="primary"
-                  size="small"
-                  sx={{ 
-                    height: 24,
-                    fontSize: '0.7rem'
-                  }}
-                />
-              )}
-            </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Manage your customer database and contacts
-            </Typography>
-            
-            {/* Quick Stats - Mobile */}
-            {isMobile && (
-              <Box sx={{ 
-                display: 'flex', 
-                gap: 1.5,
-                mt: 1,
-                flexWrap: 'wrap'
-              }}>
-                <Chip 
-                  icon={<Person fontSize="small" />}
-                  label={`${customersArray.length} Total`}
-                  size="small"
-                  variant="outlined"
-                />
-                <Chip 
-                  icon={<TrendingUp fontSize="small" />}
-                  label={`${customersArray.filter((c: Customer) => c.totalOrders > 0).length} Active`}
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                />
-              </Box>
-            )}
-          </Box>
-          
-          {/* Action Buttons */}
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1,
-            width: { xs: '100%', sm: 'auto' }
-          }}>
-            {isMobile && (
-              <IconButton
-                onClick={() => setShowMobileFilters(true)}
-                size="small"
-                sx={{ 
-                  border: 1,
-                  borderColor: 'divider'
-                }}
-              >
-                <FilterList />
-              </IconButton>
-            )}
-            
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={handleCreateCustomer}
-              size={isMobile ? "medium" : "large"}
-              disabled={!canAddCustomer || !subscription?.isActive}
-              fullWidth={isMobile}
+          {isMobile && (
+            <IconButton
+              onClick={() => setShowMobileFilters(true)}
+              size="small"
               sx={{ 
-                minHeight: isMobile ? 44 : 48,
-                whiteSpace: 'nowrap',
-                flex: { xs: 1, sm: 'none' }
+                border: 1,
+                borderColor: 'divider'
               }}
             >
-              {isMobile ? 'Add' : 'Add Customer'}
-            </Button>
-          </Box>
+              <FilterList />
+            </IconButton>
+          )}
+          
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={handleCreateCustomer}
+            size={isMobile ? "medium" : "large"}
+            disabled={!canAddCustomer || !subscription?.isActive}
+            fullWidth={isMobile}
+            sx={{ 
+              minHeight: isMobile ? 44 : 48,
+              whiteSpace: 'nowrap',
+              flex: { xs: 1, sm: 'none' }
+            }}
+          >
+            {isMobile ? 'Add' : 'Add Customer'}
+          </Button>
         </Box>
 
         {/* Subscription Alerts */}
@@ -479,20 +502,6 @@ export default function CustomersPage() {
               }
             >
               Customer limit reached ({customerLimit} customers). Upgrade to add more.
-            </Alert>
-          )}
-
-          {subscription?.status === 'trial' && (
-            <Alert 
-              severity="info" 
-              sx={{ mb: 2 }}
-              action={
-                <Button color="inherit" size="small" href="/pricing">
-                  {isMobile ? 'View' : 'View Plans'}
-                </Button>
-              }
-            >
-              Free trial: {subscription.daysRemaining} days remaining
             </Alert>
           )}
 
@@ -1086,7 +1095,7 @@ export default function CustomersPage() {
             Delete Customer
           </MenuItem>
         </Menu>
-      </Box>
+      </Container>
     </MainLayout>
   );
 }
