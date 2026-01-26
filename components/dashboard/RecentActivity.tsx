@@ -1,4 +1,5 @@
-// components/dashboard/RecentActivity.tsx - FIXED VERSION
+"use client";
+
 import React, { useEffect, useState } from 'react'
 import {
   Card,
@@ -9,15 +10,18 @@ import {
   useMediaQuery,
   CircularProgress,
   Avatar,
-  Chip
+  Chip,
+  Alert,
+  Button
 } from '@mui/material'
 import { 
   LocalActivityOutlined as ActivityIcon,
   ShoppingCart,
   PersonAdd,
   Warning,
-  Payments,
-  Inventory2
+  Inventory2,
+  Upgrade,
+  ErrorOutline
 } from '@mui/icons-material'
 
 interface Activity {
@@ -39,6 +43,8 @@ const RecentActivity: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [subscriptionExpired, setSubscriptionExpired] = useState(false)
 
   useEffect(() => {
     fetchRecentActivity()
@@ -47,18 +53,34 @@ const RecentActivity: React.FC = () => {
   const fetchRecentActivity = async () => {
     try {
       setLoading(true)
+      setError(null)
+      setSubscriptionExpired(false)
       
       // Fetch recent orders/billing data
       const billingRes = await fetch('/api/billing/recent?limit=10', { 
         credentials: 'include' 
       })
+
+      // Check for subscription expiration (402 status)
+      if (billingRes.status === 402) {
+        const data = await billingRes.json()
+        setError(data.error || 'Subscription required to view recent activity')
+        setSubscriptionExpired(true)
+        setActivities([])
+        setLoading(false)
+        return
+      }
       
-      // Fetch recent customers
+      if (!billingRes.ok) {
+        throw new Error('Failed to fetch billing data')
+      }
+      
+      // Fetch recent customers (only if billing was successful)
       const customersRes = await fetch('/api/customers?limit=5&sort=-createdAt', { 
         credentials: 'include' 
       })
       
-      // Fetch low stock products
+      // Fetch low stock products (only if previous calls were successful)
       const productsRes = await fetch('/api/products?limit=20', { 
         credentials: 'include' 
       })
@@ -161,8 +183,9 @@ const RecentActivity: React.FC = () => {
 
       setActivities(sortedActivities)
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching recent activity:', error)
+      setError(error.message || 'Failed to load recent activity')
       // Fallback to sample data from actual structure
       setActivities(getSampleActivities())
     } finally {
@@ -295,7 +318,7 @@ const RecentActivity: React.FC = () => {
           }}>
             Recent Activity
           </Typography>
-          {activities.length > 0 && (
+          {!subscriptionExpired && activities.length > 0 && (
             <Chip 
               label={`${activities.length} new`}
               size="small"
@@ -306,162 +329,224 @@ const RecentActivity: React.FC = () => {
           )}
         </Box>
 
-        {/* Activities List */}
-        <Box sx={{ 
-          flex: 1, 
-          overflow: 'auto',
-          maxHeight: 350,
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-track': {
-            background: theme.palette.grey[100],
-            borderRadius: '10px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: theme.palette.grey[400],
-            borderRadius: '10px',
-          }
-        }}>
-          {activities.length > 0 ? (
-            activities.map((activity, index) => (
-              <Box
-                key={activity.id}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 2,
-                  py: 2,
-                  px: 1,
-                  borderBottom: index < activities.length - 1 
-                    ? `1px solid ${theme.palette.divider}` 
-                    : 'none',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    backgroundColor: theme.palette.action.hover,
-                    borderRadius: 1,
-                    transform: 'translateX(2px)'
-                  }
-                }}
+        {/* Subscription Expired Message */}
+        {subscriptionExpired && (
+          <Alert 
+            severity="warning" 
+            sx={{ mb: 3 }}
+            icon={<ErrorOutline />}
+            action={
+              <Button 
+                color="inherit" 
+                size="small"
+                startIcon={<Upgrade />}
+                onClick={() => window.location.href = '/pricing'}
+                sx={{ fontWeight: 600 }}
               >
-                {/* Icon */}
-                <Avatar
+                Upgrade
+              </Button>
+            }
+          >
+            <Typography variant="body2" fontWeight={600}>
+              {error || 'Your subscription has expired'}
+            </Typography>
+            <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+              Renew your subscription to view recent activity
+            </Typography>
+          </Alert>
+        )}
+
+        {/* Activities List */}
+        {!subscriptionExpired ? (
+          <Box sx={{ 
+            flex: 1, 
+            overflow: 'auto',
+            maxHeight: 350,
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: theme.palette.grey[100],
+              borderRadius: '10px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: theme.palette.grey[400],
+              borderRadius: '10px',
+            }
+          }}>
+            {activities.length > 0 ? (
+              activities.map((activity, index) => (
+                <Box
+                  key={activity.id}
                   sx={{
-                    width: 36,
-                    height: 36,
-                    bgcolor: getActivityColor(activity.type) + '20',
-                    color: getActivityColor(activity.type),
-                    fontSize: '1rem'
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 2,
+                    py: 2,
+                    px: 1,
+                    borderBottom: index < activities.length - 1 
+                      ? `1px solid ${theme.palette.divider}` 
+                      : 'none',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: theme.palette.action.hover,
+                      borderRadius: 1,
+                      transform: 'translateX(2px)'
+                    }
                   }}
                 >
-                  {activity.icon}
-                </Avatar>
+                  {/* Icon */}
+                  <Avatar
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      bgcolor: getActivityColor(activity.type) + '20',
+                      color: getActivityColor(activity.type),
+                      fontSize: '1rem'
+                    }}
+                  >
+                    {activity.icon}
+                  </Avatar>
 
-                {/* Content */}
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: 1
-                  }}>
-                    <Typography variant="subtitle2" fontWeight={600} sx={{ 
-                      fontSize: isMobile ? '0.85rem' : '0.95rem',
-                      lineHeight: 1.3 
+                  {/* Content */}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 1
                     }}>
-                      {activity.message}
-                    </Typography>
-                    
-                    {activity.amount && (
-                      <Typography variant="caption" fontWeight={700} sx={{
-                        color: getAmountColor(activity.type),
-                        fontSize: '0.8rem',
-                        backgroundColor: activity.type === 'billing' 
-                          ? theme.palette.success.light + '40' 
-                          : 'transparent',
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 1
+                      <Typography variant="subtitle2" fontWeight={600} sx={{ 
+                        fontSize: isMobile ? '0.85rem' : '0.95rem',
+                        lineHeight: 1.3 
                       }}>
-                        ₹{activity.amount.toLocaleString('en-IN')}
+                        {activity.message}
+                      </Typography>
+                      
+                      {activity.amount && (
+                        <Typography variant="caption" fontWeight={700} sx={{
+                          color: getAmountColor(activity.type),
+                          fontSize: '0.8rem',
+                          backgroundColor: activity.type === 'billing' 
+                            ? theme.palette.success.light + '40' 
+                            : 'transparent',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1
+                        }}>
+                          ₹{activity.amount.toLocaleString('en-IN')}
+                        </Typography>
+                      )}
+                    </Box>
+
+                    <Typography variant="body2" color="text.secondary" sx={{ 
+                      mt: 0.5,
+                      fontSize: isMobile ? '0.8rem' : '0.875rem',
+                      lineHeight: 1.4 
+                    }}>
+                      {activity.details}
+                    </Typography>
+
+                    {activity.customerName && (
+                      <Typography variant="caption" sx={{
+                        display: 'inline-block',
+                        mt: 0.5,
+                        color: theme.palette.primary.main,
+                        backgroundColor: theme.palette.primary.light + '20',
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: 0.5,
+                        fontWeight: 500
+                      }}>
+                        {activity.customerName}
                       </Typography>
                     )}
+
+                    {activity.productName && (
+                      <Typography variant="caption" sx={{
+                        display: 'inline-block',
+                        mt: 0.5,
+                        ml: activity.customerName ? 0.5 : 0,
+                        color: theme.palette.warning.main,
+                        backgroundColor: theme.palette.warning.light + '20',
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: 0.5,
+                        fontWeight: 500
+                      }}>
+                        {activity.productName}
+                      </Typography>
+                    )}
+
+                    <Typography variant="caption" display="block" sx={{ 
+                      mt: 1,
+                      color: theme.palette.grey[600],
+                      fontWeight: 500,
+                      fontSize: '0.75rem'
+                    }}>
+                      {activity.time}
+                    </Typography>
                   </Box>
-
-                  <Typography variant="body2" color="text.secondary" sx={{ 
-                    mt: 0.5,
-                    fontSize: isMobile ? '0.8rem' : '0.875rem',
-                    lineHeight: 1.4 
-                  }}>
-                    {activity.details}
-                  </Typography>
-
-                  {activity.customerName && (
-                    <Typography variant="caption" sx={{
-                      display: 'inline-block',
-                      mt: 0.5,
-                      color: theme.palette.primary.main,
-                      backgroundColor: theme.palette.primary.light + '20',
-                      px: 1,
-                      py: 0.25,
-                      borderRadius: 0.5,
-                      fontWeight: 500
-                    }}>
-                      {activity.customerName}
-                    </Typography>
-                  )}
-
-                  {activity.productName && (
-                    <Typography variant="caption" sx={{
-                      display: 'inline-block',
-                      mt: 0.5,
-                      ml: activity.customerName ? 0.5 : 0,
-                      color: theme.palette.warning.main,
-                      backgroundColor: theme.palette.warning.light + '20',
-                      px: 1,
-                      py: 0.25,
-                      borderRadius: 0.5,
-                      fontWeight: 500
-                    }}>
-                      {activity.productName}
-                    </Typography>
-                  )}
-
-                  <Typography variant="caption" display="block" sx={{ 
-                    mt: 1,
-                    color: theme.palette.grey[600],
-                    fontWeight: 500,
-                    fontSize: '0.75rem'
-                  }}>
-                    {activity.time}
-                  </Typography>
                 </Box>
+              ))
+            ) : (
+              <Box sx={{ 
+                textAlign: 'center', 
+                py: 4,
+                px: 2 
+              }}>
+                <Inventory2 sx={{ 
+                  fontSize: 48, 
+                  color: theme.palette.grey[400],
+                  mb: 2 
+                }} />
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                  No recent activity
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Recent billing, customers, and stock updates will appear here
+                </Typography>
               </Box>
-            ))
-          ) : (
-            <Box sx={{ 
-              textAlign: 'center', 
-              py: 4,
-              px: 2 
-            }}>
-              <Inventory2 sx={{ 
-                fontSize: 48, 
-                color: theme.palette.grey[400],
-                mb: 2 
-              }} />
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-                No recent activity
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Recent billing, customers, and stock updates will appear here
-              </Typography>
-            </Box>
-          )}
-        </Box>
+            )}
+          </Box>
+        ) : (
+          // Show upgrade prompt when subscription expired
+          <Box sx={{ 
+            flex: 1, 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center',
+            textAlign: 'center',
+            py: 4,
+            px: 2 
+          }}>
+            <Upgrade sx={{ 
+              fontSize: 48, 
+              color: theme.palette.warning.main,
+              mb: 2 
+            }} />
+            <Typography variant="body1" fontWeight={600} sx={{ mb: 1 }}>
+              Subscription Required
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 300 }}>
+              Upgrade your plan to view recent activity and access all features
+            </Typography>
+            <Button 
+              variant="contained" 
+              color="primary"
+              startIcon={<Upgrade />}
+              onClick={() => window.location.href = '/pricing'}
+              sx={{ borderRadius: 2 }}
+            >
+              Upgrade Now
+            </Button>
+          </Box>
+        )}
 
-        {/* Footer */}
-        {activities.length > 0 && (
+        {/* Footer - Only show if not expired */}
+        {!subscriptionExpired && activities.length > 0 && (
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 

@@ -24,7 +24,15 @@ import {
   Tabs,
   Tab,
   alpha,
+  Breadcrumbs,
+  Link as MuiLink,
+  Container,
 } from '@mui/material';
+import {
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
+} from '@mui/icons-material';
+import Link from 'next/link';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { useInventoryData } from '@/hooks/useInventoryData';
 import { INVENTORY_CONTENT } from './InventoryContent';
@@ -83,6 +91,10 @@ export default function InventoryPage() {
     setSnackbar({ open: true, message: INVENTORY_CONTENT.snackbar.exportStarted, severity: 'success' });
   };
 
+  const handleBack = () => {
+    window.history.back();
+  };
+
   const categories = Array.from(new Set(products.map(p => p.category)));
 
   // Filter products
@@ -130,44 +142,53 @@ export default function InventoryPage() {
 
   return (
     <MainLayout title={INVENTORY_CONTENT.page.title}>
-      <Box sx={{ 
-        p: { xs: 2, sm: 3 }, 
-        maxWidth: 1400, 
-        margin: '0 auto',
-        minHeight: '100vh',
-      }}>
-        {/* Header Section */}
+      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+        {/* Header - Same style as All Actions page */}
         <Box sx={{ mb: 4 }}>
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBack}
+            sx={{ mb: 2 }}
+            size="small"
+          >
+            Back to Dashboard
+          </Button>
+
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none',
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              Dashboard
+            </MuiLink>
+            <Typography color="text.primary">Inventory</Typography>
+          </Breadcrumbs>
+
           <Box sx={{ 
             display: 'flex', 
-            flexDirection: { xs: 'column', sm: 'row' },
             justifyContent: 'space-between', 
             alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
             gap: 2,
             mb: 3
           }}>
             <Box>
-              <Typography 
-                variant="h4" 
-                fontWeight="bold" 
-                gutterBottom
-                sx={{ 
-                  fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' },
-                  lineHeight: 1.2,
-                  color: 'text.primary',
-                }}
-              >
+              <Typography variant="h4" fontWeight={700} gutterBottom>
                 {INVENTORY_CONTENT.page.icon} {INVENTORY_CONTENT.page.title}
               </Typography>
-              <Typography 
-                variant="body1" 
-                color="text.secondary"
-                sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
-              >
+              <Typography variant="body1" color="text.secondary">
                 {products.length} {INVENTORY_CONTENT.page.subtitle}
               </Typography>
             </Box>
-            
+
             <Stack 
               direction={{ xs: 'column', sm: 'row' }} 
               spacing={1}
@@ -177,6 +198,7 @@ export default function InventoryPage() {
                 variant="outlined"
                 startIcon={<InventoryIcon name="Filter" />}
                 onClick={() => {}}
+                size="medium"
                 sx={{ borderRadius: 2 }}
               >
                 {INVENTORY_CONTENT.buttons.filter}
@@ -185,6 +207,7 @@ export default function InventoryPage() {
                 variant="outlined"
                 startIcon={<InventoryIcon name="Download" />}
                 onClick={handleExport}
+                size="medium"
                 sx={{ borderRadius: 2 }}
               >
                 {INVENTORY_CONTENT.buttons.export}
@@ -193,6 +216,7 @@ export default function InventoryPage() {
                 variant="outlined"
                 startIcon={<InventoryIcon name="Refresh" />}
                 onClick={handleRefresh}
+                size="medium"
                 sx={{ borderRadius: 2 }}
               >
                 {INVENTORY_CONTENT.buttons.refresh}
@@ -201,6 +225,7 @@ export default function InventoryPage() {
                 variant="contained"
                 startIcon={<InventoryIcon name="Add" />}
                 onClick={() => setOpenDialog(true)}
+                size="medium"
                 sx={{ borderRadius: 2 }}
               >
                 {INVENTORY_CONTENT.buttons.addStock}
@@ -208,19 +233,19 @@ export default function InventoryPage() {
             </Stack>
           </Box>
 
-          {/* Error Alert */}
-          {error && (
-            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-              {error}
-            </Alert>
-          )}
-
           {/* Quick Stats Cards */}
           <InventoryMetrics metrics={metricCards} theme={theme} />
 
           {/* Financial Overview Card */}
           <FinancialOverview metrics={metrics} theme={theme} />
         </Box>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 2, py: 2 }}>
+            {error}
+          </Alert>
+        )}
 
         {/* Filters and Search */}
         <Box sx={{ mb: 4 }}>
@@ -371,7 +396,7 @@ export default function InventoryPage() {
             onViewOutOfStock={() => setActiveTab(2)}
           />
         </Box>
-      </Box>
+      </Container>
 
       {/* Add Stock Dialog */}
       <AddStockDialog 

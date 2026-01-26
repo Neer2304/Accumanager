@@ -1,4 +1,3 @@
-// app/(pages)/analytics/page.tsx - UPDATED WITH RESPONSIVE FIXES
 "use client";
 
 import React, { useState } from 'react';
@@ -11,11 +10,18 @@ import {
   Button,
   Stack,
   alpha,
-  IconButton,
   useMediaQuery,
   useTheme,
+  Breadcrumbs,
+  Link as MuiLink,
+  Container,
 } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
+import {
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
+  Download as DownloadIcon,
+} from '@mui/icons-material';
+import Link from 'next/link';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { AnalyticsIcon, OfflineIcon, LoadingIcon } from '@/assets/icons/AnalyticsIcons';
@@ -49,110 +55,99 @@ export default function AnalyticsPage() {
     }
   };
 
-  const handleGoBack = () => {
+  const handleBack = () => {
     window.history.back();
   };
 
   return (
     <MainLayout title="Business Analytics">
-      <Box sx={{ 
-        p: isMobile ? 1 : isTablet ? 2 : 3,
-        maxWidth: '100%',
-        overflowX: 'hidden'
-      }}>
-        {/* Header with Back Button */}
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: isMobile ? 'column' : 'row',
-          justifyContent: 'space-between', 
-          alignItems: isMobile ? 'flex-start' : 'center', 
-          mb: isMobile ? 2 : 4,
-          gap: isMobile ? 1 : 2,
-          flexWrap: 'wrap'
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: isMobile ? 1 : 2,
-            mb: isMobile ? 1 : 0
-          }}>
-            <IconButton 
-              onClick={handleGoBack}
-              size={isMobile ? "small" : "medium"}
-              sx={{ 
-                mr: isMobile ? 0.5 : 1,
-                p: isMobile ? 0.5 : 1
-              }}
-            >
-              <ArrowBack fontSize={isMobile ? "small" : "medium"} />
-            </IconButton>
-            <AnalyticsIcon />
-            <Box>
-              <Typography 
-                variant={isMobile ? "h6" : isTablet ? "h5" : "h4"} 
-                fontWeight="bold" 
-                gutterBottom={!isMobile}
-                sx={{ 
-                  fontSize: isMobile ? '1.1rem' : isTablet ? '1.5rem' : '2rem',
-                  lineHeight: isMobile ? 1.2 : 1.5
-                }}
-              >
-                Business Analytics
-              </Typography>
-              <Typography 
-                variant="body2" 
-                color="text.secondary"
-                sx={{ 
-                  fontSize: isMobile ? '0.75rem' : '0.875rem',
-                  display: isMobile ? 'none' : 'block'
-                }}
-              >
-                Real-time business performance metrics
-              </Typography>
-            </Box>
-          </Box>
-          
-          <Stack 
-            direction={isMobile ? "column" : "row"} 
-            spacing={isMobile ? 1 : 2} 
-            alignItems={isMobile ? "stretch" : "center"}
-            sx={{ width: isMobile ? '100%' : 'auto' }}
+      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+        {/* Header - Same style as All Actions page */}
+        <Box sx={{ mb: 4 }}>
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBack}
+            sx={{ mb: 2 }}
+            size="small"
           >
-            {!isOnline && (
-              <Card sx={{ 
-                px: isMobile ? 1 : 2, 
-                py: isMobile ? 0.5 : 1, 
+            Back to Dashboard
+          </Button>
+
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: 0.5,
-                bgcolor: alpha('#ed6c02', 0.1),
-                fontSize: isMobile ? '0.7rem' : '0.75rem'
-              }}>
-                <OfflineIcon />
-                <Typography 
-                  variant="caption" 
-                  color="warning.main"
-                  sx={{ fontSize: isMobile ? '0.7rem' : 'inherit' }}
-                >
-                  Offline Mode
-                </Typography>
-              </Card>
-            )}
-            
-            <Button 
-              variant="outlined" 
-              onClick={handleDownloadReport}
-              disabled={isLoading}
-              size={isMobile ? "small" : "medium"}
-              sx={{ 
-                fontSize: isMobile ? '0.75rem' : '0.875rem',
-                px: isMobile ? 1 : 2,
-                py: isMobile ? 0.5 : 1
+                textDecoration: 'none',
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
               }}
             >
-              Download Report
-            </Button>
-          </Stack>
+              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              Dashboard
+            </MuiLink>
+            <Typography color="text.primary">Analytics</Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 3
+          }}>
+            <Box>
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                Business Analytics
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Real-time business performance metrics and insights
+              </Typography>
+            </Box>
+
+            <Stack 
+              direction="row" 
+              spacing={2} 
+              alignItems="center"
+              sx={{ flexWrap: 'wrap' }}
+            >
+              {!isOnline && (
+                <Card sx={{ 
+                  px: 2, 
+                  py: 1, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 0.5,
+                  bgcolor: alpha('#ed6c02', 0.1),
+                  fontSize: '0.75rem'
+                }}>
+                  <OfflineIcon />
+                  <Typography 
+                    variant="caption" 
+                    color="warning.main"
+                  >
+                    Offline Mode
+                  </Typography>
+                </Card>
+              )}
+              
+              <Button 
+                variant="contained"
+                startIcon={<DownloadIcon />}
+                onClick={handleDownloadReport}
+                disabled={isLoading}
+                size="medium"
+                sx={{ 
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Download Report
+              </Button>
+            </Stack>
+          </Box>
         </Box>
 
         {/* Error Alert */}
@@ -160,17 +155,15 @@ export default function AnalyticsPage() {
           <Alert 
             severity="error" 
             sx={{ 
-              mb: isMobile ? 2 : 3, 
+              mb: 3, 
               borderRadius: 2,
-              fontSize: isMobile ? '0.75rem' : '0.875rem',
-              py: isMobile ? 1 : 2
+              py: 2
             }}
             action={
               <Button 
                 color="inherit" 
-                size={isMobile ? "small" : "medium"}
+                size="small"
                 onClick={() => refetch()}
-                sx={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
               >
                 Retry
               </Button>
@@ -184,16 +177,15 @@ export default function AnalyticsPage() {
         {isLoading && !data && (
           <Card sx={{ 
             textAlign: 'center', 
-            py: isMobile ? 4 : 8, 
-            mb: isMobile ? 2 : 3,
-            px: isMobile ? 1 : 3
+            py: 8, 
+            mb: 3,
+            px: 3
           }}>
             <LoadingIcon />
             <Typography 
-              variant={isMobile ? "body1" : "h6"} 
+              variant="h6" 
               sx={{ 
-                mt: isMobile ? 1 : 2,
-                fontSize: isMobile ? '0.9rem' : '1rem'
+                mt: 2
               }}
             >
               Loading Analytics Data...
@@ -202,9 +194,7 @@ export default function AnalyticsPage() {
               variant="body2" 
               color="text.secondary" 
               sx={{ 
-                mt: isMobile ? 0.5 : 1,
-                fontSize: isMobile ? '0.75rem' : '0.875rem',
-                px: isMobile ? 1 : 0
+                mt: 1
               }}
             >
               Please wait while we fetch your business insights
@@ -218,10 +208,10 @@ export default function AnalyticsPage() {
             {/* Key Stats Cards */}
             <Box sx={{ 
               display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
+              flexDirection: { xs: 'column', sm: 'row' },
               flexWrap: 'wrap',
-              gap: isMobile ? 1 : 2,
-              mb: isMobile ? 2 : 4
+              gap: 2,
+              mb: 4
             }}>
               <StatsCard
                 title="Monthly Revenue"
@@ -261,22 +251,21 @@ export default function AnalyticsPage() {
             </Box>
 
             {/* Charts Section */}
-            <Box sx={{ mb: isMobile ? 2 : 4 }}>
+            <Box sx={{ mb: 4 }}>
               <Typography 
-                variant={isMobile ? "body1" : "h6"} 
+                variant="h6" 
                 fontWeight="bold" 
                 sx={{ 
-                  mb: isMobile ? 1 : 2,
-                  fontSize: isMobile ? '0.9rem' : '1rem'
+                  mb: 2
                 }}
               >
                 Revenue & Sales Trend
               </Typography>
               <Box sx={{ 
                 display: 'flex', 
-                flexDirection: isMobile ? 'column' : isTablet ? 'column' : 'row',
-                gap: isMobile ? 1 : 3,
-                height: isMobile ? 'auto' : 350
+                flexDirection: { xs: 'column', md: 'row' },
+                gap: 3,
+                height: { xs: 'auto', md: 350 }
               }}>
                 <RevenueChart 
                   data={data.monthlyData} 
@@ -294,9 +283,9 @@ export default function AnalyticsPage() {
             {/* Bottom Section */}
             <Box sx={{ 
               display: 'flex', 
-              flexDirection: isMobile ? 'column' : isTablet ? 'column' : 'row',
-              gap: isMobile ? 1 : 3,
-              minHeight: isMobile ? 'auto' : 300
+              flexDirection: { xs: 'column', md: 'row' },
+              gap: 3,
+              minHeight: { xs: 'auto', md: 300 }
             }}>
               <TopProductsList 
                 products={data.topProducts}
@@ -312,14 +301,13 @@ export default function AnalyticsPage() {
 
             {/* Data Summary */}
             <Card sx={{ 
-              mt: isMobile ? 1 : 3,
-              p: isMobile ? 1 : 2
+              mt: 3,
+              p: 2
             }}>
-              <CardContent sx={{ p: isMobile ? '8px !important' : 2 }}>
+              <CardContent sx={{ p: '16px !important' }}>
                 <Typography 
                   variant="body2" 
                   color="text.secondary"
-                  sx={{ fontSize: isMobile ? '0.7rem' : '0.875rem' }}
                 >
                   Data Period: {new Date(data.period.startDate).toLocaleDateString()} to{' '}
                   {new Date(data.period.endDate).toLocaleDateString()} • Monthly View
@@ -333,13 +321,12 @@ export default function AnalyticsPage() {
         {!isLoading && !data && !error && (
           <Card sx={{ 
             textAlign: 'center', 
-            py: isMobile ? 4 : 8,
-            px: isMobile ? 1 : 3
+            py: 8,
+            px: 3
           }}>
             <Typography 
-              variant={isMobile ? "body1" : "h6"} 
+              variant="h6" 
               gutterBottom
-              sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}
             >
               No Analytics Data Available
             </Typography>
@@ -347,45 +334,34 @@ export default function AnalyticsPage() {
               variant="body2" 
               color="text.secondary" 
               sx={{ 
-                mb: isMobile ? 1.5 : 3,
-                fontSize: isMobile ? '0.75rem' : '0.875rem',
-                px: isMobile ? 1 : 0
+                mb: 3
               }}
             >
               Start adding products, customers, and invoices to see your business analytics
             </Typography>
             <Stack 
-              direction={isMobile ? "column" : "row"} 
-              spacing={isMobile ? 1 : 2} 
+              direction={{ xs: "column", sm: "row" }} 
+              spacing={2} 
               justifyContent="center"
-              sx={{ width: '100%' }}
             >
               <Button 
                 variant="contained" 
                 onClick={() => window.location.href = '/products/add'}
-                size={isMobile ? "small" : "medium"}
-                sx={{ 
-                  fontSize: isMobile ? '0.75rem' : '0.875rem',
-                  px: isMobile ? 2 : 3
-                }}
+                size="medium"
               >
                 Add Products
               </Button>
               <Button 
                 variant="outlined" 
                 onClick={() => window.location.href = '/customers'}
-                size={isMobile ? "small" : "medium"}
-                sx={{ 
-                  fontSize: isMobile ? '0.75rem' : '0.875rem',
-                  px: isMobile ? 2 : 3
-                }}
+                size="medium"
               >
                 Manage Customers
               </Button>
             </Stack>
           </Card>
         )}
-      </Box>
+      </Container>
     </MainLayout>
   );
 }
