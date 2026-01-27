@@ -25,6 +25,90 @@ import QuickActions from "./QuickActions";
 import RecentActivity from "./RecentActivity";
 import { DashboardStats, SalesChartData, ProductSalesData } from "@/types";
 
+// Helper function to safely fetch and parse data
+const safeFetch = async (url: string, options?: RequestInit) => {
+  try {
+    const res = await fetch(url, { 
+      credentials: "include",
+      ...options 
+    });
+    
+    if (!res.ok) {
+      console.warn(`API call failed: ${url}`, res.status);
+      return { success: false, data: null };
+    }
+    
+    const data = await res.json();
+    return { success: true, data };
+  } catch (error) {
+    console.error(`Error fetching ${url}:`, error);
+    return { success: false, data: null, error };
+  }
+};
+
+// Helper to extract array from response
+const extractArrayFromResponse = (response: any): any[] => {
+  if (!response) return [];
+  
+  if (Array.isArray(response)) {
+    return response;
+  }
+  
+  // Check common response structures
+  if (response.data && Array.isArray(response.data)) {
+    return response.data;
+  }
+  
+  if (response.employees && Array.isArray(response.employees)) {
+    return response.employees;
+  }
+  
+  if (response.products && Array.isArray(response.products)) {
+    return response.products;
+  }
+  
+  if (response.customers && Array.isArray(response.customers)) {
+    return response.customers;
+  }
+  
+  if (response.orders && Array.isArray(response.orders)) {
+    return response.orders;
+  }
+  
+  if (response.projects && Array.isArray(response.projects)) {
+    return response.projects;
+  }
+  
+  if (response.events && Array.isArray(response.events)) {
+    return response.events;
+  }
+  
+  if (response.items && Array.isArray(response.items)) {
+    return response.items;
+  }
+  
+  // If response is an object with array-like structure
+  if (typeof response === 'object' && !Array.isArray(response)) {
+    const values = Object.values(response);
+    if (values.length > 0 && Array.isArray(values[0])) {
+      return values[0] as any[];
+    }
+  }
+  
+  return [];
+};
+
+// Helper to safely filter arrays
+const safeFilter = (array: any[] | null | undefined, condition: (item: any) => boolean): any[] => {
+  if (!array || !Array.isArray(array)) return [];
+  try {
+    return array.filter(condition);
+  } catch (error) {
+    console.error("Error filtering array:", error);
+    return [];
+  }
+};
+
 export default function Dashboard() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -83,27 +167,27 @@ export default function Dashboard() {
       setLoading(true);
       setError(null);
 
+      // Fetch all dashboard data in parallel
       const [
-        statsRes,
-        salesRes,
-        ordersRes,
-        employeesRes,
-        projectsRes,
-        eventsRes,
+        statsResult,
+        salesResult,
+        ordersResult,
+        employeesResult,
+        projectsResult,
+        eventsResult,
       ] = await Promise.all([
-        fetch("/api/dashboard/stats", { credentials: "include" }),
-        fetch(`/api/dashboard/sales?range=${timeRange}&includeDrafts=true`, {
-          credentials: "include",
-        }),
-        fetch("/api/orders?limit=100", { credentials: "include" }),
-        fetch("/api/employees", { credentials: "include" }),
-        fetch("/api/projects", { credentials: "include" }),
-        fetch("/api/events", { credentials: "include" }),
+        safeFetch("/api/dashboard/stats"),
+        safeFetch(`/api/dashboard/sales?range=${timeRange}&includeDrafts=true`),
+        safeFetch("/api/orders?limit=100"),
+        safeFetch("/api/employees"),
+        safeFetch("/api/projects"),
+        safeFetch("/api/events"),
       ]);
 
-      let statsData = {
-        totalProducts: products.length,
-        totalCustomers: customers.length,
+      // Initialize stats with fallback values
+      let statsData: DashboardStats = {
+        totalProducts: products.length || 0,
+        totalCustomers: customers.length || 0,
         totalSales: 0,
         monthlyRevenue: 0,
         lowStockProducts: 0,
@@ -114,92 +198,150 @@ export default function Dashboard() {
         upcomingEvents: 0,
       };
 
-      if (statsRes.ok) {
-        const stats = await statsRes.json();
-        statsData = { ...statsData, ...stats };
+      // Merge stats from API if available
+      if (statsResult.success && statsResult.data) {
+        const apiStats = statsResult.data;
+        statsData = {
+          ...statsData,
+          ...(typeof apiStats.totalProducts === 'number' && { totalProducts: apiStats.totalProducts }),
+          ...(typeof apiStats.totalCustomers === 'number' && { totalCustomers: apiStats.totalCustomers }),
+          ...(typeof apiStats.totalSales === 'number' && { totalSales: apiStats.totalSales }),
+          ...(typeof apiStats.monthlyRevenue === 'number' && { monthlyRevenue: apiStats.monthlyRevenue }),
+          ...(typeof apiStats.lowStockProducts === 'number' && { lowStockProducts: apiStats.lowStockProducts }),
+          ...(typeof apiStats.pendingBills === 'number' && { pendingBills: apiStats.pendingBills }),
+          ...(typeof apiStats.totalEmployees === 'number' && { totalEmployees: apiStats.totalEmployees }),
+          ...(typeof apiStats.presentEmployees === 'number' && { presentEmployees: apiStats.presentEmployees }),
+          ...(typeof apiStats.activeProjects === 'number' && { activeProjects: apiStats.activeProjects }),
+          ...(typeof apiStats.upcomingEvents === 'number' && { upcomingEvents: apiStats.upcomingEvents }),
+        };
       }
 
+      // Process sales data
       let salesChartData: SalesChartData[] = [];
-      if (salesRes.ok) {
-        salesChartData = await salesRes.json();
+      if (salesResult.success && salesResult.data) {
+        salesChartData = extractArrayFromResponse(salesResult.data);
       }
 
-      let ordersData = [];
-      if (ordersRes.ok) {
-        ordersData = await ordersRes.json();
+      // Process employees data safely
+      let employeesData: any[] = [];
+      if (employeesResult.success && employeesResult.data) {
+        employeesData = extractArrayFromResponse(employeesResult.data);
+        statsData.totalEmployees = employeesData.length;
+        
+        // Count active employees with multiple possible status indicators
+        statsData.presentEmployees = safeFilter(employeesData, (emp: any) => 
+          emp.status === "active" || 
+          emp.status === "present" || 
+          emp.isActive === true ||
+          emp.attendance?.status === "present"
+        ).length;
       }
 
-      let employeesData = [];
-      if (employeesRes.ok) {
-        employeesData = await employeesRes.json();
-        statsData.totalEmployees = employeesData.length || 0;
-        statsData.presentEmployees =
-          employeesData?.filter((emp: any) => emp.status === "active").length ||
-          0;
+      // Process events data safely
+      let eventsData: any[] = [];
+      if (eventsResult.success && eventsResult.data) {
+        eventsData = extractArrayFromResponse(eventsResult.data);
+        
+        const today = new Date(); // CORRECTED: new Date() instead of newDate()
+        statsData.upcomingEvents = safeFilter(eventsData, (event: any) => {
+          try {
+            const eventDate = new Date(event.startDate || event.date || event.createdAt);
+            return eventDate > today;
+          } catch {
+            return false;
+          }
+        }).length;
       }
 
-      let eventsData = [];
-      if (eventsRes.ok) {
-        eventsData = await eventsRes.json();
-        const today = new Date();
-        statsData.upcomingEvents =
-          eventsData?.filter((event: any) => new Date(event.startDate) > today)
-            .length || 0;
+      // Process projects data safely
+      let projectsData: any[] = [];
+      if (projectsResult.success && projectsResult.data) {
+        projectsData = extractArrayFromResponse(projectsResult.data);
+        
+        statsData.activeProjects = safeFilter(projectsData, (project: any) => 
+          project.status === "active" || 
+          project.status === "in-progress" ||
+          project.isActive === true
+        ).length;
       }
 
-      const lowStockCount = products?.filter((product) => {
-        const totalStock =
-          product.variations?.reduce(
-            (sum: number, variation: any) => sum + (variation.stock || 0),
+      // Calculate low stock products
+      const lowStockCount = safeFilter(products, (product: any) => {
+        try {
+          const totalStock = product.variations?.reduce(
+            (sum: number, variation: any) => sum + (Number(variation.stock) || 0),
             0,
-          ) || 0;
-        return totalStock < 10;
+          ) || (Number(product.stock) || 0);
+          return totalStock < 10;
+        } catch {
+          return false;
+        }
       }).length;
 
-      statsData.lowStockProducts = lowStockCount || 0;
+      statsData.lowStockProducts = lowStockCount;
 
+      // Process orders for sales data
+      let ordersData: any[] = [];
+      if (ordersResult.success && ordersResult.data) {
+        ordersData = extractArrayFromResponse(ordersResult.data);
+      }
+
+      // Calculate total sales and revenue
       let totalSales = 0;
       let totalRevenue = 0;
       const productSalesMap = new Map<
         string,
-        { sales: number; revenue: number }
+        { sales: number; revenue: number; productId?: string }
       >();
 
-      if (Array.isArray(ordersData)) {
-        ordersData.forEach((order: any) => {
-          if (order.items && Array.isArray(order.items)) {
-            order.items.forEach((item: any) => {
-              const productName = item.name || "Unknown Product";
-              const quantity = item.quantity || 0;
-              const price = item.price || 0;
-              const revenue = quantity * price;
+      safeFilter(ordersData, (order: any) => 
+        order && typeof order === 'object'
+      ).forEach((order: any) => {
+        try {
+          const orderItems = extractArrayFromResponse(order.items || order.orderItems);
+          
+          orderItems.forEach((item: any) => {
+            if (!item) return;
+            
+            const productName = item.name || item.productName || "Unknown Product";
+            const productId = item.productId || item.id;
+            const quantity = Number(item.quantity) || 0;
+            const price = Number(item.price) || 0;
+            const revenue = quantity * price;
 
+            if (quantity > 0 && price > 0) {
               totalSales += quantity;
               totalRevenue += revenue;
 
-              if (productSalesMap.has(productName)) {
-                const existing = productSalesMap.get(productName)!;
-                productSalesMap.set(productName, {
+              const key = productId || productName;
+              if (productSalesMap.has(key)) {
+                const existing = productSalesMap.get(key)!;
+                productSalesMap.set(key, {
+                  ...existing,
                   sales: existing.sales + quantity,
                   revenue: existing.revenue + revenue,
                 });
               } else {
-                productSalesMap.set(productName, {
+                productSalesMap.set(key, {
                   sales: quantity,
                   revenue: revenue,
+                  productId: productId,
                 });
               }
-            });
-          }
-        });
-      }
+            }
+          });
+        } catch (error) {
+          console.error("Error processing order:", error);
+        }
+      });
 
       statsData.totalSales = totalSales;
       statsData.monthlyRevenue = totalRevenue;
 
+      // Prepare top products data
       const topProductsData = Array.from(productSalesMap.entries())
         .map(([productName, data]) => ({
-          productName,
+          productName: data.productId ? `${productName} (${data.productId})` : productName,
           sales: data.sales,
           revenue: data.revenue,
         }))
@@ -213,20 +355,24 @@ export default function Dashboard() {
       console.error("Error fetching dashboard data:", error);
       setError("Failed to load dashboard data. Please try again.");
 
-      const lowStockCount = products?.filter((product) => {
-        const totalStock =
-          product.variations?.reduce(
-            (sum: number, variation: any) => sum + (variation.stock || 0),
+      // Set fallback values
+      const lowStockCount = safeFilter(products, (product: any) => {
+        try {
+          const totalStock = product.variations?.reduce(
+            (sum: number, variation: any) => sum + (Number(variation.stock) || 0),
             0,
-          ) || 0;
-        return totalStock < 10;
+          ) || (Number(product.stock) || 0);
+          return totalStock < 10;
+        } catch {
+          return false;
+        }
       }).length;
 
       setDashboardStats((prev) => ({
         ...prev,
-        totalProducts: products.length,
-        totalCustomers: customers.length,
-        lowStockProducts: lowStockCount || 0,
+        totalProducts: products.length || 0,
+        totalCustomers: customers.length || 0,
+        lowStockProducts: lowStockCount,
       }));
     } finally {
       setLoading(false);
@@ -285,7 +431,7 @@ export default function Dashboard() {
     <Box
       sx={{
         p: { xs: 1, sm: 2, md: 3 },
-        pt: { xs: 0, sm: 0, md: 0 }, // Explicitly remove top padding
+        pt: { xs: 0, sm: 0, md: 0 },
       }}
     >
       {/* Header */}
@@ -295,8 +441,8 @@ export default function Dashboard() {
           gutterBottom
           fontWeight="bold"
           sx={{
-            mt: 0, // Ensure no margin top on the text itself
-            mb: 0.5, // Small gap between Welcome and the secondary text
+            mt: 0,
+            mb: 0.5,
             fontWeight: "bold",
             fontSize: { xs: "1.5rem", sm: "2rem" },
           }}
