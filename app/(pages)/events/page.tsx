@@ -5,7 +5,17 @@ import {
   Box,
   Typography,
   Container,
+  Button,
+  Chip,
+  Stack,
+  Breadcrumbs,
+  Link as MuiLink,
 } from "@mui/material";
+import {
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
+} from "@mui/icons-material";
+import Link from "next/link";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import {
   EventGrid,
@@ -18,6 +28,7 @@ export default function EventsPage() {
   const [search, setSearch] = useState("");
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(true);
 
   const { events, loading, deleteEvent, refetch } = useEvents();
 
@@ -52,32 +63,85 @@ export default function EventsPage() {
     handleMenuClose();
   };
 
+  const handleBack = () => {
+    window.history.back();
+  };
+
   return (
     <MainLayout title="Event Management">
-      <Container maxWidth="lg" sx={{ p: 3 }}>
-        {/* Header */}
+      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+        {/* Header - Same style as other pages */}
         <Box sx={{ mb: 4 }}>
-          <Typography
-            variant="h4"
-            component="h1"
-            fontWeight="bold"
-            gutterBottom
-            color="primary"
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBack}
+            sx={{ mb: 2 }}
+            size="small"
           >
-            Event Management
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Track and manage all your events and expenses in one place
-          </Typography>
+            Back to Dashboard
+          </Button>
+
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none',
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              Dashboard
+            </MuiLink>
+            <Typography color="text.primary">Events</Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 3
+          }}>
+            <Box>
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                Event Management
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Track and manage all your events and expenses in one place
+              </Typography>
+            </Box>
+
+            <Stack 
+              direction={{ xs: 'column', sm: 'row' }} 
+              spacing={1}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
+              {!isOnline && (
+                <Chip 
+                  label="Offline Mode" 
+                  size="small" 
+                  color="warning" 
+                  variant="outlined"
+                  sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                />
+              )}
+              {/* Add other chips if needed */}
+            </Stack>
+          </Box>
         </Box>
 
-        {/* Search and Add Button */}
+        {/* Your existing components */}
         <EventSearch 
           search={search} 
           onSearchChange={setSearch} 
         />
 
-        {/* Events Grid */}
         <EventGrid
           events={filteredEvents}
           loading={loading}
@@ -85,7 +149,6 @@ export default function EventsPage() {
           onMenuOpen={handleMenuOpen}
         />
 
-        {/* Context Menu */}
         <EventMenu
           anchorEl={menuAnchor}
           selectedEvent={selectedEvent}

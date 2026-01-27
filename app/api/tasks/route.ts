@@ -1,65 +1,12 @@
-// app/api/tasks/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Task from '@/models/Task';
 import Project from '@/models/Project';
 import { verifyToken } from '@/lib/jwt';
-import mongoose from 'mongoose'; // ADD THIS IMPORT
+import mongoose from 'mongoose';
+import { NotificationService } from '@/services/notificationService'; // Add this import
 
-export async function GET(request: NextRequest) {
-  try {
-    console.log('🔍 GET /api/tasks - Starting...');
-    
-    const authToken = request.cookies.get('auth_token')?.value;
-    
-    if (!authToken) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    try {
-      const decoded = verifyToken(authToken);
-      
-      await connectToDatabase();
-
-      const { searchParams } = new URL(request.url);
-      const projectId = searchParams.get('projectId');
-      const status = searchParams.get('status');
-      const assignedTo = searchParams.get('assignedTo');
-      
-      let query: any = { userId: decoded.userId };
-      
-      if (projectId) {
-        query.projectId = projectId;
-      }
-      
-      if (status && status !== 'all') {
-        query.status = status;
-      }
-      
-      if (assignedTo) {
-        query.assignedTo = assignedTo;
-      }
-
-      const tasks = await Task.find(query)
-        .sort({ dueDate: 1, priority: -1, createdAt: -1 })
-        .lean();
-
-      console.log(`✅ Found ${tasks.length} tasks for user ${decoded.userId}`);
-      return NextResponse.json({ tasks });
-
-    } catch (authError) {
-      console.error('❌ Auth error:', authError);
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-  } catch (error: any) {
-    console.error('❌ Get tasks error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
-
+// ✅ CREATE TASK
 export async function POST(request: NextRequest) {
   try {
     console.log('🔄 POST /api/tasks - Starting...');
@@ -111,6 +58,15 @@ export async function POST(request: NextRequest) {
       // Update project task counts
       await updateProjectTaskCounts(taskData.projectId);
 
+      // ✅ Create notification for task creation
+      try {
+        await NotificationService.notifyTaskCreated(task, decoded.userId);
+        console.log('✅ Task creation notification created');
+      } catch (notifError) {
+        console.error('⚠️ Failed to create task notification:', notifError);
+        // Don't fail the request if notification fails
+      }
+
       console.log('✅ Task created:', task._id);
       return NextResponse.json(task, { status: 201 });
 
@@ -135,6 +91,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// ✅ UPDATE TASK
 export async function PUT(request: NextRequest) {
   try {
     const authToken = request.cookies.get('auth_token')?.value;
@@ -155,7 +112,7 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
       }
 
-      // Verify the task belongs to the user
+      // Get existing task to compare status
       const existingTask = await Task.findOne({ 
         _id: taskId, 
         userId: decoded.userId 
@@ -174,6 +131,19 @@ export async function PUT(request: NextRequest) {
       // Update project task counts if status changed
       if (updateFields.status) {
         await updateProjectTaskCounts(existingTask.projectId);
+        
+        // ✅ Create notification for task status update
+        try {
+          await NotificationService.notifyTaskStatusUpdated(
+            updatedTask,
+            existingTask.status,
+            updateFields.status,
+            decoded.userId
+          );
+          console.log('✅ Task status update notification created');
+        } catch (notifError) {
+          console.error('⚠️ Failed to create status update notification:', notifError);
+        }
       }
 
       return NextResponse.json(updatedTask);
@@ -199,6 +169,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+// ✅ DELETE TASK
 export async function DELETE(request: NextRequest) {
   try {
     const authToken = request.cookies.get('auth_token')?.value;
@@ -219,7 +190,7 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
       }
 
-      // Verify the task belongs to the user
+      // Get task details before deleting for notification
       const existingTask = await Task.findOne({ 
         _id: taskId, 
         userId: decoded.userId 
@@ -233,6 +204,14 @@ export async function DELETE(request: NextRequest) {
 
       // Update project task counts
       await updateProjectTaskCounts(existingTask.projectId);
+
+      // ✅ Create notification for task deletion
+      try {
+        await NotificationService.notifyTaskDeleted(existingTask, decoded.userId);
+        console.log('✅ Task deletion notification created');
+      } catch (notifError) {
+        console.error('⚠️ Failed to create task deletion notification:', notifError);
+      }
 
       return NextResponse.json({ 
         success: true, 
@@ -287,5 +266,76 @@ async function updateProjectTaskCounts(projectId: string) {
     });
   } catch (error) {
     console.error('Error updating project task counts:', error);
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    console.log('🔍 GET /api/tasks - Starting...');
+    
+    const authToken = request.cookies.get('auth_token')?.value;
+    
+    if (!authToken) {
+      console.log('❌ No auth token found');
+      return NextResponse.json({ 
+        success: false,
+        error: 'Unauthorized' 
+      }, { status: 401 });
+    }
+
+    try {
+      const decoded = verifyToken(authToken);
+      console.log('👤 User ID from token:', decoded.userId);
+      
+      await connectToDatabase();
+      console.log('✅ Database connected');
+
+      const { searchParams } = new URL(request.url);
+      const projectId = searchParams.get('projectId');
+      const status = searchParams.get('status');
+      const assignedTo = searchParams.get('assignedTo');
+      
+      let query: any = { userId: decoded.userId };
+      
+      if (projectId) {
+        query.projectId = projectId;
+      }
+      
+      if (status && status !== 'all') {
+        query.status = status;
+      }
+      
+      if (assignedTo) {
+        query.assignedTo = assignedTo;
+      }
+
+      const tasks = await Task.find(query)
+        .sort({ dueDate: 1, priority: -1, createdAt: -1 })
+        .lean();
+
+      console.log(`✅ Found ${tasks.length} tasks for user ${decoded.userId}`);
+      
+      // Return tasks in the expected format
+      return NextResponse.json({ 
+        success: true,
+        tasks: tasks 
+      });
+
+    } catch (authError) {
+      console.error('❌ Auth error:', authError);
+      return NextResponse.json({ 
+        success: false,
+        error: 'Invalid token' 
+      }, { status: 401 });
+    }
+  } catch (error: any) {
+    console.error('❌ Get tasks error:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        error: error.message || 'Internal server error' 
+      },
+      { status: 500 }
+    );
   }
 }

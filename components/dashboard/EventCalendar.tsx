@@ -1,4 +1,3 @@
-// components/dashboard/EventCalendar.tsx
 import React, { useState, useEffect } from 'react'
 import {
   Card,
@@ -255,26 +254,23 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ upcomingEvents }) => {
                     <ListItemIcon sx={{ minWidth: 36 }}>
                       <CalendarToday color="action" fontSize="small" />
                     </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Typography variant="body2" fontWeight={500}>
-                          {event.name}
+                    {/* FIXED: Using custom Box instead of ListItemText to avoid p > div nesting */}
+                    <Box sx={{ flex: 1, ml: 2 }}>
+                      <Typography variant="body2" fontWeight={500}>
+                        {event.name}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatEventDate(event.startDate)}
                         </Typography>
-                      }
-                      secondary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            {formatEventDate(event.startDate)}
-                          </Typography>
-                          <Chip 
-                            label={event.type}
-                            size="small"
-                            color={getEventColor(event.type)}
-                            sx={{ height: 20, fontSize: '0.65rem' }}
-                          />
-                        </Box>
-                      }
-                    />
+                        <Chip 
+                          label={event.type}
+                          size="small"
+                          color={getEventColor(event.type)}
+                          sx={{ height: 20, fontSize: '0.65rem' }}
+                        />
+                      </Box>
+                    </Box>
                   </ListItem>
                 ))}
               </List>

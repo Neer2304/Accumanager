@@ -461,7 +461,7 @@ export const LandingHeader: React.FC = () => {
   );
 
   return (
-    <>
+    <Box sx={{ flexGrow: 1 }}>
       <HideOnScroll>
         <AppBar
           position="fixed"
@@ -512,19 +512,6 @@ export const LandingHeader: React.FC = () => {
                 >
                   AccumaManage
                 </Typography>
-
-                {/* {isAuthenticated && !isMobile && (
-                  <Chip
-                    label="Dashboard"
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                    component={Link}
-                    href="/dashboard"
-                    clickable
-                    sx={{ ml: 1 }}
-                  />
-                )} */}
               </Box>
 
               {/* Right Side Actions */}
@@ -541,10 +528,10 @@ export const LandingHeader: React.FC = () => {
                     onClick={handleNotificationMenuOpen}
                     sx={{
                       borderRadius: "8px",
-                      color: "primary.main", // Changed from "inherit" to "text.primary"
+                      color: "primary.main",
                       "&:hover": {
                         backgroundColor: "action.hover",
-                        color: "primary.main", // Optional: change color on hover
+                        color: "primary.main",
                       },
                     }}
                   >
@@ -888,33 +875,35 @@ export const LandingHeader: React.FC = () => {
         {/* Notifications List */}
         <Box sx={{ maxHeight: 300, overflow: "auto" }}>
           {notificationsLoading ? (
-            <MenuItem disabled>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  width: "100%",
-                  py: 2,
-                }}
-              >
-                <CircularProgress size={24} />
-              </Box>
-            </MenuItem>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                py: 3,
+                width: "100%",
+              }}
+            >
+              <CircularProgress size={24} />
+            </Box>
           ) : notifications.length === 0 ? (
-            <MenuItem disabled>
-              <MuiTypography
-                variant="body2"
-                color="text.secondary"
-                sx={{ textAlign: "center", width: "100%", py: 2 }}
-              >
+            <Box
+              sx={{
+                py: 3,
+                textAlign: "center",
+                width: "100%",
+              }}
+            >
+              <MuiTypography variant="body2" color="text.secondary">
                 No notifications
               </MuiTypography>
-            </MenuItem>
+            </Box>
           ) : (
-            <List sx={{ p: 0 }}>
+            <Box sx={{ p: 0 }}>
               {notifications.slice(0, 10).map((notification) => (
-                <ListItem
+                <MenuItem
                   key={notification._id}
+                  onClick={() => handleNotificationClick(notification)}
                   sx={{
                     borderLeft: `4px solid ${getNotificationColor(
                       notification.type
@@ -928,8 +917,11 @@ export const LandingHeader: React.FC = () => {
                     },
                     py: 1.5,
                     px: 2,
+                    borderBottom: "1px solid rgba(0,0,0,0.05)",
+                    "&:last-child": {
+                      borderBottom: "none",
+                    },
                   }}
-                  onClick={() => handleNotificationClick(notification)}
                 >
                   <Box sx={{ width: "100%" }}>
                     <Box
@@ -982,13 +974,13 @@ export const LandingHeader: React.FC = () => {
                       </Box>
                     </Box>
                   </Box>
-                </ListItem>
+                </MenuItem>
               ))}
-            </List>
+            </Box>
           )}
         </Box>
 
-        {/* View All Notifications */}
+        {/* View All Notifications - FIXED: Removed Fragment */}
         {notifications.length > 0 && (
           <>
             <Divider />
@@ -1025,6 +1017,6 @@ export const LandingHeader: React.FC = () => {
       >
         {drawer}
       </Drawer>
-    </>
+    </Box>
   );
 };
