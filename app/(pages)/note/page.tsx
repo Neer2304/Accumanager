@@ -14,20 +14,22 @@ import {
   alpha,
   useTheme,
   useMediaQuery,
+  Chip,
+  Stack,
+  Breadcrumbs,
+  Link as MuiLink,
 } from '@mui/material';
 import {
   Add,
   GridView,
   ViewList,
   FilterList,
-  Sort,
-  Search,
   Refresh,
-  Delete,
-  Archive,
-  Unarchive,
-  Share,
+  Download,
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
 } from '@mui/icons-material';
+import Link from 'next/link';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { NoteGrid } from '@/components/note/NoteGrid';
 import { NotesFilters } from '@/components/note/NoteFilters';
@@ -36,7 +38,21 @@ import { NoteBulkActions } from '@/components/note/NoteBulkActions';
 import { NoteMobileMenu } from '@/components/note/NoteMobileMenu';
 import { NoteShareDialog } from '@/components/note/NoteShareDialog';
 import { useNotes } from '@/components/note/hooks/useNotes';
-import { Note } from '@/components/note/types';
+import { 
+  Note, 
+  NotePriority, 
+  NoteStatus, 
+  NoteFilters as NoteFiltersType, 
+  NoteStats as NoteStatsType,
+  NoteFormData,
+  ShareRole,
+  getPriorityLabel,
+  getStatusLabel,
+  getPriorityColor,
+  getStatusColor,
+  calculateReadTime,
+  calculateWordCount
+} from '@/components/note/types';
 
 export default function NotesPage() {
   const theme = useTheme();
@@ -58,14 +74,14 @@ export default function NotesPage() {
 
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<NoteFiltersType>({
     search: '',
     category: '',
     tag: '',
     priority: '',
     status: 'active',
-    sortBy: 'updatedAt' as const,
-    sortOrder: 'desc' as const,
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
     showShared: false,
     page: 1,
     limit: 20,
@@ -148,10 +164,10 @@ export default function NotesPage() {
         case 'restore':
           message = `${selectedNotes.length} note(s) restored`;
           break;
-        case 'changeCategory':
+        case 'change-category':
           message = `${selectedNotes.length} note(s) category updated`;
           break;
-        case 'changePriority':
+        case 'change-priority':
           message = `${selectedNotes.length} note(s) priority updated`;
           break;
       }
@@ -164,6 +180,74 @@ export default function NotesPage() {
     }
   };
 
+  const handleDownloadNotes = () => {
+    try {
+      // Create CSV content
+      const headers = [
+        'Title', 
+        'Content', 
+        'Category', 
+        'Tags', 
+        'Priority', 
+        'Status', 
+        'Word Count', 
+        'Read Time (mins)', 
+        'Created At', 
+        'Updated At',
+        'Attachments',
+        'References',
+        'Is Public',
+        'Password Protected',
+        'AI Summary'
+      ];
+      
+      const csvContent = [
+        headers.join(','),
+        ...notes.map(note => {
+          // Escape quotes in content
+          const escapeQuotes = (text: string) => `"${text.replace(/"/g, '""')}"`;
+          
+          return [
+            escapeQuotes(note.title || ''),
+            escapeQuotes(note.content || ''),
+            escapeQuotes(note.category || 'general'),
+            escapeQuotes(note.tags?.join('; ') || ''),
+            escapeQuotes(getPriorityLabel(note.priority || 'medium')),
+            escapeQuotes(getStatusLabel(note.status || 'draft')),
+            note.wordCount || calculateWordCount(note.content || ''),
+            note.readTime || calculateReadTime(note.content || ''),
+            escapeQuotes(new Date(note.createdAt).toLocaleDateString()),
+            escapeQuotes(new Date(note.updatedAt).toLocaleDateString()),
+            note.attachments?.length || 0,
+            note.references?.length || 0,
+            note.isPublic ? 'Yes' : 'No',
+            note.passwordProtected ? 'Yes' : 'No',
+            escapeQuotes(note.summary || '')
+          ].join(',');
+        })
+      ].join('\n');
+
+      // Create and trigger download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `notes_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showSnackbar(`${notes.length} notes exported successfully`, 'success');
+    } catch (error) {
+      console.error('Error exporting notes:', error);
+      showSnackbar('Failed to export notes', 'error');
+    }
+  };
+
   const showSnackbar = (message: string, severity: typeof snackbar.severity) => {
     setSnackbar({ open: true, message, severity });
   };
@@ -172,9 +256,26 @@ export default function NotesPage() {
     window.location.href = '/note/add';
   };
 
+  const handleBack = () => {
+    window.history.back();
+  };
+
+  // Get stats summary for display
+  const getStatsSummary = () => {
+    if (!stats) return { active: 0, archived: 0, total: 0 };
+    
+    const activeCount = stats.statuses?.find(s => s._id === 'active')?.count || 0;
+    const archivedCount = stats.statuses?.find(s => s._id === 'archived')?.count || 0;
+    const totalCount = stats.totalNotes || 0;
+    
+    return { active: activeCount, archived: archivedCount, total: totalCount };
+  };
+
+  const statsSummary = getStatsSummary();
+
   return (
-    <MainLayout title="Notes">
-      <Container maxWidth="xl" sx={{ py: { xs: 2, md: 3 }, px: { xs: 1, sm: 2 } }}>
+    <MainLayout title="Notes Management">
+      <Container maxWidth="xl" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
         {/* Mobile Menu */}
         <NoteMobileMenu
           open={showMobileMenu}
@@ -184,96 +285,245 @@ export default function NotesPage() {
           stats={stats}
         />
 
-        {/* Header */}
-        <Paper
-          sx={{
-            p: { xs: 2, sm: 3 },
-            mb: 3,
-            borderRadius: 2,
-            background: `linear-gradient(135deg, ${alpha(
-              theme.palette.primary.main,
-              0.1
-            )} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-            boxShadow: theme.shadows[1],
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: { xs: 'flex-start', md: 'center' },
-              flexDirection: { xs: 'column', md: 'row' },
-              gap: { xs: 2, md: 3 },
-            }}
+        {/* Header - Updated style similar to Events page */}
+        <Box sx={{ mb: 4 }}>
+          {/* Back Button */}
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBack}
+            sx={{ mb: 2 }}
+            size="small"
+            variant="outlined"
           >
-            <Box sx={{ flex: 1 }}>
-              <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold" gutterBottom>
-                📝 Notes
+            Back to Dashboard
+          </Button>
+
+          {/* Breadcrumbs */}
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none',
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              Dashboard
+            </MuiLink>
+            <Typography color="text.primary">Notes</Typography>
+          </Breadcrumbs>
+
+          {/* Main Header */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 3
+          }}>
+            <Box>
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                📝 Notes Management
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Organize your thoughts, ideas, and important information
+              <Typography variant="body1" color="text.secondary">
+                Organize your thoughts, ideas, and important information in one place
               </Typography>
             </Box>
 
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                width: { xs: '100%', md: 'auto' },
+            <Stack 
+              direction="row" 
+              spacing={1}
+              alignItems="center"
+              sx={{ 
+                width: { xs: '100%', sm: 'auto' },
+                justifyContent: { xs: 'space-between', sm: 'flex-end' }
               }}
             >
-              {isMobile && (
-                <IconButton
-                  onClick={() => setShowMobileMenu(true)}
-                  sx={{ border: 1, borderColor: 'divider' }}
-                >
-                  <FilterList />
-                </IconButton>
-              )}
+              {/* Status Chips */}
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Chip 
+                  label={`${statsSummary.total} Total`}
+                  size="small"
+                  color="default"
+                  variant="outlined"
+                />
+                <Chip 
+                  label={`${statsSummary.active} Active`}
+                  size="small"
+                  sx={{ 
+                    backgroundColor: alpha(getStatusColor('active'), 0.1),
+                    color: getStatusColor('active'),
+                    border: `1px solid ${alpha(getStatusColor('active'), 0.3)}`
+                  }}
+                />
+                <Chip 
+                  label={`${statsSummary.archived} Archived`}
+                  size="small"
+                  sx={{ 
+                    backgroundColor: alpha(getStatusColor('archived'), 0.1),
+                    color: getStatusColor('archived'),
+                    border: `1px solid ${alpha(getStatusColor('archived'), 0.3)}`
+                  }}
+                />
+                {selectedNotes.length > 0 && (
+                  <Chip 
+                    label={`${selectedNotes.length} Selected`}
+                    size="small"
+                    color="secondary"
+                  />
+                )}
+              </Stack>
 
-              <Tooltip title="Grid view">
-                <IconButton
-                  onClick={() => setViewMode('grid')}
-                  color={viewMode === 'grid' ? 'primary' : 'default'}
+              {/* Download Button */}
+              <Tooltip title="Download Notes as CSV">
+                <Button
+                  variant="outlined"
+                  startIcon={<Download />}
+                  onClick={handleDownloadNotes}
+                  size={isMobile ? 'small' : 'medium'}
+                  disabled={notes.length === 0}
+                  sx={{
+                    borderRadius: 2,
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    '&:hover': {
+                      borderColor: 'primary.dark',
+                      backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                    },
+                    '&.Mui-disabled': {
+                      borderColor: theme.palette.action.disabled,
+                      color: theme.palette.action.disabled,
+                    }
+                  }}
                 >
-                  <GridView />
-                </IconButton>
+                  {isMobile ? 'Export' : 'Export Notes'}
+                </Button>
               </Tooltip>
 
-              <Tooltip title="List view">
-                <IconButton
-                  onClick={() => setViewMode('list')}
-                  color={viewMode === 'list' ? 'primary' : 'default'}
-                >
-                  <ViewList />
-                </IconButton>
-              </Tooltip>
-
-              <Tooltip title="Refresh">
-                <IconButton onClick={() => fetchNotes(filters)}>
-                  <Refresh />
-                </IconButton>
-              </Tooltip>
-
+              {/* New Note Button */}
               <Button
                 variant="contained"
                 startIcon={<Add />}
                 onClick={handleCreateNote}
-                size={isMobile ? 'medium' : 'large'}
+                size={isMobile ? 'small' : 'medium'}
                 sx={{
-                  borderRadius: 3,
-                  px: { xs: 2, md: 3 },
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${
-                    theme.palette.primary.dark
-                  } 100%)`,
+                  borderRadius: 2,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                  boxShadow: theme.shadows[2],
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
+                    boxShadow: theme.shadows[4],
+                  }
                 }}
               >
                 New Note
               </Button>
-            </Box>
+            </Stack>
           </Box>
-        </Paper>
+
+          {/* Action Bar */}
+          <Paper
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              background: alpha(theme.palette.background.paper, 0.8),
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 2,
+              }}
+            >
+              {/* Left side - View controls and Refresh */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Tooltip title="Grid view">
+                  <IconButton
+                    onClick={() => setViewMode('grid')}
+                    color={viewMode === 'grid' ? 'primary' : 'default'}
+                    size="small"
+                  >
+                    <GridView />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="List view">
+                  <IconButton
+                    onClick={() => setViewMode('list')}
+                    color={viewMode === 'list' ? 'primary' : 'default'}
+                    size="small"
+                  >
+                    <ViewList />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="Refresh">
+                  <IconButton 
+                    onClick={() => fetchNotes(filters)} 
+                    size="small"
+                  >
+                    <Refresh />
+                  </IconButton>
+                </Tooltip>
+
+                {isMobile && (
+                  <Tooltip title="Filters">
+                    <IconButton
+                      onClick={() => setShowMobileMenu(true)}
+                      size="small"
+                      sx={{ border: 1, borderColor: 'divider' }}
+                    >
+                      <FilterList />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+
+              {/* Right side - Stats summary */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="caption" color="text.secondary">
+                  <strong>{notes.length}</strong> notes displayed
+                </Typography>
+                {filters.search && (
+                  <Chip 
+                    label={`Search: "${filters.search}"`}
+                    size="small"
+                    onDelete={() => setFilters({...filters, search: ''})}
+                  />
+                )}
+                {filters.category && (
+                  <Chip 
+                    label={`Category: ${filters.category}`}
+                    size="small"
+                    onDelete={() => setFilters({...filters, category: ''})}
+                  />
+                )}
+                {filters.priority && (
+                  <Chip 
+                    label={`Priority: ${getPriorityLabel(filters.priority as NotePriority)}`}
+                    size="small"
+                    sx={{ 
+                      backgroundColor: alpha(getPriorityColor(filters.priority as NotePriority), 0.1),
+                      color: getPriorityColor(filters.priority as NotePriority),
+                    }}
+                    onDelete={() => setFilters({...filters, priority: ''})}
+                  />
+                )}
+              </Box>
+            </Box>
+          </Paper>
+        </Box>
 
         {/* Error Alert */}
         {error && (
@@ -286,7 +536,7 @@ export default function NotesPage() {
           </Alert>
         )}
 
-        {/* Stats */}
+        {/* Stats Cards */}
         <NotesStats stats={stats} loading={loading} />
 
         {/* Filters - Desktop */}
@@ -337,7 +587,7 @@ export default function NotesPage() {
               setShowShareDialog(false);
               setNoteToShare(null);
             }}
-            onShare={async (userIds, role) => {
+            onShare={async (userIds: string[], role: ShareRole) => {
               try {
                 await shareNote(noteToShare._id, userIds, role);
                 showSnackbar('Note shared successfully', 'success');

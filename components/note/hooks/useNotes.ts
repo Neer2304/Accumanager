@@ -99,10 +99,12 @@ export const useNotes = () => {
     }
   }, []);
 
-  // In your hooks/useNotes.ts - check the fetchNote function
  const fetchNote = useCallback(async (id: string, password?: string) => {
   try {
     console.log(`🔍 useNotes.fetchNote - Starting for ID: ${id}`);
+    console.log(`🔐 Password provided?: ${!!password}`);
+    console.log(`🔐 Password value: ${password}`);
+    
     setLoading(true);
     setError(null);
     
@@ -112,10 +114,13 @@ export const useNotes = () => {
     
     if (password) {
       headers['x-note-password'] = password;
-      console.log(`🔐 Password included in request`);
+      console.log(`🔐 Password set in x-note-password header:`, password);
+    } else {
+      console.log(`🔐 No password provided in request`);
     }
 
     console.log(`📤 Making request to: /api/note/${id}`);
+    console.log(`📤 Headers:`, headers);
     
     const response = await fetch(`/api/note/${id}`, { 
       headers,
@@ -147,14 +152,24 @@ export const useNotes = () => {
     if (!data.success) {
       // Check for password-related errors
       if (data.requiresPassword) {
+        console.log('❌ API returned: Password required');
         throw new Error('Password required');
       } else if (data.message && data.message.includes('Invalid password')) {
+        console.log('❌ API returned: Invalid password');
         throw new Error('Invalid password');
+      } else if (data.message && data.message.includes('Note configuration error')) {
+        // HANDLE THE SPECIFIC ERROR FROM THE API
+        console.log('❌ API returned: Note configuration error');
+        throw new Error(
+          "This note has incorrect security settings. Please contact support.",
+        );
       } else {
+        console.log('❌ API returned generic error:', data.message);
         throw new Error(data.message || `Failed to fetch note (${response.status})`);
       }
     }
     
+    console.log('✅ Successfully fetched note');
     return data.data;
   } catch (err: any) {
     console.error(`❌ useNotes.fetchNote error:`, err);
@@ -289,7 +304,7 @@ export const useNotes = () => {
         `/api/note/search?q=${encodeURIComponent(query)}`,
         {
           credentials: "include",
-        }
+        },
       );
       const data = await response.json();
 
@@ -340,7 +355,7 @@ export const useNotes = () => {
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
   const shareNote = useCallback(
@@ -374,7 +389,7 @@ export const useNotes = () => {
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
   return {

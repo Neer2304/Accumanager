@@ -14,20 +14,114 @@ import {
   Stack,
   alpha,
   useTheme,
+  TextField,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
 import {
   Category,
   Label,
   PriorityHigh,
   Lock,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { useNotes } from './hooks/useNotes';
 import { NoteHeader } from './components/NoteHeader';
-import { NotePasswordDialog } from './components/NotePasswordDialog';
 import { NoteDeleteDialog } from './components/NoteDeleteDialog';
 import { NoteArchiveDialog } from './components/NoteArchiveDialog';
 import { Note } from './types/note.types';
+
+// Password Dialog Component
+interface PasswordDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (password: string) => void;
+  error?: string;
+}
+
+function PasswordDialog({ open, onClose, onSubmit, error }: PasswordDialogProps) {
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState('');
+
+  const handleSubmit = () => {
+    if (!password.trim()) {
+      setLocalError('Password is required');
+      return;
+    }
+    onSubmit(password);
+    setPassword('');
+    setLocalError('');
+  };
+
+  const handleClose = () => {
+    setPassword('');
+    setLocalError('');
+    onClose();
+  };
+
+  const displayError = error || localError;
+
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
+      <DialogTitle>Enter Password</DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          This note is password protected. Please enter the password to view it.
+        </Typography>
+        
+        <TextField
+          autoFocus
+          margin="dense"
+          label="Password"
+          type={showPassword ? 'text' : 'password'}
+          fullWidth
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setLocalError('');
+          }}
+          error={!!displayError}
+          helperText={displayError}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowPassword(!showPassword)}
+                  edge="end"
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleSubmit();
+            }
+          }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose}>Cancel</Button>
+        <Button 
+          onClick={handleSubmit} 
+          variant="contained"
+          disabled={!password.trim()}
+        >
+          Unlock
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 function NoteDetailContent() {
   const { id } = useParams();
@@ -40,6 +134,8 @@ function NoteDetailContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [requiresPassword, setRequiresPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordUsed, setPasswordUsed] = useState(''); // Track password entered by user
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
 
@@ -53,18 +149,24 @@ function NoteDetailContent() {
     }
   }, [id]);
 
-  const loadNote = async (noteId: string, pwd?: string) => {
+  const loadNote = async (noteId: string, password?: string) => {
     try {
       setLoading(true);
       setError('');
-      const noteData = await fetchNote(noteId, pwd);
+      setPasswordError('');
+      const noteData = await fetchNote(noteId, password);
       setNote(noteData);
       setRequiresPassword(false);
+      if (password) {
+        setPasswordUsed(password); // Store the successful password
+      }
     } catch (err: any) {
-      if (err.message.includes('Password required')) {
+      console.error('Error loading note:', err);
+      if (err.message === 'Password required') {
         setRequiresPassword(true);
-      } else if (err.message.includes('Invalid password')) {
-        setError('Invalid password. Please try again.');
+      } else if (err.message === 'Invalid password' || err.message.includes('password')) {
+        setPasswordError(err.message);
+        setRequiresPassword(true);
       } else {
         setError(err.message || 'Failed to load note');
       }
@@ -74,14 +176,23 @@ function NoteDetailContent() {
   };
 
   const handlePasswordSubmit = async (password: string) => {
+    setPasswordUsed(password); // Store the password entered by user
     if (id) {
       const noteId = Array.isArray(id) ? id[0] : id;
       await loadNote(noteId, password);
     }
   };
 
+  const handlePasswordDialogClose = () => {
+    router.push('/notes');
+  };
+
   const handleEdit = () => {
     if (note) {
+      // Store password in sessionStorage before navigating to edit page
+      if (note.passwordProtected && passwordUsed) {
+        sessionStorage.setItem(`note_password_${note._id}`, passwordUsed);
+      }
       router.push(`/note/${note._id}/edit`);
     }
   };
@@ -89,10 +200,33 @@ function NoteDetailContent() {
   const handleArchive = async () => {
     try {
       if (!note) return;
-      await updateNote(note._id, { 
-        status: note.status === 'archived' ? 'active' : 'archived' 
+      
+      // Prepare headers with password if needed
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Include password in header if note is password protected
+      if (note.passwordProtected && passwordUsed) {
+        headers['x-note-password'] = passwordUsed;
+      }
+      
+      // Use fetch directly to include password header
+      const response = await fetch(`/api/note/${note._id}`, {
+        method: 'PUT',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ 
+          status: note.status === 'archived' ? 'active' : 'archived' 
+        }),
       });
-      loadNote(note._id);
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update note');
+      }
+      
+      loadNote(note._id, note.passwordProtected ? passwordUsed : undefined);
       setShowArchiveDialog(false);
     } catch (err) {
       setError('Failed to update note');
@@ -102,30 +236,62 @@ function NoteDetailContent() {
   const handleDelete = async () => {
     try {
       if (!note) return;
-      await deleteNote(note._id);
+      
+      // Prepare headers with password if needed
+      const headers: HeadersInit = {};
+      
+      // Include password in header if note is password protected
+      if (note.passwordProtected && passwordUsed) {
+        headers['x-note-password'] = passwordUsed;
+      }
+      
+      // Use fetch directly to include password header
+      const response = await fetch(`/api/note/${note._id}`, {
+        method: 'DELETE',
+        headers,
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to delete note');
+      }
+      
+      // Clean up stored password
+      sessionStorage.removeItem(`note_password_${note._id}`);
       router.push('/notes');
     } catch (err) {
       setError('Failed to delete note');
     }
   };
 
-  if (loading) {
+  if (loading && !requiresPassword) {
     return (
       <Container>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-          <CircularProgress />
+        <Box 
+          display="flex" 
+          justifyContent="center" 
+          alignItems="center" 
+          minHeight="60vh"
+          key="loading-fallback"
+        >
+          <CircularProgress size={40} />
         </Box>
       </Container>
     );
   }
 
+  // Password Dialog
   if (requiresPassword) {
     return (
-      <NotePasswordDialog
-        open={requiresPassword}
-        onClose={() => router.push('/notes')}
-        onSubmit={handlePasswordSubmit}
-      />
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <PasswordDialog
+          open={requiresPassword}
+          onClose={handlePasswordDialogClose}
+          onSubmit={handlePasswordSubmit}
+          error={passwordError}
+        />
+      </Box>
     );
   }
 
@@ -279,8 +445,14 @@ export default function NoteDetail() {
     <MainLayout title="Note">
       <Suspense fallback={
         <Container>
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-            <CircularProgress />
+          <Box 
+            display="flex" 
+            justifyContent="center" 
+            alignItems="center" 
+            minHeight="60vh"
+            key="suspense-fallback"
+          >
+            <CircularProgress size={40} />
           </Box>
         </Container>
       }>

@@ -100,7 +100,7 @@ export async function GET(
         { isPublic: true }
       ],
       status: { $ne: 'deleted' }
-    }).select('-versions -encryptionKey -passwordHash').lean();
+    }).select('-versions -encryptionKey').lean();
 
     console.log('🔍 Note found?:', !!note);
     
