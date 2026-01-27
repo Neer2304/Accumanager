@@ -15,13 +15,21 @@ import {
   StepLabel,
   Stack,
   Divider,
+  Chip,
+  Breadcrumbs,
+  Link as MuiLink,
+  Container,
 } from '@mui/material'
 import {
   Business as BusinessIcon,
   LocationOn as LocationIcon,
   ContactPhone as ContactIcon,
   CheckCircle as CheckCircleIcon,
+  Download,
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
 } from '@mui/icons-material'
+import Link from 'next/link'
 import { MainLayout } from '@/components/Layout/MainLayout'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -233,6 +241,67 @@ export default function BusinessSetupPage() {
     }
   }
 
+  const handleDownloadProfile = () => {
+    if (!business) {
+      setError('No business profile found to download')
+      return
+    }
+
+    try {
+      // Create PDF content
+      const content = `
+BUSINESS PROFILE
+================
+Date: ${new Date().toLocaleDateString()}
+
+BUSINESS INFORMATION
+-------------------
+Business Name: ${business.businessName}
+GST Number: ${business.gstNumber}
+Logo URL: ${business.logo || 'Not provided'}
+
+ADDRESS DETAILS
+---------------
+Address: ${business.address}
+City: ${business.city}
+State: ${business.state}
+Pincode: ${business.pincode}
+Country: ${business.country}
+
+CONTACT INFORMATION
+------------------
+Phone: ${business.phone}
+Email: ${business.email}
+
+GENERATED ON: ${new Date().toLocaleString()}
+      `.trim();
+
+      // Create and trigger download
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `business_profile_${business.businessName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.txt`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      setSuccess('Business profile downloaded successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error downloading profile:', error);
+      setError('Failed to download business profile');
+    }
+  };
+
+  const handleBackToDashboard = () => {
+    window.history.back();
+  };
+
   const renderStepContent = (step: number) => {
     switch (step) {
       case 0:
@@ -382,25 +451,162 @@ export default function BusinessSetupPage() {
   }
 
   return (
-    <MainLayout title={business ? "Business Profile" : "Setup Your Business"}>
-      <Box sx={{ p: 3, maxWidth: 800, margin: '0 auto' }}>
-        {/* Header */}
-        <Paper sx={{ p: 4, mb: 3, textAlign: 'center', borderRadius: 2 }}>
-          <BusinessIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-          <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
-            {business ? 'Business Profile' : 'Setup Your Business'}
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            {business 
-              ? 'Update your business information for invoicing and compliance'
-              : 'Complete your business profile to start creating invoices with GST'
-            }
-          </Typography>
-        </Paper>
+    <MainLayout title="Business Management">
+      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+        {/* Header - Similar to other pages */}
+        <Box sx={{ mb: 4 }}>
+          {/* Back Button */}
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBackToDashboard}
+            sx={{ mb: 2 }}
+            size="small"
+            variant="outlined"
+          >
+            Back to Dashboard
+          </Button>
+
+          {/* Breadcrumbs */}
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none',
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              Dashboard
+            </MuiLink>
+            <Typography color="text.primary">Business</Typography>
+          </Breadcrumbs>
+
+          {/* Main Header */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 3
+          }}>
+            <Box>
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                🏢 Business Management
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {business 
+                  ? 'Manage your business profile for invoicing and compliance'
+                  : 'Setup your business profile to start creating professional invoices'
+                }
+              </Typography>
+            </Box>
+
+            <Stack 
+              direction="row" 
+              spacing={1}
+              alignItems="center"
+              sx={{ 
+                width: { xs: '100%', sm: 'auto' },
+                justifyContent: { xs: 'space-between', sm: 'flex-end' }
+              }}
+            >
+              {/* Status Chip */}
+              <Chip 
+                label={business ? "Profile Created" : "Setup Required"}
+                size="small"
+                color={business ? "success" : "warning"}
+                variant="outlined"
+              />
+
+              {/* Download Button */}
+              {business && (
+                <Button
+                  variant="outlined"
+                  startIcon={<Download />}
+                  onClick={handleDownloadProfile}
+                  size="small"
+                  sx={{
+                    borderRadius: 2,
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    '&:hover': {
+                      borderColor: 'primary.dark',
+                    }
+                  }}
+                >
+                  Download Profile
+                </Button>
+              )}
+            </Stack>
+          </Box>
+
+          {/* Status Bar */}
+          <Paper
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              backgroundColor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <BusinessIcon color="primary" />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Current Status
+                  </Typography>
+                  <Typography variant="body1" fontWeight="medium">
+                    {business ? `Profile: ${business.businessName}` : 'Business Profile Not Setup'}
+                  </Typography>
+                </Box>
+              </Box>
+              
+              {business && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    GST: <strong>{business.gstNumber}</strong>
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Location: <strong>{business.city}, {business.state}</strong>
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* Alerts */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError('')}>
+            {error}
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setSuccess('')}>
+            {success}
+          </Alert>
+        )}
 
         {/* Stepper */}
-        <Card sx={{ mb: 3, borderRadius: 2 }}>
-          <CardContent>
+        <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
+          <CardContent sx={{ p: 3 }}>
             <Stepper activeStep={activeStep} alternativeLabel>
               {steps.map((label) => (
                 <Step key={label}>
@@ -411,21 +617,8 @@ export default function BusinessSetupPage() {
           </CardContent>
         </Card>
 
-        {/* Alerts */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-            {error}
-          </Alert>
-        )}
-        
-        {success && (
-          <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
-            {success}
-          </Alert>
-        )}
-
         {/* Form Content */}
-        <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
+        <Card sx={{ borderRadius: 2, boxShadow: 2, mb: 3 }}>
           <CardContent sx={{ p: 4 }}>
             {renderStepContent(activeStep)}
 
@@ -447,12 +640,27 @@ export default function BusinessSetupPage() {
                   variant="contained"
                   size="large"
                   startIcon={isLoading ? null : <CheckCircleIcon />}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ 
+                    borderRadius: 2,
+                    background: 'linear-gradient(135deg, #1976d2 0%, #115293 100%)',
+                    boxShadow: 2,
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #115293 0%, #0d47a1 100%)',
+                      boxShadow: 4,
+                    }
+                  }}
                 >
                   {isLoading ? 'Saving...' : business ? 'Update Business' : 'Save Business'}
                 </Button>
               ) : (
-                <Button onClick={handleNext} variant="contained" sx={{ borderRadius: 2 }}>
+                <Button 
+                  onClick={handleNext} 
+                  variant="contained" 
+                  sx={{ 
+                    borderRadius: 2,
+                    background: 'linear-gradient(135deg, #1976d2 0%, #115293 100%)',
+                  }}
+                >
                   Next
                 </Button>
               )}
@@ -461,28 +669,29 @@ export default function BusinessSetupPage() {
         </Card>
 
         {/* Quick Info */}
-        <Card sx={{ mt: 3, borderRadius: 2 }}>
+        <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom color="primary">
+            <Typography variant="h6" gutterBottom color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <BusinessIcon />
               Why setup business profile?
             </Typography>
             <Stack spacing={1}>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 • Required for generating GST-compliant invoices
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 • Auto-calculates CGST/SGST or IGST based on your business state
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 • Professional invoices with your business details
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 • Required for tax compliance and record keeping
               </Typography>
             </Stack>
           </CardContent>
         </Card>
-      </Box>
+      </Container>
     </MainLayout>
   )
 }
