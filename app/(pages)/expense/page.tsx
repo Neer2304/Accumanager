@@ -1,7 +1,25 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Paper, useTheme, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Paper,
+  useTheme,
+  useMediaQuery,
+  Container,
+  Button,
+  Chip,
+  Stack,
+  Breadcrumbs,
+  Link as MuiLink,
+} from "@mui/material";
+import {
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
+  Download,
+} from "@mui/icons-material";
+import Link from "next/link";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import ExpenseHeader from "@/components/expenses/ExpenseHeader";
 import ExpenseStats from "@/components/expenses/ExpenseStats";
@@ -33,7 +51,7 @@ interface Expense {
   userId?: string;
 }
 
-interface ExpenseStats {
+interface ExpenseStatsType {
   categoryStats: Array<{
     _id: string;
     totalAmount: number;
@@ -62,7 +80,7 @@ export default function ExpensesPage() {
   
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<ExpenseStats | null>(null);
+  const [stats, setStats] = useState<ExpenseStatsType | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -104,7 +122,7 @@ export default function ExpensesPage() {
       });
       
       if (response.ok) {
-        const data = await response.json() as ExpenseStats;
+        const data = await response.json() as ExpenseStatsType;
         console.log("Stats loaded:", data);
         setStats(data);
       } else {
@@ -236,6 +254,85 @@ export default function ExpensesPage() {
     setEditingExpense(null);
   };
 
+  // Handle download expenses
+  const handleDownloadExpenses = () => {
+    if (expenses.length === 0) {
+      alert("No expenses to download");
+      return;
+    }
+
+    try {
+      // Create CSV content
+      const headers = [
+        'Title',
+        'Amount',
+        'Currency',
+        'Category',
+        'Payment Method',
+        'Date',
+        'Description',
+        'Business Expense',
+        'GST Amount',
+        'Vendor Name',
+        'Vendor GSTIN',
+        'Vendor Contact',
+        'Tags',
+        'Recurring',
+        'Recurrence',
+        'Status'
+      ];
+
+      const csvContent = [
+        headers.join(','),
+        ...expenses.map(expense => {
+          const escape = (text: any) => `"${String(text || '').replace(/"/g, '""')}"`;
+          
+          return [
+            escape(expense.title),
+            expense.amount,
+            expense.currency,
+            escape(expense.category),
+            escape(expense.paymentMethod),
+            new Date(expense.date).toLocaleDateString(),
+            escape(expense.description),
+            expense.isBusinessExpense ? 'Yes' : 'No',
+            expense.gstAmount || 0,
+            escape(expense.vendor?.name),
+            escape(expense.vendor?.gstin),
+            escape(expense.vendor?.contact),
+            escape(expense.tags?.join(', ')),
+            expense.isRecurring ? 'Yes' : 'No',
+            expense.recurrence || 'None',
+            escape(expense.status)
+          ].join(',');
+        })
+      ].join('\n');
+
+      // Create and trigger download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `expenses_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert(`${expenses.length} expenses exported successfully`);
+    } catch (error) {
+      console.error('Error exporting expenses:', error);
+      alert('Failed to export expenses');
+    }
+  };
+
+  const handleBack = () => {
+    window.history.back();
+  };
+
   // Calculate totals
   const totalAmount = expenses.reduce(
     (sum, expense) => sum + expense.amount,
@@ -248,16 +345,182 @@ export default function ExpensesPage() {
     .filter((e) => !e.isBusinessExpense)
     .reduce((sum, e) => sum + e.amount, 0);
 
-  return (
-    <MainLayout title="Expense Tracker">
-      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, margin: "0 auto" }}>
-        {/* Header */}
-        <ExpenseHeader
-          onAddExpense={() => setDialogOpen(true)}
-          totalExpenses={expenses.length}
-        />
+  // Calculate category counts
+  const businessCount = expenses.filter(e => e.isBusinessExpense).length;
+  const personalCount = expenses.filter(e => !e.isBusinessExpense).length;
 
-        {/* Statistics */}
+  return (
+    <MainLayout title="Expense Management">
+      <Container maxWidth="xl" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+        {/* Header - Same style as Events page */}
+        <Box sx={{ mb: 4 }}>
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBack}
+            sx={{ mb: 2 }}
+            size="small"
+            variant="outlined"
+          >
+            Back to Dashboard
+          </Button>
+
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none',
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              Dashboard
+            </MuiLink>
+            <Typography color="text.primary">Expenses</Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 3
+          }}>
+            <Box>
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                💰 Expense Management
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Track and manage all your business and personal expenses in one place
+              </Typography>
+            </Box>
+
+            <Stack 
+              direction="row" 
+              spacing={1}
+              alignItems="center"
+              sx={{ 
+                width: { xs: '100%', sm: 'auto' },
+                justifyContent: { xs: 'space-between', sm: 'flex-end' }
+              }}
+            >
+              {/* Status Chips */}
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Chip 
+                  label={`₹${totalAmount.toLocaleString('en-IN')}`}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+                <Chip 
+                  label={`${expenses.length} Expenses`}
+                  size="small"
+                  color="default"
+                  variant="outlined"
+                />
+                {businessCount > 0 && (
+                  <Chip 
+                    label={`${businessCount} Business`}
+                    size="small"
+                    color="success"
+                    variant="outlined"
+                  />
+                )}
+                {personalCount > 0 && (
+                  <Chip 
+                    label={`${personalCount} Personal`}
+                    size="small"
+                    color="info"
+                    variant="outlined"
+                  />
+                )}
+              </Stack>
+
+              {/* Download Button */}
+              <Button
+                variant="outlined"
+                startIcon={<Download />}
+                onClick={handleDownloadExpenses}
+                size={isMobile ? 'small' : 'medium'}
+                disabled={expenses.length === 0}
+                sx={{
+                  borderRadius: 2,
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  '&:hover': {
+                    borderColor: 'primary.dark',
+                  },
+                  '&.Mui-disabled': {
+                    borderColor: 'action.disabled',
+                    color: 'action.disabled',
+                  }
+                }}
+              >
+                {isMobile ? 'Export' : 'Export Expenses'}
+              </Button>
+            </Stack>
+          </Box>
+
+          {/* Action Bar */}
+          <Paper
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              background: 'background.paper',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid',
+              borderColor: 'divider',
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 2,
+              }}
+            >
+              {/* Left side - Totals */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Total: <strong style={{ color: theme.palette.primary.main }}>₹{totalAmount.toLocaleString('en-IN')}</strong>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Business: <strong style={{ color: theme.palette.success.main }}>₹{businessTotal.toLocaleString('en-IN')}</strong>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Personal: <strong style={{ color: theme.palette.info.main }}>₹{personalTotal.toLocaleString('en-IN')}</strong>
+                </Typography>
+              </Box>
+
+              {/* Right side - Add Expense Button */}
+              <Button
+                variant="contained"
+                onClick={() => setDialogOpen(true)}
+                size="small"
+                sx={{
+                  borderRadius: 2,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                  boxShadow: theme.shadows[2],
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
+                    boxShadow: theme.shadows[4],
+                  }
+                }}
+              >
+                + Add Expense
+              </Button>
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* Statistics Cards */}
         <ExpenseStats
           totalAmount={totalAmount}
           businessTotal={businessTotal}
@@ -294,7 +557,7 @@ export default function ExpensesPage() {
           onSave={handleSaveExpense}
           editingExpense={editingExpense}
         />
-      </Box>
+      </Container>
     </MainLayout>
   );
 }

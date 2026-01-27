@@ -12,7 +12,17 @@ import {
   useTheme,
   useMediaQuery,
   alpha,
+  Paper,
+  Breadcrumbs,
+  Link as MuiLink,
+  Stack,
 } from '@mui/material';
+import {
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
+  Download,
+} from '@mui/icons-material';
+import Link from 'next/link';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import {
   FaqHeader,
@@ -100,14 +110,197 @@ export default function FAQPage() {
   const TeamIcon = FaqIcons.team;
   const ArrowForwardIcon = FaqIcons.arrowForward;
 
-  return (
-    <MainLayout title="FAQ & Help Center">
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
-        {/* Header */}
-        <FaqHeader />
+  const handleBack = () => {
+    window.history.back();
+  };
 
-        {/* Search */}
-        <FaqSearch onSearch={handleSearch} searchResults={searchResults || undefined} />
+  const handleDownloadFAQ = () => {
+    try {
+      // Create FAQ content
+      const content = `
+FAQ & HELP CENTER
+================
+Generated on: ${new Date().toLocaleDateString()}
+
+${faqCategories.map(category => `
+${category.title.toUpperCase()}
+${'='.repeat(category.title.length)}
+
+${category.questions.map((q, index) => `
+${index + 1}. ${q.question}
+   ${q.answer}
+
+   Tags: ${q.tags?.join(', ') || 'None'}
+   ${'-'.repeat(50)}
+`).join('\n')}
+`).join('\n\n')}
+
+Total Questions: ${faqCategories.reduce((acc, cat) => acc + cat.questions.length, 0)}
+Total Categories: ${faqCategories.length}
+
+For additional help, contact: support@attendancepro.com
+      `.trim();
+
+      // Create and trigger download
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `faq_guide_${new Date().toISOString().split('T')[0]}.txt`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert('FAQ guide downloaded successfully!');
+    } catch (error) {
+      console.error('Error downloading FAQ:', error);
+      alert('Failed to download FAQ guide');
+    }
+  };
+
+  return (
+    <MainLayout title="FAQ Management">
+      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+        {/* Header - Same style as other pages */}
+        <Box sx={{ mb: 4 }}>
+          {/* Back Button */}
+          <Button
+            startIcon={<BackIcon />}
+            onClick={handleBack}
+            sx={{ mb: 2 }}
+            size="small"
+            variant="outlined"
+          >
+            Back to Dashboard
+          </Button>
+
+          {/* Breadcrumbs */}
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none',
+                color: 'text.secondary',
+                '&:hover': { color: 'primary.main' }
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              Dashboard
+            </MuiLink>
+            <Typography color="text.primary">FAQ & Help</Typography>
+          </Breadcrumbs>
+
+          {/* Main Header */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 3
+          }}>
+            <Box>
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                ❓ FAQ & Help Center
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Find answers to common questions and learn how to use the system
+              </Typography>
+            </Box>
+
+            <Stack 
+              direction="row" 
+              spacing={1}
+              alignItems="center"
+              sx={{ 
+                width: { xs: '100%', sm: 'auto' },
+                justifyContent: { xs: 'space-between', sm: 'flex-end' }
+              }}
+            >
+              {/* Status Chips */}
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Chip 
+                  label={`${faqCategories.length} Categories`}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+                <Chip 
+                  label={`${faqCategories.reduce((acc, cat) => acc + cat.questions.length, 0)} Questions`}
+                  size="small"
+                  color="default"
+                  variant="outlined"
+                />
+                {activeFilter !== 'all' && (
+                  <Chip 
+                    label={`${popularTags.find(t => t.id === activeFilter)?.label}`}
+                    size="small"
+                    color="secondary"
+                    onDelete={() => setActiveFilter('all')}
+                  />
+                )}
+              </Stack>
+
+              {/* Download Button */}
+              <Button
+                variant="outlined"
+                startIcon={<Download />}
+                onClick={handleDownloadFAQ}
+                size={isMobile ? 'small' : 'medium'}
+                sx={{
+                  borderRadius: 2,
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  '&:hover': {
+                    borderColor: 'primary.dark',
+                  }
+                }}
+              >
+                {isMobile ? 'Download' : 'Download FAQ'}
+              </Button>
+            </Stack>
+          </Box>
+
+          {/* Search Bar */}
+          <Paper
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              background: 'background.paper',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid',
+              borderColor: 'divider',
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ flex: 1, minWidth: 300 }}>
+                <FaqSearch onSearch={handleSearch} searchResults={searchResults || undefined} />
+              </Box>
+              
+              <Typography variant="caption" color="text.secondary">
+                Need more help? <Link href="/support" style={{ color: theme.palette.primary.main, textDecoration: 'none' }}>
+                  Contact Support
+                </Link>
+              </Typography>
+            </Box>
+          </Paper>
+        </Box>
 
         {/* Search Results Alert */}
         {searchQuery.trim() && searchResults && (
@@ -126,7 +319,7 @@ export default function FAQPage() {
 
         {/* No Results */}
         {searchQuery.trim() && searchResults && searchResults.length === 0 && (
-          <Box sx={{ textAlign: 'center', py: 6 }}>
+          <Box sx={{ textAlign: 'center', py: 6, mb: 4 }}>
             <SearchIcon sx={{ fontSize: 60, color: 'text.secondary', opacity: 0.5, mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No results found for "{searchQuery}"
