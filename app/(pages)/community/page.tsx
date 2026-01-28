@@ -1,3 +1,4 @@
+// app/community/page.tsx
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -79,7 +80,6 @@ import {
   ThumbUp,
 } from "@mui/icons-material";
 import Link from "next/link";
-import { MainLayout } from "@/components/Layout/MainLayout";
 import { useCommunity } from "@/hooks/useCommunity";
 import { formatDate } from "@/utils/dateUtils";
 
@@ -215,15 +215,15 @@ function PostCard({
 
   const handleLikeClick = async () => {
     if (isLiking) return;
-    
+
     setIsLiking(true);
     try {
       console.log("=== LIKE CLICK ===");
       console.log("Post object:", post);
-      
+
       // Extract the actual ID
       let actualId = "";
-      
+
       if (typeof post._id === "string") {
         actualId = post._id;
       } else if (post._id && post._id.toString) {
@@ -233,7 +233,7 @@ function PostCard({
       } else {
         actualId = String(post._id);
       }
-      
+
       console.log("Actual ID to send:", actualId);
       await onLike(actualId);
     } catch (error) {
@@ -245,12 +245,12 @@ function PostCard({
 
   const handleBookmarkClick = async () => {
     if (isBookmarking) return;
-    
+
     setIsBookmarking(true);
     try {
       console.log("=== BOOKMARK CLICK ===");
       console.log("Post ID:", post._id);
-      
+
       let actualId = "";
       if (typeof post._id === "string") {
         actualId = post._id;
@@ -259,7 +259,7 @@ function PostCard({
       } else {
         actualId = String(post._id);
       }
-      
+
       console.log("Actual ID for bookmark:", actualId);
       await onBookmark(actualId);
     } catch (error) {
@@ -398,7 +398,7 @@ function PostCard({
                 isLiking ? (
                   <CircularProgress size={16} />
                 ) : hasLiked ? (
-                  <LikeIcon sx={{ color: "#f44336" }} />
+                  <LikeIcon sx={{ color: "#ed1d0e" }} />
                 ) : (
                   <LikeIcon />
                 )
@@ -550,28 +550,36 @@ function PostDetail({
           </Box>
 
           <Box sx={{ display: "flex", gap: 1 }}>
-            <IconButton 
-              onClick={handleLikeClick} 
+            <IconButton
+              onClick={handleLikeClick}
               disabled={isLiking}
-              sx={{ 
+              sx={{
                 color: hasLiked ? "#f44336" : "inherit",
-                "&:hover": { color: hasLiked ? "#d32f2f" : "primary.main" }
+                "&:hover": { color: hasLiked ? "#d32f2f" : "primary.main" },
               }}
             >
               {isLiking ? <CircularProgress size={24} /> : <LikeIcon />}
             </IconButton>
-            
-            <IconButton 
-              onClick={handleBookmarkClick} 
+
+            <IconButton
+              onClick={handleBookmarkClick}
               disabled={isBookmarking}
-              sx={{ 
+              sx={{
                 color: hasBookmarked ? "#2196f3" : "inherit",
-                "&:hover": { color: hasBookmarked ? "#1976d2" : "primary.main" }
+                "&:hover": {
+                  color: hasBookmarked ? "#1976d2" : "primary.main",
+                },
               }}
             >
-              {isBookmarking ? <CircularProgress size={24} /> : hasBookmarked ? <BookmarkedIcon /> : <BookmarkIcon />}
+              {isBookmarking ? (
+                <CircularProgress size={24} />
+              ) : hasBookmarked ? (
+                <BookmarkedIcon />
+              ) : (
+                <BookmarkIcon />
+              )}
             </IconButton>
-            
+
             <IconButton>
               <ShareIcon />
             </IconButton>
@@ -607,7 +615,8 @@ function PostDetail({
             variant="caption"
             sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
           >
-            <BookmarkIcon fontSize="small" /> {post.bookmarkCount || 0} bookmarks
+            <BookmarkIcon fontSize="small" /> {post.bookmarkCount || 0}{" "}
+            bookmarks
           </Typography>
           <Typography
             variant="caption"
@@ -688,6 +697,10 @@ function PostDetail({
         <Button
           variant="contained"
           onClick={() => {
+            console.log("🟡 Comment button clicked");
+            console.log("Post ID:", post._id);
+            console.log("Comment text:", commentText);
+
             if (commentText.trim()) {
               onComment(post._id, commentText);
               setCommentText("");
@@ -758,7 +771,7 @@ export default function CommunityPage() {
       try {
         // You need to decode the JWT token to get user ID
         // This is a simplified version - you should use your actual token decoding logic
-        const tokenParts = token.split('.');
+        const tokenParts = token.split(".");
         if (tokenParts.length === 3) {
           const payload = JSON.parse(atob(tokenParts[1]));
           setCurrentUserId(payload.userId);
@@ -768,10 +781,6 @@ export default function CommunityPage() {
       }
     }
   }, [filters, fetchPosts, fetchStats]);
-
-  const handleBack = () => {
-    window.history.back();
-  };
 
   const handleFilterChange = (key: keyof CommunityFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
@@ -813,14 +822,22 @@ export default function CommunityPage() {
     }
   };
 
-  const handleAddComment = async (postId: string) => {
-    if (!commentInput.trim()) return;
+  const handleAddComment = async (postId: string, content: string) => {
+    console.log("🟢 handleAddComment called");
+    console.log("Post ID:", postId);
+    console.log("Comment content:", content);
+
+    if (!content.trim()) {
+      console.log("❌ Empty comment, not posting");
+      return;
+    }
 
     try {
-      await addComment(postId, commentInput);
-      setCommentInput("");
+      console.log("📤 Calling addComment API...");
+      await addComment(postId, content);
+      console.log("✅ Comment added successfully");
     } catch (error) {
-      console.error("Failed to add comment:", error);
+      console.error("❌ Failed to add comment:", error);
     }
   };
 
@@ -902,587 +919,574 @@ For more, visit: https://yourapp.com/community
   const communityPosts = posts as unknown as CommunityPost[];
 
   return (
-    <MainLayout title="Community Forum">
-      <Container maxWidth="xl" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          {/* Back Button */}
-          <Button
-            startIcon={<BackIcon />}
-            onClick={handleBack}
-            sx={{ mb: 2 }}
-            size="small"
-            variant="outlined"
+    <Container maxWidth="xl" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        {/* Breadcrumbs */}
+        <Breadcrumbs sx={{ mb: 2 }}>
+          <MuiLink
+            component={Link}
+            href="/dashboard"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              textDecoration: "none",
+              color: "text.secondary",
+              "&:hover": { color: "primary.main" },
+            }}
           >
-            Back to Dashboard
-          </Button>
+            <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+            Dashboard
+          </MuiLink>
+          <Typography color="text.primary">Community</Typography>
+        </Breadcrumbs>
 
-          {/* Breadcrumbs */}
-          <Breadcrumbs sx={{ mb: 2 }}>
-            <MuiLink
-              component={Link}
-              href="/dashboard"
+        {/* Main Header */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          <Box>
+            <Typography variant="h4" fontWeight={700} gutterBottom>
+              👥 Community Forum
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Connect with other users, share knowledge, and get help
+            </Typography>
+          </Box>
+
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{
+              width: { xs: "100%", sm: "auto" },
+              justifyContent: { xs: "space-between", sm: "flex-end" },
+            }}
+          >
+            {/* Stats Chips */}
+            <Stack direction="row" spacing={1} alignItems="center">
+              {stats && (
+                <>
+                  <Chip
+                    icon={<ForumIcon />}
+                    label={`${stats.totalPosts} Posts`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Chip
+                    icon={<PeopleIcon />}
+                    label={`${stats.totalUsers} Users`}
+                    size="small"
+                    color="info"
+                    variant="outlined"
+                  />
+                  <Chip
+                    icon={<ChartIcon />}
+                    label={`${stats.activeToday} Active Today`}
+                    size="small"
+                    color="success"
+                    variant="outlined"
+                  />
+                </>
+              )}
+            </Stack>
+
+            {/* Download Button */}
+            <Button
+              variant="outlined"
+              startIcon={<Download />}
+              onClick={handleDownloadCommunity}
+              size={isMobile ? "small" : "medium"}
               sx={{
-                display: "flex",
-                alignItems: "center",
-                textDecoration: "none",
-                color: "text.secondary",
-                "&:hover": { color: "primary.main" },
+                borderRadius: 2,
+                borderColor: "primary.main",
+                color: "primary.main",
+                "&:hover": {
+                  borderColor: "primary.dark",
+                },
               }}
             >
-              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
-              Dashboard
-            </MuiLink>
-            <Typography color="text.primary">Community</Typography>
-          </Breadcrumbs>
+              Export
+            </Button>
 
-          {/* Main Header */}
+            {/* New Post Button */}
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setShowNewPostDialog(true)}
+              size={isMobile ? "small" : "medium"}
+              sx={{
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                boxShadow: theme.shadows[2],
+                "&:hover": {
+                  background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
+                  boxShadow: theme.shadows[4],
+                },
+              }}
+            >
+              New Post
+            </Button>
+          </Stack>
+        </Box>
+
+        {/* Search & Filter Bar */}
+        <Paper
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            background: "background.paper",
+            backdropFilter: "blur(10px)",
+            border: "1px solid",
+            borderColor: "divider",
+            mb: 3,
+          }}
+        >
           <Box
             sx={{
               display: "flex",
+              alignItems: "center",
               justifyContent: "space-between",
-              alignItems: { xs: "flex-start", sm: "center" },
-              flexDirection: { xs: "column", sm: "row" },
+              flexWrap: "wrap",
               gap: 2,
-              mb: 3,
             }}
           >
-            <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
-                👥 Community Forum
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Connect with other users, share knowledge, and get help
-              </Typography>
-            </Box>
-
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{
-                width: { xs: "100%", sm: "auto" },
-                justifyContent: { xs: "space-between", sm: "flex-end" },
-              }}
-            >
-              {/* Stats Chips */}
-              <Stack direction="row" spacing={1} alignItems="center">
-                {stats && (
-                  <>
-                    <Chip
-                      icon={<ForumIcon />}
-                      label={`${stats.totalPosts} Posts`}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
-                    <Chip
-                      icon={<PeopleIcon />}
-                      label={`${stats.totalUsers} Users`}
-                      size="small"
-                      color="info"
-                      variant="outlined"
-                    />
-                    <Chip
-                      icon={<ChartIcon />}
-                      label={`${stats.activeToday} Active Today`}
-                      size="small"
-                      color="success"
-                      variant="outlined"
-                    />
-                  </>
-                )}
-              </Stack>
-
-              {/* Download Button */}
-              <Button
-                variant="outlined"
-                startIcon={<Download />}
-                onClick={handleDownloadCommunity}
-                size={isMobile ? "small" : "medium"}
-                sx={{
-                  borderRadius: 2,
-                  borderColor: "primary.main",
-                  color: "primary.main",
-                  "&:hover": {
-                    borderColor: "primary.dark",
-                  },
-                }}
-              >
-                Export
-              </Button>
-
-              {/* New Post Button */}
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setShowNewPostDialog(true)}
-                size={isMobile ? "small" : "medium"}
-                sx={{
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                  boxShadow: theme.shadows[2],
-                  "&:hover": {
-                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
-                    boxShadow: theme.shadows[4],
-                  },
-                }}
-              >
-                New Post
-              </Button>
-            </Stack>
-          </Box>
-
-          {/* Search & Filter Bar */}
-          <Paper
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              background: "background.paper",
-              backdropFilter: "blur(10px)",
-              border: "1px solid",
-              borderColor: "divider",
-              mb: 3,
-            }}
-          >
+            {/* Search */}
             <Box
               sx={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 2,
+                flex: 1,
+                minWidth: 300,
               }}
             >
-              {/* Search */}
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  flex: 1,
-                  minWidth: 300,
-                }}
-              >
-                <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
-                <TextField
-                  fullWidth
-                  placeholder="Search discussions, questions, or topics..."
-                  value={filters.search}
-                  onChange={handleSearch}
-                  variant="standard"
-                  size="small"
-                  InputProps={{ disableUnderline: true }}
-                />
-              </Box>
-
-              {/* Category Filter */}
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={filters.category}
-                  onChange={(e) =>
-                    handleFilterChange("category", e.target.value)
-                  }
-                  label="Category"
-                  startAdornment={<CategoryIcon sx={{ mr: 1 }} />}
-                >
-                  {CATEGORIES.map((cat) => (
-                    <MenuItem key={cat.id} value={cat.id}>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        {cat.icon}
-                        {cat.name}
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              {/* Sort Filter */}
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Sort by</InputLabel>
-                <Select
-                  value={filters.sort}
-                  onChange={(e) => handleFilterChange("sort", e.target.value)}
-                  label="Sort by"
-                  startAdornment={<SortIcon sx={{ mr: 1 }} />}
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        {option.icon}
-                        {option.label}
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-          </Paper>
-        </Box>
-
-        {/* Error Alert */}
-        {error && (
-          <Alert
-            severity="error"
-            sx={{ mb: 3, borderRadius: 2 }}
-            onClose={() => setError(null)}
-          >
-            {error}
-          </Alert>
-        )}
-
-        {/* Categories Tabs */}
-        <Paper sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
-          <Tabs
-            value={filters.category}
-            onChange={(e, newValue) => handleFilterChange("category", newValue)}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              bgcolor: "background.paper",
-              "& .MuiTab-root": {
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                minHeight: 60,
-              },
-            }}
-          >
-            {CATEGORIES.map((category) => (
-              <Tab
-                key={category.id}
-                value={category.id}
-                icon={category.icon}
-                iconPosition="start"
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {category.name}
-                    {stats?.popularCategories?.find(
-                      (c) => c._id === category.id,
-                    ) && (
-                      <Chip
-                        label={
-                          stats.popularCategories.find(
-                            (c) => c._id === category.id,
-                          )?.count
-                        }
-                        size="small"
-                        sx={{ height: 20, fontSize: "0.75rem" }}
-                      />
-                    )}
-                  </Box>
-                }
-                sx={{
-                  color:
-                    filters.category === category.id
-                      ? category.color
-                      : "text.secondary",
-                }}
+              <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
+              <TextField
+                fullWidth
+                placeholder="Search discussions, questions, or topics..."
+                value={filters.search}
+                onChange={handleSearch}
+                variant="standard"
+                size="small"
+                InputProps={{ disableUnderline: true }}
               />
-            ))}
-          </Tabs>
-        </Paper>
+            </Box>
 
-        {/* Content Grid */}
-        <Box
+            {/* Category Filter */}
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Category</InputLabel>
+              <Select
+                value={filters.category}
+                onChange={(e) =>
+                  handleFilterChange("category", e.target.value)
+                }
+                label="Category"
+                startAdornment={<CategoryIcon sx={{ mr: 1 }} />}
+              >
+                {CATEGORIES.map((cat) => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    >
+                      {cat.icon}
+                      {cat.name}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Sort Filter */}
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Sort by</InputLabel>
+              <Select
+                value={filters.sort}
+                onChange={(e) => handleFilterChange("sort", e.target.value)}
+                label="Sort by"
+                startAdornment={<SortIcon sx={{ mr: 1 }} />}
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    >
+                      {option.icon}
+                      {option.label}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </Paper>
+      </Box>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert
+          severity="error"
+          sx={{ mb: 3, borderRadius: 2 }}
+          onClose={() => setError(null)}
+        >
+          {error}
+        </Alert>
+      )}
+
+      {/* Categories Tabs */}
+      <Paper sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
+        <Tabs
+          value={filters.category}
+          onChange={(e, newValue) => handleFilterChange("category", newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
-            display: "flex",
-            flexDirection: { xs: "column", lg: "row" },
-            gap: 3,
+            bgcolor: "background.paper",
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "0.95rem",
+              minHeight: 60,
+            },
           }}
         >
-          {/* Main Posts */}
-          <Box sx={{ flex: 1 }}>
-            {loading ? (
-              <Box sx={{ textAlign: "center", py: 8 }}>
-                <CircularProgress />
-                <Typography color="text.secondary" sx={{ mt: 2 }}>
-                  Loading community posts...
-                </Typography>
-              </Box>
-            ) : communityPosts.length === 0 ? (
-              <Box sx={{ textAlign: "center", py: 8 }}>
-                <ForumIcon
-                  sx={{
-                    fontSize: 60,
-                    color: "text.secondary",
-                    opacity: 0.5,
-                    mb: 2,
-                  }}
-                />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No posts found
+          {CATEGORIES.map((category) => (
+            <Tab
+              key={category.id}
+              value={category.id}
+              icon={category.icon}
+              iconPosition="start"
+              label={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {category.name}
+                  {stats?.popularCategories?.find(
+                    (c) => c._id === category.id,
+                  ) && (
+                    <Chip
+                      label={
+                        stats.popularCategories.find(
+                          (c) => c._id === category.id,
+                        )?.count
+                      }
+                      size="small"
+                      sx={{ height: 20, fontSize: "0.75rem" }}
+                    />
+                  )}
+                </Box>
+              }
+              sx={{
+                color:
+                  filters.category === category.id
+                    ? category.color
+                    : "text.secondary",
+              }}
+            />
+          ))}
+        </Tabs>
+      </Paper>
+
+      {/* Content Grid */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", lg: "row" },
+          gap: 3,
+        }}
+      >
+        {/* Main Posts */}
+        <Box sx={{ flex: 1 }}>
+          {loading ? (
+            <Box sx={{ textAlign: "center", py: 8 }}>
+              <CircularProgress />
+              <Typography color="text.secondary" sx={{ mt: 2 }}>
+                Loading community posts...
+              </Typography>
+            </Box>
+          ) : communityPosts.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 8 }}>
+              <ForumIcon
+                sx={{
+                  fontSize: 60,
+                  color: "text.secondary",
+                  opacity: 0.5,
+                  mb: 2,
+                }}
+              />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No posts found
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 3 }}
+              >
+                {filters.search
+                  ? "Try a different search term"
+                  : "Be the first to start a discussion!"}
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setShowNewPostDialog(true)}
+              >
+                Create First Post
+              </Button>
+            </Box>
+          ) : (
+            <>
+              {/* Pinned Posts */}
+              {communityPosts.filter((p) => p.isPinned).length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
+                    <PinIcon />
+                    Pinned Posts
+                  </Typography>
+                  <Stack spacing={2}>
+                    {communityPosts
+                      .filter((p) => p.isPinned)
+                      .map((post) => (
+                        <PostCard
+                          key={post._id}
+                          post={post}
+                          onLike={handleLikePost}
+                          onBookmark={handleBookmarkPost}
+                          onSelect={setSelectedPost}
+                          currentUserId={currentUserId || undefined}
+                        />
+                      ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {/* All Posts */}
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+              >
+                <NewIcon />
+                {filters.sort === "trending"
+                  ? "Trending Now"
+                  : "Recent Discussions"}
+              </Typography>
+
+              <Stack spacing={2}>
+                {communityPosts
+                  .filter((p) => !p.isPinned)
+                  .map((post) => (
+                    <PostCard
+                      key={post._id}
+                      post={post}
+                      onLike={handleLikePost}
+                      onBookmark={handleBookmarkPost}
+                      onSelect={setSelectedPost}
+                      currentUserId={currentUserId || undefined}
+                    />
+                  ))}
+              </Stack>
+
+              {/* Pagination */}
+              {pagination.pages > 1 && (
+                <Box
+                  sx={{ display: "flex", justifyContent: "center", mt: 4 }}
+                >
+                  <Pagination
+                    count={pagination.pages}
+                    page={pagination.page}
+                    onChange={(e, page) => handleFilterChange("page", page)}
+                    color="primary"
+                    size={isMobile ? "small" : "medium"}
+                    showFirstButton
+                    showLastButton
+                  />
+                </Box>
+              )}
+            </>
+          )}
+        </Box>
+
+        {/* Sidebar */}
+        <Box sx={{ width: { xs: "100%", lg: 350 } }}>
+          {/* Community Stats */}
+          <Card sx={{ mb: 3, borderRadius: 2 }}>
+            <CardContent>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
+                <ChartIcon />
+                Community Stats
+              </Typography>
+              {stats ? (
+                <Stack spacing={1.5}>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Total Posts
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {stats.totalPosts}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Total Comments
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {stats.totalComments}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Total Users
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {stats.totalUsers}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Active Today
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {stats.activeToday}
+                    </Typography>
+                  </Box>
+                </Stack>
+              ) : (
+                <CircularProgress size={20} />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Popular Categories */}
+          <Card sx={{ mb: 3, borderRadius: 2 }}>
+            <CardContent>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
+                <HotIcon />
+                Popular Categories
+              </Typography>
+              <Stack spacing={1}>
+                {stats?.popularCategories?.map((category) => (
+                  <Box
+                    key={category._id}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      p: 1.5,
+                      borderRadius: 1,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      },
+                    }}
+                    onClick={() =>
+                      handleFilterChange("category", category._id)
+                    }
+                  >
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                    >
+                      {CATEGORIES.find((c) => c.id === category._id)?.icon}
+                      <Typography variant="body2" fontWeight={500}>
+                        {CATEGORIES.find((c) => c.id === category._id)
+                          ?.name || category._id}
+                      </Typography>
+                    </Box>
+                    <Chip label={category.count} size="small" />
+                  </Box>
+                ))}
+              </Stack>
+            </CardContent>
+          </Card>
+
+          {/* Community Guidelines */}
+          <Card sx={{ mb: 3, borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                📝 Community Guidelines
+              </Typography>
+              <Stack spacing={1}>
+                <Typography
+                  variant="body2"
+                  sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
+                >
+                  <CheckIcon
+                    fontSize="small"
+                    sx={{ color: "success.main", mt: 0.2 }}
+                  />
+                  Be respectful and professional
                 </Typography>
                 <Typography
                   variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 3 }}
+                  sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
                 >
-                  {filters.search
-                    ? "Try a different search term"
-                    : "Be the first to start a discussion!"}
+                  <CheckIcon
+                    fontSize="small"
+                    sx={{ color: "success.main", mt: 0.2 }}
+                  />
+                  No spam or self-promotion
                 </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => setShowNewPostDialog(true)}
-                >
-                  Create First Post
-                </Button>
-              </Box>
-            ) : (
-              <>
-                {/* Pinned Posts */}
-                {communityPosts.filter((p) => p.isPinned).length > 0 && (
-                  <Box sx={{ mb: 3 }}>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                    >
-                      <PinIcon />
-                      Pinned Posts
-                    </Typography>
-                    <Stack spacing={2}>
-                      {communityPosts
-                        .filter((p) => p.isPinned)
-                        .map((post) => (
-                          <PostCard
-                            key={post._id}
-                            post={post}
-                            onLike={handleLikePost}
-                            onBookmark={handleBookmarkPost}
-                            onSelect={setSelectedPost}
-                            currentUserId={currentUserId || undefined}
-                          />
-                        ))}
-                    </Stack>
-                  </Box>
-                )}
-
-                {/* All Posts */}
                 <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+                  variant="body2"
+                  sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
                 >
-                  <NewIcon />
-                  {filters.sort === "trending"
-                    ? "Trending Now"
-                    : "Recent Discussions"}
+                  <CheckIcon
+                    fontSize="small"
+                    sx={{ color: "success.main", mt: 0.2 }}
+                  />
+                  Stay on topic
                 </Typography>
-
-                <Stack spacing={2}>
-                  {communityPosts
-                    .filter((p) => !p.isPinned)
-                    .map((post) => (
-                      <PostCard
-                        key={post._id}
-                        post={post}
-                        onLike={handleLikePost}
-                        onBookmark={handleBookmarkPost}
-                        onSelect={setSelectedPost}
-                        currentUserId={currentUserId || undefined}
-                      />
-                    ))}
-                </Stack>
-
-                {/* Pagination */}
-                {pagination.pages > 1 && (
-                  <Box
-                    sx={{ display: "flex", justifyContent: "center", mt: 4 }}
-                  >
-                    <Pagination
-                      count={pagination.pages}
-                      page={pagination.page}
-                      onChange={(e, page) => handleFilterChange("page", page)}
-                      color="primary"
-                      size={isMobile ? "small" : "medium"}
-                      showFirstButton
-                      showLastButton
-                    />
-                  </Box>
-                )}
-              </>
-            )}
-          </Box>
-
-          {/* Sidebar */}
-          <Box sx={{ width: { xs: "100%", lg: 350 } }}>
-            {/* Community Stats */}
-            <Card sx={{ mb: 3, borderRadius: 2 }}>
-              <CardContent>
                 <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  variant="body2"
+                  sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
                 >
-                  <ChartIcon />
-                  Community Stats
+                  <CheckIcon
+                    fontSize="small"
+                    sx={{ color: "success.main", mt: 0.2 }}
+                  />
+                  Help others when you can
                 </Typography>
-                {stats ? (
-                  <Stack spacing={1.5}>
-                    <Box
-                      sx={{ display: "flex", justifyContent: "space-between" }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        Total Posts
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {stats.totalPosts}
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{ display: "flex", justifyContent: "space-between" }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        Total Comments
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {stats.totalComments}
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{ display: "flex", justifyContent: "space-between" }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        Total Users
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {stats.totalUsers}
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{ display: "flex", justifyContent: "space-between" }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        Active Today
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {stats.activeToday}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                ) : (
-                  <CircularProgress size={20} />
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Popular Categories */}
-            <Card sx={{ mb: 3, borderRadius: 2 }}>
-              <CardContent>
                 <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  variant="body2"
+                  sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
                 >
-                  <HotIcon />
-                  Popular Categories
+                  <CheckIcon
+                    fontSize="small"
+                    sx={{ color: "success.main", mt: 0.2 }}
+                  />
+                  Report inappropriate content
                 </Typography>
-                <Stack spacing={1}>
-                  {stats?.popularCategories?.map((category) => (
-                    <Box
-                      key={category._id}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        p: 1.5,
-                        borderRadius: 1,
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                        "&:hover": {
-                          bgcolor: alpha(theme.palette.primary.main, 0.05),
-                        },
-                      }}
-                      onClick={() =>
-                        handleFilterChange("category", category._id)
-                      }
-                    >
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                      >
-                        {CATEGORIES.find((c) => c.id === category._id)?.icon}
-                        <Typography variant="body2" fontWeight={500}>
-                          {CATEGORIES.find((c) => c.id === category._id)
-                            ?.name || category._id}
-                        </Typography>
-                      </Box>
-                      <Chip label={category.count} size="small" />
-                    </Box>
-                  ))}
-                </Stack>
-              </CardContent>
-            </Card>
-
-            {/* Community Guidelines */}
-            <Card sx={{ mb: 3, borderRadius: 2 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  📝 Community Guidelines
-                </Typography>
-                <Stack spacing={1}>
-                  <Typography
-                    variant="body2"
-                    sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                  >
-                    <CheckIcon
-                      fontSize="small"
-                      sx={{ color: "success.main", mt: 0.2 }}
-                    />
-                    Be respectful and professional
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                  >
-                    <CheckIcon
-                      fontSize="small"
-                      sx={{ color: "success.main", mt: 0.2 }}
-                    />
-                    No spam or self-promotion
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                  >
-                    <CheckIcon
-                      fontSize="small"
-                      sx={{ color: "success.main", mt: 0.2 }}
-                    />
-                    Stay on topic
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                  >
-                    <CheckIcon
-                      fontSize="small"
-                      sx={{ color: "success.main", mt: 0.2 }}
-                    />
-                    Help others when you can
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                  >
-                    <CheckIcon
-                      fontSize="small"
-                      sx={{ color: "success.main", mt: 0.2 }}
-                    />
-                    Report inappropriate content
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Box>
+              </Stack>
+            </CardContent>
+          </Card>
         </Box>
-      </Container>
+      </Box>
 
       {/* New Post Dialog */}
       <Dialog
@@ -1584,8 +1588,8 @@ For more, visit: https://yourapp.com/community
           PaperProps={{
             sx: {
               borderRadius: 3,
-              maxHeight: '90vh',
-            }
+              maxHeight: "90vh",
+            },
           }}
         >
           <DialogTitle>{selectedPost.title}</DialogTitle>
@@ -1595,13 +1599,18 @@ For more, visit: https://yourapp.com/community
               onClose={() => setSelectedPost(null)}
               onLike={handleLikePost}
               onBookmark={handleBookmarkPost}
-              onComment={handleAddComment}
+              onComment={(postId, content) => {
+                console.log("📝 PostDetail onComment called");
+                console.log("Post ID:", postId);
+                console.log("Content:", content);
+                handleAddComment(postId, content);
+              }}
               onMarkAsSolution={handleMarkAsSolution}
               currentUserId={currentUserId || undefined}
             />
           </DialogContent>
         </Dialog>
       )}
-    </MainLayout>
+    </Container>
   );
 }
