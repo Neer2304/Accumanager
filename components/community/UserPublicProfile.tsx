@@ -565,27 +565,72 @@ export default function UserPublicProfile({
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to parse error message from response
+        let errorMessage = `HTTP error! status: ${response.status}`;
+
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // If response is not JSON, try to get text
+          try {
+            const errorText = await response.text();
+            if (errorText) errorMessage = `${errorMessage}: ${errorText}`;
+          } catch {
+            // Ignore if can't get text
+          }
+        }
+
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      console.log("Follow/Unfollow response:", data);
 
       if (data.success) {
         setIsFollowing(!isFollowing);
         if (data.data?.followerCount !== undefined) {
           setFollowerCount(data.data.followerCount);
         }
+
+        // Show success message
+        const action = isFollowing ? "unfollowed" : "followed";
+        console.log(`Successfully ${action} ${profile.username}`);
+
         // Refresh followers list if on followers tab
         if (tabValue === 1) {
           fetchFollowers();
         }
+
+        // Optionally show a toast notification
+        // toast.success(`Successfully ${action} ${profile.username}`);
       } else {
         throw new Error(data.message || "Failed to follow/unfollow");
       }
     } catch (error: any) {
       console.error("Follow toggle error:", error);
-      alert("Error: " + error.message);
+
+      // More user-friendly error messages
+      let userErrorMessage = "Operation failed. Please try again.";
+
+      if (error.message.includes("405")) {
+        userErrorMessage =
+          "Unfollow action is not available. Please refresh the page.";
+      } else if (error.message.includes("401")) {
+        userErrorMessage = "Please login to follow users.";
+      } else if (error.message.includes("404")) {
+        userErrorMessage = "User not found.";
+      } else if (error.message.includes("400")) {
+        userErrorMessage = "Cannot perform this action.";
+      } else {
+        userErrorMessage = error.message || userErrorMessage;
+      }
+
+      // Use alert or your preferred notification system
+      alert(`Error: ${userErrorMessage}`);
+
+      // Optionally revert UI state on error
+      // setIsFollowing(isFollowing); // Keep original state
     } finally {
       setFollowLoading(false);
     }

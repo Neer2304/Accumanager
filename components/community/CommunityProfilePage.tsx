@@ -1,4 +1,4 @@
-// components/community/CommunityProfilePage.tsx
+// components/community/CommunityProfilePage.tsx - UPDATED WITH ACTIVITY API
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -13,11 +13,8 @@ import {
   Tabs,
   Chip,
   IconButton,
-  Divider,
   Card,
   CardContent,
-  CardActions,
-  Stack,
   CircularProgress,
   Alert,
   TextField,
@@ -33,6 +30,7 @@ import {
   Forum as ForumIcon,
   ThumbUp as ThumbUpIcon,
   Bookmark as BookmarkIcon,
+  Comment as CommentIcon,
   CalendarToday as CalendarIcon,
   LocationOn as LocationIcon,
   Business as BusinessIcon,
@@ -50,6 +48,7 @@ import { formatDate, formatNumber } from '@/utils/formatUtils';
 import CommunityProfileDialog from './CommunityProfileDialog';
 import UserCard from './UserCard';
 import PostCard from './PostCard';
+import FollowDialog from './FollowDialog';
 
 // Export the interface so it can be imported elsewhere
 export interface CommunityProfile {
@@ -114,22 +113,23 @@ interface User {
     name: string;
     shopName?: string;
   };
+  isFollowing?: boolean;
 }
 
-interface Post {
+interface ActivityPost {
   _id: string;
   title: string;
-  excerpt: string;
-  author: {
-    _id: string;
-    name: string;
-    avatar?: string;
-  };
+  excerpt?: string;
+  category?: string;
   likeCount: number;
   commentCount: number;
   views: number;
   createdAt: string;
-  tags: string[];
+  updatedAt: string;
+  lastActivityAt: string;
+  type: 'liked' | 'bookmarked' | 'created' | 'commented';
+  commentContent?: string;
+  commentDate?: string;
 }
 
 export default function CommunityProfilePage() {
@@ -140,18 +140,22 @@ export default function CommunityProfilePage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [followers, setFollowers] = useState<User[]>([]);
   const [following, setFollowing] = useState<User[]>([]);
-  const [userPosts, setUserPosts] = useState<Post[]>([]);
-  const [likedPosts, setLikedPosts] = useState<Post[]>([]);
-  const [bookmarkedPosts, setBookmarkedPosts] = useState<Post[]>([]);
+  const [activities, setActivities] = useState<ActivityPost[]>([]);
+  const [activityStats, setActivityStats] = useState({
+    totalLikes: 0,
+    totalBookmarks: 0,
+    totalComments: 0,
+    totalPosts: 0,
+  });
   const [statsLoading, setStatsLoading] = useState({
     followers: false,
     following: false,
-    posts: false,
-    likes: false,
-    bookmarks: false,
+    activity: false,
   });
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [followDialogOpen, setFollowDialogOpen] = useState(false);
+  const [followDialogType, setFollowDialogType] = useState<'followers' | 'following'>('followers');
 
   // Fetch profile data
   const fetchProfile = useCallback(async () => {
@@ -185,7 +189,7 @@ export default function CommunityProfilePage() {
     setStatsLoading(prev => ({ ...prev, followers: true }));
     try {
       const response = await fetch(
-        `/api/community/profile/${profile.userId._id}/connections?type=followers&limit=12`,
+        `/api/community/profile/${profile.username}/connections?type=followers&limit=12`,
         { credentials: 'include' }
       );
       
@@ -209,7 +213,7 @@ export default function CommunityProfilePage() {
     setStatsLoading(prev => ({ ...prev, following: true }));
     try {
       const response = await fetch(
-        `/api/community/profile/${profile.userId._id}/connections?type=following&limit=12`,
+        `/api/community/profile/${profile.username}/connections?type=following&limit=12`,
         { credentials: 'include' }
       );
       
@@ -226,76 +230,36 @@ export default function CommunityProfilePage() {
     }
   };
 
-  // Fetch user posts
-  const fetchUserPosts = async () => {
-    if (!profile) return;
-    
-    setStatsLoading(prev => ({ ...prev, posts: true }));
+  // Fetch all activity data using the activity API
+  const fetchActivityData = async () => {
+    setStatsLoading(prev => ({ ...prev, activity: true }));
     try {
-      const response = await fetch(
-        `/api/community/posts/user/${profile.userId._id}?limit=6`,
-        { credentials: 'include' }
-      );
+      const response = await fetch('/api/community/activity', {
+        credentials: 'include'
+      });
       
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setUserPosts(data.data || []);
+          setActivities(data.data.recentActivity || []);
+          setActivityStats({
+            totalLikes: data.data.totalLikes || 0,
+            totalBookmarks: data.data.totalBookmarks || 0,
+            totalComments: data.data.totalComments || 0,
+            totalPosts: data.data.totalPosts || 0,
+          });
         }
       }
     } catch (error) {
-      console.error('Failed to fetch user posts:', error);
+      console.error('Failed to fetch activity data:', error);
     } finally {
-      setStatsLoading(prev => ({ ...prev, posts: false }));
+      setStatsLoading(prev => ({ ...prev, activity: false }));
     }
   };
 
-  // Fetch liked posts
-  const fetchLikedPosts = async () => {
-    if (!profile) return;
-    
-    setStatsLoading(prev => ({ ...prev, likes: true }));
-    try {
-      const response = await fetch(
-        `/api/community/profile/${profile.userId._id}/likes?limit=6`,
-        { credentials: 'include' }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setLikedPosts(data.data || []);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch liked posts:', error);
-    } finally {
-      setStatsLoading(prev => ({ ...prev, likes: false }));
-    }
-  };
-
-  // Fetch bookmarked posts
-  const fetchBookmarkedPosts = async () => {
-    if (!profile) return;
-    
-    setStatsLoading(prev => ({ ...prev, bookmarks: true }));
-    try {
-      const response = await fetch(
-        `/api/community/profile/${profile.userId._id}/bookmarks?limit=6`,
-        { credentials: 'include' }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setBookmarkedPosts(data.data || []);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch bookmarked posts:', error);
-    } finally {
-      setStatsLoading(prev => ({ ...prev, bookmarks: false }));
-    }
+  // Filter activities by type
+  const getActivitiesByType = (type: 'liked' | 'bookmarked' | 'created' | 'commented') => {
+    return activities.filter(activity => activity.type === type);
   };
 
   // Load data based on active tab
@@ -308,22 +272,23 @@ export default function CommunityProfilePage() {
         case 2:
           fetchFollowing();
           break;
-        case 3:
-          fetchUserPosts();
+        case 3: // Posts tab - we'll show created posts from activity data
+          // No need to fetch separately, we already have activity data
           break;
-        case 4:
-          fetchLikedPosts();
+        case 4: // Likes tab
+          // No need to fetch separately, we already have activity data
           break;
-        case 5:
-          fetchBookmarkedPosts();
+        case 5: // Bookmarks tab
+          // No need to fetch separately, we already have activity data
           break;
       }
     }
   }, [tabValue, profile]);
 
-  // Initial load
+  // Initial load - fetch profile and activity data
   useEffect(() => {
     fetchProfile();
+    fetchActivityData();
   }, [fetchProfile]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -334,9 +299,9 @@ export default function CommunityProfilePage() {
     setProfile(updatedProfile);
   };
 
-  const handleFollowUser = async (userId: string) => {
+  const handleFollowUser = async (username: string) => {
     try {
-      const response = await fetch(`/api/community/profile/${userId}/follow`, {
+      const response = await fetch(`/api/community/profile/${username}/follow`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -344,13 +309,8 @@ export default function CommunityProfilePage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // Update follower count
-          if (profile) {
-            setProfile({
-              ...profile,
-              followerCount: data.data.targetUser?.followerCount || profile.followerCount,
-            });
-          }
+          // Refresh followers list
+          fetchFollowers();
         }
       }
     } catch (error) {
@@ -358,9 +318,9 @@ export default function CommunityProfilePage() {
     }
   };
 
-  const handleUnfollowUser = async (userId: string) => {
+  const handleUnfollowUser = async (username: string) => {
     try {
-      const response = await fetch(`/api/community/profile/${userId}/follow`, {
+      const response = await fetch(`/api/community/profile/${username}/follow`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -368,13 +328,8 @@ export default function CommunityProfilePage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // Update follower count
-          if (profile) {
-            setProfile({
-              ...profile,
-              followerCount: data.data.targetUser?.followerCount || profile.followerCount,
-            });
-          }
+          // Refresh followers list
+          fetchFollowers();
         }
       }
     } catch (error) {
@@ -390,10 +345,8 @@ export default function CommunityProfilePage() {
       });
       
       if (response.ok) {
-        // Refresh liked posts
-        if (tabValue === 4) {
-          fetchLikedPosts();
-        }
+        // Refresh activity data
+        fetchActivityData();
       }
     } catch (error) {
       console.error('Failed to like post:', error);
@@ -408,13 +361,32 @@ export default function CommunityProfilePage() {
       });
       
       if (response.ok) {
-        // Refresh bookmarked posts
-        if (tabValue === 5) {
-          fetchBookmarkedPosts();
-        }
+        // Refresh activity data
+        fetchActivityData();
       }
     } catch (error) {
       console.error('Failed to bookmark post:', error);
+    }
+  };
+
+  const handleOpenFollowDialog = (type: 'followers' | 'following') => {
+    setFollowDialogType(type);
+    setFollowDialogOpen(true);
+  };
+
+  // Get activity icon and label
+  const getActivityInfo = (type: string) => {
+    switch (type) {
+      case 'liked':
+        return { icon: <ThumbUpIcon color="error" />, label: 'Liked' };
+      case 'bookmarked':
+        return { icon: <BookmarkIcon color="primary" />, label: 'Bookmarked' };
+      case 'created':
+        return { icon: <ForumIcon color="success" />, label: 'Created' };
+      case 'commented':
+        return { icon: <CommentIcon color="info" />, label: 'Commented on' };
+      default:
+        return { icon: <ForumIcon />, label: 'Posted' };
     }
   };
 
@@ -553,7 +525,7 @@ export default function CommunityProfilePage() {
                 )}
 
                 {/* Details */}
-                <Stack direction="row" spacing={3} sx={{ mb: 3, flexWrap: 'wrap', gap: 2 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
                   {profile.location && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <LocationIcon fontSize="small" color="action" />
@@ -595,7 +567,7 @@ export default function CommunityProfilePage() {
                       </Typography>
                     </Box>
                   )}
-                </Stack>
+                </Box>
 
                 {/* Social Links */}
                 {profile.socialLinks && (
@@ -653,7 +625,7 @@ export default function CommunityProfilePage() {
                     <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                       Badges
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       {profile.badges.map((badge, index) => (
                         <Chip
                           key={index}
@@ -663,7 +635,7 @@ export default function CommunityProfilePage() {
                           variant="outlined"
                         />
                       ))}
-                    </Stack>
+                    </Box>
                   </Box>
                 )}
 
@@ -673,7 +645,7 @@ export default function CommunityProfilePage() {
                     <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                       Expert In
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       {profile.expertInCategories.map((category, index) => (
                         <Chip
                           key={index}
@@ -683,13 +655,13 @@ export default function CommunityProfilePage() {
                           variant="outlined"
                         />
                       ))}
-                    </Stack>
+                    </Box>
                   </Box>
                 )}
               </Box>
 
               {/* Action Buttons */}
-              <Stack direction="row" spacing={1}>
+              <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button
                   variant="outlined"
                   startIcon={<EditIcon />}
@@ -700,10 +672,10 @@ export default function CommunityProfilePage() {
                 <IconButton>
                   <SettingsIcon />
                 </IconButton>
-              </Stack>
+              </Box>
             </Box>
 
-            {/* Stats Bar */}
+            {/* Stats Bar - Make follower/following counts clickable */}
             <Paper 
               sx={{ 
                 p: 3, 
@@ -711,39 +683,89 @@ export default function CommunityProfilePage() {
                 bgcolor: (theme) => alpha(theme.palette.primary.main, 0.02),
                 border: '1px solid',
                 borderColor: 'divider',
+                mt: 3,
               }}
             >
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                <Box sx={{ flex: 1, minWidth: '120px', textAlign: 'center' }}>
-                  <Typography variant="h4" fontWeight={700} color="primary">
+                {/* Followers - Clickable */}
+                <Box 
+                  sx={{ 
+                    flex: 1, 
+                    minWidth: '120px', 
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                    },
+                  }}
+                  onClick={() => handleOpenFollowDialog('followers')}
+                >
+                  <Typography 
+                    variant="h4" 
+                    fontWeight={700} 
+                    color="primary"
+                    sx={{
+                      '&:hover': {
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
                     {formatNumber(profile.followerCount)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Followers
                   </Typography>
                 </Box>
-                <Box sx={{ flex: 1, minWidth: '120px', textAlign: 'center' }}>
-                  <Typography variant="h4" fontWeight={700} color="primary">
+                
+                {/* Following - Clickable */}
+                <Box 
+                  sx={{ 
+                    flex: 1, 
+                    minWidth: '120px', 
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                    },
+                  }}
+                  onClick={() => handleOpenFollowDialog('following')}
+                >
+                  <Typography 
+                    variant="h4" 
+                    fontWeight={700} 
+                    color="primary"
+                    sx={{
+                      '&:hover': {
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
                     {formatNumber(profile.followingCount)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Following
                   </Typography>
                 </Box>
+                
+                {/* Posts */}
                 <Box sx={{ flex: 1, minWidth: '120px', textAlign: 'center' }}>
                   <Typography variant="h4" fontWeight={700} color="primary">
-                    {formatNumber(profile.communityStats.totalPosts)}
+                    {formatNumber(activityStats.totalPosts || profile.communityStats.totalPosts)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Posts
                   </Typography>
                 </Box>
+                
+                {/* Likes */}
                 <Box sx={{ flex: 1, minWidth: '120px', textAlign: 'center' }}>
                   <Typography variant="h4" fontWeight={700} color="primary">
-                    {formatNumber(profile.communityStats.engagementScore)}
+                    {formatNumber(activityStats.totalLikes || profile.communityStats.totalLikesGiven)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Engagement Score
+                    Likes Given
                   </Typography>
                 </Box>
               </Box>
@@ -779,17 +801,17 @@ export default function CommunityProfilePage() {
                 <Tab 
                   icon={<ForumIcon />} 
                   iconPosition="start"
-                  label={`Posts (${formatNumber(profile.communityStats.totalPosts)})`} 
+                  label={`Posts (${formatNumber(activityStats.totalPosts || profile.communityStats.totalPosts)})`} 
                 />
                 <Tab 
                   icon={<ThumbUpIcon />} 
                   iconPosition="start"
-                  label={`Likes (${formatNumber(profile.communityStats.totalLikesGiven)})`} 
+                  label={`Likes (${formatNumber(activityStats.totalLikes || profile.communityStats.totalLikesGiven)})`} 
                 />
                 <Tab 
                   icon={<BookmarkIcon />} 
                   iconPosition="start"
-                  label={`Bookmarks (${formatNumber(profile.communityStats.totalBookmarks)})`} 
+                  label={`Bookmarks (${formatNumber(activityStats.totalBookmarks || profile.communityStats.totalBookmarks)})`} 
                 />
               </Tabs>
             </Box>
@@ -810,7 +832,7 @@ export default function CommunityProfilePage() {
                             <Typography variant="h6">Post Activity</Typography>
                           </Box>
                           <Typography variant="body2" color="text.secondary" paragraph>
-                            You have created {profile.communityStats.totalPosts} posts and made {profile.communityStats.totalComments} comments in the community.
+                            You have created {activityStats.totalPosts || profile.communityStats.totalPosts} posts and made {profile.communityStats.totalComments} comments in the community.
                           </Typography>
                           <Typography variant="body2">
                             Last active: {formatDate(profile.communityStats.lastActive, true)}
@@ -824,7 +846,7 @@ export default function CommunityProfilePage() {
                             <Typography variant="h6">Engagement</Typography>
                           </Box>
                           <Typography variant="body2" color="text.secondary" paragraph>
-                            You've given {profile.communityStats.totalLikesGiven} likes and received {profile.communityStats.totalLikesReceived} likes.
+                            You've given {activityStats.totalLikes || profile.communityStats.totalLikesGiven} likes and received {profile.communityStats.totalLikesReceived} likes.
                           </Typography>
                           <Typography variant="body2">
                             Engagement score: {profile.communityStats.engagementScore}
@@ -832,6 +854,72 @@ export default function CommunityProfilePage() {
                         </CardContent>
                       </Card>
                     </Box>
+
+                    {/* Recent Activity Preview */}
+                    {activities.length > 0 && (
+                      <Card>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>
+                            Recent Activity
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {activities.slice(0, 5).map((activity, index) => {
+                              const { icon, label } = getActivityInfo(activity.type);
+                              return (
+                                <Box key={index} sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: 2,
+                                  p: 1,
+                                  borderRadius: 1,
+                                  '&:hover': { bgcolor: 'action.hover' }
+                                }}>
+                                  {icon}
+                                  <Box sx={{ flex: 1 }}>
+                                    <Typography variant="body2" fontWeight={500}>
+                                      {label}: {activity.title}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {formatDate(activity.lastActivityAt, true)}
+                                    </Typography>
+                                  </Box>
+                                  <Button 
+                                    size="small" 
+                                    onClick={() => router.push(`/community/post/${activity._id}`)}
+                                  >
+                                    View
+                                  </Button>
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Subscription Info */}
+                    {profile.userId.subscription && (
+                      <Card>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>
+                            Subscription Status
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Chip
+                              label={profile.userId.subscription.plan.toUpperCase()}
+                              color={
+                                profile.userId.subscription.plan === 'premium' ? 'primary' : 
+                                profile.userId.subscription.plan === 'pro' ? 'success' : 'default'
+                              }
+                              variant="outlined"
+                            />
+                            <Typography variant="body2" color="text.secondary">
+                              Status: {profile.userId.subscription.status}
+                            </Typography>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    )}
                   </Box>
                 </Box>
               )}
@@ -886,7 +974,7 @@ export default function CommunityProfilePage() {
                               user={user}
                               onFollow={handleFollowUser}
                               onUnfollow={handleUnfollowUser}
-                              onViewProfile={(userId) => router.push(`/community/profile/${user.username}`)}
+                              onViewProfile={(username) => router.push(`/community/profile/${user.username}`)}
                             />
                           </Box>
                         ))}
@@ -946,7 +1034,7 @@ export default function CommunityProfilePage() {
                               isFollowing={true}
                               onFollow={handleFollowUser}
                               onUnfollow={handleUnfollowUser}
-                              onViewProfile={(userId) => router.push(`/community/profile/${user.username}`)}
+                              onViewProfile={(username) => router.push(`/community/profile/${user.username}`)}
                             />
                           </Box>
                         ))}
@@ -959,7 +1047,7 @@ export default function CommunityProfilePage() {
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
                     <Typography variant="h6">
-                      Your Posts ({formatNumber(profile.communityStats.totalPosts)})
+                      Your Posts ({formatNumber(activityStats.totalPosts || profile.communityStats.totalPosts)})
                     </Typography>
                     <Button
                       variant="contained"
@@ -970,25 +1058,59 @@ export default function CommunityProfilePage() {
                     </Button>
                   </Box>
                   
-                  {statsLoading.posts ? (
+                  {statsLoading.activity ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                       <CircularProgress />
                     </Box>
-                  ) : userPosts.length === 0 ? (
+                  ) : getActivitiesByType('created').length === 0 ? (
                     <Alert severity="info">
                       You haven't created any posts yet.
                     </Alert>
                   ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      {userPosts.map((post) => (
+                      {getActivitiesByType('created').map((post) => (
                         <Box key={post._id}>
-                          <PostCard
-                            post={post}
-                            showActions={true}
-                            onViewPost={(postId) => router.push(`/community/post/${postId}`)}
-                            onLike={handleLikePost}
-                            onBookmark={handleBookmarkPost}
-                          />
+                          <Card sx={{ borderRadius: 2 }}>
+                            <CardContent>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                <ForumIcon color="success" />
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                  {post.title}
+                                </Typography>
+                                <Chip 
+                                  label="Created" 
+                                  size="small" 
+                                  color="success" 
+                                  variant="outlined"
+                                  sx={{ ml: 'auto' }}
+                                />
+                              </Box>
+                              {post.excerpt && (
+                                <Typography variant="body2" color="text.secondary" paragraph>
+                                  {post.excerpt}
+                                </Typography>
+                              )}
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    👍 {post.likeCount}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    💬 {post.commentCount}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    👁️ {post.views}
+                                  </Typography>
+                                </Box>
+                                <Button 
+                                  size="small" 
+                                  onClick={() => router.push(`/community/post/${post._id}`)}
+                                >
+                                  View Post
+                                </Button>
+                              </Box>
+                            </CardContent>
+                          </Card>
                         </Box>
                       ))}
                     </Box>
@@ -1000,29 +1122,63 @@ export default function CommunityProfilePage() {
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
                     <Typography variant="h6">
-                      Liked Posts ({formatNumber(profile.communityStats.totalLikesGiven)})
+                      Liked Posts ({formatNumber(activityStats.totalLikes || profile.communityStats.totalLikesGiven)})
                     </Typography>
                   </Box>
                   
-                  {statsLoading.likes ? (
+                  {statsLoading.activity ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                       <CircularProgress />
                     </Box>
-                  ) : likedPosts.length === 0 ? (
+                  ) : getActivitiesByType('liked').length === 0 ? (
                     <Alert severity="info">
                       You haven't liked any posts yet.
                     </Alert>
                   ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      {likedPosts.map((post) => (
+                      {getActivitiesByType('liked').map((post) => (
                         <Box key={post._id}>
-                          <PostCard
-                            post={post}
-                            showActions={true}
-                            onViewPost={(postId) => router.push(`/community/post/${postId}`)}
-                            onLike={handleLikePost}
-                            onBookmark={handleBookmarkPost}
-                          />
+                          <Card sx={{ borderRadius: 2 }}>
+                            <CardContent>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                <ThumbUpIcon color="error" />
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                  {post.title}
+                                </Typography>
+                                <Chip 
+                                  label="Liked" 
+                                  size="small" 
+                                  color="error" 
+                                  variant="outlined"
+                                  sx={{ ml: 'auto' }}
+                                />
+                              </Box>
+                              {post.excerpt && (
+                                <Typography variant="body2" color="text.secondary" paragraph>
+                                  {post.excerpt}
+                                </Typography>
+                              )}
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    👍 {post.likeCount}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    💬 {post.commentCount}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    👁️ {post.views}
+                                  </Typography>
+                                </Box>
+                                <Button 
+                                  size="small" 
+                                  onClick={() => router.push(`/community/post/${post._id}`)}
+                                >
+                                  View Post
+                                </Button>
+                              </Box>
+                            </CardContent>
+                          </Card>
                         </Box>
                       ))}
                     </Box>
@@ -1034,29 +1190,63 @@ export default function CommunityProfilePage() {
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
                     <Typography variant="h6">
-                      Bookmarked Posts ({formatNumber(profile.communityStats.totalBookmarks)})
+                      Bookmarked Posts ({formatNumber(activityStats.totalBookmarks || profile.communityStats.totalBookmarks)})
                     </Typography>
                   </Box>
                   
-                  {statsLoading.bookmarks ? (
+                  {statsLoading.activity ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                       <CircularProgress />
                     </Box>
-                  ) : bookmarkedPosts.length === 0 ? (
+                  ) : getActivitiesByType('bookmarked').length === 0 ? (
                     <Alert severity="info">
                       You haven't bookmarked any posts yet.
                     </Alert>
                   ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      {bookmarkedPosts.map((post) => (
+                      {getActivitiesByType('bookmarked').map((post) => (
                         <Box key={post._id}>
-                          <PostCard
-                            post={post}
-                            showActions={true}
-                            onViewPost={(postId) => router.push(`/community/post/${postId}`)}
-                            onLike={handleLikePost}
-                            onBookmark={handleBookmarkPost}
-                          />
+                          <Card sx={{ borderRadius: 2 }}>
+                            <CardContent>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                <BookmarkIcon color="primary" />
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                  {post.title}
+                                </Typography>
+                                <Chip 
+                                  label="Bookmarked" 
+                                  size="small" 
+                                  color="primary" 
+                                  variant="outlined"
+                                  sx={{ ml: 'auto' }}
+                                />
+                              </Box>
+                              {post.excerpt && (
+                                <Typography variant="body2" color="text.secondary" paragraph>
+                                  {post.excerpt}
+                                </Typography>
+                              )}
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    👍 {post.likeCount}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    💬 {post.commentCount}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    👁️ {post.views}
+                                  </Typography>
+                                </Box>
+                                <Button 
+                                  size="small" 
+                                  onClick={() => router.push(`/community/post/${post._id}`)}
+                                >
+                                  View Post
+                                </Button>
+                              </Box>
+                            </CardContent>
+                          </Card>
                         </Box>
                       ))}
                     </Box>
@@ -1074,6 +1264,15 @@ export default function CommunityProfilePage() {
         onClose={() => setEditDialogOpen(false)}
         profile={profile}
         onUpdate={handleProfileUpdate}
+      />
+
+      {/* Follow Dialog */}
+      <FollowDialog
+        open={followDialogOpen}
+        onClose={() => setFollowDialogOpen(false)}
+        profileId={profile.username}
+        type={followDialogType}
+        title={`@${profile.username}'s ${followDialogType}`}
       />
     </>
   );

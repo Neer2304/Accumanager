@@ -203,61 +203,90 @@ export default function FollowDialog({
 
     try {
       const method = isCurrentlyFollowing ? "DELETE" : "POST";
-      const response = await fetch(
-        `/api/community/profile/${user.username}/follow`,
-        {
-          method,
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
+      const url = `/api/community/profile/${encodeURIComponent(user.username)}/follow`;
+
+      const response = await fetch(url, {
+        method,
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+      });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // Immediately update the user in the current list
-          const updateUserInList = (
-            users: User[],
-            userId: string,
-            isFollowing: boolean,
-          ) =>
-            users.map((u) => {
-              if (u._id === userId) {
-                return {
-                  ...u,
-                  isFollowing,
-                  communityStats: {
-                    ...u.communityStats,
-                    followerCount: isFollowing
-                      ? (u.communityStats.followerCount || 0) + 1
-                      : Math.max(0, (u.communityStats.followerCount || 0) - 1),
-                  },
-                };
-              }
-              return u;
-            });
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
 
-          if (activeTab === 0) {
-            setFollowers((prev) =>
-              updateUserInList(prev, user._id, !isCurrentlyFollowing),
-            );
-          } else {
-            setFollowing((prev) =>
-              updateUserInList(prev, user._id, !isCurrentlyFollowing),
-            );
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          try {
+            const errorText = await response.text();
+            if (errorText) errorMessage = `${errorMessage}: ${errorText}`;
+          } catch {
+            // Ignore if can't get text
           }
+        }
 
-          // Show success message
-          console.log(
-            `Successfully ${isCurrentlyFollowing ? "unfollowed" : "followed"} ${user.username}`,
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Immediately update the user in the current list
+        const updateUserInList = (
+          users: User[],
+          userId: string,
+          isFollowing: boolean,
+        ) =>
+          users.map((u) => {
+            if (u._id === userId) {
+              return {
+                ...u,
+                isFollowing,
+                communityStats: {
+                  ...u.communityStats,
+                  followerCount: isFollowing
+                    ? (u.communityStats.followerCount || 0) + 1
+                    : Math.max(0, (u.communityStats.followerCount || 0) - 1),
+                },
+              };
+            }
+            return u;
+          });
+
+        if (activeTab === 0) {
+          setFollowers((prev) =>
+            updateUserInList(prev, user._id, !isCurrentlyFollowing),
+          );
+        } else {
+          setFollowing((prev) =>
+            updateUserInList(prev, user._id, !isCurrentlyFollowing),
           );
         }
+
+        // Show success message
+        const action = isCurrentlyFollowing ? "unfollowed" : "followed";
+        console.log(`Successfully ${action} ${user.username}`);
+      } else {
+        throw new Error(data.message || "Failed to follow/unfollow");
       }
     } catch (error) {
       console.error("Failed to toggle follow:", error);
+
+      // Show error message to user
+      let userErrorMessage = "Failed to perform action";
+      if (error instanceof Error) {
+        if (error.message.includes("405")) {
+          userErrorMessage = "Action not allowed. Please refresh the page.";
+        }
+        // You could add more specific error handling here
+      }
+
       // Optionally show an error toast
+      // toast.error(userErrorMessage);
+      console.error(userErrorMessage);
     } finally {
       setFollowLoading((prev) => ({ ...prev, [user._id]: false }));
     }
@@ -351,9 +380,11 @@ export default function FollowDialog({
           zIndex: 1,
         }}
       >
-        <Typography variant="h6" fontWeight={600}>
-          {title}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography variant="h6" component="span" fontWeight={600}>
+            {title}
+          </Typography>
+        </Box>
         <IconButton
           onClick={onClose}
           size="small"

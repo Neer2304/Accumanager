@@ -226,3 +226,137 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+// Add this DELETE handler after your POST handler in the same file
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
+    await connectToDatabase();
+    
+    const { id } = await params;
+    const targetUsername = id;
+    
+    console.log('=== UNFOLLOW API CALLED ===');
+    console.log('Target username from params:', targetUsername);
+    
+    if (!targetUsername || targetUsername.trim() === '') {
+      return NextResponse.json(
+        { success: false, message: 'Username is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Get current user from auth token
+    const cookies = request.headers.get('cookie') || '';
+    const authTokenMatch = cookies.match(/auth_token=([^;]+)/);
+    const authToken = authTokenMatch?.[1];
+    
+    if (!authToken) {
+      return NextResponse.json(
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    let decoded;
+    try {
+      decoded = verifyToken(authToken) as any;
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+    
+    if (!decoded?.userId) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid token data' },
+        { status: 401 }
+      );
+    }
+    
+    // Find current user
+    const currentUser = await User.findById(decoded.userId);
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Find current user's community profile
+    let currentUserProfile = await CommunityUser.findOne({ userId: currentUser._id });
+    if (!currentUserProfile) {
+      return NextResponse.json(
+        { success: false, message: 'Community profile not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Find target user
+    const targetUsernameLower = targetUsername.toLowerCase();
+    let targetUserProfile = await CommunityUser.findOne({ 
+      username: targetUsernameLower 
+    });
+    
+    if (!targetUserProfile) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Check if not following
+    const isFollowing = currentUserProfile.following.some(
+      (id: Types.ObjectId) => id.toString() === targetUserProfile._id.toString()
+    );
+    
+    if (!isFollowing) {
+      return NextResponse.json(
+        { success: false, message: 'You are not following this user' },
+        { status: 400 }
+      );
+    }
+    
+    // Remove from following list
+    currentUserProfile.following = currentUserProfile.following.filter(
+      (id: Types.ObjectId) => id.toString() !== targetUserProfile._id.toString()
+    );
+    currentUserProfile.followingCount = currentUserProfile.following.length;
+    
+    // Remove from target's followers list
+    targetUserProfile.followers = targetUserProfile.followers.filter(
+      (id: Types.ObjectId) => id.toString() !== currentUserProfile._id.toString()
+    );
+    targetUserProfile.followerCount = targetUserProfile.followers.length;
+    
+    // Save both profiles
+    await Promise.all([
+      currentUserProfile.save(),
+      targetUserProfile.save()
+    ]);
+    
+    console.log('Unfollow successful!');
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Successfully unfollowed user',
+      data: {
+        isFollowing: false,
+        followerCount: targetUserProfile.followerCount,
+        followingCount: currentUserProfile.followingCount,
+        currentUser: currentUserProfile.username,
+        targetUser: targetUserProfile.username
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('DELETE /api/community/profile/[id]/follow error:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: error.message || 'Failed to unfollow user'
+      },
+      { status: 500 }
+    );
+  }
+}

@@ -10,16 +10,11 @@ import {
   Avatar,
   Typography,
   Chip,
-  Stack,
   Divider,
   Button,
   IconButton,
   Paper,
-  alpha,
   CircularProgress,
-  Tabs,
-  Tab,
-  Grid,
   Badge,
   Tooltip,
 } from "@mui/material";
@@ -101,7 +96,6 @@ export default function UserProfileDialog({
   loading = false,
   user,
 }: UserProfileDialogProps) {
-  const [tabValue, setTabValue] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(user?.isFollowing || false);
   const [followerCount, setFollowerCount] = useState(user?.followerCount || 0);
@@ -151,7 +145,7 @@ export default function UserProfileDialog({
     if (links.length === 0) return null;
     
     return (
-      <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+      <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
         {links.map((link, index) => (
           <Tooltip key={index} title={link.url}>
             <IconButton
@@ -177,6 +171,8 @@ export default function UserProfileDialog({
         sx: {
           borderRadius: 3,
           maxHeight: '90vh',
+          m: { xs: 1, sm: 2 },
+          width: { xs: 'calc(100% - 16px)', sm: 'auto' },
         },
       }}
     >
@@ -189,16 +185,21 @@ export default function UserProfileDialog({
         </Box>
       </DialogTitle>
 
-      <DialogContent dividers>
+      <DialogContent dividers sx={{ p: { xs: 2, sm: 3 } }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
             <CircularProgress />
           </Box>
         ) : user ? (
-          <Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Header Section */}
-            <Box sx={{ mb: 3 }}>
-              <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' }, 
+              gap: 3, 
+              alignItems: { xs: 'center', sm: 'flex-start' } 
+            }}>
+              <Box sx={{ position: 'relative' }}>
                 <Badge
                   overlap="circular"
                   anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
@@ -210,9 +211,9 @@ export default function UserProfileDialog({
                 >
                   <Avatar
                     sx={{
-                      width: 100,
-                      height: 100,
-                      fontSize: 40,
+                      width: { xs: 80, sm: 100 },
+                      height: { xs: 80, sm: 100 },
+                      fontSize: { xs: 32, sm: 40 },
                       border: '3px solid white',
                       boxShadow: 2,
                     }}
@@ -221,12 +222,25 @@ export default function UserProfileDialog({
                     {user.userId.name?.charAt(0).toUpperCase()}
                   </Avatar>
                 </Badge>
-                
-                <Box sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Typography variant="h5" fontWeight={600}>
-                      {user.userId.name}
-                    </Typography>
+              </Box>
+              
+              <Box sx={{ flex: 1, width: '100%', textAlign: { xs: 'center', sm: 'left' } }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: { xs: 'column', sm: 'row' }, 
+                  alignItems: { xs: 'center', sm: 'flex-start' },
+                  gap: 1, 
+                  mb: 1 
+                }}>
+                  <Typography variant="h5" fontWeight={600}>
+                    {user.userId.name}
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    gap: 1, 
+                    flexWrap: 'wrap',
+                    justifyContent: { xs: 'center', sm: 'flex-start' } 
+                  }}>
                     {user.isVerified && (
                       <Chip
                         label="Verified"
@@ -239,187 +253,248 @@ export default function UserProfileDialog({
                       label={`@${user.username}`}
                       size="small"
                       variant="outlined"
-                      sx={{ ml: 'auto' }}
                     />
                   </Box>
-                  
-                  {user.userId.shopName && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <BusinessIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        {user.userId.shopName}
-                      </Typography>
-                    </Box>
-                  )}
-                  
-                  {user.bio && (
-                    <Typography variant="body2" sx={{ mb: 2 }}>
-                      {user.bio}
+                </Box>
+                
+                {user.userId.shopName && (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1, 
+                    mb: 1,
+                    justifyContent: { xs: 'center', sm: 'flex-start' } 
+                  }}>
+                    <BusinessIcon fontSize="small" color="action" />
+                    <Typography variant="body2" color="text.secondary">
+                      {user.userId.shopName}
                     </Typography>
-                  )}
-                  
-                  {/* Follow Stats */}
-                  <Box sx={{ display: 'flex', gap: 3, mb: 2 }}>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h6">{followerCount}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Followers
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h6">{user.followingCount}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Following
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h6">{user.communityStats?.totalPosts || 0}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Posts
-                      </Typography>
-                    </Box>
                   </Box>
-                  
-                  {/* Action Buttons */}
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant={isFollowing ? "outlined" : "contained"}
-                      size="small"
-                      onClick={handleFollowToggle}
-                      disabled={followLoading}
-                    >
-                      {followLoading ? 'Loading...' : isFollowing ? 'Following' : 'Follow'}
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<EmailIcon />}
-                    >
-                      Message
-                    </Button>
+                )}
+                
+                {user.bio && (
+                  <Typography 
+                    variant="body2" 
+                    sx={{ mb: 2, textAlign: { xs: 'center', sm: 'left' } }}
+                  >
+                    {user.bio}
+                  </Typography>
+                )}
+                
+                {/* Follow Stats */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 3, 
+                  mb: 2,
+                  justifyContent: { xs: 'center', sm: 'flex-start' } 
+                }}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6">{followerCount}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Followers
+                    </Typography>
                   </Box>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6">{user.followingCount}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Following
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6">{user.communityStats?.totalPosts || 0}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Posts
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                {/* Action Buttons */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 1,
+                  justifyContent: { xs: 'center', sm: 'flex-start' },
+                  flexWrap: 'wrap'
+                }}>
+                  <Button
+                    variant={isFollowing ? "outlined" : "contained"}
+                    size="small"
+                    onClick={handleFollowToggle}
+                    disabled={followLoading}
+                    sx={{ minWidth: 100 }}
+                  >
+                    {followLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<EmailIcon />}
+                  >
+                    Message
+                  </Button>
                 </Box>
               </Box>
             </Box>
 
             {/* Details Section */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              flexWrap: 'wrap'
+            }}>
               {user.location && (
-                <Grid item xs={6}>
-                  <Paper sx={{ p: 2, borderRadius: 2 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                      <LocationIcon fontSize="small" color="action" />
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Location
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2">{user.location}</Typography>
-                  </Paper>
-                </Grid>
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2,
+                  flex: 1,
+                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' }
+                }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                    <LocationIcon fontSize="small" color="action" />
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      Location
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2">{user.location}</Typography>
+                </Paper>
               )}
               
               {user.website && (
-                <Grid item xs={6}>
-                  <Paper sx={{ p: 2, borderRadius: 2 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                      <LinkIcon fontSize="small" color="action" />
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Website
-                      </Typography>
-                    </Box>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: 'primary.main',
-                        textDecoration: 'underline',
-                        cursor: 'pointer'
-                      }}
-                      onClick={() => window.open(user.website, '_blank')}
-                    >
-                      {user.website}
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2,
+                  flex: 1,
+                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' }
+                }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                    <LinkIcon fontSize="small" color="action" />
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      Website
                     </Typography>
-                  </Paper>
-                </Grid>
+                  </Box>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: 'primary.main',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                      wordBreak: 'break-word'
+                    }}
+                    onClick={() => window.open(user.website, '_blank')}
+                  >
+                    {user.website}
+                  </Typography>
+                </Paper>
               )}
               
               {user.userId.subscription && (
-                <Grid item xs={6}>
-                  <Paper sx={{ p: 2, borderRadius: 2 }}>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                      Subscription
-                    </Typography>
-                    <Chip
-                      label={user.userId.subscription.plan}
-                      size="small"
-                      color={
-                        user.userId.subscription.plan === 'premium' ? 'primary' : 
-                        user.userId.subscription.plan === 'pro' ? 'success' : 'default'
-                      }
-                    />
-                  </Paper>
-                </Grid>
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2,
+                  flex: 1,
+                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' }
+                }}>
+                  <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    Subscription
+                  </Typography>
+                  <Chip
+                    label={user.userId.subscription.plan}
+                    size="small"
+                    color={
+                      user.userId.subscription.plan === 'premium' ? 'primary' : 
+                      user.userId.subscription.plan === 'pro' ? 'success' : 'default'
+                    }
+                  />
+                </Paper>
               )}
               
-              <Grid item xs={6}>
-                <Paper sx={{ p: 2, borderRadius: 2 }}>
-                  <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                    Member Since
-                  </Typography>
-                  <Typography variant="body2">
-                    {formatDate(user.communityStats?.joinDate || user.userId._id.toString())}
-                  </Typography>
-                </Paper>
-              </Grid>
-            </Grid>
+              <Paper sx={{ 
+                p: 2, 
+                borderRadius: 2,
+                flex: 1,
+                minWidth: { xs: '100%', sm: 'calc(50% - 8px)' }
+              }}>
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                  Member Since
+                </Typography>
+                <Typography variant="body2">
+                  {formatDate(user.communityStats?.joinDate || user.userId._id.toString())}
+                </Typography>
+              </Paper>
+            </Box>
 
             {/* Social Links */}
             {renderSocialLinks()}
 
-            <Divider sx={{ my: 3 }} />
+            <Divider sx={{ my: 2 }} />
 
             {/* Community Stats */}
             <Box>
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                 Community Activity
               </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={3}>
-                  <Paper sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
-                    <ForumIcon sx={{ color: 'primary.main', mb: 0.5 }} />
-                    <Typography variant="h6">{user.communityStats?.totalPosts || 0}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Posts
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid item xs={3}>
-                  <Paper sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
-                    <ForumIcon sx={{ color: 'success.main', mb: 0.5 }} />
-                    <Typography variant="h6">{user.communityStats?.totalComments || 0}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Comments
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid item xs={3}>
-                  <Paper sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
-                    <LikeIcon sx={{ color: '#f44336', mb: 0.5 }} />
-                    <Typography variant="h6">{user.communityStats?.totalLikesGiven || 0}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Likes Given
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid item xs={3}>
-                  <Paper sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
-                    <BookmarkIcon sx={{ color: '#2196f3', mb: 0.5 }} />
-                    <Typography variant="h6">{user.communityStats?.totalBookmarks || 0}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Bookmarks
-                    </Typography>
-                  </Paper>
-                </Grid>
-              </Grid>
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap',
+                gap: 2,
+                justifyContent: { xs: 'center', sm: 'flex-start' }
+              }}>
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2, 
+                  textAlign: 'center',
+                  flex: '1 1 calc(50% - 8px)',
+                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' }
+                }}>
+                  <ForumIcon sx={{ color: 'primary.main', mb: 0.5 }} />
+                  <Typography variant="h6">{user.communityStats?.totalPosts || 0}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Posts
+                  </Typography>
+                </Paper>
+                
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2, 
+                  textAlign: 'center',
+                  flex: '1 1 calc(50% - 8px)',
+                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' }
+                }}>
+                  <ForumIcon sx={{ color: 'success.main', mb: 0.5 }} />
+                  <Typography variant="h6">{user.communityStats?.totalComments || 0}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Comments
+                  </Typography>
+                </Paper>
+                
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2, 
+                  textAlign: 'center',
+                  flex: '1 1 calc(50% - 8px)',
+                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' }
+                }}>
+                  <LikeIcon sx={{ color: '#f44336', mb: 0.5 }} />
+                  <Typography variant="h6">{user.communityStats?.totalLikesGiven || 0}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Likes Given
+                  </Typography>
+                </Paper>
+                
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2, 
+                  textAlign: 'center',
+                  flex: '1 1 calc(50% - 8px)',
+                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' }
+                }}>
+                  <BookmarkIcon sx={{ color: '#2196f3', mb: 0.5 }} />
+                  <Typography variant="h6">{user.communityStats?.totalBookmarks || 0}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Bookmarks
+                  </Typography>
+                </Paper>
+              </Box>
             </Box>
 
             {/* Expert Categories */}
@@ -428,7 +503,12 @@ export default function UserProfileDialog({
                 <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                   Expert In
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 1, 
+                  flexWrap: 'wrap',
+                  justifyContent: { xs: 'center', sm: 'flex-start' }
+                }}>
                   {user.expertInCategories.map((category, index) => (
                     <Chip
                       key={index}
@@ -448,7 +528,12 @@ export default function UserProfileDialog({
                 <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                   Badges
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 1, 
+                  flexWrap: 'wrap',
+                  justifyContent: { xs: 'center', sm: 'flex-start' }
+                }}>
                   {user.badges.map((badge, index) => (
                     <Tooltip key={index} title={badge}>
                       <Chip
