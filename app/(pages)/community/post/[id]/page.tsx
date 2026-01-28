@@ -1,4 +1,4 @@
-// app/community/post/[id]/page.tsx
+// app/(pages)/community/post/[id]/page.tsx - FIXED VERSION
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -40,11 +40,11 @@ import { useCommunity } from '@/hooks/useCommunity';
 
 interface Comment {
   _id: string;
-  user: {
+  user?: {
     _id: string;
-    name: string;
+    name?: string;
     avatar?: string;
-    role: string;
+    role?: string;
   };
   content: string;
   createdAt: string;
@@ -55,11 +55,11 @@ interface Post {
   _id: string;
   title: string;
   content: string;
-  author: {
+  author?: {
     _id: string;
-    name: string;
+    name?: string;
     avatar?: string;
-    role: string;
+    role?: string;
   };
   category: string;
   tags: string[];
@@ -73,6 +73,7 @@ interface Post {
   solutionCommentId?: string;
   createdAt: string;
   updatedAt: string;
+  bookmarks?: string[];
 }
 
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
@@ -176,7 +177,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     if (navigator.share) {
       navigator.share({
         title: hookPost.title,
-        text: hookPost.content.substring(0, 100),
+        text: hookPost.content?.substring(0, 100) || '',
         url: url,
       });
     } else {
@@ -267,12 +268,12 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           {/* Author Info & Stats */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar src={post.author.avatar}>
-                {post.author.name.charAt(0)}
+              <Avatar src={post.author?.avatar}>
+                {post.author?.name?.charAt(0) || 'A'}
               </Avatar>
               <Box>
                 <Typography variant="subtitle1" fontWeight={600}>
-                  {post.author.name}
+                  {post.author?.name || 'Unknown Author'}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <AccessTimeIcon fontSize="small" color="action" />
@@ -417,10 +418,10 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Avatar sx={{ width: 32, height: 32 }}>
-                          {comment.user.name.charAt(0)}
+                          {comment.user?.name?.charAt(0) || 'U'}
                         </Avatar>
                         <Typography variant="subtitle2" fontWeight={600}>
-                          {comment.user.name}
+                          {comment.user?.name || 'Unknown User'}
                         </Typography>
                         {comment.isSolution && (
                           <Chip
@@ -439,7 +440,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
                       {comment.content}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      {!post.isSolved && currentUserId === post.author._id && (
+                      {!post.isSolved && currentUserId === post.author?._id && (
                         <Button
                           size="small"
                           onClick={() => handleMarkAsSolution(comment._id)}
@@ -463,15 +464,15 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
               Author
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Avatar src={post.author.avatar} sx={{ width: 48, height: 48 }}>
-                {post.author.name.charAt(0)}
+              <Avatar src={post.author?.avatar} sx={{ width: 48, height: 48 }}>
+                {post.author?.name?.charAt(0) || 'A'}
               </Avatar>
               <Box>
                 <Typography variant="subtitle1" fontWeight={600}>
-                  {post.author.name}
+                  {post.author?.name || 'Unknown Author'}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {post.author.role}
+                  {post.author?.role || 'User'}
                 </Typography>
               </Box>
             </Box>
@@ -479,7 +480,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
               fullWidth
               variant="outlined"
               component={Link}
-              href={`/community/profile/${post.author._id}`}
+              href={`/community/profile/${post.author?._id}`}
+              disabled={!post.author?._id}
             >
               View Profile
             </Button>

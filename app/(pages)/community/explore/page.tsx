@@ -1,4 +1,4 @@
-// app/community/explore/page.tsx
+// app/community/explore/page.tsx - UPDATED VERSION WITHOUT GRID
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -9,7 +9,6 @@ import {
   Paper,
   TextField,
   InputAdornment,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -117,7 +116,7 @@ export default function ExplorePage() {
           let filteredUsers = data.data || [];
           if (currentUserProfile) {
             filteredUsers = filteredUsers.filter((user: User) => 
-              user.userId._id !== currentUserProfile.userId?._id && 
+              user.userId?._id !== currentUserProfile.userId?._id && 
               user._id !== currentUserProfile._id
             );
           }
@@ -201,9 +200,9 @@ export default function ExplorePage() {
 
   const filteredUsers = users.filter(user =>
     user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.userId.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.userId?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.userId.shopName?.toLowerCase().includes(searchQuery.toLowerCase())
+    user.userId?.shopName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -291,9 +290,26 @@ export default function ExplorePage() {
           </Typography>
         </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexWrap: 'wrap',
+          gap: 3,
+          justifyContent: { xs: 'center', sm: 'flex-start' }
+        }}>
           {filteredUsers.map((user) => (
-            <Grid item xs={12} sm={6} md={4} key={user._id}>
+            <Box 
+              key={user._id}
+              sx={{ 
+                width: { 
+                  xs: '100%', 
+                  sm: 'calc(50% - 12px)', 
+                  md: 'calc(33.333% - 16px)',
+                  lg: 'calc(25% - 18px)'
+                },
+                minWidth: { xs: '100%', sm: '280px' },
+                maxWidth: { xs: '100%', md: '400px' }
+              }}
+            >
               <Card sx={{ 
                 height: '100%', 
                 display: 'flex', 
@@ -311,12 +327,12 @@ export default function ExplorePage() {
                       src={user.avatar}
                       sx={{ width: 60, height: 60 }}
                     >
-                      {user.userId.name.charAt(0)}
+                      {user.userId?.name?.charAt(0) || 'U'}
                     </Avatar>
                     <Box sx={{ flex: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                         <Typography variant="subtitle1" fontWeight={600}>
-                          {user.userId.name}
+                          {user.userId?.name || 'Unknown User'}
                         </Typography>
                         {user.isVerified && (
                           <VerifiedIcon fontSize="small" color="primary" />
@@ -325,7 +341,7 @@ export default function ExplorePage() {
                       <Typography variant="body2" color="text.secondary">
                         @{user.username}
                       </Typography>
-                      {user.userId.role !== 'user' && (
+                      {user.userId?.role && user.userId.role !== 'user' && (
                         <Chip
                           label={user.userId.role}
                           size="small"
@@ -353,7 +369,7 @@ export default function ExplorePage() {
                   )}
 
                   {/* Shop Name */}
-                  {user.userId.shopName && (
+                  {user.userId?.shopName && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                       <BusinessIcon fontSize="small" color="action" />
                       <Typography variant="body2" color="text.secondary">
@@ -365,13 +381,13 @@ export default function ExplorePage() {
                   {/* Stats */}
                   <Stack direction="row" spacing={2} sx={{ mt: 'auto' }}>
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h6">{user.communityStats.totalPosts}</Typography>
+                      <Typography variant="h6">{user.communityStats?.totalPosts || 0}</Typography>
                       <Typography variant="caption" color="text.secondary">
                         Posts
                       </Typography>
                     </Box>
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h6">{user.communityStats.followerCount}</Typography>
+                      <Typography variant="h6">{user.communityStats?.followerCount || 0}</Typography>
                       <Typography variant="caption" color="text.secondary">
                         Followers
                       </Typography>
@@ -402,9 +418,9 @@ export default function ExplorePage() {
                   </Button>
                 </CardActions>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       )}
     </Container>
   );
