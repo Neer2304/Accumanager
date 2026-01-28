@@ -1,7 +1,7 @@
 // components/community/UserPublicProfile.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Box,
@@ -29,7 +29,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-} from '@mui/material';
+} from "@mui/material";
 import {
   People as PeopleIcon,
   Forum as ForumIcon,
@@ -48,25 +48,26 @@ import {
   Email as EmailIcon,
   Message as MessageIcon,
   ArrowBack as ArrowBackIcon,
-} from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
-import { formatDate, formatNumber } from '@/utils/formatUtils';
-import UserCard from './UserCard';
-import PostCard from './PostCard';
+  Edit as EditIcon,
+} from "@mui/icons-material";
+import { useRouter } from "next/navigation";
+import FollowDialog from "@/components/community/FollowDialog";
 
 interface CommunityProfile {
   _id: string;
-  userId: string | {
-    _id: string;
-    name: string;
-    email: string;
-    role: string;
-    shopName?: string;
-    subscription?: {
-      plan: string;
-      status: string;
-    };
-  };
+  userId:
+    | string
+    | {
+        _id: string;
+        name: string;
+        email: string;
+        role: string;
+        shopName?: string;
+        subscription?: {
+          plan: string;
+          status: string;
+        };
+      };
   username: string;
   avatar?: string;
   coverImage?: string;
@@ -109,40 +110,297 @@ interface UserPublicProfileProps {
   username: string;
 }
 
-export default function UserPublicProfile({ profile, username }: UserPublicProfileProps) {
+// Helper functions
+const formatDate = (
+  dateString: string | Date,
+  relative: boolean = false,
+): string => {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "N/A";
+
+  if (relative) {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    }
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + "M";
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + "K";
+  }
+  return num.toString();
+};
+
+// User Card Component
+interface UserCardProps {
+  user: any;
+  isFollowing?: boolean;
+  onFollow?: (username: string) => void;
+  onUnfollow?: (username: string) => void;
+  onViewProfile?: (username: string) => void;
+}
+
+const UserCard: React.FC<UserCardProps> = ({
+  user,
+  isFollowing = false,
+  onFollow,
+  onUnfollow,
+  onViewProfile,
+}) => {
+  return (
+    <Card sx={{ height: "100%", borderRadius: 2 }}>
+      <CardContent>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+          <Avatar src={user.avatar} sx={{ width: 50, height: 50 }}>
+            {user.username?.charAt(0).toUpperCase()}
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body1" fontWeight={600}>
+              {user.userId?.name || user.username}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              @{user.username}
+            </Typography>
+          </Box>
+        </Box>
+
+        {user.bio && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {user.bio.length > 100
+              ? user.bio.substring(0, 100) + "..."
+              : user.bio}
+          </Typography>
+        )}
+
+        <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+          <Box>
+            <Typography variant="caption" color="text.secondary">
+              Followers
+            </Typography>
+            <Typography variant="body2" fontWeight={600}>
+              {formatNumber(user.followerCount || 0)}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" color="text.secondary">
+              Posts
+            </Typography>
+            <Typography variant="body2" fontWeight={600}>
+              {formatNumber(user.communityStats?.totalPosts || 0)}
+            </Typography>
+          </Box>
+        </Box>
+
+        {user.expertInCategories && user.expertInCategories.length > 0 && (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 2 }}>
+            {user.expertInCategories
+              .slice(0, 2)
+              .map((category: string, idx: number) => (
+                <Chip
+                  key={idx}
+                  label={category}
+                  size="small"
+                  variant="outlined"
+                />
+              ))}
+          </Box>
+        )}
+      </CardContent>
+      <CardActions>
+        <Button
+          size="small"
+          variant={isFollowing ? "outlined" : "contained"}
+          fullWidth
+          onClick={() => {
+            if (isFollowing && onUnfollow) {
+              onUnfollow(user.username);
+            } else if (!isFollowing && onFollow) {
+              onFollow(user.username);
+            }
+          }}
+        >
+          {isFollowing ? "Following" : "Follow"}
+        </Button>
+        {onViewProfile && (
+          <Button
+            size="small"
+            variant="outlined"
+            fullWidth
+            onClick={() => onViewProfile(user.username)}
+          >
+            View Profile
+          </Button>
+        )}
+      </CardActions>
+    </Card>
+  );
+};
+
+// Post Card Component
+interface PostCardProps {
+  post: any;
+  showActions?: boolean;
+  onViewPost?: (postId: string) => void;
+}
+
+const PostCard: React.FC<PostCardProps> = ({
+  post,
+  showActions = true,
+  onViewPost,
+}) => {
+  return (
+    <Card sx={{ mb: 2, borderRadius: 2 }}>
+      <CardContent>
+        <Typography variant="h6" fontWeight={600} gutterBottom>
+          {post.title}
+        </Typography>
+        {post.excerpt && (
+          <Typography variant="body2" color="text.secondary" paragraph>
+            {post.excerpt}
+          </Typography>
+        )}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mt: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Typography variant="caption" color="text.secondary">
+              👍 {post.likeCount || 0}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              💬 {post.commentCount || 0}
+            </Typography>
+            {post.isSolved && (
+              <Chip label="Solved" size="small" color="success" />
+            )}
+          </Box>
+          <Button size="small" onClick={() => onViewPost?.(post._id)}>
+            View
+          </Button>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Main User Public Profile Component
+export default function UserPublicProfile({
+  profile,
+  username,
+}: UserPublicProfileProps) {
   const router = useRouter();
   const [tabValue, setTabValue] = useState(0);
-  const [loading, setLoading] = useState({
-    posts: false,
-    follow: false,
-    followers: false,
-    following: false,
-  });
-  const [isFollowing, setIsFollowing] = useState(profile.isFollowing || false);
-  const [followerCount, setFollowerCount] = useState(profile.followerCount || 0);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
-  const [messageContent, setMessageContent] = useState('');
+  const [messageContent, setMessageContent] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [followers, setFollowers] = useState<any[]>([]);
   const [following, setFollowing] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
+  const [followDialogOpen, setFollowDialogOpen] = useState(false);
+  const [followDialogType, setFollowDialogType] = useState<
+    "followers" | "following"
+  >("followers");
+
+  // State for follow status
+  const [isFollowing, setIsFollowing] = useState(profile.isFollowing || false);
+  const [followerCount, setFollowerCount] = useState(
+    profile.followerCount || 0,
+  );
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
+
+  // Check if this is the current user's own profile
+  useEffect(() => {
+    const checkOwnProfile = async () => {
+      try {
+        const response = await fetch("/api/community/profile", {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            const currentUserProfile = data.data;
+            // Check if the viewed profile is the same as current user's profile
+            const isSameUser =
+              currentUserProfile.username === profile.username ||
+              currentUserProfile._id === profile._id ||
+              (typeof profile.userId === "string"
+                ? currentUserProfile.userId._id === profile.userId
+                : currentUserProfile.userId._id === profile.userId._id);
+
+            setIsOwnProfile(isSameUser);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check own profile:", error);
+      }
+    };
+
+    checkOwnProfile();
+  }, [profile]);
 
   // Safely extract user information
+  // In UserPublicProfile component, update the getUserInfo function:
+
   const getUserInfo = () => {
-    if (!profile) return { _id: '', name: '', email: '', role: '', shopName: '', subscription: null };
-    
-    if (typeof profile.userId === 'string') {
+    if (!profile)
+      return {
+        _id: "",
+        name: "",
+        email: "",
+        role: "",
+        shopName: "",
+        subscription: null,
+      };
+
+    if (typeof profile.userId === "string") {
+      // Try to find user info from followers/following lists
+      const userFromList =
+        followers.find((f) => f._id === profile.userId) ||
+        following.find((f) => f._id === profile.userId);
+
+      if (userFromList) {
+        return userFromList.userId;
+      }
+
       return {
         _id: profile.userId,
-        name: profile.username || 'User',
-        email: '',
-        role: '',
-        shopName: '',
+        name: profile.username || "User",
+        email: "",
+        role: "",
+        shopName: "",
         subscription: null,
       };
     }
-    
+
     return profile.userId;
   };
 
@@ -151,15 +409,18 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
   // Fetch user posts
   const fetchUserPosts = async () => {
     if (!profile) return;
-    
-    setLoading(prev => ({ ...prev, posts: true }));
+
     try {
-      const userId = typeof profile.userId === 'string' ? profile.userId : profile.userId._id;
+      setConnectionsLoading(true);
+      const userId =
+        typeof profile.userId === "string"
+          ? profile.userId
+          : profile.userId._id;
       const response = await fetch(
         `/api/community/posts/user/${userId}?limit=10`,
-        { credentials: 'include' }
+        { credentials: "include" },
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -167,113 +428,175 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
         }
       }
     } catch (error) {
-      console.error('Failed to fetch user posts:', error);
+      console.error("Failed to fetch user posts:", error);
     } finally {
-      setLoading(prev => ({ ...prev, posts: false }));
+      setConnectionsLoading(false);
     }
   };
 
   // Fetch followers
   const fetchFollowers = async () => {
     if (!profile) return;
-    
-    setLoading(prev => ({ ...prev, followers: true }));
+
     try {
-      const userId = typeof profile.userId === 'string' ? profile.userId : profile.userId._id;
+      setConnectionsLoading(true);
       const response = await fetch(
-        `/api/community/profile/${userId}/connections?type=followers&limit=20`,
-        { credentials: 'include' }
+        `/api/community/profile/${profile.username}/connections?type=followers&limit=12`,
+        { credentials: "include" },
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setFollowers(data.data?.users || []);
+          setFollowers(data.data.users || []);
         }
       }
     } catch (error) {
-      console.error('Failed to fetch followers:', error);
+      console.error("Failed to fetch followers:", error);
     } finally {
-      setLoading(prev => ({ ...prev, followers: false }));
+      setConnectionsLoading(false);
     }
+  };
+
+  // Function to open follow dialog
+  const handleOpenFollowDialog = (type: "followers" | "following") => {
+    setFollowDialogType(type);
+    setFollowDialogOpen(true);
   };
 
   // Fetch following
   const fetchFollowing = async () => {
     if (!profile) return;
-    
-    setLoading(prev => ({ ...prev, following: true }));
+
     try {
-      const userId = typeof profile.userId === 'string' ? profile.userId : profile.userId._id;
+      setConnectionsLoading(true);
       const response = await fetch(
-        `/api/community/profile/${userId}/connections?type=following&limit=20`,
-        { credentials: 'include' }
+        `/api/community/profile/${profile.username}/connections?type=following&limit=12`,
+        { credentials: "include" },
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setFollowing(data.data?.users || []);
+          setFollowing(data.data.users || []);
         }
       }
     } catch (error) {
-      console.error('Failed to fetch following:', error);
+      console.error("Failed to fetch following:", error);
     } finally {
-      setLoading(prev => ({ ...prev, following: false }));
+      setConnectionsLoading(false);
     }
   };
 
-  // Handle follow/unfollow
+  // Handle follow/unfollow toggle
   const handleFollowToggle = async () => {
-    if (loading.follow) return;
-    
-    setLoading(prev => ({ ...prev, follow: true }));
+    if (!profile || isOwnProfile) return;
+
+    setFollowLoading(true);
+
     try {
-      const method = isFollowing ? 'DELETE' : 'POST';
-      const targetUserId = typeof profile.userId === 'string' ? profile.userId : profile.userId._id;
-      
-      const response = await fetch(`/api/community/profile/${targetUserId}/follow`, {
-        method,
-        credentials: 'include',
+      const method = isFollowing ? "DELETE" : "POST";
+      const url = `/api/community/profile/${encodeURIComponent(profile.username)}/follow`;
+
+      const response = await fetch(url, {
+        method: method,
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-      
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsFollowing(!isFollowing);
+        if (data.data?.followerCount !== undefined) {
+          setFollowerCount(data.data.followerCount);
+        }
+        // Refresh followers list if on followers tab
+        if (tabValue === 1) {
+          fetchFollowers();
+        }
+      } else {
+        throw new Error(data.message || "Failed to follow/unfollow");
+      }
+    } catch (error: any) {
+      console.error("Follow toggle error:", error);
+      alert("Error: " + error.message);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  // Handle follow user in the list
+  const handleFollowUser = async (username: string) => {
+    try {
+      const response = await fetch(
+        `/api/community/profile/${username}/follow`,
+        {
+          method: "POST",
+          credentials: "include",
+        },
+      );
+
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setIsFollowing(!isFollowing);
-          setFollowerCount(data.data?.followerCount || (isFollowing ? followerCount - 1 : followerCount + 1));
+          // Refresh the list
+          fetchFollowers();
         }
       }
     } catch (error) {
-      console.error('Failed to toggle follow:', error);
-    } finally {
-      setLoading(prev => ({ ...prev, follow: false }));
+      console.error("Failed to follow user:", error);
+    }
+  };
+
+  // Handle unfollow user in the list
+  const handleUnfollowUser = async (username: string) => {
+    try {
+      const response = await fetch(
+        `/api/community/profile/${username}/follow`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Refresh the list
+          fetchFollowers();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to unfollow user:", error);
     }
   };
 
   // Handle send message
   const handleSendMessage = async () => {
     if (!messageContent.trim() || sendingMessage) return;
-    
+
     setSendingMessage(true);
     try {
-      // Here you would typically call your message API
-      console.log('Sending message:', messageContent);
-      // await fetch('/api/messages', {
-      //   method: 'POST',
-      //   body: JSON.stringify({
-      //     recipientId: profile.userId,
-      //     content: messageContent,
-      //   }),
-      //   credentials: 'include',
-      // });
-      
-      alert('Message sent successfully!');
-      setMessageContent('');
+      console.log(
+        "Sending message to:",
+        userInfo._id,
+        "Content:",
+        messageContent,
+      );
+      alert("Message sent successfully!");
+      setMessageContent("");
       setMessageDialogOpen(false);
     } catch (error) {
-      console.error('Failed to send message:', error);
-      alert('Failed to send message');
+      console.error("Failed to send message:", error);
+      alert("Failed to send message");
     } finally {
       setSendingMessage(false);
     }
@@ -282,7 +605,7 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
   // Load data based on active tab
   useEffect(() => {
     if (!profile) return;
-    
+
     switch (tabValue) {
       case 1: // Followers
         fetchFollowers();
@@ -302,44 +625,11 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
 
   // Check message permissions
   const canMessage = () => {
-    if (!profile.preferences) return false;
-    if (profile.preferences.allowMessages === 'none') return false;
-    if (profile.preferences.allowMessages === 'followers' && !isFollowing) return false;
+    if (!profile.preferences || isOwnProfile) return false;
+    if (profile.preferences.allowMessages === "none") return false;
+    if (profile.preferences.allowMessages === "followers" && !isFollowing)
+      return false;
     return true;
-  };
-
-  // Handle follow user
-  const handleFollowUser = async (userId: string) => {
-    try {
-      const response = await fetch(`/api/community/profile/${userId}/follow`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        // Refresh followers list
-        fetchFollowers();
-      }
-    } catch (error) {
-      console.error('Failed to follow user:', error);
-    }
-  };
-
-  // Handle unfollow user
-  const handleUnfollowUser = async (userId: string) => {
-    try {
-      const response = await fetch(`/api/community/profile/${userId}/follow`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        // Refresh followers list
-        fetchFollowers();
-      }
-    } catch (error) {
-      console.error('Failed to unfollow user:', error);
-    }
   };
 
   // If no profile, show error
@@ -349,10 +639,7 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
         <Alert severity="error" sx={{ mb: 3 }}>
           User profile not found
         </Alert>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => router.back()}
-        >
+        <Button startIcon={<ArrowBackIcon />} onClick={() => router.back()}>
           Go Back
         </Button>
       </Container>
@@ -372,47 +659,52 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
         </Button>
 
         {/* Profile Header */}
-        <Paper 
-          sx={{ 
-            borderRadius: 3, 
-            overflow: 'hidden',
+        <Paper
+          sx={{
+            borderRadius: 3,
+            overflow: "hidden",
             mb: 4,
-            position: 'relative',
+            position: "relative",
           }}
         >
           {/* Cover Image */}
           <Box
             sx={{
               height: 200,
-              backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
-              backgroundImage: profile.coverImage ? `url(${profile.coverImage})` : 'none',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              position: 'relative',
+              backgroundColor: (theme) =>
+                alpha(theme.palette.primary.main, 0.1),
+              backgroundImage: profile.coverImage
+                ? `url(${profile.coverImage})`
+                : "none",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              position: "relative",
             }}
           >
             <Box
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 bottom: -60,
                 left: 40,
-                display: 'flex',
-                alignItems: 'flex-end',
+                display: "flex",
+                alignItems: "flex-end",
                 gap: 3,
               }}
             >
               <Badge
                 overlap="circular"
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 badgeContent={
                   profile.verificationBadge && (
-                    <VerifiedIcon sx={{ 
-                      color: '#1DA1F2', 
-                      fontSize: 28,
-                      bgcolor: 'white',
-                      borderRadius: '50%',
-                      p: 0.5,
-                    }} />
+                    <VerifiedIcon
+                      sx={{
+                        color: "#1DA1F2",
+                        fontSize: 28,
+                        bgcolor: "white",
+                        borderRadius: "50%",
+                        p: 0.5,
+                      }}
+                    />
                   )
                 }
               >
@@ -421,7 +713,7 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                     width: 120,
                     height: 120,
                     fontSize: 48,
-                    border: '4px solid white',
+                    border: "4px solid white",
                     boxShadow: 3,
                   }}
                   src={profile.avatar}
@@ -429,18 +721,24 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                   {userInfo.name?.charAt(0).toUpperCase()}
                 </Avatar>
               </Badge>
-              
-              <Box sx={{ mb: 2, color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+
+              <Box
+                sx={{
+                  mb: 2,
+                  color: "white",
+                  textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+                }}
+              >
                 <Typography variant="h4" fontWeight={700} gutterBottom>
                   {userInfo.name}
                   {profile.isVerified && (
-                    <VerifiedIcon 
-                      sx={{ 
-                        color: '#1DA1F2', 
+                    <VerifiedIcon
+                      sx={{
+                        color: "#1DA1F2",
                         ml: 1,
-                        verticalAlign: 'middle',
+                        verticalAlign: "middle",
                         fontSize: 28,
-                      }} 
+                      }}
                     />
                   )}
                 </Typography>
@@ -453,8 +751,16 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
 
           {/* Profile Info */}
           <Box sx={{ pt: 8, px: 4, pb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
-              <Box sx={{ flex: 1, minWidth: '300px' }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+                gap: 2,
+              }}
+            >
+              <Box sx={{ flex: 1, minWidth: "300px" }}>
                 {/* Bio */}
                 {profile.bio && (
                   <Typography variant="body1" paragraph sx={{ maxWidth: 800 }}>
@@ -463,59 +769,71 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                 )}
 
                 {/* Details */}
-                <Stack direction="row" spacing={3} sx={{ mb: 3, flexWrap: 'wrap', gap: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 3,
+                    mb: 3,
+                  }}
+                >
                   {profile.location && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <LocationIcon fontSize="small" color="action" />
                       <Typography variant="body2" color="text.secondary">
                         {profile.location}
                       </Typography>
                     </Box>
                   )}
-                  
+
                   {userInfo.shopName && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <BusinessIcon fontSize="small" color="action" />
                       <Typography variant="body2" color="text.secondary">
                         {userInfo.shopName}
                       </Typography>
                     </Box>
                   )}
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <CalendarIcon fontSize="small" color="action" />
                     <Typography variant="body2" color="text.secondary">
-                      Joined {formatDate(profile.communityStats?.joinDate || profile._id)}
+                      Joined{" "}
+                      {formatDate(
+                        profile.communityStats?.joinDate || profile._id,
+                      )}
                     </Typography>
                   </Box>
-                  
+
                   {profile.website && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <LinkIcon fontSize="small" color="action" />
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: 'primary.main',
-                          textDecoration: 'underline',
-                          cursor: 'pointer',
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "primary.main",
+                          textDecoration: "underline",
+                          cursor: "pointer",
                         }}
-                        onClick={() => window.open(profile.website, '_blank')}
+                        onClick={() => window.open(profile.website, "_blank")}
                       >
                         Website
                       </Typography>
                     </Box>
                   )}
-                </Stack>
+                </Box>
 
                 {/* Social Links */}
                 {profile.socialLinks && (
-                  <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+                  <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
                     {profile.socialLinks.twitter && (
                       <Tooltip title="Twitter">
                         <IconButton
                           size="small"
-                          onClick={() => window.open(profile.socialLinks!.twitter, '_blank')}
-                          sx={{ color: '#1DA1F2' }}
+                          onClick={() =>
+                            window.open(profile.socialLinks!.twitter, "_blank")
+                          }
+                          sx={{ color: "#1DA1F2" }}
                         >
                           <TwitterIcon />
                         </IconButton>
@@ -525,8 +843,10 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                       <Tooltip title="LinkedIn">
                         <IconButton
                           size="small"
-                          onClick={() => window.open(profile.socialLinks!.linkedin, '_blank')}
-                          sx={{ color: '#0077B5' }}
+                          onClick={() =>
+                            window.open(profile.socialLinks!.linkedin, "_blank")
+                          }
+                          sx={{ color: "#0077B5" }}
                         >
                           <LinkedInIcon />
                         </IconButton>
@@ -536,8 +856,13 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                       <Tooltip title="Instagram">
                         <IconButton
                           size="small"
-                          onClick={() => window.open(profile.socialLinks!.instagram, '_blank')}
-                          sx={{ color: '#E4405F' }}
+                          onClick={() =>
+                            window.open(
+                              profile.socialLinks!.instagram,
+                              "_blank",
+                            )
+                          }
+                          sx={{ color: "#E4405F" }}
                         >
                           <InstagramIcon />
                         </IconButton>
@@ -547,8 +872,10 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                       <Tooltip title="Facebook">
                         <IconButton
                           size="small"
-                          onClick={() => window.open(profile.socialLinks!.facebook, '_blank')}
-                          sx={{ color: '#1877F2' }}
+                          onClick={() =>
+                            window.open(profile.socialLinks!.facebook, "_blank")
+                          }
+                          sx={{ color: "#1877F2" }}
                         >
                           <FacebookIcon />
                         </IconButton>
@@ -560,10 +887,20 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                 {/* Badges */}
                 {profile.badges && profile.badges.length > 0 && (
                   <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={600}
+                      gutterBottom
+                    >
                       Badges
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 1,
+                      }}
+                    >
                       {profile.badges.map((badge, index) => (
                         <Chip
                           key={index}
@@ -573,42 +910,80 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                           variant="outlined"
                         />
                       ))}
-                    </Stack>
+                    </Box>
                   </Box>
                 )}
 
                 {/* Expert Categories */}
-                {profile.expertInCategories && profile.expertInCategories.length > 0 && (
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                      Expert In
-                    </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-                      {profile.expertInCategories.map((category, index) => (
-                        <Chip
-                          key={index}
-                          label={category}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                        />
-                      ))}
-                    </Stack>
-                  </Box>
-                )}
+                {profile.expertInCategories &&
+                  profile.expertInCategories.length > 0 && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={600}
+                        gutterBottom
+                      >
+                        Expert In
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                        }}
+                      >
+                        {profile.expertInCategories.map((category, index) => (
+                          <Chip
+                            key={index}
+                            label={category}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
               </Box>
 
               {/* Action Buttons */}
-              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                <Button
-                  variant={isFollowing ? "outlined" : "contained"}
-                  onClick={handleFollowToggle}
-                  disabled={loading.follow}
-                  startIcon={loading.follow ? <CircularProgress size={20} /> : undefined}
-                >
-                  {loading.follow ? '...' : isFollowing ? 'Following' : 'Follow'}
-                </Button>
-                
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 1,
+                }}
+              >
+                {/* Only show follow button if it's NOT the current user's own profile */}
+                {!isOwnProfile && (
+                  <Button
+                    variant={isFollowing ? "outlined" : "contained"}
+                    onClick={handleFollowToggle}
+                    disabled={followLoading}
+                    startIcon={
+                      followLoading ? <CircularProgress size={20} /> : undefined
+                    }
+                  >
+                    {followLoading
+                      ? "..."
+                      : isFollowing
+                        ? "Following"
+                        : "Follow"}
+                  </Button>
+                )}
+
+                {/* If it's own profile, show edit button */}
+                {isOwnProfile && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    onClick={() => router.push("/community/profile/edit")}
+                  >
+                    Edit Profile
+                  </Button>
+                )}
+
+                {/* Message button - only show if not own profile and user allows messages */}
                 {canMessage() && (
                   <Button
                     variant="outlined"
@@ -618,48 +993,104 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                     Message
                   </Button>
                 )}
-                
-                {userInfo.email && (
+
+                {/* Email button - only show if not own profile */}
+                {!isOwnProfile && userInfo.email && (
                   <Button
                     variant="outlined"
                     startIcon={<EmailIcon />}
-                    onClick={() => window.location.href = `mailto:${userInfo.email}`}
+                    onClick={() =>
+                      (window.location.href = `mailto:${userInfo.email}`)
+                    }
                   >
                     Email
                   </Button>
                 )}
-              </Stack>
+              </Box>
             </Box>
 
             {/* Stats Bar */}
-            <Paper 
-              sx={{ 
-                p: 3, 
+            <Paper
+              sx={{
+                p: 3,
                 borderRadius: 2,
                 bgcolor: (theme) => alpha(theme.palette.primary.main, 0.02),
-                border: '1px solid',
-                borderColor: 'divider',
+                border: "1px solid",
+                borderColor: "divider",
                 mt: 3,
               }}
             >
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                <Box sx={{ flex: 1, minWidth: '120px', textAlign: 'center' }}>
-                  <Typography variant="h4" fontWeight={700} color="primary">
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 3,
+                }}
+              >
+                {/* Followers - Clickable */}
+                <Box
+                  sx={{
+                    flex: 1,
+                    minWidth: "120px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    "&:hover": {
+                      transform: "translateY(-2px)",
+                    },
+                  }}
+                  onClick={() => handleOpenFollowDialog("followers")}
+                >
+                  <Typography
+                    variant="h4"
+                    fontWeight={700}
+                    color="primary"
+                    sx={{
+                      "&:hover": {
+                        textDecoration: "underline",
+                      },
+                    }}
+                  >
                     {formatNumber(followerCount)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Followers
                   </Typography>
                 </Box>
-                <Box sx={{ flex: 1, minWidth: '120px', textAlign: 'center' }}>
-                  <Typography variant="h4" fontWeight={700} color="primary">
+
+                {/* Following - Clickable */}
+                <Box
+                  sx={{
+                    flex: 1,
+                    minWidth: "120px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    "&:hover": {
+                      transform: "translateY(-2px)",
+                    },
+                  }}
+                  onClick={() => handleOpenFollowDialog("following")}
+                >
+                  <Typography
+                    variant="h4"
+                    fontWeight={700}
+                    color="primary"
+                    sx={{
+                      "&:hover": {
+                        textDecoration: "underline",
+                      },
+                    }}
+                  >
                     {formatNumber(profile.followingCount)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Following
                   </Typography>
                 </Box>
-                <Box sx={{ flex: 1, minWidth: '120px', textAlign: 'center' }}>
+
+                {/* Posts */}
+                <Box sx={{ flex: 1, minWidth: "120px", textAlign: "center" }}>
                   <Typography variant="h4" fontWeight={700} color="primary">
                     {formatNumber(profile.communityStats?.totalPosts || 0)}
                   </Typography>
@@ -667,7 +1098,9 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                     Posts
                   </Typography>
                 </Box>
-                <Box sx={{ flex: 1, minWidth: '120px', textAlign: 'center' }}>
+
+                {/* Engagement Score */}
+                <Box sx={{ flex: 1, minWidth: "120px", textAlign: "center" }}>
                   <Typography variant="h4" fontWeight={700} color="primary">
                     {formatNumber(profile.communityStats?.engagementScore || 0)}
                   </Typography>
@@ -681,34 +1114,34 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
         </Paper>
 
         {/* Main Content */}
-        <Box sx={{ width: '100%' }}>
-          <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <Tabs 
-                value={tabValue} 
+        <Box sx={{ width: "100%" }}>
+          <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
+            <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+              <Tabs
+                value={tabValue}
                 onChange={handleTabChange}
                 variant="scrollable"
                 scrollButtons="auto"
               >
-                <Tab 
-                  icon={<PeopleIcon />} 
+                <Tab
+                  icon={<PeopleIcon />}
                   iconPosition="start"
-                  label="Overview" 
+                  label="Overview"
                 />
-                <Tab 
-                  icon={<PeopleIcon />} 
+                <Tab
+                  icon={<PeopleIcon />}
                   iconPosition="start"
-                  label={`Followers (${formatNumber(followerCount)})`} 
+                  label={`Followers (${formatNumber(followerCount)})`}
                 />
-                <Tab 
-                  icon={<PeopleIcon />} 
+                <Tab
+                  icon={<PeopleIcon />}
                   iconPosition="start"
-                  label={`Following (${formatNumber(profile.followingCount)})`} 
+                  label={`Following (${formatNumber(profile.followingCount)})`}
                 />
-                <Tab 
-                  icon={<ForumIcon />} 
+                <Tab
+                  icon={<ForumIcon />}
                   iconPosition="start"
-                  label={`Posts (${formatNumber(profile.communityStats?.totalPosts || 0)})`} 
+                  label={`Posts (${formatNumber(profile.communityStats?.totalPosts || 0)})`}
                 />
               </Tabs>
             </Box>
@@ -720,38 +1153,84 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                   <Typography variant="h6" gutterBottom>
                     Community Activity Overview
                   </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                      <Card sx={{ flex: 1, minWidth: '300px' }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 3,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 3,
+                      }}
+                    >
+                      <Card sx={{ flex: 1, minWidth: "300px" }}>
                         <CardContent>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                              mb: 2,
+                            }}
+                          >
                             <ForumIcon color="primary" />
                             <Typography variant="h6">Post Activity</Typography>
                           </Box>
-                          <Typography variant="body2" color="text.secondary" paragraph>
-                            {userInfo.name} has created {profile.communityStats?.totalPosts || 0} posts and made {profile.communityStats?.totalComments || 0} comments in the community.
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            paragraph
+                          >
+                            {userInfo.name} has created{" "}
+                            {profile.communityStats?.totalPosts || 0} posts and
+                            made {profile.communityStats?.totalComments || 0}{" "}
+                            comments in the community.
                           </Typography>
                           <Typography variant="body2">
-                            Last active: {formatDate(profile.communityStats?.lastActive || profile._id, true)}
+                            Last active:{" "}
+                            {formatDate(
+                              profile.communityStats?.lastActive || profile._id,
+                              true,
+                            )}
                           </Typography>
                         </CardContent>
                       </Card>
-                      <Card sx={{ flex: 1, minWidth: '300px' }}>
+                      <Card sx={{ flex: 1, minWidth: "300px" }}>
                         <CardContent>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                              mb: 2,
+                            }}
+                          >
                             <ThumbUpIcon color="primary" />
                             <Typography variant="h6">Engagement</Typography>
                           </Box>
-                          <Typography variant="body2" color="text.secondary" paragraph>
-                            {userInfo.name} has given {profile.communityStats?.totalLikesGiven || 0} likes and received {profile.communityStats?.totalLikesReceived || 0} likes.
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            paragraph
+                          >
+                            {userInfo.name} has given{" "}
+                            {profile.communityStats?.totalLikesGiven || 0} likes
+                            and received{" "}
+                            {profile.communityStats?.totalLikesReceived || 0}{" "}
+                            likes.
                           </Typography>
                           <Typography variant="body2">
-                            Engagement score: {profile.communityStats?.engagementScore || 0}
+                            Engagement score:{" "}
+                            {profile.communityStats?.engagementScore || 0}
                           </Typography>
                         </CardContent>
                       </Card>
                     </Box>
-                    
+
                     {/* Subscription Info */}
                     {userInfo.subscription && (
                       <Card>
@@ -759,12 +1238,21 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                           <Typography variant="h6" gutterBottom>
                             Subscription Status
                           </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                            }}
+                          >
                             <Chip
                               label={userInfo.subscription.plan.toUpperCase()}
                               color={
-                                userInfo.subscription.plan === 'premium' ? 'primary' : 
-                                userInfo.subscription.plan === 'pro' ? 'success' : 'default'
+                                userInfo.subscription.plan === "premium"
+                                  ? "primary"
+                                  : userInfo.subscription.plan === "pro"
+                                    ? "success"
+                                    : "default"
                               }
                               variant="outlined"
                             />
@@ -781,7 +1269,16 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
 
               {tabValue === 1 && (
                 <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 3,
+                      flexWrap: "wrap",
+                      gap: 2,
+                    }}
+                  >
                     <Typography variant="h6">
                       Followers ({formatNumber(followerCount)})
                     </Typography>
@@ -797,39 +1294,55 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                           </InputAdornment>
                         ),
                       }}
-                      sx={{ width: { xs: '100%', sm: '300px' } }}
+                      sx={{ width: { xs: "100%", sm: "300px" } }}
                     />
                   </Box>
-                  
-                  {loading.followers ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+
+                  {connectionsLoading ? (
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", py: 4 }}
+                    >
                       <CircularProgress />
                     </Box>
                   ) : followers.length === 0 ? (
-                    <Alert severity="info">
-                      No followers yet.
-                    </Alert>
+                    <Alert severity="info">No followers yet.</Alert>
                   ) : (
-                    <Box sx={{ 
-                      display: 'flex', 
-                      flexWrap: 'wrap',
-                      gap: 3,
-                    }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 3,
+                      }}
+                    >
                       {followers
-                        .filter(user => 
-                          user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.userId.name.toLowerCase().includes(searchQuery.toLowerCase())
+                        .filter(
+                          (user) =>
+                            user.username
+                              .toLowerCase()
+                              .includes(searchQuery.toLowerCase()) ||
+                            user.userId?.name
+                              ?.toLowerCase()
+                              .includes(searchQuery.toLowerCase()),
                         )
                         .map((user) => (
-                          <Box key={user._id} sx={{ 
-                            width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' },
-                            minWidth: '280px'
-                          }}>
+                          <Box
+                            key={user._id}
+                            sx={{
+                              width: {
+                                xs: "100%",
+                                sm: "calc(50% - 12px)",
+                                md: "calc(33.333% - 16px)",
+                              },
+                              minWidth: "280px",
+                            }}
+                          >
                             <UserCard
                               user={user}
                               onFollow={handleFollowUser}
                               onUnfollow={handleUnfollowUser}
-                              onViewProfile={(userId) => router.push(`/community/profile/${user.username}`)}
+                              onViewProfile={(username) =>
+                                router.push(`/community/profile/${username}`)
+                              }
                             />
                           </Box>
                         ))}
@@ -840,7 +1353,16 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
 
               {tabValue === 2 && (
                 <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 3,
+                      flexWrap: "wrap",
+                      gap: 2,
+                    }}
+                  >
                     <Typography variant="h6">
                       Following ({formatNumber(profile.followingCount)})
                     </Typography>
@@ -856,40 +1378,56 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                           </InputAdornment>
                         ),
                       }}
-                      sx={{ width: { xs: '100%', sm: '300px' } }}
+                      sx={{ width: { xs: "100%", sm: "300px" } }}
                     />
                   </Box>
-                  
-                  {loading.following ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+
+                  {connectionsLoading ? (
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", py: 4 }}
+                    >
                       <CircularProgress />
                     </Box>
                   ) : following.length === 0 ? (
-                    <Alert severity="info">
-                      Not following anyone yet.
-                    </Alert>
+                    <Alert severity="info">Not following anyone yet.</Alert>
                   ) : (
-                    <Box sx={{ 
-                      display: 'flex', 
-                      flexWrap: 'wrap',
-                      gap: 3,
-                    }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 3,
+                      }}
+                    >
                       {following
-                        .filter(user => 
-                          user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.userId.name.toLowerCase().includes(searchQuery.toLowerCase())
+                        .filter(
+                          (user) =>
+                            user.username
+                              .toLowerCase()
+                              .includes(searchQuery.toLowerCase()) ||
+                            user.userId?.name
+                              ?.toLowerCase()
+                              .includes(searchQuery.toLowerCase()),
                         )
                         .map((user) => (
-                          <Box key={user._id} sx={{ 
-                            width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 16px)' },
-                            minWidth: '280px'
-                          }}>
+                          <Box
+                            key={user._id}
+                            sx={{
+                              width: {
+                                xs: "100%",
+                                sm: "calc(50% - 12px)",
+                                md: "calc(33.333% - 16px)",
+                              },
+                              minWidth: "280px",
+                            }}
+                          >
                             <UserCard
                               user={user}
                               isFollowing={true}
                               onFollow={handleFollowUser}
                               onUnfollow={handleUnfollowUser}
-                              onViewProfile={(userId) => router.push(`/community/profile/${user.username}`)}
+                              onViewProfile={(username) =>
+                                router.push(`/community/profile/${username}`)
+                              }
                             />
                           </Box>
                         ))}
@@ -900,14 +1438,29 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
 
               {tabValue === 3 && (
                 <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 3,
+                      flexWrap: "wrap",
+                      gap: 2,
+                    }}
+                  >
                     <Typography variant="h6">
-                      Posts ({formatNumber(profile.communityStats?.totalPosts || userPosts.length)})
+                      Posts (
+                      {formatNumber(
+                        profile.communityStats?.totalPosts || userPosts.length,
+                      )}
+                      )
                     </Typography>
                   </Box>
-                  
-                  {loading.posts ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+
+                  {connectionsLoading ? (
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", py: 4 }}
+                    >
                       <CircularProgress />
                     </Box>
                   ) : userPosts.length === 0 ? (
@@ -915,7 +1468,9 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                       {userInfo.name} hasn't created any posts yet.
                     </Alert>
                   ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 3 }}
+                    >
                       {userPosts.map((post) => (
                         <Box key={post._id}>
                           <PostCard
@@ -933,10 +1488,12 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
                               updatedAt: post.updatedAt,
                               isPinned: post.isPinned,
                               isSolved: post.isSolved,
-                              attachments: post.attachments
+                              attachments: post.attachments,
                             }}
                             showActions={true}
-                            onViewPost={(postId) => router.push(`/community/post/${postId}`)}
+                            onViewPost={(postId) =>
+                              router.push(`/community/post/${postId}`)
+                            }
                           />
                         </Box>
                       ))}
@@ -956,9 +1513,7 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>
-          Send Message to {userInfo.name}
-        </DialogTitle>
+        <DialogTitle>Send Message to {userInfo.name}</DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
@@ -971,19 +1526,28 @@ export default function UserPublicProfile({ profile, username }: UserPublicProfi
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setMessageDialogOpen(false)}>
-            Cancel
-          </Button>
+          <Button onClick={() => setMessageDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={handleSendMessage}
             variant="contained"
             disabled={!messageContent.trim() || sendingMessage}
-            startIcon={sendingMessage ? <CircularProgress size={20} /> : undefined}
+            startIcon={
+              sendingMessage ? <CircularProgress size={20} /> : undefined
+            }
           >
-            {sendingMessage ? 'Sending...' : 'Send Message'}
+            {sendingMessage ? "Sending..." : "Send Message"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Follow Dialog */}
+      <FollowDialog
+        open={followDialogOpen}
+        onClose={() => setFollowDialogOpen(false)}
+        profileId={profile.username}
+        type={followDialogType}
+        title={`@${profile.username}'s ${followDialogType}`}
+      />
     </>
   );
 }

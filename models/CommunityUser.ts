@@ -64,7 +64,7 @@ export interface ICommunityUser extends Document {
 
 const CommunityUserSchema = new Schema<ICommunityUser>({
   userId: {
-    type: Schema.Types.ObjectId,
+    type: Schema.Types.Mixed,
     ref: 'User',
     required: true,
     unique: true
@@ -148,6 +148,7 @@ const CommunityUserSchema = new Schema<ICommunityUser>({
 });
 
 // Indexes
+CommunityUserSchema.index({ userId: 1 }, { unique: true });
 CommunityUserSchema.index({ username: 1 });
 CommunityUserSchema.index({ 'communityStats.engagementScore': -1 });
 CommunityUserSchema.index({ 'communityStats.lastActive': -1 });

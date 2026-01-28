@@ -49,6 +49,7 @@ interface User {
     followerCount: number;
   };
   userId: {
+    _id: string;
     name: string;
     shopName?: string;
     role: string;
@@ -67,10 +68,32 @@ export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [tabValue, setTabValue] = useState(0);
   const [following, setFollowing] = useState<string[]>([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+
+  // Get current user profile to filter out own profile
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/community/profile', {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setCurrentUserProfile(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch current user:', error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     fetchUsers();
-  }, [tabValue]);
+  }, [tabValue, currentUserProfile]);
 
   const fetchUsers = async () => {
     try {
@@ -90,7 +113,20 @@ export default function ExplorePage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setUsers(data.data || []);
+          // Filter out current user's profile
+          let filteredUsers = data.data || [];
+          if (currentUserProfile) {
+            filteredUsers = filteredUsers.filter((user: User) => 
+              user.userId._id !== currentUserProfile.userId?._id && 
+              user._id !== currentUserProfile._id
+            );
+          }
+          
+          // Filter out users who are already following
+          const followingUsers = filteredUsers.filter((user: User) => user.isFollowing);
+          setFollowing(followingUsers.map((user: User) => user._id));
+          
+          setUsers(filteredUsers);
         }
       }
     } catch (err: any) {
@@ -100,25 +136,32 @@ export default function ExplorePage() {
     }
   };
 
-  const handleFollow = async (userId: string) => {
+  const handleFollow = async (user: User) => {
     try {
-      const response = await fetch(`/api/community/profile/${userId}/follow`, {
+      const response = await fetch(`/api/community/profile/${user.username}/follow`, {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setUsers(users.map(user => 
-            user._id === userId 
-              ? { ...user, isFollowing: true, communityStats: { 
-                  ...user.communityStats, 
-                  followerCount: user.communityStats.followerCount + 1 
-                }} 
-              : user
+          setUsers(users.map(u => 
+            u._id === user._id 
+              ? { 
+                  ...u, 
+                  isFollowing: true, 
+                  communityStats: { 
+                    ...u.communityStats, 
+                    followerCount: u.communityStats.followerCount + 1 
+                  }
+                } 
+              : u
           ));
-          setFollowing([...following, userId]);
+          setFollowing([...following, user._id]);
         }
       }
     } catch (error) {
@@ -126,9 +169,9 @@ export default function ExplorePage() {
     }
   };
 
-  const handleUnfollow = async (userId: string) => {
+  const handleUnfollow = async (user: User) => {
     try {
-      const response = await fetch(`/api/community/profile/${userId}/follow`, {
+      const response = await fetch(`/api/community/profile/${user.username}/follow`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -136,15 +179,19 @@ export default function ExplorePage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setUsers(users.map(user => 
-            user._id === userId 
-              ? { ...user, isFollowing: false, communityStats: { 
-                  ...user.communityStats, 
-                  followerCount: user.communityStats.followerCount - 1 
-                }} 
-              : user
+          setUsers(users.map(u => 
+            u._id === user._id 
+              ? { 
+                  ...u, 
+                  isFollowing: false, 
+                  communityStats: { 
+                    ...u.communityStats, 
+                    followerCount: u.communityStats.followerCount - 1 
+                  }
+                } 
+              : u
           ));
-          setFollowing(following.filter(id => id !== userId));
+          setFollowing(following.filter(id => id !== user._id));
         }
       }
     } catch (error) {
@@ -173,7 +220,14 @@ export default function ExplorePage() {
 
       {/* Search & Tabs */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 2, 
+          flexWrap: 'wrap', 
+          gap: 2 
+        }}>
           <TextField
             placeholder="Search users by name, username, or bio..."
             value={searchQuery}
@@ -190,7 +244,7 @@ export default function ExplorePage() {
           />
           
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Chip label={`${users.length} Users`} size="small" />
+            <Chip label={`${filteredUsers.length} Users`} size="small" />
             <Chip 
               label={`${following.length} Following`} 
               size="small" 
@@ -240,7 +294,16 @@ export default function ExplorePage() {
         <Grid container spacing={3}>
           {filteredUsers.map((user) => (
             <Grid item xs={12} sm={6} md={4} key={user._id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Card sx={{ 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: theme.shadows[4],
+                }
+              }}>
                 <CardContent sx={{ flex: 1 }}>
                   {/* User Header */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -274,7 +337,17 @@ export default function ExplorePage() {
 
                   {/* Bio */}
                   {user.bio && (
-                    <Typography variant="body2" sx={{ mb: 2 }} noWrap>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        mb: 2,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
                       {user.bio}
                     </Typography>
                   )}
@@ -314,7 +387,7 @@ export default function ExplorePage() {
                     variant={user.isFollowing ? "outlined" : "contained"}
                     fullWidth
                     startIcon={user.isFollowing ? undefined : <PersonAddIcon />}
-                    onClick={() => user.isFollowing ? handleUnfollow(user._id) : handleFollow(user._id)}
+                    onClick={() => user.isFollowing ? handleUnfollow(user) : handleFollow(user)}
                   >
                     {user.isFollowing ? 'Following' : 'Follow'}
                   </Button>

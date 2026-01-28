@@ -10,6 +10,10 @@ export interface IUser extends Document {
   communityProfile?: Types.ObjectId;
   isActive: boolean;
 
+  // For OAuth users
+  providerId: string; // Add this field
+  provider: string;
+
   // Subscription fields
   subscription: {
     plan: "trial" | "monthly" | "quarterly" | "yearly";
@@ -147,6 +151,16 @@ const UserSchema = new Schema<IUser>(
       ref: "CommunityUser",
     },
 
+    providerId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    provider: {
+      type: String,
+      required: true,
+    },
+
     // Activity Logs for detailed tracking
     activityLogs: [
       {
@@ -165,5 +179,6 @@ const UserSchema = new Schema<IUser>(
 // Index for faster queries on screen time
 UserSchema.index({ "screenTime.lastActive": -1 });
 UserSchema.index({ "screenTime.dailyStats.date": 1 });
+UserSchema.index({ providerId: 1, provider: 1 }, { unique: true });
 
 export default models.User || model<IUser>("User", UserSchema);

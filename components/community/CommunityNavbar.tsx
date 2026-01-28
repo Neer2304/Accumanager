@@ -1,7 +1,7 @@
 // components/community/CommunityNavbar.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -15,7 +15,6 @@ import {
   Badge,
   Drawer,
   List,
-  ListItem,
   ListItemIcon,
   ListItemText,
   Divider,
@@ -25,6 +24,10 @@ import {
   Paper,
   useMediaQuery,
   useTheme,
+  CircularProgress,
+  ListItemAvatar,
+  Chip,
+  Alert,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -40,26 +43,71 @@ import {
   Close as CloseIcon,
   TrendingUp as TrendingIcon,
   BookmarkBorder as BookmarkIcon,
-  ChatBubbleOutline as ChatIcon,
+  Favorite as FavoriteIcon,
+  PersonAdd as PersonAddIcon,
+  PersonRemove as PersonRemoveIcon,
+  Comment as CommentIcon,
+  People as PeopleIcon2,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+
+interface CommunityUser {
+  _id: string;
+  communityUserId: string;
+  name: string;
+  email?: string;
+  username: string;
+  avatar?: string;
+  bio?: string;
+  location?: string;
+  role?: string;
+  businessName?: string;
+  shopName?: string;
+  followerCount: number;
+  followingCount: number;
+  isVerified: boolean;
+  createdAt: string;
+}
+
+interface CommunityNotification {
+  _id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'follow' | 'like' | 'comment';
+  isRead: boolean;
+  actionUrl?: string;
+  metadata?: {
+    postId?: string;
+    commentId?: string;
+    userId?: string;
+    communityUserId?: string;
+    likeCount?: number;
+    commentCount?: number;
+  };
+  createdAt: string;
+  readAt?: string;
+}
 
 export default function CommunityNavbar() {
   const router = useRouter();
   const pathname = usePathname();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'lg'));
   
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [searchAnchorEl, setSearchAnchorEl] = useState<null | HTMLElement>(null);
+  const [notifications, setNotifications] = useState<CommunityNotification[]>([]);
   const [user, setUser] = useState<any>(null);
   const [notificationCount, setNotificationCount] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<CommunityUser[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch user data and notifications
   useEffect(() => {
@@ -86,31 +134,80 @@ export default function CommunityNavbar() {
       const response = await fetch('/api/community/notifications', {
         credentials: 'include',
       });
+      
+      console.log('Notifications response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Notifications data:', data);
+        
         if (data.success) {
-          setNotifications(data.data || []);
-          setNotificationCount(data.unreadCount || 0);
+          const notificationsData = data.data || [];
+          setNotifications(notificationsData);
+          const unreadCount = notificationsData.filter((n: CommunityNotification) => !n.isRead).length;
+          setNotificationCount(unreadCount);
+        } else {
+          // No notifications yet
+          setNotifications([]);
+          setNotificationCount(0);
         }
       } else {
-        // Mock notifications for demo
-        setNotifications([
-          { _id: '1', message: 'New follower: John Doe', createdAt: new Date() },
-          { _id: '2', message: 'Your post got 5 likes', createdAt: new Date() },
-          { _id: '3', message: 'New comment on your post', createdAt: new Date() },
-        ]);
-        setNotificationCount(3);
+        // No notifications or error
+        setNotifications([]);
+        setNotificationCount(0);
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
-      // Mock data for demo
-      setNotifications([
-        { _id: '1', message: 'New follower: John Doe', createdAt: new Date() },
-        { _id: '2', message: 'Your post got 5 likes', createdAt: new Date() },
-        { _id: '3', message: 'New comment on your post', createdAt: new Date() },
-      ]);
-      setNotificationCount(3);
+      setNotifications([]);
+      setNotificationCount(0);
     }
+  };
+
+  const searchUsers = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearchLoading(true);
+    setSearchError(null);
+
+    try {
+      console.log('Searching for users:', query);
+      
+      const response = await fetch(`/api/community/users/search?q=${encodeURIComponent(query)}&limit=5`, {
+        credentials: 'include',
+      });
+
+      console.log('Search response status:', response.status);
+      
+      const data = await response.json();
+      console.log('Search response data:', data);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Search failed');
+      }
+
+      setSearchResults(data.data || []);
+      
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchError(error instanceof Error ? error.message : 'Failed to search users');
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Debounced search handler
+  const handleSearchChange = (query: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      searchUsers(query);
+    }, 300);
   };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -133,6 +230,16 @@ export default function CommunityNavbar() {
     setNotificationAnchorEl(null);
   };
 
+  const handleSearchOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setSearchAnchorEl(event.currentTarget);
+  };
+
+  const handleSearchClose = () => {
+    setSearchAnchorEl(null);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', {
@@ -145,32 +252,94 @@ export default function CommunityNavbar() {
     }
   };
 
-  const handleNotificationClick = async (notificationId: string) => {
-    // Mark as read
-    await fetch(`/api/community/notifications/${notificationId}/read`, {
-      method: 'PUT',
-      credentials: 'include',
-    });
+  const handleNotificationClick = async (notification: CommunityNotification) => {
+    try {
+      // Mark as read
+      const response = await fetch(`/api/community/notifications/${notification._id}/read`, {
+        method: 'PUT',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        // Navigate if there's an action URL
+        if (notification.actionUrl) {
+          router.push(notification.actionUrl);
+        } else if (notification.metadata?.postId) {
+          router.push(`/community/post/${notification.metadata.postId}`);
+        } else if (notification.metadata?.communityUserId) {
+          router.push(`/community/profile/${notification.metadata.communityUserId}`);
+        }
+        
+        // Refresh notifications
+        fetchNotifications();
+      }
+    } catch (error) {
+      console.error('Failed to handle notification:', error);
+    }
     
-    // Refresh notifications
-    fetchNotifications();
+    setNotificationAnchorEl(null);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/community/search?q=${encodeURIComponent(searchQuery)}`);
+      router.push(`/community/explore?search=${encodeURIComponent(searchQuery)}`);
+      handleSearchClose();
       setSearchOpen(false);
-      setSearchQuery('');
+    }
+  };
+
+  const handleUserClick = (communityUserId: string) => {
+    router.push(`/community/profile/${communityUserId}`);
+    handleSearchClose();
+    if (isMobile) setSearchOpen(false);
+  };
+
+  const getNotificationIcon = (type: CommunityNotification['type']) => {
+    switch (type) {
+      case 'success':
+      case 'like':
+        return <FavoriteIcon color="success" fontSize="small" />;
+      case 'warning':
+        return <NotificationsIcon color="warning" fontSize="small" />;
+      case 'error':
+        return <PersonRemoveIcon color="error" fontSize="small" />;
+      case 'follow':
+        return <PersonAddIcon color="info" fontSize="small" />;
+      case 'comment':
+        return <CommentIcon color="info" fontSize="small" />;
+      default:
+        return <NotificationsIcon color="info" fontSize="small" />;
+    }
+  };
+
+  const formatNotificationDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    } else {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
     }
   };
 
   const navItems = [
     { label: 'Home', href: '/community', icon: <HomeIcon /> },
-    { label: 'Explore', href: '/community/explore', icon: <TrendingIcon /> },
+    { label: 'Explore Users', href: '/community/explore', icon: <PeopleIcon2 /> },
     { label: 'Discussions', href: '/community/discussions', icon: <ForumIcon /> },
     { label: 'Bookmarks', href: '/community/bookmarks', icon: <BookmarkIcon /> },
-    { label: 'My Profile', href: '/community/profile', icon: <PersonIcon /> },
   ];
 
   // Responsive drawer content
@@ -208,9 +377,12 @@ export default function CommunityNavbar() {
           }}
         >
           <InputBase
-            placeholder="Search community..."
+            placeholder="Search users..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              handleSearchChange(e.target.value);
+            }}
             sx={{
               ml: 1,
               flex: 1,
@@ -263,6 +435,20 @@ export default function CommunityNavbar() {
       {/* Drawer Footer */}
       <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
         <ListItemButton onClick={() => {
+          if (user?._id) {
+            router.push(`/community/profile/${user._id}`);
+          } else {
+            router.push('/settings');
+          }
+          setMobileOpen(false);
+        }}>
+          <ListItemIcon>
+            <PersonIcon />
+          </ListItemIcon>
+          <ListItemText primary={user?._id ? "My Profile" : "Profile"} />
+        </ListItemButton>
+        
+        <ListItemButton onClick={() => {
           router.push('/settings');
           setMobileOpen(false);
         }}>
@@ -293,7 +479,11 @@ export default function CommunityNavbar() {
       borderBottom: 1,
       borderColor: 'divider',
     }}>
-      <IconButton onClick={() => setSearchOpen(false)}>
+      <IconButton onClick={() => {
+        setSearchOpen(false);
+        setSearchQuery('');
+        setSearchResults([]);
+      }}>
         <CloseIcon />
       </IconButton>
       <Paper
@@ -309,9 +499,12 @@ export default function CommunityNavbar() {
       >
         <InputBase
           autoFocus
-          placeholder="Search discussions, users, topics..."
+          placeholder="Search users by name or business..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            handleSearchChange(e.target.value);
+          }}
           sx={{ ml: 1, flex: 1 }}
         />
         <IconButton type="submit" sx={{ p: '10px' }}>
@@ -422,17 +615,36 @@ export default function CommunityNavbar() {
                   width: '100%',
                   borderRadius: 3,
                   bgcolor: alpha('#000', 0.03),
+                  position: 'relative',
                 }}
               >
-                <IconButton sx={{ p: '10px' }} onClick={() => document.querySelector('input')?.focus()}>
+                <IconButton sx={{ p: '10px' }} onClick={(e) => {
+                  handleSearchOpen(e);
+                  document.querySelector('input')?.focus();
+                }}>
                   <SearchIcon />
                 </IconButton>
                 <InputBase
-                  placeholder="Search discussions, users, topics..."
+                  placeholder="Search users by name or business..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    handleSearchChange(e.target.value);
+                  }}
                   sx={{ ml: 1, flex: 1, fontSize: '0.875rem' }}
                 />
+                {searchQuery && (
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                    }}
+                    sx={{ mr: 0.5 }}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                )}
               </Paper>
             </Box>
 
@@ -516,6 +728,7 @@ export default function CommunityNavbar() {
                 }}
               >
                 <Avatar 
+                  src={user?.avatar}
                   sx={{ 
                     width: { xs: 32, sm: 36 },
                     height: { xs: 32, sm: 36 },
@@ -544,7 +757,11 @@ export default function CommunityNavbar() {
               }}
             >
               <MenuItem onClick={() => {
-                router.push('/community/profile');
+                if (user?._id) {
+                  router.push(`/community/profile/${user._id}`);
+                } else {
+                  router.push('/community/profile');
+                }
                 handleMenuClose();
               }}>
                 <PersonIcon sx={{ mr: 2, fontSize: 20 }} /> 
@@ -567,7 +784,134 @@ export default function CommunityNavbar() {
               </MenuItem>
             </Menu>
 
-            {/* Notifications Menu */}
+            {/* Search Results Menu */}
+            <Menu
+              anchorEl={searchAnchorEl}
+              open={Boolean(searchAnchorEl)}
+              onClose={handleSearchClose}
+              PaperProps={{
+                sx: {
+                  mt: 1.5,
+                  width: 320,
+                  maxWidth: '90vw',
+                  borderRadius: 2,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  maxHeight: 400,
+                }
+              }}
+            >
+              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Search Users
+                </Typography>
+                {searchQuery && (
+                  <Typography variant="caption" color="text.secondary">
+                    Results for "{searchQuery}"
+                  </Typography>
+                )}
+              </Box>
+              
+              <Box sx={{ maxHeight: 300, overflow: 'auto', p: 1 }}>
+                {searchLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : searchError ? (
+                  <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Alert severity="error" sx={{ mb: 1 }}>
+                      {searchError}
+                    </Alert>
+                    <Typography variant="caption" color="text.secondary">
+                      Please try again
+                    </Typography>
+                  </Box>
+                ) : searchResults.length === 0 && searchQuery ? (
+                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <PeopleIcon2 sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      No users found
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Try different keywords
+                    </Typography>
+                  </Box>
+                ) : (
+                  searchResults.map((user) => (
+                    <MenuItem 
+                      key={user.communityUserId || user._id}
+                      onClick={() => handleUserClick(user.communityUserId || user._id)}
+                      sx={{ 
+                        py: 1.5,
+                        borderRadius: 1,
+                        mb: 0.5,
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        },
+                      }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar 
+                          src={user.avatar}
+                          sx={{ width: 40, height: 40 }}
+                        >
+                          {user.name?.charAt(0) || user.username?.charAt(0) || 'U'}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {user.name || user.username}
+                          </Typography>
+                          {user.isVerified && (
+                            <Chip
+                              label="Verified"
+                              size="small"
+                              color="success"
+                              sx={{ height: 18, fontSize: '0.6rem' }}
+                            />
+                          )}
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          @{user.username}
+                        </Typography>
+                        {user.bio && (
+                          <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                            {user.bio.substring(0, 40)}...
+                          </Typography>
+                        )}
+                        <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            {user.followerCount || 0} followers
+                          </Typography>
+                          {user.location && (
+                            <Typography variant="caption" color="text.secondary">
+                              • {user.location}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    </MenuItem>
+                  ))
+                )}
+              </Box>
+              
+              {searchResults.length > 0 && (
+                <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider' }}>
+                  <Button 
+                    fullWidth
+                    size="small" 
+                    onClick={() => {
+                      router.push(`/community/explore?search=${encodeURIComponent(searchQuery)}`);
+                      handleSearchClose();
+                    }}
+                  >
+                    View All Results ({searchResults.length})
+                  </Button>
+                </Box>
+              )}
+            </Menu>
+
+            {/* Community Notifications Menu */}
             <Menu
               anchorEl={notificationAnchorEl}
               open={Boolean(notificationAnchorEl)}
@@ -575,7 +919,7 @@ export default function CommunityNavbar() {
               PaperProps={{
                 sx: {
                   mt: 1.5,
-                  width: 320,
+                  width: 380,
                   maxWidth: '90vw',
                   borderRadius: 2,
                   boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
@@ -584,7 +928,7 @@ export default function CommunityNavbar() {
             >
               <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
                 <Typography variant="subtitle1" fontWeight={600}>
-                  Notifications
+                  Community Notifications
                   {notificationCount > 0 && (
                     <Badge 
                       badgeContent={notificationCount} 
@@ -602,32 +946,66 @@ export default function CommunityNavbar() {
                     <Typography variant="body2" color="text.secondary">
                       No notifications yet
                     </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Your community activity will appear here
+                    </Typography>
                   </Box>
                 ) : (
                   <>
-                    {notifications.slice(0, 5).map((notification) => (
+                    {notifications.map((notification) => (
                       <MenuItem 
                         key={notification._id}
-                        onClick={() => handleNotificationClick(notification._id)}
+                        onClick={() => handleNotificationClick(notification)}
                         sx={{ 
-                          py: 1.5,
+                          py: 2,
+                          px: 2,
                           borderBottom: 1,
                           borderColor: 'divider',
+                          bgcolor: notification.isRead ? 'inherit' : alpha(theme.palette.primary.main, 0.04),
                           '&:last-child': { borderBottom: 0 },
+                          '&:hover': {
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          },
                         }}
                       >
-                        <Box sx={{ width: '100%' }}>
-                          <Typography variant="body2">
-                            {notification.message}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(notification.createdAt).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, width: '100%' }}>
+                          <Box sx={{ 
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            bgcolor: alpha(
+                              theme.palette[notification.type === 'success' || notification.type === 'like' ? 'success' : 
+                                           notification.type === 'warning' ? 'warning' : 
+                                           notification.type === 'error' ? 'error' : 'info'].main, 
+                              0.1
+                            ),
+                          }}>
+                            {getNotificationIcon(notification.type)}
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" fontWeight={600}>
+                              {notification.title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                              {notification.message}
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                              <Typography variant="caption" color="text.secondary">
+                                {formatNotificationDate(notification.createdAt)}
+                              </Typography>
+                              {!notification.isRead && (
+                                <Box sx={{ 
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: '50%',
+                                  bgcolor: 'primary.main',
+                                }} />
+                              )}
+                            </Box>
+                          </Box>
                         </Box>
                       </MenuItem>
                     ))}

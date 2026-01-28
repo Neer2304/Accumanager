@@ -2,7 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import CommunityUser from '@/models/CommunityUser';
+import Community from '@/models/Community'; // Add this import
 import { verifyToken } from '@/lib/jwt';
+import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,13 +38,15 @@ export async function GET(request: NextRequest) {
     // Get users
     const users = await CommunityUser.find(query)
       .populate('userId', 'name email role shopName subscription.plan')
-      .select('username avatar bio expertInCategories followerCount followingCount communityStats verificationBadge')
+      .select('username avatar bio expertInCategories followerCount followingCount communityStats verificationBadge userId')
       .sort(sortOptions)
       .limit(limit)
       .lean();
     
-    // Check if current user is following each user
+    // Get current user's ID for following status
+    let currentUserId: mongoose.Types.ObjectId | null = null;
     let followingMap: Record<string, boolean> = {};
+    
     const cookies = request.headers.get('cookie');
     const authToken = cookies?.match(/auth_token=([^;]+)/)?.[1];
     
@@ -50,7 +54,8 @@ export async function GET(request: NextRequest) {
       try {
         const decoded = verifyToken(authToken) as any;
         if (decoded?.userId) {
-          const currentProfile = await CommunityUser.findOne({ userId: decoded.userId });
+          currentUserId = new mongoose.Types.ObjectId(decoded.userId);
+          const currentProfile = await CommunityUser.findOne({ userId: currentUserId });
           if (currentProfile) {
             followingMap = users.reduce((acc: Record<string, boolean>, user: any) => {
               acc[user._id.toString()] = currentProfile.following.some(
@@ -61,37 +66,59 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (error) {
-        // Token verification failed
+        console.error('Token verification failed:', error);
       }
     }
     
-    // Transform users
-    const transformedUsers = users.map((user: any) => ({
-      _id: user._id.toString(),
-      username: user.username,
-      avatar: user.avatar,
-      bio: user.bio,
-      isVerified: user.verificationBadge,
-      expertInCategories: user.expertInCategories || [],
-      isFollowing: followingMap[user._id.toString()] || false,
-      communityStats: {
-        totalPosts: user.communityStats?.totalPosts || 0,
-        followerCount: user.followerCount || 0,
-        followingCount: user.followingCount || 0,
-      },
-      userId: {
-        _id: user.userId._id.toString(),
-        name: user.userId.name,
-        email: user.userId.email,
-        role: user.userId.role,
-        shopName: user.userId.shopName,
-        subscription: user.userId.subscription,
-      },
-    }));
+    // Get actual post counts for each user
+    const transformedUsers = await Promise.all(
+      users.map(async (user: any) => {
+        // Get actual post count from Community model
+        const actualPostCount = await Community.countDocuments({
+          author: user.userId._id,
+          status: 'active'
+        });
+        
+        // Filter out current user's own profile
+        const isCurrentUser = currentUserId && 
+          (currentUserId.toString() === user.userId._id.toString() || 
+           currentUserId.toString() === user._id.toString());
+        
+        return {
+          _id: user._id.toString(),
+          username: user.username,
+          avatar: user.avatar,
+          bio: user.bio,
+          isVerified: user.verificationBadge,
+          expertInCategories: user.expertInCategories || [],
+          isFollowing: followingMap[user._id.toString()] || false,
+          communityStats: {
+            totalPosts: actualPostCount, // Use actual count from Community model
+            followerCount: user.followerCount || 0,
+            followingCount: user.followingCount || 0,
+          },
+          userId: {
+            _id: user.userId._id.toString(),
+            name: user.userId.name,
+            email: user.userId.email,
+            role: user.userId.role,
+            shopName: user.userId.shopName,
+            subscription: user.userId.subscription,
+          },
+          isCurrentUser // Add flag to filter in frontend
+        };
+      })
+    );
+    
+    // Filter out current user's profile
+    const filteredUsers = transformedUsers.filter(user => !user.isCurrentUser);
+    
+    // Remove isCurrentUser flag from final response
+    const finalUsers = filteredUsers.map(({ isCurrentUser, ...rest }) => rest);
     
     return NextResponse.json({
       success: true,
-      data: transformedUsers,
+      data: finalUsers,
     });
     
   } catch (error: any) {
