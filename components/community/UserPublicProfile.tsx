@@ -160,6 +160,7 @@ interface UserCardProps {
   onViewProfile?: (username: string) => void;
 }
 
+// Update the UserCard component inside UserPublicProfile.tsx
 const UserCard: React.FC<UserCardProps> = ({
   user,
   isFollowing = false,
@@ -167,12 +168,20 @@ const UserCard: React.FC<UserCardProps> = ({
   onUnfollow,
   onViewProfile,
 }) => {
+  // Debug the user data
+  console.log("UserCard rendering user:", {
+    username: user.username,
+    isFollowing: user.isFollowing || isFollowing,
+    followerCount: user.followerCount,
+    postCount: user.communityStats?.totalPosts,
+  });
+
   return (
     <Card sx={{ height: "100%", borderRadius: 2 }}>
       <CardContent>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
           <Avatar src={user.avatar} sx={{ width: 50, height: 50 }}>
-            {user.username?.charAt(0).toUpperCase()}
+            {(user.userId?.name || user.username)?.charAt(0).toUpperCase()}
           </Avatar>
           <Box sx={{ flex: 1 }}>
             <Typography variant="body1" fontWeight={600}>
@@ -229,17 +238,17 @@ const UserCard: React.FC<UserCardProps> = ({
       <CardActions>
         <Button
           size="small"
-          variant={isFollowing ? "outlined" : "contained"}
+          variant={user.isFollowing || isFollowing ? "outlined" : "contained"}
           fullWidth
           onClick={() => {
-            if (isFollowing && onUnfollow) {
+            if ((user.isFollowing || isFollowing) && onUnfollow) {
               onUnfollow(user.username);
-            } else if (!isFollowing && onFollow) {
+            } else if (!(user.isFollowing || isFollowing) && onFollow) {
               onFollow(user.username);
             }
           }}
         >
-          {isFollowing ? "Following" : "Follow"}
+          {user.isFollowing || isFollowing ? "Following" : "Follow"}
         </Button>
         {onViewProfile && (
           <Button
@@ -434,22 +443,49 @@ export default function UserPublicProfile({
     }
   };
 
-  // Fetch followers
+  const handleOpenFollowDialog = (type: "followers" | "following") => {
+    setFollowDialogType(type);
+    setFollowDialogOpen(true);
+  };
+
+  // components/community/UserPublicProfile.tsx
+  // Update the fetchFollowers and fetchFollowing functions:
+
+  // Fetch followers with proper data
+  // In UserPublicProfile component, add debug logging:
   const fetchFollowers = async () => {
     if (!profile) return;
 
     try {
       setConnectionsLoading(true);
+      console.log("Fetching followers for:", profile.username);
+
       const response = await fetch(
-        `/api/community/profile/${profile.username}/connections?type=followers&limit=12`,
+        `/api/community/profile/${profile.username}/connections?type=followers&limit=100`,
         { credentials: "include" },
       );
 
+      console.log("Response status:", response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log("Followers API response:", data);
+
         if (data.success) {
-          setFollowers(data.data.users || []);
+          const users = data.data?.users || [];
+          console.log("Received users:", users.length);
+          console.log("First user data:", users[0]);
+
+          setFollowers(users);
+
+          // Update follower count if different
+          if (data.data?.profile?.followerCount !== undefined) {
+            setFollowerCount(data.data.profile.followerCount);
+          }
         }
+      } else {
+        const errorText = await response.text();
+        console.error("API error:", errorText);
       }
     } catch (error) {
       console.error("Failed to fetch followers:", error);
@@ -458,27 +494,49 @@ export default function UserPublicProfile({
     }
   };
 
-  // Function to open follow dialog
-  const handleOpenFollowDialog = (type: "followers" | "following") => {
-    setFollowDialogType(type);
-    setFollowDialogOpen(true);
-  };
-
-  // Fetch following
+  // Fetch following with proper data
   const fetchFollowing = async () => {
     if (!profile) return;
 
     try {
       setConnectionsLoading(true);
       const response = await fetch(
-        `/api/community/profile/${profile.username}/connections?type=following&limit=12`,
+        `/api/community/profile/${profile.username}/connections?type=following&limit=100`,
         { credentials: "include" },
       );
 
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setFollowing(data.data.users || []);
+          const users = data.data?.users || [];
+          console.log("Following data received:", users);
+
+          // Transform users to match the expected format
+          const transformedUsers = users.map((user: any) => ({
+            _id: user._id,
+            username: user.username,
+            avatar: user.avatar,
+            bio: user.bio,
+            isVerified: user.isVerified,
+            expertInCategories: user.expertInCategories || [],
+            isFollowing: user.isFollowing || false,
+            followerCount: user.followerCount || 0,
+            communityStats: {
+              totalPosts: user.communityStats?.totalPosts || 0,
+              followerCount: user.followerCount || 0,
+              followingCount: user.followingCount || 0,
+            },
+            userId: user.userId || {
+              _id: user._id,
+              name: user.username,
+              email: "",
+              role: "",
+              shopName: "",
+              subscription: null,
+            },
+          }));
+
+          setFollowing(transformedUsers);
         }
       }
     } catch (error) {

@@ -4,9 +4,11 @@ import { notFound } from 'next/navigation';
 import UserPublicProfile from '@/components/community/UserPublicProfile';
 import { connectToDatabase } from '@/lib/mongodb';
 import CommunityUser from '@/models/CommunityUser';
+import Community from '@/models/Community';
 import User from '@/models/User';
 import { verifyToken } from '@/lib/jwt';
-import { cookies } from 'next/headers'; // Import cookies from next/headers
+import { cookies } from 'next/headers';
+import mongoose from 'mongoose';
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -72,8 +74,25 @@ export default async function UserProfilePage({ params }: PageProps) {
       .select('name email role shopName subscription')
       .lean();
     
+    // Get actual post count from Community model
+    const postCount = await Community.countDocuments({
+      author: communityProfile.userId,
+      status: 'active'
+    });
+    
+    // Get actual follower count (count the followers array)
+    const followerCount = await CommunityUser.countDocuments({
+      following: communityProfile._id
+    });
+    
+    // Get actual following count (count the following array)
+    const followingCount = await CommunityUser.countDocuments({
+      followers: communityProfile._id
+    });
+    
     // Check if current user is following this profile
     let isFollowing = false;
+    let isOwnProfile = false;
     
     try {
       // Get cookies from next/headers
@@ -83,8 +102,13 @@ export default async function UserProfilePage({ params }: PageProps) {
       if (authToken) {
         const decoded = verifyToken(authToken) as any;
         if (decoded?.userId) {
+          const currentUserId = new mongoose.Types.ObjectId(decoded.userId);
+          
+          // Check if it's own profile
+          isOwnProfile = currentUserId.toString() === communityProfile.userId.toString();
+          
           const currentProfile = await CommunityUser.findOne({ 
-            userId: decoded.userId 
+            userId: currentUserId 
           });
           
           if (currentProfile && currentProfile.following) {
@@ -96,29 +120,21 @@ export default async function UserProfilePage({ params }: PageProps) {
       }
     } catch (error) {
       console.error('Error checking follow status:', error);
-      // Continue without follow status
     }
-    
-    // Get actual post count from Community model
-    const Community = (await import('@/models/Community')).default;
-    const postCount = await Community.countDocuments({
-      author: communityProfile.userId,
-      status: 'active'
-    });
     
     // Create profile with correct data
     const profile = {
       ...communityProfile,
       userId: user || communityProfile.userId,
       isFollowing: isFollowing,
-      // Update community stats with actual post count
+      isOwnProfile: isOwnProfile,
+      // Update with actual counts
+      followerCount: followerCount,
+      followingCount: followingCount,
       communityStats: {
         ...communityProfile.communityStats,
         totalPosts: postCount,
       },
-      // Ensure counts are numbers
-      followerCount: Number(communityProfile.followerCount) || 0,
-      followingCount: Number(communityProfile.followingCount) || 0,
     };
     
     // Convert to plain object
