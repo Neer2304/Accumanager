@@ -54,7 +54,7 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
           <TextField
             fullWidth
             label="Customer Name *"
-            value={customer.name}
+            value={customer.name || ''} // Fix: Add fallback
             onChange={(e) =>
               onCustomerChange("name", e.target.value)
             }
@@ -64,7 +64,7 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
             <TextField
               fullWidth
               label="Phone *"
-              value={customer.phone}
+              value={customer.phone || ''} // Fix: Add fallback
               onChange={(e) =>
                 onCustomerChange("phone", e.target.value)
               }
@@ -73,7 +73,7 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
             <TextField
               fullWidth
               label="GSTIN"
-              value={customer.gstin}
+              value={customer.gstin || ''} // FIXED HERE
               onChange={(e) =>
                 onCustomerChange("gstin", e.target.value)
               }
@@ -83,7 +83,7 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
           <TextField
             fullWidth
             label="State *"
-            value={customer.state}
+            value={customer.state || ''} // Fix: Add fallback
             onChange={(e) =>
               onCustomerChange("state", e.target.value)
             }
