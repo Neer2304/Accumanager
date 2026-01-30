@@ -242,7 +242,7 @@ export default function Dashboard() {
       if (eventsResult.success && eventsResult.data) {
         eventsData = extractArrayFromResponse(eventsResult.data);
         
-        const today = new Date(); // CORRECTED: new Date() instead of newDate()
+        const today = new Date();
         statsData.upcomingEvents = safeFilter(eventsData, (event: any) => {
           try {
             const eventDate = new Date(event.startDate || event.date || event.createdAt);
@@ -291,7 +291,7 @@ export default function Dashboard() {
       let totalRevenue = 0;
       const productSalesMap = new Map<
         string,
-        { sales: number; revenue: number; productId?: string }
+        { sales: number; revenue: number; productId?: string; productName: string }
       >();
 
       safeFilter(ordersData, (order: any) => 
@@ -313,19 +313,22 @@ export default function Dashboard() {
               totalSales += quantity;
               totalRevenue += revenue;
 
-              const key = productId || productName;
-              if (productSalesMap.has(key)) {
-                const existing = productSalesMap.get(key)!;
-                productSalesMap.set(key, {
+              // Create a unique key by combining productId and productName
+              const uniqueKey = productId ? `${productId}_${productName}` : productName;
+              
+              if (productSalesMap.has(uniqueKey)) {
+                const existing = productSalesMap.get(uniqueKey)!;
+                productSalesMap.set(uniqueKey, {
                   ...existing,
                   sales: existing.sales + quantity,
                   revenue: existing.revenue + revenue,
                 });
               } else {
-                productSalesMap.set(key, {
+                productSalesMap.set(uniqueKey, {
                   sales: quantity,
                   revenue: revenue,
                   productId: productId,
+                  productName: productName,
                 });
               }
             }
@@ -338,12 +341,17 @@ export default function Dashboard() {
       statsData.totalSales = totalSales;
       statsData.monthlyRevenue = totalRevenue;
 
-      // Prepare top products data
+      // Prepare top products data - ensure unique keys
       const topProductsData = Array.from(productSalesMap.entries())
-        .map(([productName, data]) => ({
-          productName: data.productId ? `${productName} (${data.productId})` : productName,
+        .map(([uniqueKey, data], index) => ({
+          // Use uniqueKey as ID to ensure uniqueness
+          id: uniqueKey,
+          productId: data.productId,
+          productName: data.productName || `Product ${index + 1}`,
           sales: data.sales,
           revenue: data.revenue,
+          // Add a unique key for React
+          key: `${uniqueKey}_${index}_${Date.now()}`,
         }))
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 5);
@@ -558,6 +566,7 @@ export default function Dashboard() {
               order: { xs: 2, md: 2 },
             }}
           >
+            {/* Pass unique topProducts data with unique ids */}
             <TopProductsChart data={topProducts} />
           </Box>
         </Box>

@@ -50,8 +50,9 @@ const TopProductsChart: React.FC<TopProductsChartProps> = ({ data: propData }) =
       // If data is passed as prop, use it
       if (propData && propData.length > 0) {
         console.log('📊 Using prop data for top products:', propData)
-        setProductsData(propData.map(item => ({
-          _id: Math.random().toString(),
+        setProductsData(propData.map((item, index) => ({
+          // FIX: Create unique ID using item properties and index
+          _id: item.id || item.productId || `${item.productName}_${index}_${Date.now()}`,
           name: item.productName || 'Unknown Product',
           totalSales: item.sales || 0,
           totalRevenue: item.revenue || 0,
@@ -82,7 +83,12 @@ const TopProductsChart: React.FC<TopProductsChartProps> = ({ data: propData }) =
       console.log('✅ Top products data received:', data)
       
       if (data && Array.isArray(data)) {
-        setProductsData(data)
+        // FIX: Ensure each item has a unique _id
+        const productsWithUniqueIds = data.map((item, index) => ({
+          ...item,
+          _id: item._id || `product_${index}_${Date.now()}`
+        }))
+        setProductsData(productsWithUniqueIds)
       } else {
         throw new Error('Invalid data format received')
       }
@@ -218,7 +224,8 @@ const TopProductsChart: React.FC<TopProductsChartProps> = ({ data: propData }) =
             >
               {productsData.map((product, index) => (
                 <ListItem 
-                  key={product._id} 
+                  // FIX: Use a combination of _id and index for unique key
+                  key={`${product._id}_${index}`}
                   divider={index !== productsData.length - 1}
                   sx={{ 
                     py: { xs: 1, sm: 1.5 },

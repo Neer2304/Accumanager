@@ -267,6 +267,7 @@ export interface ProductSalesData {
   sales: number;
   revenue: number;
   id?: string; // Add this
+  productId?: string;
 }
 
 export interface RecentActivity {
