@@ -25,7 +25,6 @@ import {
   Paper,
   Chip,
   IconButton,
-  Grid,
   Skeleton,
   Avatar,
   Divider,
@@ -266,13 +265,21 @@ export default function InvoicePage() {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Skeleton variant="text" width="40%" height={60} sx={{ mb: 3 }} />
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Box sx={{ 
+          display: "grid", 
+          gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+          gap: 3, 
+          mb: 4 
+        }}>
           {[1, 2, 3].map((i) => (
-            <Grid item xs={12} md={4} key={i}>
-              <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 2 }} />
-            </Grid>
+            <Skeleton 
+              key={i} 
+              variant="rectangular" 
+              height={120} 
+              sx={{ borderRadius: 2 }} 
+            />
           ))}
-        </Grid>
+        </Box>
         <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
       </Container>
     );
@@ -281,7 +288,14 @@ export default function InvoicePage() {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
+      <Box sx={{ 
+        display: "flex", 
+        flexDirection: { xs: "column", sm: "row" },
+        justifyContent: "space-between", 
+        alignItems: { xs: "flex-start", sm: "center" }, 
+        gap: 2,
+        mb: 4 
+      }}>
         <Box>
           <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
             Invoices
@@ -290,12 +304,13 @@ export default function InvoicePage() {
             Manage and view all your invoices in one place
           </Typography>
         </Box>
-        <Stack direction="row" spacing={2}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ width: { xs: "100%", sm: "auto" } }}>
           <Button
             variant="outlined"
             startIcon={<Refresh />}
             onClick={fetchInvoices}
             disabled={loading}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             Refresh
           </Button>
@@ -303,6 +318,7 @@ export default function InvoicePage() {
             variant="contained"
             startIcon={<AddCircle />}
             onClick={() => router.push("/billing/new")}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             Create Invoice
           </Button>
@@ -310,153 +326,156 @@ export default function InvoicePage() {
       </Box>
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Avatar sx={{ bgcolor: "primary.light", mr: 2 }}>
-                  <AttachMoney />
-                </Avatar>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Total Revenue
-                  </Typography>
-                  <Typography variant="h5" fontWeight="bold">
-                    ₹{totalRevenue.toLocaleString()}
-                  </Typography>
-                </Box>
+      <Box sx={{ 
+        display: "grid", 
+        gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+        gap: 3,
+        mb: 4 
+      }}>
+        {/* Total Revenue Card */}
+        <Card>
+          <CardContent>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <Avatar sx={{ bgcolor: "primary.light", mr: 2 }}>
+                <AttachMoney />
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Total Revenue
+                </Typography>
+                <Typography variant="h5" fontWeight="bold">
+                  ₹{totalRevenue.toLocaleString()}
+                </Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary">
-                From {totalInvoices} invoices
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Avatar sx={{ bgcolor: "warning.light", mr: 2 }}>
-                  <Receipt />
-                </Avatar>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Pending Amount
-                  </Typography>
-                  <Typography variant="h5" fontWeight="bold">
-                    ₹{pendingAmount.toLocaleString()}
-                  </Typography>
-                </Box>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              From {totalInvoices} invoices
+            </Typography>
+          </CardContent>
+        </Card>
+
+        {/* Pending Amount Card */}
+        <Card>
+          <CardContent>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <Avatar sx={{ bgcolor: "warning.light", mr: 2 }}>
+                <Receipt />
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Pending Amount
+                </Typography>
+                <Typography variant="h5" fontWeight="bold">
+                  ₹{pendingAmount.toLocaleString()}
+                </Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary">
-                {invoices.filter(inv => inv.paymentStatus === "pending").length} unpaid invoices
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Avatar sx={{ bgcolor: "success.light", mr: 2 }}>
-                  <TrendingUp />
-                </Avatar>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Recent Activity
-                  </Typography>
-                  <Typography variant="h5" fontWeight="bold">
-                    {invoices.filter(inv => {
-                      const weekAgo = new Date();
-                      weekAgo.setDate(weekAgo.getDate() - 7);
-                      return new Date(inv.invoiceDate) >= weekAgo;
-                    }).length}
-                  </Typography>
-                </Box>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              {invoices.filter(inv => inv.paymentStatus === "pending").length} unpaid invoices
+            </Typography>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity Card */}
+        <Card>
+          <CardContent>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <Avatar sx={{ bgcolor: "success.light", mr: 2 }}>
+                <TrendingUp />
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Recent Activity
+                </Typography>
+                <Typography variant="h5" fontWeight="bold">
+                  {invoices.filter(inv => {
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return new Date(inv.invoiceDate) >= weekAgo;
+                  }).length}
+                </Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary">
-                Invoices this week
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Invoices this week
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
 
       {/* Filters Card */}
       <Card sx={{ mb: 4 }}>
         <CardContent>
-          <Grid container spacing={3}>
+          <Box sx={{ 
+            display: "grid", 
+            gridTemplateColumns: { xs: "1fr", md: "2fr repeat(3, 1fr)" },
+            gap: 3,
+            mb: 3 
+          }}>
             {/* Search */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                placeholder="Search by invoice number, customer name, phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
+            <TextField
+              fullWidth
+              placeholder="Search by invoice number, customer name, phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+            />
             
-            {/* Filters */}
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="all">All Status</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="draft">Draft</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
-                  <MenuItem value="returned">Returned</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+            {/* Status Filter */}
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">All Status</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="draft">Draft</MenuItem>
+                <MenuItem value="cancelled">Cancelled</MenuItem>
+                <MenuItem value="returned">Returned</MenuItem>
+              </Select>
+            </FormControl>
             
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth>
-                <InputLabel>Payment</InputLabel>
-                <Select
-                  value={paymentFilter}
-                  label="Payment"
-                  onChange={(e) => setPaymentFilter(e.target.value)}
-                >
-                  <MenuItem value="all">All Payments</MenuItem>
-                  <MenuItem value="paid">Paid</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="partially_paid">Partial</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+            {/* Payment Filter */}
+            <FormControl fullWidth>
+              <InputLabel>Payment</InputLabel>
+              <Select
+                value={paymentFilter}
+                label="Payment"
+                onChange={(e) => setPaymentFilter(e.target.value)}
+              >
+                <MenuItem value="all">All Payments</MenuItem>
+                <MenuItem value="paid">Paid</MenuItem>
+                <MenuItem value="pending">Pending</MenuItem>
+                <MenuItem value="partially_paid">Partial</MenuItem>
+              </Select>
+            </FormControl>
             
-            <Grid item xs={12} md={2}>
-              <FormControl fullWidth>
-                <InputLabel>Sort by</InputLabel>
-                <Select
-                  value={sortBy}
-                  label="Sort by"
-                  onChange={(e) => setSortBy(e.target.value)}
-                >
-                  <MenuItem value="newest">Newest First</MenuItem>
-                  <MenuItem value="oldest">Oldest First</MenuItem>
-                  <MenuItem value="highest">Highest Amount</MenuItem>
-                  <MenuItem value="lowest">Lowest Amount</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+            {/* Sort Filter */}
+            <FormControl fullWidth>
+              <InputLabel>Sort by</InputLabel>
+              <Select
+                value={sortBy}
+                label="Sort by"
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <MenuItem value="newest">Newest First</MenuItem>
+                <MenuItem value="oldest">Oldest First</MenuItem>
+                <MenuItem value="highest">Highest Amount</MenuItem>
+                <MenuItem value="lowest">Lowest Amount</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
           
           {/* Date Filter Chips */}
-          <Box sx={{ mt: 3, display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             {[
               { value: "all", label: "All Time" },
               { value: "today", label: "Today" },
@@ -478,7 +497,14 @@ export default function InvoicePage() {
       {/* Invoices Table */}
       <Card>
         <CardContent>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+          <Box sx={{ 
+            display: "flex", 
+            flexDirection: { xs: "column", sm: "row" },
+            justifyContent: "space-between", 
+            alignItems: { xs: "flex-start", sm: "center" }, 
+            mb: 3,
+            gap: 1
+          }}>
             <Typography variant="h6">All Invoices</Typography>
             <Typography variant="body2" color="text.secondary">
               {filteredInvoices.length} invoices found

@@ -10,7 +10,6 @@ import {
   Button,
   Card,
   CardContent,
-  Grid,
   Chip,
   Divider,
   Stack,
@@ -31,17 +30,12 @@ import {
   Print,
   Email,
   ContentCopy,
-  Edit,
   Person,
   Phone,
   Mail as MailIcon,
   Business,
   LocationOn,
   Description,
-  AttachMoney,
-  Inventory,
-  CalendarToday,
-  Update,
   CheckCircle,
   Pending,
   Schedule,
@@ -186,14 +180,14 @@ export default function InvoiceDetailPage() {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Skeleton variant="text" width="40%" height={60} sx={{ mb: 3 }} />
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
-            <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
-          </Grid>
-          <Grid item xs={12} md={8}>
-            <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
-          </Grid>
-        </Grid>
+        <Box sx={{ 
+          display: "grid", 
+          gridTemplateColumns: { xs: "1fr", md: "1fr 2fr" },
+          gap: 3 
+        }}>
+          <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
+          <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
+        </Box>
       </Container>
     );
   }
@@ -205,7 +199,14 @@ export default function InvoiceDetailPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4 }}>
+      <Box sx={{ 
+        display: "flex", 
+        flexDirection: { xs: "column", sm: "row" },
+        justifyContent: "space-between", 
+        alignItems: { xs: "flex-start", sm: "center" },
+        gap: 2,
+        mb: 4 
+      }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <IconButton onClick={() => router.push("/billing/invoice")}>
             <ArrowBack />
@@ -229,12 +230,13 @@ export default function InvoiceDetailPage() {
             </Box>
           </Box>
         </Box>
-        <Stack direction="row" spacing={2}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ width: { xs: "100%", sm: "auto" } }}>
           <Button
             variant="outlined"
             startIcon={<Email />}
             onClick={handleSendEmail}
             disabled={!invoice.customer.email}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             Send Email
           </Button>
@@ -242,6 +244,7 @@ export default function InvoiceDetailPage() {
             variant="outlined"
             startIcon={<Download />}
             onClick={() => toast.success("Download started")}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             Download
           </Button>
@@ -249,15 +252,21 @@ export default function InvoiceDetailPage() {
             variant="contained"
             startIcon={<Print />}
             onClick={handlePrint}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             Print
           </Button>
         </Stack>
       </Box>
 
-      <Grid container spacing={3}>
+      {/* Main Content */}
+      <Box sx={{ 
+        display: "grid", 
+        gridTemplateColumns: { xs: "1fr", md: "1fr 2fr" },
+        gap: 3 
+      }}>
         {/* Left Column - Customer Info & Status */}
-        <Grid item xs={12} md={4}>
+        <Box>
           {/* Status Card */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
@@ -400,14 +409,21 @@ export default function InvoiceDetailPage() {
               </Stack>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Right Column - Items & Summary */}
-        <Grid item xs={12} md={8}>
+        <Box>
           {/* Items Card */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+              <Box sx={{ 
+                display: "flex", 
+                flexDirection: { xs: "column", sm: "row" },
+                justifyContent: "space-between", 
+                alignItems: { xs: "flex-start", sm: "center" }, 
+                mb: 3,
+                gap: 1
+              }}>
                 <Typography variant="h6">Items</Typography>
                 <Typography variant="body2" color="text.secondary">
                   {invoice.items.length} item(s) in this invoice
@@ -565,8 +581,8 @@ export default function InvoiceDetailPage() {
               )}
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Container>
   );
 }
