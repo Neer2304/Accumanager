@@ -13,6 +13,7 @@ import {
   PricingFooter 
 } from "@/components/pricing";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Box, Skeleton, Card, CardContent, Container } from "@mui/material";
 
 interface PricingPlan {
   id: string;
@@ -38,6 +39,114 @@ interface PricingPlan {
   };
   savingPercentage?: number;
 }
+
+// Skeleton Components
+const PricingSkeleton = () => (
+  <Box className="min-h-screen">
+    {/* Navigation Skeleton */}
+    <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Skeleton variant="text" width={120} height={40} />
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <Skeleton variant="rectangular" width={100} height={40} sx={{ borderRadius: 2 }} />
+        <Skeleton variant="rectangular" width={100} height={40} sx={{ borderRadius: 2 }} />
+      </Box>
+    </Box>
+
+    {/* Header Skeleton */}
+    <Box sx={{ textAlign: 'center', py: 6, px: 2 }}>
+      <Skeleton variant="text" width="60%" height={60} sx={{ mx: 'auto', mb: 2 }} />
+      <Skeleton variant="text" width="80%" height={30} sx={{ mx: 'auto', mb: 4 }} />
+      <Skeleton variant="rectangular" width={200} height={50} sx={{ mx: 'auto', borderRadius: 2 }} />
+    </Box>
+
+    {/* Pricing Plans Skeleton */}
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ textAlign: 'center', mb: 6 }}>
+        <Skeleton variant="text" width="50%" height={50} sx={{ mx: 'auto', mb: 2 }} />
+        <Skeleton variant="text" width="70%" height={30} sx={{ mx: 'auto' }} />
+      </Box>
+
+      <Box sx={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        gap: 3,
+        justifyContent: 'center'
+      }}>
+        {[1, 2, 3, 4].map((item) => (
+          <Box key={item} sx={{ 
+            width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 12px)' },
+            minWidth: { xs: '100%', sm: '300px', md: '250px' }
+          }}>
+            <Card sx={{ height: '100%', position: 'relative' }}>
+              <CardContent sx={{ p: 3 }}>
+                {/* Popular Badge Skeleton */}
+                <Skeleton 
+                  variant="rectangular" 
+                  width={100} 
+                  height={24} 
+                  sx={{ 
+                    position: 'absolute', 
+                    top: 16, 
+                    right: 16, 
+                    borderRadius: 12 
+                  }} 
+                />
+                
+                <Box sx={{ mb: 3 }}>
+                  <Skeleton variant="text" width="60%" height={30} sx={{ mb: 1 }} />
+                  <Skeleton variant="text" width="80%" height={40} sx={{ mb: 1 }} />
+                  <Skeleton variant="text" width="50%" height={20} />
+                </Box>
+
+                <Box sx={{ mb: 3 }}>
+                  {[1, 2, 3, 4].map((feature) => (
+                    <Box key={feature} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Skeleton variant="circular" width={20} height={20} sx={{ mr: 1 }} />
+                      <Skeleton variant="text" width="80%" height={20} />
+                    </Box>
+                  ))}
+                </Box>
+
+                <Skeleton variant="rectangular" width="100%" height={48} sx={{ borderRadius: 2 }} />
+              </CardContent>
+            </Card>
+          </Box>
+        ))}
+      </Box>
+
+      {/* Free Trial Banner Skeleton */}
+      <Card sx={{ mt: 6, p: 4, textAlign: 'center' }}>
+        <Skeleton variant="text" width="60%" height={40} sx={{ mx: 'auto', mb: 2 }} />
+        <Skeleton variant="text" width="80%" height={30} sx={{ mx: 'auto', mb: 3 }} />
+        <Skeleton variant="rectangular" width={200} height={48} sx={{ mx: 'auto', borderRadius: 2 }} />
+      </Card>
+
+      {/* FAQ Section Skeleton */}
+      <Box sx={{ mt: 8 }}>
+        <Skeleton variant="text" width="40%" height={50} sx={{ mb: 4 }} />
+        <Box sx={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: 3 
+        }}>
+          {[1, 2, 3, 4].map((item) => (
+            <Box key={item} sx={{ 
+              width: { xs: '100%', md: 'calc(50% - 12px)' }
+            }}>
+              <Card>
+                <CardContent>
+                  <Skeleton variant="text" width="80%" height={30} sx={{ mb: 2 }} />
+                  <Skeleton variant="text" width="100%" height={20} sx={{ mb: 1 }} />
+                  <Skeleton variant="text" width="90%" height={20} />
+                </CardContent>
+              </Card>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </Container>
+  </Box>
+);
 
 export default function PricingPage() {
   const { user, isAuthenticated } = useAuth();
@@ -97,11 +206,7 @@ export default function PricingPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PricingSkeleton />;
   }
 
   if (error) {
@@ -139,14 +244,18 @@ export default function PricingPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        <div className="flex flex-wrap justify-center gap-6 max-w-7xl mx-auto">
           {plans.map((plan) => (
-            <PricingPlanCard
-              key={plan.id}
-              plan={plan}
-              isAuthenticated={isAuthenticated}
-              onSubscribe={handleSubscribe}
-            />
+            <div 
+              key={plan.id} 
+              className="w-full sm:w-[calc(50%-12px)] md:w-[calc(25%-12px)] min-w-[250px]"
+            >
+              <PricingPlanCard
+                plan={plan}
+                isAuthenticated={isAuthenticated}
+                onSubscribe={handleSubscribe}
+              />
+            </div>
           ))}
         </div>
 

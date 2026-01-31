@@ -13,6 +13,10 @@ import {
   Stack,
   Breadcrumbs,
   Link as MuiLink,
+  Skeleton,
+  Card,
+  CardContent,
+  Grid,
 } from "@mui/material";
 import {
   Home as HomeIcon,
@@ -21,6 +25,8 @@ import {
 } from "@mui/icons-material";
 import Link from "next/link";
 import { MainLayout } from "@/components/Layout/MainLayout";
+import { Icons } from "@/components/common/icons/index";
+import { Heading2, BodyText, MutedText, SectionTitle } from "@/components/common/Text";
 import ExpenseHeader from "@/components/expenses/ExpenseHeader";
 import ExpenseStats from "@/components/expenses/ExpenseStats";
 import ExpenseTabs from "@/components/expenses/ExpenseTabs";
@@ -73,6 +79,95 @@ interface ExpenseStatsType {
   period: { year: number; month: number };
 }
 
+// Skeleton Component for Expenses Page
+const ExpensesSkeleton = () => (
+  <>
+    {/* Header Skeleton */}
+    <Box sx={{ mb: 4 }}>
+      <Skeleton variant="text" width={120} height={40} sx={{ mb: 2 }} />
+      
+      <Box sx={{ mb: 2 }}>
+        <Skeleton variant="text" width={200} height={25} />
+      </Box>
+
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' },
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: 2,
+        mb: 3
+      }}>
+        <Box>
+          <Skeleton variant="text" width={300} height={50} sx={{ mb: 1 }} />
+          <Skeleton variant="text" width={250} height={25} />
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Skeleton variant="rectangular" width={150} height={40} sx={{ borderRadius: 1 }} />
+          <Skeleton variant="rectangular" width={120} height={40} sx={{ borderRadius: 1 }} />
+        </Box>
+      </Box>
+    </Box>
+
+    {/* Action Bar Skeleton */}
+    <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Skeleton variant="text" width={100} height={30} />
+          <Skeleton variant="text" width={100} height={30} />
+          <Skeleton variant="text" width={100} height={30} />
+        </Box>
+        <Skeleton variant="rectangular" width={120} height={40} sx={{ borderRadius: 1 }} />
+      </Box>
+    </Paper>
+
+    {/* Stats Cards Skeleton */}
+    <Box sx={{ 
+      display: 'grid',
+      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+      gap: 2,
+      mb: 4
+    }}>
+      {[1, 2, 3, 4].map((item) => (
+        <Card key={item} sx={{ p: 2 }}>
+          <CardContent sx={{ p: '16px !important' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Skeleton variant="circular" width={48} height={48} />
+              <Box sx={{ flex: 1 }}>
+                <Skeleton variant="text" width="60%" height={25} />
+                <Skeleton variant="text" width="80%" height={35} />
+              </Box>
+            </Box>
+            <Skeleton variant="text" width="70%" height={20} />
+          </CardContent>
+        </Card>
+      ))}
+    </Box>
+
+    {/* Main Content Skeleton */}
+    <Paper sx={{ 
+      width: "100%", 
+      borderRadius: 3, 
+      overflow: "hidden",
+      mb: 3 
+    }}>
+      {/* Tabs Skeleton */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', p: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {[1, 2, 3].map((item) => (
+            <Skeleton key={item} variant="rectangular" width={100} height={40} sx={{ borderRadius: 1 }} />
+          ))}
+        </Box>
+      </Box>
+
+      {/* Table Skeleton */}
+      <Box sx={{ p: 3 }}>
+        <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
+      </Box>
+    </Paper>
+  </>
+);
+
 // Main Expenses Page Component
 export default function ExpensesPage() {
   const theme = useTheme();
@@ -80,6 +175,7 @@ export default function ExpensesPage() {
   
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
   const [stats, setStats] = useState<ExpenseStatsType | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -109,6 +205,7 @@ export default function ExpensesPage() {
       setExpenses([]);
     } finally {
       setLoading(false);
+      setPageLoading(false);
     }
   };
 
@@ -137,6 +234,12 @@ export default function ExpensesPage() {
     // Initial fetch
     fetchExpenses();
     fetchStats();
+
+    // Simulate initial page loading
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   // Save expense
@@ -352,211 +455,273 @@ export default function ExpensesPage() {
   return (
     <MainLayout title="Expense Management">
       <Container maxWidth="xl" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
-        {/* Header - Same style as Events page */}
-        <Box sx={{ mb: 4 }}>
-          <Button
-            startIcon={<BackIcon />}
-            onClick={handleBack}
-            sx={{ mb: 2 }}
-            size="small"
-            variant="outlined"
-          >
-            Back to Dashboard
-          </Button>
-
-          <Breadcrumbs sx={{ mb: 2 }}>
-            <MuiLink
-              component={Link}
-              href="/dashboard"
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                textDecoration: 'none',
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main' }
-              }}
-            >
-              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
-              Dashboard
-            </MuiLink>
-            <Typography color="text.primary">Expenses</Typography>
-          </Breadcrumbs>
-
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: 2,
-            mb: 3
-          }}>
-            <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
-                💰 Expense Management
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Track and manage all your business and personal expenses in one place
-              </Typography>
-            </Box>
-
-            <Stack 
-              direction="row" 
-              spacing={1}
-              alignItems="center"
-              sx={{ 
-                width: { xs: '100%', sm: 'auto' },
-                justifyContent: { xs: 'space-between', sm: 'flex-end' }
-              }}
-            >
-              {/* Status Chips */}
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Chip 
-                  label={`₹${totalAmount.toLocaleString('en-IN')}`}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-                <Chip 
-                  label={`${expenses.length} Expenses`}
-                  size="small"
-                  color="default"
-                  variant="outlined"
-                />
-                {businessCount > 0 && (
-                  <Chip 
-                    label={`${businessCount} Business`}
-                    size="small"
-                    color="success"
-                    variant="outlined"
-                  />
-                )}
-                {personalCount > 0 && (
-                  <Chip 
-                    label={`${personalCount} Personal`}
-                    size="small"
-                    color="info"
-                    variant="outlined"
-                  />
-                )}
-              </Stack>
-
-              {/* Download Button */}
+        {/* Loading State */}
+        {pageLoading ? (
+          <ExpensesSkeleton />
+        ) : (
+          <>
+            {/* Header - Same style as Events page */}
+            <Box sx={{ mb: 4 }}>
               <Button
+                startIcon={<BackIcon />}
+                onClick={handleBack}
+                sx={{ mb: 2 }}
+                size="small"
                 variant="outlined"
-                startIcon={<Download />}
-                onClick={handleDownloadExpenses}
-                size={isMobile ? 'small' : 'medium'}
-                disabled={expenses.length === 0}
-                sx={{
-                  borderRadius: 2,
-                  borderColor: 'primary.main',
-                  color: 'primary.main',
-                  '&:hover': {
-                    borderColor: 'primary.dark',
-                  },
-                  '&.Mui-disabled': {
-                    borderColor: 'action.disabled',
-                    color: 'action.disabled',
-                  }
-                }}
               >
-                {isMobile ? 'Export' : 'Export Expenses'}
+                Back to Dashboard
               </Button>
-            </Stack>
-          </Box>
 
-          {/* Action Bar */}
-          <Paper
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              background: 'background.paper',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid',
-              borderColor: 'divider',
-              mb: 3,
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
+              <Breadcrumbs sx={{ mb: 2 }}>
+                <MuiLink
+                  component={Link}
+                  href="/dashboard"
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    textDecoration: 'none',
+                    color: 'text.secondary',
+                    '&:hover': { color: 'primary.main' }
+                  }}
+                >
+                  <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+                  Dashboard
+                </MuiLink>
+                <Typography color="text.primary">Expenses</Typography>
+              </Breadcrumbs>
+
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: { xs: 'flex-start', sm: 'center' },
+                flexDirection: { xs: 'column', sm: 'row' },
                 gap: 2,
-              }}
-            >
-              {/* Left side - Totals */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Total: <strong style={{ color: theme.palette.primary.main }}>₹{totalAmount.toLocaleString('en-IN')}</strong>
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Business: <strong style={{ color: theme.palette.success.main }}>₹{businessTotal.toLocaleString('en-IN')}</strong>
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Personal: <strong style={{ color: theme.palette.info.main }}>₹{personalTotal.toLocaleString('en-IN')}</strong>
-                </Typography>
+                mb: 3
+              }}>
+                <Box>
+                  <Heading2 gutterBottom>
+                    💰 Expense Management
+                  </Heading2>
+                  <MutedText>
+                    Track and manage all your business and personal expenses in one place
+                  </MutedText>
+                </Box>
+
+                <Stack 
+                  direction="row" 
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ 
+                    width: { xs: '100%', sm: 'auto' },
+                    justifyContent: { xs: 'space-between', sm: 'flex-end' }
+                  }}
+                >
+                  {/* Status Chips */}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Chip 
+                      label={`₹${totalAmount.toLocaleString('en-IN')}`}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                    />
+                    <Chip 
+                      label={`${expenses.length} Expenses`}
+                      size="small"
+                      color="default"
+                      variant="outlined"
+                    />
+                    {businessCount > 0 && (
+                      <Chip 
+                        label={`${businessCount} Business`}
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                      />
+                    )}
+                    {personalCount > 0 && (
+                      <Chip 
+                        label={`${personalCount} Personal`}
+                        size="small"
+                        color="info"
+                        variant="outlined"
+                      />
+                    )}
+                  </Stack>
+
+                  {/* Download Button */}
+                  <Button
+                    variant="outlined"
+                    startIcon={<Download />}
+                    onClick={handleDownloadExpenses}
+                    size={isMobile ? 'small' : 'medium'}
+                    disabled={expenses.length === 0}
+                    sx={{
+                      borderRadius: 2,
+                      borderColor: 'primary.main',
+                      color: 'primary.main',
+                      '&:hover': {
+                        borderColor: 'primary.dark',
+                      },
+                      '&.Mui-disabled': {
+                        borderColor: 'action.disabled',
+                        color: 'action.disabled',
+                      }
+                    }}
+                  >
+                    {isMobile ? 'Export' : 'Export Expenses'}
+                  </Button>
+                </Stack>
               </Box>
 
-              {/* Right side - Add Expense Button */}
-              <Button
-                variant="contained"
-                onClick={() => setDialogOpen(true)}
-                size="small"
+              {/* Action Bar */}
+              <Paper
                 sx={{
+                  p: 2,
                   borderRadius: 2,
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                  boxShadow: theme.shadows[2],
-                  '&:hover': {
-                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
-                    boxShadow: theme.shadows[4],
-                  }
+                  background: 'background.paper',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  mb: 3,
                 }}
               >
-                + Add Expense
-              </Button>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                  }}
+                >
+                  {/* Left side - Totals */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <BodyText>
+                      Total: <strong style={{ color: theme.palette.primary.main }}>₹{totalAmount.toLocaleString('en-IN')}</strong>
+                    </BodyText>
+                    <BodyText>
+                      Business: <strong style={{ color: theme.palette.success.main }}>₹{businessTotal.toLocaleString('en-IN')}</strong>
+                    </BodyText>
+                    <BodyText>
+                      Personal: <strong style={{ color: theme.palette.info.main }}>₹{personalTotal.toLocaleString('en-IN')}</strong>
+                    </BodyText>
+                  </Box>
+
+                  {/* Right side - Add Expense Button */}
+                  <Button
+                    variant="contained"
+                    onClick={() => setDialogOpen(true)}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                      boxShadow: theme.shadows[2],
+                      '&:hover': {
+                        background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
+                        boxShadow: theme.shadows[4],
+                      }
+                    }}
+                  >
+                    + Add Expense
+                  </Button>
+                </Box>
+              </Paper>
             </Box>
-          </Paper>
-        </Box>
 
-        {/* Statistics Cards */}
-        <ExpenseStats
-          totalAmount={totalAmount}
-          businessTotal={businessTotal}
-          personalTotal={personalTotal}
-          totalRecords={expenses.length}
-        />
+            {/* Statistics Cards - Show skeleton if loading */}
+            {loading ? (
+              <Box sx={{ 
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+                gap: 2,
+                mb: 4
+              }}>
+                {[1, 2, 3, 4].map((item) => (
+                  <Card key={item} sx={{ p: 2 }}>
+                    <CardContent sx={{ p: '16px !important' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                        <Skeleton variant="circular" width={48} height={48} />
+                        <Box sx={{ flex: 1 }}>
+                          <Skeleton variant="text" width="60%" height={25} />
+                          <Skeleton variant="text" width="80%" height={35} />
+                        </Box>
+                      </Box>
+                      <Skeleton variant="text" width="70%" height={20} />
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            ) : (
+              <ExpenseStats
+                totalAmount={totalAmount}
+                businessTotal={businessTotal}
+                personalTotal={personalTotal}
+                totalRecords={expenses.length}
+              />
+            )}
 
-        {/* Main Content */}
-        <Paper
-          sx={{
-            width: "100%",
-            borderRadius: 3,
-            overflow: "hidden",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08)",
-            border: "1px solid rgba(0, 0, 0, 0.08)",
-          }}
-        >
-          <ExpenseTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            expenses={expenses}
-            stats={stats}
-            loading={loading}
-            onEditExpense={handleEditExpense}
-            onDeleteExpense={handleDeleteExpense}
-            isMobile={isMobile}
-          />
-        </Paper>
+            {/* Main Content */}
+            <Paper
+              sx={{
+                width: "100%",
+                borderRadius: 3,
+                overflow: "hidden",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08)",
+                border: "1px solid rgba(0, 0, 0, 0.08)",
+              }}
+            >
+              <ExpenseTabs
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                expenses={expenses}
+                stats={stats}
+                loading={loading}
+                onEditExpense={handleEditExpense}
+                onDeleteExpense={handleDeleteExpense}
+                isMobile={isMobile}
+              />
+            </Paper>
 
-        {/* Add/Edit Expense Dialog */}
-        <AddExpenseDialog
-          open={dialogOpen}
-          onClose={handleCloseDialog}
-          onSave={handleSaveExpense}
-          editingExpense={editingExpense}
-        />
+            {/* Add/Edit Expense Dialog */}
+            <AddExpenseDialog
+              open={dialogOpen}
+              onClose={handleCloseDialog}
+              onSave={handleSaveExpense}
+              editingExpense={editingExpense}
+            />
+          </>
+        )}
+
+        {/* Empty State */}
+        {!pageLoading && !loading && expenses.length === 0 && (
+          <Card sx={{ 
+            textAlign: 'center', 
+            py: 8,
+            px: 3,
+            mt: 4
+          }}>
+            <Box sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }}>
+              💰
+            </Box>
+            <Heading2 gutterBottom>
+              No Expenses Found
+            </Heading2>
+            <MutedText sx={{ 
+              mb: 3,
+              maxWidth: 500,
+              mx: 'auto'
+            }}>
+              Start tracking your expenses to get insights into your spending habits
+            </MutedText>
+            <Button
+              variant="contained"
+              onClick={() => setDialogOpen(true)}
+              size="medium"
+            >
+              Add Your First Expense
+            </Button>
+          </Card>
+        )}
       </Container>
     </MainLayout>
   );
