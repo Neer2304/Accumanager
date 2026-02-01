@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Box, Skeleton as MuiSkeleton, Card, CardContent } from '@mui/material';
+import { Card2 } from './card2';
 
 // Common Skeleton Text Component
 export const SkeletonText = ({ 
@@ -202,3 +203,46 @@ export const MessageDetailSkeleton = () => (
   </Box>
 );
 
+// Review Item Skeleton
+export const ReviewItemSkeleton = ({ count = 3 }: { count?: number }) => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    {Array.from({ length: count }).map((_, index) => (
+      <Card2 key={index} sx={{ p: { xs: 3, sm: 4 }, borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
+          <Box sx={{ display: 'flex', gap: 2, minWidth: 200 }}>
+            <MuiSkeleton variant="circular" width={56} height={56} />
+            <Box sx={{ flex: 1 }}>
+              <MuiSkeleton variant="text" width={120} height={24} sx={{ mb: 1 }} />
+              <MuiSkeleton variant="text" width={100} height={16} />
+              <MuiSkeleton variant="text" width={80} height={14} />
+            </Box>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <MuiSkeleton variant="rectangular" width={120} height={24} />
+              <MuiSkeleton variant="text" width={180} height={28} />
+            </Box>
+            <MuiSkeleton variant="text" width="100%" height={20} sx={{ mb: 0.5 }} />
+            <MuiSkeleton variant="text" width="90%" height={20} sx={{ mb: 0.5 }} />
+            <MuiSkeleton variant="text" width="80%" height={20} />
+          </Box>
+        </Box>
+      </Card2>
+    ))}
+  </Box>
+);
+
+// Review Stats Skeleton
+export const ReviewStatsSkeleton = () => (
+  <Box sx={{ 
+    display: 'flex', 
+    flexDirection: { xs: 'column', sm: 'row' },
+    alignItems: 'center',
+    gap: 3,
+    mb: 4,
+    justifyContent: 'center'
+  }}>
+    <MuiSkeleton variant="rectangular" width={120} height={100} sx={{ borderRadius: 2 }} />
+    <MuiSkeleton variant="rectangular" width={120} height={100} sx={{ borderRadius: 2 }} />
+  </Box>
+);
