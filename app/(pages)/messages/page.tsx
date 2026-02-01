@@ -38,6 +38,7 @@ import {
   alpha,
   ListItemIcon,
   Container,
+  Skeleton,
 } from '@mui/material';
 import {
   PersonAdd as PersonAddIcon,
@@ -87,6 +88,18 @@ import { MainLayout } from '@/components/Layout/MainLayout';
 import { useRouter } from 'next/navigation';
 import { useTheme as useCustomTheme } from '@/contexts/ThemeContext';
 import { format } from 'date-fns';
+
+// Import our new components
+import { Button2 } from '@/components/ui/button2';
+import { Input2 } from '@/components/ui/input2';
+import { Card2 } from '@/components/ui/card2';
+import { Alert2 } from '@/components/ui/alert2';
+import { Badge2 } from '@/components/ui/badge2';
+import { CombinedIcon } from '@/components/ui/icons2';
+import { MessageListSkeleton, MessageDetailSkeleton } from '@/components/ui/skeleton2';
+import { MessageList } from '@/components/messages/MessageList';
+import { MessageDetail } from '@/components/messages/MessageDetail';
+import { MessageToolbar } from '@/components/messages/MessageToolbar';
 
 interface Message {
   _id: string;
@@ -226,12 +239,12 @@ function MessagesPage() {
     setFilteredMessages(filtered);
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (newValue: number) => {
     setActiveTab(newValue);
   };
 
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
   };
 
   const handleMessageClick = (message: Message) => {
@@ -437,36 +450,6 @@ function MessagesPage() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'unread': return <MarkEmailUnreadIcon color="primary" />;
-      case 'read': return <MarkEmailReadIcon />;
-      case 'pending': return <PendingIcon color="warning" />;
-      case 'accepted': return <CheckCircleIcon color="success" />;
-      case 'declined': return <CancelIcon color="error" />;
-      default: return <MarkEmailReadIcon />;
-    }
-  };
-
-  const getMessageTypeIcon = (type: string) => {
-    switch (type) {
-      case 'meeting_invite': return <VideoCallIcon color="primary" />;
-      case 'direct_message': return <EmailIcon />;
-      case 'system_notification': return <NotificationsIcon color="info" />;
-      default: return <EmailIcon />;
-    }
-  };
-
-  const getMeetingTypeColor = (type?: string) => {
-    switch (type) {
-      case 'internal': return 'primary';
-      case 'client': return 'secondary';
-      case 'partner': return 'success';
-      case 'team': return 'warning';
-      default: return 'default';
-    }
-  };
-
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -488,13 +471,41 @@ function MessagesPage() {
   };
 
   const tabs = [
-    { label: 'Inbox', icon: <InboxIcon />, count: messages.filter(m => ['read', 'unread'].includes(m.status)).length },
-    { label: 'Unread', icon: <MarkEmailUnreadIcon />, count: messages.filter(m => m.status === 'unread').length },
-    { label: 'Starred', icon: <StarIcon />, count: messages.filter(m => m.isStarred).length },
-    { label: 'Meeting Invites', icon: <VideoCallIcon />, count: messages.filter(m => m.type === 'meeting_invite').length },
-    { label: 'Sent', icon: <OutboxIcon />, count: messages.filter(m => m.senderEmail === 'currentuser@example.com').length },
-    { label: 'Archived', icon: <ArchiveIcon />, count: messages.filter(m => m.status === 'archived').length },
-    { label: 'Trash', icon: <DeleteIcon />, count: messages.filter(m => m.status === 'deleted').length },
+    { 
+      label: 'Inbox', 
+      icon: <CombinedIcon name="Inbox" size={16} />, 
+      count: messages.filter(m => ['read', 'unread'].includes(m.status)).length 
+    },
+    { 
+      label: 'Unread', 
+      icon: <CombinedIcon name="MarkEmailUnread" size={16} />, 
+      count: messages.filter(m => m.status === 'unread').length 
+    },
+    { 
+      label: 'Starred', 
+      icon: <CombinedIcon name="Star" size={16} />, 
+      count: messages.filter(m => m.isStarred).length 
+    },
+    { 
+      label: 'Meeting Invites', 
+      icon: <CombinedIcon name="Videocam" size={16} />, 
+      count: messages.filter(m => m.type === 'meeting_invite').length 
+    },
+    { 
+      label: 'Sent', 
+      icon: <CombinedIcon name="Outbox" size={16} />, 
+      count: messages.filter(m => m.senderEmail === 'currentuser@example.com').length 
+    },
+    { 
+      label: 'Archived', 
+      icon: <CombinedIcon name="Archive" size={16} />, 
+      count: messages.filter(m => m.status === 'archived').length 
+    },
+    { 
+      label: 'Trash', 
+      icon: <CombinedIcon name="Delete" size={16} />, 
+      count: messages.filter(m => m.status === 'deleted').length 
+    },
   ];
 
   return (
@@ -506,23 +517,13 @@ function MessagesPage() {
         p: { xs: 1, sm: 2, md: 3 },
       }}>
         {/* Development Warning */}
-        <Alert 
+        <Alert2 
           severity="warning" 
-          icon={<ConstructionIcon />}
-          sx={{ 
-            mb: 3,
-            borderRadius: 2,
-            border: `1px solid ${theme.palette.warning.main}`,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(251, 191, 36, 0.1)',
-          }}
-        >
-          <Typography variant="body2" fontWeight="medium">
-            ⚠️ Messaging System Under Development
-          </Typography>
-          <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-            This feature is currently in development. Real data integration will be available soon.
-          </Typography>
-        </Alert>
+          title="⚠️ Messaging System Under Development"
+          message="This feature is currently in development. Real data integration will be available soon."
+          icon={<CombinedIcon name="Construction" />}
+          sx={{ mb: 3 }}
+        />
 
         {/* Header */}
         <Box sx={{ mb: 3 }}>
@@ -536,14 +537,10 @@ function MessagesPage() {
 
         {/* Alerts */}
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-            {error}
-          </Alert>
+          <Alert2 severity="error" message={error} dismissible onDismiss={() => setError('')} sx={{ mb: 3 }} />
         )}
         {success && (
-          <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
-            {success}
-          </Alert>
+          <Alert2 severity="success" message={success} dismissible onDismiss={() => setSuccess('')} sx={{ mb: 3 }} />
         )}
 
         <Box sx={{ 
@@ -558,254 +555,32 @@ function MessagesPage() {
             minWidth: { md: selectedMessage ? 350 : 'auto' },
             display: 'flex',
             flexDirection: 'column',
+            gap: 2,
           }}>
-            <Paper sx={{ 
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: 3,
-              overflow: 'hidden',
-              bgcolor: theme.palette.background.paper,
-              border: `1px solid ${theme.palette.divider}`,
-            }}>
-              {/* Toolbar */}
-              <Box sx={{ 
-                p: { xs: 1.5, sm: 2 }, 
-                borderBottom: `1px solid ${theme.palette.divider}`,
-                bgcolor: theme.palette.mode === 'dark' ? '#1e293b' : '#ffffff',
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 1, sm: 2 } }}>
-                  <TextField
-                    fullWidth
-                    placeholder="Search messages..."
-                    value={searchQuery}
-                    onChange={handleSearch}
-                    size="small"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon fontSize="small" />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        bgcolor: theme.palette.mode === 'dark' ? '#0f172a' : '#f1f5f9',
-                      },
-                    }}
-                  />
-                  <Tooltip title="Filter messages">
-                    <IconButton
-                      onClick={(e) => setFilterMenuAnchor(e.currentTarget)}
-                      sx={{
-                        border: `1px solid ${theme.palette.divider}`,
-                        borderRadius: 2,
-                        minWidth: 40,
-                        height: 40,
-                      }}
-                    >
-                      <FilterIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
+            {/* Toolbar */}
+            <Card2>
+              <MessageToolbar
+                searchQuery={searchQuery}
+                onSearchChange={handleSearch}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                tabs={tabs}
+                onRefresh={fetchMessages}
+                onCompose={handleComposeMessage}
+                loading={loading}
+              />
+            </Card2>
 
-                <Box sx={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                  <Tabs
-                    value={activeTab}
-                    onChange={handleTabChange}
-                    variant="scrollable"
-                    scrollButtons="auto"
-                    sx={{
-                      minHeight: 48,
-                      '& .MuiTab-root': {
-                        minHeight: 48,
-                        textTransform: 'none',
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                        minWidth: 'auto',
-                        px: { xs: 1, sm: 2 },
-                      },
-                    }}
-                  >
-                    {tabs.map((tab, index) => (
-                      <Tab
-                        key={tab.label}
-                        icon={React.cloneElement(tab.icon as React.ReactElement, { 
-                          // fontSize: { xs: 'small', sm: 'medium' } 
-                        })}
-                        iconPosition="start"
-                        label={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <span>{tab.label}</span>
-                            {tab.count > 0 && (
-                              <Chip
-                                label={tab.count}
-                                size="small"
-                                sx={{
-                                  height: 18,
-                                  fontSize: '0.65rem',
-                                  bgcolor: theme.palette.primary.main,
-                                  color: 'white',
-                                  ml: 0.5,
-                                }}
-                              />
-                            )}
-                          </Box>
-                        }
-                      />
-                    ))}
-                  </Tabs>
-                </Box>
-              </Box>
-
-              {/* Message List */}
-              <Box sx={{ flex: 1, overflow: 'auto' }}>
-                {loading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: 200 }}>
-                    <CircularProgress />
-                  </Box>
-                ) : filteredMessages.length === 0 ? (
-                  <Box sx={{ p: 4, textAlign: 'center' }}>
-                    <MailOutlineIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary">
-                      No messages found
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      {searchQuery ? 'Try a different search' : 'Your inbox is empty'}
-                    </Typography>
-                  </Box>
-                ) : (
-                  <List sx={{ p: 0 }}>
-                    {filteredMessages.map((message) => (
-                      <ListItem
-                        key={message._id}
-                        button
-                        selected={selectedMessage?._id === message._id}
-                        onClick={() => handleMessageClick(message)}
-                        sx={{
-                          borderBottom: `1px solid ${theme.palette.divider}`,
-                          px: { xs: 1.5, sm: 2 },
-                          py: 1.5,
-                          '&:hover': {
-                            bgcolor: theme.palette.mode === 'dark' ? '#1e293b' : '#f8fafc',
-                          },
-                          '&.Mui-selected': {
-                            bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.1),
-                            '&:hover': {
-                              bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.25 : 0.15),
-                            },
-                          },
-                        }}
-                      >
-                        <ListItemAvatar sx={{ minWidth: 40 }}>
-                          <Avatar 
-                            sx={{ 
-                              width: 32, 
-                              height: 32, 
-                              bgcolor: theme.palette.primary.main,
-                              fontSize: '0.875rem'
-                            }}
-                          >
-                            {getMessageTypeIcon(message.type)}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-                              <Typography 
-                                variant="subtitle2" 
-                                fontWeight={message.status === 'unread' ? 600 : 400}
-                                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
-                              >
-                                {message.senderName}
-                              </Typography>
-                              {message.isImportant && (
-                                <LabelImportantIcon fontSize="small" color="warning" sx={{ fontSize: 14 }} />
-                              )}
-                              {message.type === 'meeting_invite' && (
-                                <Chip
-                                  label={message.meetingType}
-                                  size="small"
-                                  sx={{ 
-                                    height: 18,
-                                    fontSize: '0.65rem',
-                                    bgcolor: `${getMeetingTypeColor(message.meetingType)}.light`,
-                                    color: `${getMeetingTypeColor(message.meetingType)}.main`,
-                                    ml: 0.5,
-                                  }}
-                                />
-                              )}
-                            </Box>
-                          }
-                          secondary={
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                color="text.primary"
-                                sx={{
-                                  fontWeight: message.status === 'unread' ? 600 : 400,
-                                  mb: 0.25,
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                {message.subject}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 1,
-                                  WebkitBoxOrient: 'vertical',
-                                  overflow: 'hidden',
-                                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                                }}
-                              >
-                                {message.content}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                        <ListItemSecondaryAction>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
-                            <Typography 
-                              variant="caption" 
-                              color="text.secondary"
-                              sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                            >
-                              {formatDate(message.createdAt)}
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 0.25 }}>
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleStar(message._id);
-                                }}
-                                sx={{ padding: 0.5 }}
-                              >
-                                {message.isStarred ? (
-                                  <StarIcon fontSize="small" sx={{ fontSize: 16, color: '#f59e0b' }} />
-                                ) : (
-                                  <StarBorderIcon fontSize="small" sx={{ fontSize: 16 }} />
-                                )}
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                onClick={(e) => handleMessageMenuOpen(e, message)}
-                                sx={{ padding: 0.5 }}
-                              >
-                                <MoreIcon fontSize="small" sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            </Box>
-                          </Box>
-                        </ListItemSecondaryAction>
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
-              </Box>
-            </Paper>
+            {/* Message List */}
+            <MessageList
+              messages={filteredMessages}
+              loading={loading}
+              selectedMessageId={selectedMessage?._id || null}
+              onMessageClick={handleMessageClick}
+              onToggleStar={toggleStar}
+              onMenuOpen={handleMessageMenuOpen}
+              formatDate={formatDate}
+            />
           </Box>
 
           {/* Right Panel - Message Details */}
@@ -816,312 +591,16 @@ function MessagesPage() {
               flexDirection: 'column',
               minWidth: 0,
             }}>
-              <Paper sx={{ 
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: 3,
-                overflow: 'hidden',
-                bgcolor: theme.palette.background.paper,
-                border: `1px solid ${theme.palette.divider}`,
-              }}>
-                {/* Message Header */}
-                <Box sx={{ 
-                  p: { xs: 1.5, sm: 2 }, 
-                  borderBottom: `1px solid ${theme.palette.divider}`,
-                  bgcolor: theme.palette.mode === 'dark' ? '#1e293b' : '#ffffff',
-                }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5, gap: 1 }}>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography 
-                        variant="h6" 
-                        fontWeight="bold" 
-                        sx={{ 
-                          mb: 1,
-                          fontSize: { xs: '1rem', sm: '1.25rem' },
-                          wordBreak: 'break-word'
-                        }}
-                      >
-                        {selectedMessage.subject}
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Avatar sx={{ width: 28, height: 28, bgcolor: theme.palette.primary.main, fontSize: '0.875rem' }}>
-                            {selectedMessage.senderName.charAt(0)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                              {selectedMessage.senderName}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                              {selectedMessage.senderEmail}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Typography 
-                          variant="caption" 
-                          color="text.secondary"
-                          sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                        >
-                          {new Date(selectedMessage.createdAt).toLocaleString()}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      <IconButton onClick={() => toggleStar(selectedMessage._id)} size="small">
-                        {selectedMessage.isStarred ? (
-                          <StarIcon sx={{ fontSize: 20, color: '#f59e0b' }} />
-                        ) : (
-                          <StarBorderIcon sx={{ fontSize: 20 }} />
-                        )}
-                      </IconButton>
-                      <IconButton onClick={() => archiveMessage(selectedMessage._id)} size="small">
-                        <ArchiveIcon sx={{ fontSize: 20 }} />
-                      </IconButton>
-                      <IconButton onClick={() => deleteMessage(selectedMessage._id)} size="small">
-                        <DeleteIcon sx={{ fontSize: 20 }} />
-                      </IconButton>
-                    </Box>
-                  </Box>
-
-                  {selectedMessage.type === 'meeting_invite' && selectedMessage.meetingTitle && (
-                    <Card sx={{ 
-                      mt: 1.5,
-                      bgcolor: theme.palette.mode === 'dark' ? '#0f172a' : '#f1f5f9',
-                      border: `1px solid ${theme.palette.divider}`,
-                    }}>
-                      <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-                        <Typography 
-                          variant="subtitle1" 
-                          fontWeight="bold" 
-                          gutterBottom 
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 0.5,
-                            fontSize: { xs: '0.875rem', sm: '1rem' }
-                          }}
-                        >
-                          <VideoCallIcon color="primary" fontSize="small" />
-                          Meeting Invitation
-                        </Typography>
-                        <Stack spacing={1.5}>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                              Meeting Title
-                            </Typography>
-                            <Typography variant="body2" fontWeight={600} sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                              {selectedMessage.meetingTitle}
-                            </Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                              Date & Time
-                            </Typography>
-                            <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                              {new Date(selectedMessage.meetingTime!).toLocaleString()}
-                            </Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                              Meeting Link
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25, flexWrap: 'wrap' }}>
-                              <LinkIcon fontSize="small" sx={{ fontSize: 14 }} />
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  color: theme.palette.primary.main,
-                                  textDecoration: 'none',
-                                  '&:hover': { textDecoration: 'underline' },
-                                  cursor: 'pointer',
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                  wordBreak: 'break-all',
-                                }}
-                                onClick={() => window.open(selectedMessage.meetingLink, '_blank')}
-                              >
-                                {selectedMessage.meetingLink}
-                              </Typography>
-                              <IconButton 
-                                size="small" 
-                                onClick={() => navigator.clipboard.writeText(selectedMessage.meetingLink!)}
-                                sx={{ padding: 0.25 }}
-                              >
-                                <CopyIcon fontSize="small" sx={{ fontSize: 14 }} />
-                              </IconButton>
-                            </Box>
-                          </Box>
-                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                            <Button
-                              variant="contained"
-                              startIcon={<CheckIcon />}
-                              onClick={() => respondToMeetingInvite(selectedMessage._id, 'accepted')}
-                              sx={{ borderRadius: 1.5, fontSize: { xs: '0.75rem', sm: '0.875rem' }, py: 0.5 }}
-                              size="small"
-                            >
-                              Accept
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              startIcon={<CloseIcon />}
-                              onClick={() => respondToMeetingInvite(selectedMessage._id, 'declined')}
-                              sx={{ borderRadius: 1.5, fontSize: { xs: '0.75rem', sm: '0.875rem' }, py: 0.5 }}
-                              size="small"
-                            >
-                              Decline
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              startIcon={<VideoCallIcon />}
-                              onClick={() => window.open(selectedMessage.meetingLink, '_blank')}
-                              sx={{ borderRadius: 1.5, fontSize: { xs: '0.75rem', sm: '0.875rem' }, py: 0.5 }}
-                              size="small"
-                            >
-                              Join
-                            </Button>
-                          </Box>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  )}
-                </Box>
-
-                {/* Message Content */}
-                <Box sx={{ flex: 1, p: { xs: 1.5, sm: 2 }, overflow: 'auto' }}>
-                  <Typography 
-                    variant="body1" 
-                    sx={{ 
-                      whiteSpace: 'pre-wrap', 
-                      lineHeight: 1.6,
-                      fontSize: { xs: '0.875rem', sm: '1rem' }
-                    }}
-                  >
-                    {selectedMessage.content}
-                  </Typography>
-
-                  {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
-                    <Box sx={{ mt: 3 }}>
-                      <Typography 
-                        variant="subtitle1" 
-                        fontWeight="bold" 
-                        gutterBottom
-                        sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
-                      >
-                        Attachments ({selectedMessage.attachments.length})
-                      </Typography>
-                      <Stack spacing={1}>
-                        {selectedMessage.attachments.map((file, index) => (
-                          <Paper
-                            key={index}
-                            sx={{
-                              p: 1.5,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              bgcolor: theme.palette.mode === 'dark' ? '#1e293b' : '#f8fafc',
-                              border: `1px solid ${theme.palette.divider}`,
-                              borderRadius: 1.5,
-                              flexWrap: 'wrap',
-                              gap: 1,
-                            }}
-                          >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-                              {file.type === 'pdf' ? (
-                                <PdfIcon color="error" sx={{ fontSize: 20 }} />
-                              ) : file.type === 'powerpoint' ? (
-                                <DescriptionIcon color="warning" sx={{ fontSize: 20 }} />
-                              ) : (
-                                <InsertDriveFileIcon sx={{ fontSize: 20 }} />
-                              )}
-                              <Box sx={{ minWidth: 0 }}>
-                                <Typography 
-                                  variant="body2" 
-                                  fontWeight={600} 
-                                  sx={{ 
-                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                    wordBreak: 'break-all'
-                                  }}
-                                >
-                                  {file.name}
-                                </Typography>
-                                <Typography 
-                                  variant="caption" 
-                                  color="text.secondary"
-                                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                                >
-                                  {(file.size / 1024).toFixed(2)} KB
-                                </Typography>
-                              </Box>
-                            </Box>
-                            <Button
-                              size="small"
-                              startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
-                              onClick={() => window.open(file.url, '_blank')}
-                              sx={{ 
-                                borderRadius: 1,
-                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                py: 0.5
-                              }}
-                            >
-                              Download
-                            </Button>
-                          </Paper>
-                        ))}
-                      </Stack>
-                    </Box>
-                  )}
-                </Box>
-
-                {/* Message Actions */}
-                <Box sx={{ 
-                  p: { xs: 1, sm: 1.5 }, 
-                  borderTop: `1px solid ${theme.palette.divider}`,
-                  bgcolor: theme.palette.mode === 'dark' ? '#1e293b' : '#ffffff',
-                }}>
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<ReplyIcon sx={{ fontSize: 16 }} />}
-                      sx={{ 
-                        borderRadius: 1.5, 
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                        py: 0.5
-                      }}
-                      size="small"
-                    >
-                      Reply
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<ForwardIcon sx={{ fontSize: 16 }} />}
-                      sx={{ 
-                        borderRadius: 1.5, 
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                        py: 0.5
-                      }}
-                      size="small"
-                    >
-                      Forward
-                    </Button>
-                    {selectedMessage.type === 'meeting_invite' && (
-                      <Button
-                        variant="contained"
-                        startIcon={<VideoCallIcon sx={{ fontSize: 16 }} />}
-                        onClick={() => window.open(selectedMessage.meetingLink, '_blank')}
-                        sx={{ 
-                          borderRadius: 1.5, 
-                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                          py: 0.5
-                        }}
-                        size="small"
-                      >
-                        Join Meeting
-                      </Button>
-                    )}
-                  </Box>
-                </Box>
-              </Paper>
+              <MessageDetail
+                message={selectedMessage}
+                loading={false}
+                onToggleStar={toggleStar}
+                onArchive={archiveMessage}
+                onDelete={deleteMessage}
+                onRespondToMeeting={respondToMeetingInvite}
+                onReply={() => console.log('Reply to', selectedMessage._id)}
+                onForward={() => console.log('Forward', selectedMessage._id)}
+              />
             </Box>
           )}
         </Box>
@@ -1147,7 +626,7 @@ function MessagesPage() {
           </DialogTitle>
           <DialogContent sx={{ pt: 3 }}>
             <Stack spacing={2}>
-              <TextField
+              <Input2
                 select
                 label="Message Type"
                 value={newMessage.type}
@@ -1159,25 +638,19 @@ function MessagesPage() {
               >
                 <option value="direct_message">Direct Message</option>
                 <option value="meeting_invite">Meeting Invitation</option>
-              </TextField>
+              </Input2>
 
-              <TextField
+              <Input2
                 label="To"
                 value={newMessage.to}
                 onChange={(e) => setNewMessage({ ...newMessage, to: e.target.value })}
                 placeholder="email@example.com"
                 required
                 size="small"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <EmailIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
+                startIcon={<CombinedIcon name="Email" size={16} />}
               />
 
-              <TextField
+              <Input2
                 label="Subject"
                 value={newMessage.subject}
                 onChange={(e) => setNewMessage({ ...newMessage, subject: e.target.value })}
@@ -1187,12 +660,12 @@ function MessagesPage() {
               />
 
               {newMessage.type === 'meeting_invite' && (
-                <Box sx={{ border: `1px solid ${theme.palette.divider}`, p: 1.5, borderRadius: 2 }}>
+                <Card2 sx={{ border: `1px solid ${theme.palette.divider}`, p: 1.5, borderRadius: 2 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Meeting Details
                   </Typography>
                   <Stack spacing={2}>
-                    <TextField
+                    <Input2
                       label="Meeting Title"
                       value={newMessage.meetingDetails.title}
                       onChange={(e) => setNewMessage({
@@ -1203,7 +676,7 @@ function MessagesPage() {
                       size="small"
                     />
                     <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
-                      <TextField
+                      <Input2
                         label="Date"
                         type="date"
                         value={newMessage.meetingDetails.date}
@@ -1215,7 +688,7 @@ function MessagesPage() {
                         fullWidth
                         size="small"
                       />
-                      <TextField
+                      <Input2
                         label="Time"
                         type="time"
                         value={newMessage.meetingDetails.time}
@@ -1228,7 +701,7 @@ function MessagesPage() {
                         size="small"
                       />
                     </Box>
-                    <TextField
+                    <Input2
                       label="Meeting Link"
                       value={newMessage.meetingDetails.link}
                       onChange={(e) => setNewMessage({
@@ -1238,7 +711,7 @@ function MessagesPage() {
                       placeholder="https://meet.accumanage.com/..."
                       size="small"
                     />
-                    <TextField
+                    <Input2
                       select
                       label="Meeting Type"
                       value={newMessage.meetingDetails.type}
@@ -1255,12 +728,12 @@ function MessagesPage() {
                       <option value="client">Client</option>
                       <option value="partner">Partner</option>
                       <option value="team">Team</option>
-                    </TextField>
+                    </Input2>
                   </Stack>
-                </Box>
+                </Card2>
               )}
 
-              <TextField
+              <Input2
                 label="Message"
                 value={newMessage.content}
                 onChange={(e) => setNewMessage({ ...newMessage, content: e.target.value })}
@@ -1273,22 +746,23 @@ function MessagesPage() {
             </Stack>
           </DialogContent>
           <DialogActions sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
-            <Button 
+            <Button2 
               onClick={() => setComposeDialogOpen(false)} 
               sx={{ borderRadius: 2 }}
               size="small"
+              variant="outlined"
             >
               Cancel
-            </Button>
-            <Button
+            </Button2>
+            <Button2
               onClick={handleSendMessage}
               variant="contained"
-              startIcon={<SendIcon />}
+              iconLeft={<CombinedIcon name="Send" size={16} />}
               sx={{ borderRadius: 2 }}
               size="small"
             >
               Send Message
-            </Button>
+            </Button2>
           </DialogActions>
         </Dialog>
 
@@ -1315,7 +789,10 @@ function MessagesPage() {
             sx={{ borderRadius: 1, mx: 1, my: 0.5 }}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>
-              {selectedMessageForMenu?.isStarred ? <StarBorderIcon fontSize="small" /> : <StarIcon fontSize="small" />}
+              {selectedMessageForMenu?.isStarred ? 
+                <CombinedIcon name="StarBorder" size={16} /> : 
+                <CombinedIcon name="Star" size={16} />
+              }
             </ListItemIcon>
             <ListItemText 
               primaryTypographyProps={{ fontSize: '0.875rem' }}
@@ -1333,7 +810,7 @@ function MessagesPage() {
             sx={{ borderRadius: 1, mx: 1, my: 0.5 }}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>
-              <ArchiveIcon fontSize="small" />
+              <CombinedIcon name="Archive" size={16} />
             </ListItemIcon>
             <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>
               Archive
@@ -1355,7 +832,7 @@ function MessagesPage() {
             }}
           >
             <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
-              <DeleteIcon fontSize="small" />
+              <CombinedIcon name="Delete" size={16} />
             </ListItemIcon>
             <ListItemText 
               primaryTypographyProps={{ 
@@ -1390,33 +867,8 @@ function MessagesPage() {
             display: { xs: selectedMessage ? 'none' : 'flex', sm: 'flex' },
           }}
         >
-          <AddIcon sx={{ fontSize: { xs: 24, sm: 28 } }} />
+          <CombinedIcon name="Add" size={24} />
         </Fab>
-
-        {/* Back Button for Mobile when viewing message */}
-        {selectedMessage && (
-          <Fab
-            color="primary"
-            aria-label="back to messages"
-            onClick={() => setSelectedMessage(null)}
-            sx={{
-              position: 'fixed',
-              bottom: 16,
-              left: 16,
-              width: 48,
-              height: 48,
-              bgcolor: theme.palette.primary.main,
-              color: 'white',
-              '&:hover': {
-                bgcolor: theme.palette.primary.dark,
-              },
-              display: { xs: 'flex', sm: 'none' },
-              zIndex: 1000,
-            }}
-          >
-            {/* <ArrowBackIcon/> */}
-          </Fab>
-        )}
       </Box>
     </MainLayout>
   );
