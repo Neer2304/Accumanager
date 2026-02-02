@@ -505,7 +505,7 @@ export default function TeamMembersPage() {
                               <strong>{member.assignedTasksCount}</strong> tasks
                             </Typography>
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {member.assignedProjects.slice(0, 3).map((project) => (
+                              {member?.assignedProjects?.slice(0, 3).map((project) => (
                                 <Chip
                                   key={project._id}
                                   label={project.name.length > 15 
@@ -515,7 +515,7 @@ export default function TeamMembersPage() {
                                   variant="outlined"
                                 />
                               ))}
-                              {member.assignedProjects.length > 3 && (
+                              {member.assignedProjects?.length > 3 && (
                                 <Typography variant="caption" color="text.secondary">
                                   +{member.assignedProjects.length - 3} more
                                 </Typography>
