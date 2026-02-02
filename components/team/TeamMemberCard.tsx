@@ -1,47 +1,28 @@
+// components/team/TeamMemberCard.tsx
+"use client";
+
 import React from 'react';
 import {
-  Card,
-  CardContent,
-  Typography,
+  Paper,
   Box,
+  Typography,
   Chip,
   Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Divider,
-  alpha,
-  useTheme,
+  Badge,
+  Tooltip,
 } from '@mui/material';
-import { Person, AccessTime } from '@mui/icons-material';
-
-export interface TeamMember {
-  _id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  role: string;
-  currentProjects: string[];
-  lastActive: string;
-  status: 'active' | 'away' | 'offline';
-}
+import { FiberManualRecord } from '@mui/icons-material';
+import { TeamMember } from '@/types/teamActivity';
+import { formatTime } from '@/utils/dateFormatter';
+import { useTheme } from '@mui/material/styles';
+import { alpha } from '@mui/material/styles';
 
 interface TeamMemberCardProps {
-  members: TeamMember[];
-  title?: string;
-  showCount?: boolean;
-  autoRefresh?: boolean;
-  onAutoRefreshChange?: (checked: boolean) => void;
+  member: TeamMember;
+  onClick?: (member: TeamMember) => void;
 }
 
-export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({
-  members,
-  title = 'Team Members',
-  showCount = true,
-  autoRefresh = false,
-  onAutoRefreshChange,
-}) => {
+export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onClick }) => {
   const theme = useTheme();
 
   const getStatusColor = (status: TeamMember['status']) => {
@@ -53,107 +34,92 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString();
-  };
-
   return (
-    <Card sx={{ height: '100%', borderRadius: 2 }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5">
-            {title} {showCount && `(${members.length})`}
-          </Typography>
-        </Box>
+    <Paper
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+        transition: 'all 0.3s',
+        cursor: onClick ? 'pointer' : 'default',
+        '&:hover': onClick && {
+          borderColor: theme.palette.primary.main,
+          boxShadow: theme.shadows[2],
+          transform: 'translateY(-2px)',
+        },
+      }}
+      onClick={() => onClick?.(member)}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Badge
+          overlap="circular"
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          badgeContent={
+            <FiberManualRecord 
+              sx={{ 
+                fontSize: 12,
+                color: getStatusColor(member.status),
+                bgcolor: 'white',
+                borderRadius: '50%',
+              }}
+            />
+          }
+        >
+          <Avatar
+            src={member.avatar}
+            sx={{
+              width: 56,
+              height: 56,
+              bgcolor: theme.palette.primary.main,
+            }}
+          >
+            {member.name.charAt(0)}
+          </Avatar>
+        </Badge>
         
-        {members.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-            No team members found
+        <Box sx={{ flex: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography variant="subtitle1" fontWeight="bold">
+              {member.name}
+            </Typography>
+            <Chip
+              label={`${member.performance}%`}
+              size="small"
+              color={member.performance > 90 ? 'success' : member.performance > 80 ? 'warning' : 'error'}
+              sx={{ fontWeight: 600 }}
+            />
+          </Box>
+          
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            {member.role}
           </Typography>
-        ) : (
-          <List sx={{ maxHeight: 500, overflow: 'auto' }}>
-            {members.map((member, index) => (
-              <React.Fragment key={member._id}>
-                {index > 0 && <Divider variant="inset" component="li" />}
-                <ListItem>
-                  <ListItemAvatar>
-                    <Avatar 
-                      src={member.avatar} 
-                      sx={{ 
-                        bgcolor: 'primary.main',
-                        width: 48,
-                        height: 48
-                      }}
-                    >
-                      {member.name.charAt(0)}
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          {member.name}
-                        </Typography>
-                        <Chip
-                          label={member.status}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha(getStatusColor(member.status), 0.1),
-                            color: getStatusColor(member.status),
-                            border: `1px solid ${alpha(getStatusColor(member.status), 0.2)}`,
-                          }}
-                        />
-                      </Box>
-                    }
-                    secondary={
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          {member.role}
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                          <AccessTime fontSize="small" sx={{ fontSize: 14 }} />
-                          <Typography variant="caption" color="text.secondary">
-                            Last active: {formatDate(member.lastActive)} at {formatTime(member.lastActive)}
-                          </Typography>
-                        </Box>
-                        {member.currentProjects.length > 0 && (
-                          <Box sx={{ mt: 1 }}>
-                            <Typography variant="caption" color="text.secondary" display="block">
-                              Active Projects:
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                              {member.currentProjects.slice(0, 3).map((project, idx) => (
-                                <Chip
-                                  key={idx}
-                                  label={project}
-                                  size="small"
-                                  variant="outlined"
-                                  sx={{ height: 20 }}
-                                />
-                              ))}
-                              {member.currentProjects.length > 3 && (
-                                <Chip
-                                  label={`+${member.currentProjects.length - 3} more`}
-                                  size="small"
-                                  sx={{ height: 20 }}
-                                />
-                              )}
-                            </Box>
-                          </Box>
-                        )}
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              </React.Fragment>
+          
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+            {member.currentProjects.map((project, idx) => (
+              <Chip
+                key={idx}
+                label={project}
+                size="small"
+                variant="outlined"
+                sx={{ height: 24, fontSize: '0.75rem' }}
+              />
             ))}
-          </List>
-        )}
-      </CardContent>
-    </Card>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Tooltip title="Tasks completed">
+              <Typography variant="caption" color="text.secondary">
+                {member.tasksCompleted} tasks
+              </Typography>
+            </Tooltip>
+            <Tooltip title="Last active">
+              <Typography variant="caption" color="text.secondary">
+                {formatTime(member.lastActive)}
+              </Typography>
+            </Tooltip>
+          </Box>
+        </Box>
+      </Box>
+    </Paper>
   );
 };

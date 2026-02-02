@@ -1,21 +1,23 @@
-import Notification from '@/models/Notification';
-import { 
-  NotificationData, 
-  NotificationType, 
-  ProjectNotificationData, 
+import Notification from "@/models/Notification";
+import {
+  NotificationData,
+  NotificationType,
+  ProjectNotificationData,
   TaskNotificationData,
-  CreateNotificationOptions 
-} from '@/types/notification';
-import mongoose from 'mongoose';
+  CreateNotificationOptions,
+} from "@/types/notification";
+import mongoose from "mongoose";
 
 export class NotificationService {
   // ============ HELPER METHODS ============
-  
+
   /**
    * Convert userId to ObjectId
    */
-  private static toObjectId(userId: string | mongoose.Types.ObjectId): mongoose.Types.ObjectId {
-    if (typeof userId === 'string') {
+  private static toObjectId(
+    userId: string | mongoose.Types.ObjectId,
+  ): mongoose.Types.ObjectId {
+    if (typeof userId === "string") {
       return new mongoose.Types.ObjectId(userId);
     }
     return userId;
@@ -28,8 +30,8 @@ export class NotificationService {
     userId: string | mongoose.Types.ObjectId,
     title: string,
     message: string,
-    type: NotificationType = 'info',
-    options: CreateNotificationOptions = {}
+    type: NotificationType = "info",
+    options: CreateNotificationOptions = {},
   ): NotificationData {
     return {
       userId: this.toObjectId(userId),
@@ -37,88 +39,113 @@ export class NotificationService {
       message,
       type,
       isRead: options.isRead || false,
-      actionUrl: options.actionUrl || '',
+      actionUrl: options.actionUrl || "",
       metadata: options.metadata || {},
-      createdAt: new Date()
+      createdAt: new Date(),
     };
   }
 
   // ============ PROJECT NOTIFICATIONS ============
-  
+
   /**
    * Notify when a project is created
    */
-  static async notifyProjectCreated(project: any, userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async notifyProjectCreated(
+    project: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       const notificationData = this.createNotificationData(
         userId,
-        'New Project Created 🎉',
+        "New Project Created 🎉",
         `Your project "${project.name}" has been successfully created. Start adding tasks and team members!`,
-        'success',
+        "success",
         {
           actionUrl: `/projects/${project._id}`,
           metadata: {
             projectId: project._id.toString(),
             projectName: project.name,
-            event: 'project_created',
-            timestamp: new Date().toISOString()
-          }
-        }
+            event: "project_created",
+            timestamp: new Date().toISOString(),
+          },
+        },
       );
-      
+
       const notification = await Notification.create(notificationData);
-      console.log('✅ Project creation notification created:', notification._id);
+      console.log(
+        "✅ Project creation notification created:",
+        notification._id,
+      );
       return notification;
     } catch (error: any) {
-      console.error('❌ Error creating project creation notification:', error);
-      throw new Error(`Failed to create project notification: ${error.message}`);
+      console.error("❌ Error creating project creation notification:", error);
+      throw new Error(
+        `Failed to create project notification: ${error.message}`,
+      );
     }
   }
 
   /**
    * Notify when a project is completed
    */
-  static async notifyProjectCompleted(project: any, userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async notifyProjectCompleted(
+    project: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       const notificationData = this.createNotificationData(
         userId,
-        'Project Completed! 🎊',
+        "Project Completed! 🎊",
         `Congratulations! Project "${project.name}" has been completed successfully.`,
-        'success',
+        "success",
         {
           actionUrl: `/projects/${project._id}`,
           metadata: {
             projectId: project._id.toString(),
             projectName: project.name,
-            event: 'project_completed',
-            completionDate: new Date().toISOString()
-          }
-        }
+            event: "project_completed",
+            completionDate: new Date().toISOString(),
+          },
+        },
       );
-      
+
       const notification = await Notification.create(notificationData);
-      console.log('✅ Project completion notification created:', notification._id);
+      console.log(
+        "✅ Project completion notification created:",
+        notification._id,
+      );
       return notification;
     } catch (error: any) {
-      console.error('❌ Error creating project completion notification:', error);
-      throw new Error(`Failed to create project completion notification: ${error.message}`);
+      console.error(
+        "❌ Error creating project completion notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create project completion notification: ${error.message}`,
+      );
     }
   }
 
   /**
    * Notify when a project is delayed
    */
-  static async notifyProjectDelayed(project: any, userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async notifyProjectDelayed(
+    project: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       const deadline = new Date(project.deadline);
       const now = new Date();
-      const daysLate = Math.max(0, Math.ceil((now.getTime() - deadline.getTime()) / (1000 * 60 * 60 * 24)));
-      
+      const daysLate = Math.max(
+        0,
+        Math.ceil((now.getTime() - deadline.getTime()) / (1000 * 60 * 60 * 24)),
+      );
+
       const notificationData = this.createNotificationData(
         userId,
-        'Project Delayed ⚠️',
-        `Project "${project.name}" is ${daysLate} day${daysLate !== 1 ? 's' : ''} past deadline. Please review the timeline.`,
-        'warning',
+        "Project Delayed ⚠️",
+        `Project "${project.name}" is ${daysLate} day${daysLate !== 1 ? "s" : ""} past deadline. Please review the timeline.`,
+        "warning",
         {
           actionUrl: `/projects/${project._id}`,
           metadata: {
@@ -126,17 +153,19 @@ export class NotificationService {
             projectName: project.name,
             daysLate,
             originalDeadline: project.deadline,
-            event: 'project_delayed'
-          }
-        }
+            event: "project_delayed",
+          },
+        },
       );
-      
+
       const notification = await Notification.create(notificationData);
-      console.log('✅ Project delayed notification created:', notification._id);
+      console.log("✅ Project delayed notification created:", notification._id);
       return notification;
     } catch (error: any) {
-      console.error('❌ Error creating project delayed notification:', error);
-      throw new Error(`Failed to create project delayed notification: ${error.message}`);
+      console.error("❌ Error creating project delayed notification:", error);
+      throw new Error(
+        `Failed to create project delayed notification: ${error.message}`,
+      );
     }
   }
 
@@ -145,13 +174,16 @@ export class NotificationService {
   /**
    * Notify when a task is created
    */
-  static async notifyTaskCreated(task: any, userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async notifyTaskCreated(
+    task: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       const notificationData = this.createNotificationData(
         userId,
-        'New Task Assigned 📝',
-        `Task "${task.title}" has been created${task.assignedToName ? ` and assigned to ${task.assignedToName}` : ''}.`,
-        'info',
+        "New Task Assigned 📝",
+        `Task "${task.title}" has been created${task.assignedToName ? ` and assigned to ${task.assignedToName}` : ""}.`,
+        "info",
         {
           actionUrl: `/tasks?projectId=${task.projectId}`,
           metadata: {
@@ -162,16 +194,16 @@ export class NotificationService {
             assignedTo: task.assignedToName,
             priority: task.priority,
             dueDate: task.dueDate,
-            event: 'task_created'
-          }
-        }
+            event: "task_created",
+          },
+        },
       );
-      
+
       const notification = await Notification.create(notificationData);
-      console.log('✅ Task creation notification created:', notification._id);
+      console.log("✅ Task creation notification created:", notification._id);
       return notification;
     } catch (error: any) {
-      console.error('❌ Error creating task creation notification:', error);
+      console.error("❌ Error creating task creation notification:", error);
       throw new Error(`Failed to create task notification: ${error.message}`);
     }
   }
@@ -180,26 +212,29 @@ export class NotificationService {
    * Notify when a task status is updated
    */
   static async notifyTaskStatusUpdated(
-    task: any, 
-    oldStatus: string, 
-    newStatus: string, 
-    userId: string | mongoose.Types.ObjectId
+    task: any,
+    oldStatus: string,
+    newStatus: string,
+    userId: string | mongoose.Types.ObjectId,
   ): Promise<any> {
     try {
       const statusEmoji: Record<string, string> = {
-        'todo': '📋',
-        'in_progress': '🔄',
-        'in_review': '👀',
-        'completed': '✅',
-        'blocked': '🚫'
+        todo: "📋",
+        in_progress: "🔄",
+        in_review: "👀",
+        completed: "✅",
+        blocked: "🚫",
       };
 
       const notificationData = this.createNotificationData(
         userId,
-        `Task Status Updated ${statusEmoji[newStatus] || '📝'}`,
-        `Task "${task.title}" status changed from ${oldStatus.replace('_', ' ')} to ${newStatus.replace('_', ' ')}.`,
-        newStatus === 'completed' ? 'success' : 
-        newStatus === 'blocked' ? 'warning' : 'info',
+        `Task Status Updated ${statusEmoji[newStatus] || "📝"}`,
+        `Task "${task.title}" status changed from ${oldStatus.replace("_", " ")} to ${newStatus.replace("_", " ")}.`,
+        newStatus === "completed"
+          ? "success"
+          : newStatus === "blocked"
+            ? "warning"
+            : "info",
         {
           actionUrl: `/tasks?projectId=${task.projectId}`,
           metadata: {
@@ -210,38 +245,51 @@ export class NotificationService {
             projectId: task.projectId,
             projectName: task.projectName,
             updatedAt: new Date().toISOString(),
-            event: 'task_status_updated'
-          }
-        }
+            event: "task_status_updated",
+          },
+        },
       );
-      
+
       const notification = await Notification.create(notificationData);
-      console.log('✅ Task status update notification created:', notification._id);
+      console.log(
+        "✅ Task status update notification created:",
+        notification._id,
+      );
       return notification;
     } catch (error: any) {
-      console.error('❌ Error creating task status update notification:', error);
-      throw new Error(`Failed to create task status update notification: ${error.message}`);
+      console.error(
+        "❌ Error creating task status update notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create task status update notification: ${error.message}`,
+      );
     }
   }
 
   /**
    * Notify when a task is approaching deadline (3 days before)
    */
-  static async notifyTaskDueSoon(task: any, userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async notifyTaskDueSoon(
+    task: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       if (!task.dueDate) return null;
 
       const dueDate = new Date(task.dueDate);
       const now = new Date();
-      const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
+      const daysUntilDue = Math.ceil(
+        (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
       if (daysUntilDue > 3) return null; // Only notify if due within 3 days
 
       const notificationData = this.createNotificationData(
         userId,
-        'Task Due Soon ⏰',
-        `Task "${task.title}" is due in ${daysUntilDue} day${daysUntilDue !== 1 ? 's' : ''}.`,
-        daysUntilDue <= 1 ? 'warning' : 'info',
+        "Task Due Soon ⏰",
+        `Task "${task.title}" is due in ${daysUntilDue} day${daysUntilDue !== 1 ? "s" : ""}.`,
+        daysUntilDue <= 1 ? "warning" : "info",
         {
           actionUrl: `/tasks?projectId=${task.projectId}`,
           metadata: {
@@ -251,39 +299,46 @@ export class NotificationService {
             dueDate: task.dueDate,
             projectId: task.projectId,
             projectName: task.projectName,
-            event: 'task_due_soon'
-          }
-        }
+            event: "task_due_soon",
+          },
+        },
       );
-      
+
       const notification = await Notification.create(notificationData);
-      console.log('✅ Task due soon notification created:', notification._id);
+      console.log("✅ Task due soon notification created:", notification._id);
       return notification;
     } catch (error: any) {
-      console.error('❌ Error creating task due soon notification:', error);
-      throw new Error(`Failed to create task due soon notification: ${error.message}`);
+      console.error("❌ Error creating task due soon notification:", error);
+      throw new Error(
+        `Failed to create task due soon notification: ${error.message}`,
+      );
     }
   }
 
   /**
    * Notify when a task is overdue
    */
-  static async notifyTaskOverdue(task: any, userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async notifyTaskOverdue(
+    task: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       if (!task.dueDate) return null;
 
       const dueDate = new Date(task.dueDate);
       const now = new Date();
-      
+
       if (now < dueDate) return null; // Not overdue yet
 
-      const daysOverdue = Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysOverdue = Math.ceil(
+        (now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
+      );
 
       const notificationData = this.createNotificationData(
         userId,
-        'Task Overdue ⚠️',
-        `Task "${task.title}" is ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue.`,
-        'error',
+        "Task Overdue ⚠️",
+        `Task "${task.title}" is ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""} overdue.`,
+        "error",
         {
           actionUrl: `/tasks?projectId=${task.projectId}`,
           metadata: {
@@ -293,30 +348,35 @@ export class NotificationService {
             originalDueDate: task.dueDate,
             projectId: task.projectId,
             projectName: task.projectName,
-            event: 'task_overdue'
-          }
-        }
+            event: "task_overdue",
+          },
+        },
       );
-      
+
       const notification = await Notification.create(notificationData);
-      console.log('✅ Task overdue notification created:', notification._id);
+      console.log("✅ Task overdue notification created:", notification._id);
       return notification;
     } catch (error: any) {
-      console.error('❌ Error creating task overdue notification:', error);
-      throw new Error(`Failed to create task overdue notification: ${error.message}`);
+      console.error("❌ Error creating task overdue notification:", error);
+      throw new Error(
+        `Failed to create task overdue notification: ${error.message}`,
+      );
     }
   }
 
   /**
    * Notify when a task is deleted
    */
-  static async notifyTaskDeleted(task: any, userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async notifyTaskDeleted(
+    task: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       const notificationData = this.createNotificationData(
         userId,
-        'Task Deleted 🗑️',
+        "Task Deleted 🗑️",
         `Task "${task.title}" has been deleted from project "${task.projectName}".`,
-        'info',
+        "info",
         {
           actionUrl: `/tasks?projectId=${task.projectId}`,
           metadata: {
@@ -324,17 +384,19 @@ export class NotificationService {
             projectId: task.projectId,
             projectName: task.projectName,
             deletedAt: new Date().toISOString(),
-            event: 'task_deleted'
-          }
-        }
+            event: "task_deleted",
+          },
+        },
       );
-      
+
       const notification = await Notification.create(notificationData);
-      console.log('✅ Task deletion notification created:', notification._id);
+      console.log("✅ Task deletion notification created:", notification._id);
       return notification;
     } catch (error: any) {
-      console.error('❌ Error creating task deletion notification:', error);
-      throw new Error(`Failed to create task deletion notification: ${error.message}`);
+      console.error("❌ Error creating task deletion notification:", error);
+      throw new Error(
+        `Failed to create task deletion notification: ${error.message}`,
+      );
     }
   }
 
@@ -347,17 +409,23 @@ export class NotificationService {
     userId: string | mongoose.Types.ObjectId,
     title: string,
     message: string,
-    type: NotificationType = 'info',
-    options: CreateNotificationOptions = {}
+    type: NotificationType = "info",
+    options: CreateNotificationOptions = {},
   ): Promise<any> {
     try {
-      const notificationData = this.createNotificationData(userId, title, message, type, options);
-      
+      const notificationData = this.createNotificationData(
+        userId,
+        title,
+        message,
+        type,
+        options,
+      );
+
       const notification = await Notification.create(notificationData);
-      console.log('✅ Custom notification created:', notification._id);
+      console.log("✅ Custom notification created:", notification._id);
       return notification;
     } catch (error: any) {
-      console.error('❌ Error creating custom notification:', error);
+      console.error("❌ Error creating custom notification:", error);
       throw new Error(`Failed to create notification: ${error.message}`);
     }
   }
@@ -365,25 +433,28 @@ export class NotificationService {
   /**
    * Mark notification as read
    */
-  static async markAsRead(notificationId: string, userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async markAsRead(
+    notificationId: string,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       const notification = await Notification.findOneAndUpdate(
         {
           _id: notificationId,
-          userId: this.toObjectId(userId)
+          userId: this.toObjectId(userId),
         },
         { isRead: true, readAt: new Date() },
-        { new: true }
+        { new: true },
       );
-      
+
       if (!notification) {
-        throw new Error('Notification not found or unauthorized');
+        throw new Error("Notification not found or unauthorized");
       }
-      
-      console.log('✅ Notification marked as read:', notificationId);
+
+      console.log("✅ Notification marked as read:", notificationId);
       return notification;
     } catch (error: any) {
-      console.error('❌ Error marking notification as read:', error);
+      console.error("❌ Error marking notification as read:", error);
       throw new Error(`Failed to mark notification as read: ${error.message}`);
     }
   }
@@ -391,42 +462,51 @@ export class NotificationService {
   /**
    * Mark all notifications as read for a user
    */
-  static async markAllAsRead(userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async markAllAsRead(
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       const result = await Notification.updateMany(
         {
           userId: this.toObjectId(userId),
-          isRead: false
+          isRead: false,
         },
-        { isRead: true, readAt: new Date() }
+        { isRead: true, readAt: new Date() },
       );
-      
-      console.log(`✅ Marked ${result.modifiedCount} notifications as read for user`);
+
+      console.log(
+        `✅ Marked ${result.modifiedCount} notifications as read for user`,
+      );
       return result;
     } catch (error: any) {
-      console.error('❌ Error marking all notifications as read:', error);
-      throw new Error(`Failed to mark all notifications as read: ${error.message}`);
+      console.error("❌ Error marking all notifications as read:", error);
+      throw new Error(
+        `Failed to mark all notifications as read: ${error.message}`,
+      );
     }
   }
 
   /**
    * Delete a notification
    */
-  static async deleteNotification(notificationId: string, userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async deleteNotification(
+    notificationId: string,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       const result = await Notification.findOneAndDelete({
         _id: notificationId,
-        userId: this.toObjectId(userId)
+        userId: this.toObjectId(userId),
       });
-      
+
       if (!result) {
-        throw new Error('Notification not found or unauthorized');
+        throw new Error("Notification not found or unauthorized");
       }
-      
-      console.log('✅ Notification deleted:', notificationId);
+
+      console.log("✅ Notification deleted:", notificationId);
       return result;
     } catch (error: any) {
-      console.error('❌ Error deleting notification:', error);
+      console.error("❌ Error deleting notification:", error);
       throw new Error(`Failed to delete notification: ${error.message}`);
     }
   }
@@ -435,29 +515,31 @@ export class NotificationService {
    * Get all notifications for a user
    */
   static async getUserNotifications(
-    userId: string | mongoose.Types.ObjectId, 
-    options: { unreadOnly?: boolean; limit?: number } = {}
+    userId: string | mongoose.Types.ObjectId,
+    options: { unreadOnly?: boolean; limit?: number } = {},
   ): Promise<any[]> {
     try {
       const { unreadOnly = false, limit = 50 } = options;
-      
+
       const query: any = {
-        userId: this.toObjectId(userId)
+        userId: this.toObjectId(userId),
       };
-      
+
       if (unreadOnly) {
         query.isRead = false;
       }
-      
+
       const notifications = await Notification.find(query)
         .sort({ createdAt: -1 })
         .limit(limit)
         .lean();
-      
-      console.log(`✅ Retrieved ${notifications.length} notifications for user`);
+
+      console.log(
+        `✅ Retrieved ${notifications.length} notifications for user`,
+      );
       return notifications;
     } catch (error: any) {
-      console.error('❌ Error getting user notifications:', error);
+      console.error("❌ Error getting user notifications:", error);
       throw new Error(`Failed to get notifications: ${error.message}`);
     }
   }
@@ -466,40 +548,277 @@ export class NotificationService {
    * Get notification count for a user
    */
   static async getNotificationCount(
-    userId: string | mongoose.Types.ObjectId, 
-    unreadOnly: boolean = true
+    userId: string | mongoose.Types.ObjectId,
+    unreadOnly: boolean = true,
   ): Promise<number> {
     try {
       const query: any = {
-        userId: this.toObjectId(userId)
+        userId: this.toObjectId(userId),
       };
-      
+
       if (unreadOnly) {
         query.isRead = false;
       }
-      
+
       const count = await Notification.countDocuments(query);
-      console.log(`✅ Notification count for user: ${count} (unread only: ${unreadOnly})`);
+      console.log(
+        `✅ Notification count for user: ${count} (unread only: ${unreadOnly})`,
+      );
       return count;
     } catch (error: any) {
-      console.error('❌ Error getting notification count:', error);
+      console.error("❌ Error getting notification count:", error);
       throw new Error(`Failed to get notification count: ${error.message}`);
+    }
+  }
+
+  // ... existing methods ...
+
+  /**
+   * Notify when a team member is added
+   */
+  static async notifyTeamMemberAdded(
+    teamMember: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      return await this.createNotification(
+        userId,
+        "Team Member Added 👥",
+        `${teamMember.name} (${teamMember.role}) has been added to your team.`,
+        "info",
+        {
+          actionUrl: `/team/members/${teamMember._id}`,
+          metadata: {
+            teamMemberId: teamMember._id.toString(),
+            teamMemberName: teamMember.name,
+            role: teamMember.role,
+            department: teamMember.department,
+            event: "team_member_added",
+          },
+        },
+      );
+    } catch (error: any) {
+      console.error("Error creating team member added notification:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Notify when a team member is assigned to a project
+   */
+  static async notifyProjectAssignment(
+    project: any,
+    teamMember: any,
+    userId: string | mongoose.Types.ObjectId,
+    action: "assigned" | "unassigned",
+  ): Promise<any> {
+    try {
+      const actionText =
+        action === "assigned" ? "assigned to" : "unassigned from";
+
+      return await this.createNotification(
+        userId,
+        `Team Member ${action === "assigned" ? "Assigned" : "Unassigned"} 📋`,
+        `${teamMember.name} has been ${actionText} project "${project.name}".`,
+        "info",
+        {
+          actionUrl: `/projects/${project._id}`,
+          metadata: {
+            projectId: project._id.toString(),
+            projectName: project.name,
+            teamMemberId: teamMember._id.toString(),
+            teamMemberName: teamMember.name,
+            action: action,
+            event: "project_assignment_changed",
+          },
+        },
+      );
+    } catch (error: any) {
+      console.error("Error creating project assignment notification:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Notify when multiple team members are assigned to a project
+   */
+  static async notifyBulkProjectAssignment(
+    project: any,
+    teamMembers: any[],
+    userId: string | mongoose.Types.ObjectId,
+    action: "assigned" | "unassigned",
+  ): Promise<any[]> {
+    const notifications = [];
+
+    for (const member of teamMembers) {
+      try {
+        const notification = await this.notifyProjectAssignment(
+          project,
+          member,
+          userId,
+          action,
+        );
+        notifications.push(notification);
+      } catch (error) {
+        console.error(
+          `Failed to create notification for ${member.name}:`,
+          error,
+        );
+      }
+    }
+
+    // Also create a summary notification
+    try {
+      const summaryNotification = await this.createNotification(
+        userId,
+        "Team Members Updated 👥",
+        `${teamMembers.length} team member(s) ${action} to project "${project.name}".`,
+        "info",
+        {
+          actionUrl: `/projects/${project._id}`,
+          metadata: {
+            projectId: project._id.toString(),
+            projectName: project.name,
+            assignedCount: action === "assigned" ? teamMembers.length : 0,
+            unassignedCount: action === "unassigned" ? teamMembers.length : 0,
+            action: action,
+            event: "bulk_project_assignment",
+          },
+        },
+      );
+      notifications.push(summaryNotification);
+    } catch (error) {
+      console.error("Failed to create summary notification:", error);
+    }
+
+    return notifications;
+  }
+
+  /**
+   * Notify when team member performance is updated
+   */
+  static async notifyPerformanceUpdate(
+    teamMember: any,
+    oldPerformance: number,
+    newPerformance: number,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const performanceChange = newPerformance - oldPerformance;
+      const direction = performanceChange > 0 ? "improved" : "decreased";
+      const emoji = performanceChange > 0 ? "📈" : "📉";
+
+      return await this.createNotification(
+        userId,
+        `Performance Update ${emoji}`,
+        `${teamMember.name}'s performance ${direction} from ${oldPerformance}% to ${newPerformance}%.`,
+        performanceChange > 0 ? "success" : "warning",
+        {
+          actionUrl: `/team/members/${teamMember._id}`,
+          metadata: {
+            teamMemberId: teamMember._id.toString(),
+            teamMemberName: teamMember.name,
+            oldPerformance,
+            newPerformance,
+            change: performanceChange,
+            direction,
+            event: "performance_updated",
+          },
+        },
+      );
+    } catch (error: any) {
+      console.error("Error creating performance update notification:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Notify when team member status changes
+   */
+  static async notifyTeamMemberStatusChange(
+    teamMember: any,
+    oldStatus: string,
+    newStatus: string,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const statusConfig: Record<
+        string,
+        { emoji: string; type: NotificationType }
+      > = {
+        active: { emoji: "🟢", type: "success" },
+        away: { emoji: "🟡", type: "warning" },
+        offline: { emoji: "⚫", type: "info" },
+      };
+
+      const config = statusConfig[newStatus] || { emoji: "🔵", type: "info" };
+
+      return await this.createNotification(
+        userId,
+        `Status Changed ${config.emoji}`,
+        `${teamMember.name} is now ${newStatus}.`,
+        config.type,
+        {
+          actionUrl: `/team/members/${teamMember._id}`,
+          metadata: {
+            teamMemberId: teamMember._id.toString(),
+            teamMemberName: teamMember.name,
+            oldStatus,
+            newStatus,
+            event: "status_changed",
+          },
+        },
+      );
+    } catch (error: any) {
+      console.error("Error creating status change notification:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Notify about important team milestones
+   */
+  static async notifyTeamMilestone(
+    milestone: string,
+    description: string,
+    userId: string | mongoose.Types.ObjectId,
+    metadata?: any,
+  ): Promise<any> {
+    try {
+      return await this.createNotification(
+        userId,
+        `Team Milestone 🎉`,
+        description,
+        "success",
+        {
+          metadata: {
+            milestone,
+            ...metadata,
+            event: "team_milestone",
+          },
+        },
+      );
+    } catch (error: any) {
+      console.error("Error creating team milestone notification:", error);
+      throw error;
     }
   }
 
   /**
    * Clear all notifications for a user
    */
-  static async clearAllNotifications(userId: string | mongoose.Types.ObjectId): Promise<any> {
+  static async clearAllNotifications(
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
     try {
       const result = await Notification.deleteMany({
-        userId: this.toObjectId(userId)
+        userId: this.toObjectId(userId),
       });
-      
+
       console.log(`✅ Cleared ${result.deletedCount} notifications for user`);
       return result;
     } catch (error: any) {
-      console.error('❌ Error clearing notifications:', error);
+      console.error("❌ Error clearing notifications:", error);
       throw new Error(`Failed to clear notifications: ${error.message}`);
     }
   }
