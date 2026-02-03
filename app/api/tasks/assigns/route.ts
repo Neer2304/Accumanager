@@ -1,4 +1,4 @@
-// app/api/team/tasks/assign/route.ts
+// app/api/team/tasks/assigns/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import TeamTask from '@/models/TeamTask';
