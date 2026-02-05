@@ -1,11 +1,19 @@
 // app/(pages)/advance/page.tsx
 'use client'
 
-import { Box, Typography, Button, Card, CardContent, Grid, Chip } from '@mui/material'
+import { Box, Typography, Button, Card, CardContent, Chip } from '@mui/material'
 import { Rocket, Palette, TrendingUp, People, AutoAwesome } from '@mui/icons-material'
 import { useAdvanceThemeContext } from '@/contexts/AdvanceThemeContexts'
 
-const features = [
+interface Feature {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  path: string;
+  status: 'active' | 'beta' | 'soon';
+}
+
+const features: Feature[] = [
   {
     title: 'Theme Customizer',
     description: 'Customize colors, components, and create your own theme system',
@@ -37,7 +45,41 @@ const features = [
 ]
 
 export default function AdvancePage() {
-  const { currentScheme, mode } = useAdvanceThemeContext()
+  const { currentScheme } = useAdvanceThemeContext()
+
+  // Helper to get status color (using buttons colors)
+  const getStatusColor = (status: Feature['status']) => {
+    switch (status) {
+      case 'active':
+        return {
+          background: `${currentScheme.colors.buttons.success}20`,
+          color: currentScheme.colors.buttons.success
+        };
+      case 'beta':
+        return {
+          background: `${currentScheme.colors.buttons.warning}20`,
+          color: currentScheme.colors.buttons.warning
+        };
+      case 'soon':
+        return {
+          background: `${currentScheme.colors.buttons.error}20`, // Using error as "soon" color
+          color: currentScheme.colors.buttons.error
+        };
+      default:
+        return {
+          background: `${currentScheme.colors.buttons.success}20`,
+          color: currentScheme.colors.buttons.success
+        };
+    }
+  }
+
+  // Helper for stats colors (using buttons colors)
+  const statsColors = {
+    primary: currentScheme.colors.primary,
+    success: currentScheme.colors.buttons.success,
+    warning: currentScheme.colors.buttons.warning,
+    info: currentScheme.colors.buttons.error, // Using error as info
+  }
 
   return (
     <Box>
@@ -80,84 +122,96 @@ export default function AdvancePage() {
         </CardContent>
       </Card>
 
-      {/* Features Grid */}
-      <Grid container spacing={3}>
-        {features.map((feature) => (
-          <Grid item xs={12} sm={6} key={feature.title}>
-            <Card
+      {/* Features Grid using Flexbox */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 3,
+          mb: 4,
+        }}
+      >
+        {features.map((feature) => {
+          const statusColor = getStatusColor(feature.status);
+          
+          return (
+            <Box
+              key={feature.title}
               sx={{
-                height: '100%',
-                background: currentScheme.colors.components.card,
-                border: `1px solid ${currentScheme.colors.components.border}`,
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: `0 12px 40px ${currentScheme.colors.primary}20`,
-                  borderColor: currentScheme.colors.primary,
-                },
+                flex: '1 1 calc(50% - 12px)',
+                minWidth: '300px',
               }}
             >
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                  <Box
+              <Card
+                sx={{
+                  height: '100%',
+                  background: currentScheme.colors.components.card,
+                  border: `1px solid ${currentScheme.colors.components.border}`,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 12px 40px ${currentScheme.colors.primary}20`,
+                    borderColor: currentScheme.colors.primary,
+                  },
+                }}
+              >
+                <CardContent>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${currentScheme.colors.primary}20 0%, ${currentScheme.colors.secondary}20 100%)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {feature.icon}
+                    </Box>
+                    <Chip
+                      label={feature.status}
+                      size="small"
+                      sx={{
+                        textTransform: 'capitalize',
+                        background: statusColor.background,
+                        color: statusColor.color,
+                      }}
+                    />
+                  </Box>
+                  
+                  <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    {feature.title}
+                  </Typography>
+                  
+                  <Typography variant="body2" color={currentScheme.colors.text.secondary} paragraph>
+                    {feature.description}
+                  </Typography>
+                  
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    href={feature.path}
+                    disabled={feature.status === 'soon'}
                     sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 2,
-                      background: `linear-gradient(135deg, ${currentScheme.colors.primary}20 0%, ${currentScheme.colors.secondary}20 100%)`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      background: `linear-gradient(135deg, ${currentScheme.colors.buttons.primary} 0%, ${currentScheme.colors.secondary} 100%)`,
+                      '&:hover': {
+                        background: `linear-gradient(135deg, ${currentScheme.colors.buttons.primary}CC 0%, ${currentScheme.colors.secondary}CC 100%)`,
+                      },
                     }}
                   >
-                    {feature.icon}
-                  </Box>
-                  <Chip
-                    label={feature.status}
-                    size="small"
-                    sx={{
-                      textTransform: 'capitalize',
-                      background: 
-                        feature.status === 'active' ? currentScheme.colors.success + '20' :
-                        feature.status === 'beta' ? currentScheme.colors.warning + '20' :
-                        currentScheme.colors.info + '20',
-                      color: 
-                        feature.status === 'active' ? currentScheme.colors.success :
-                        feature.status === 'beta' ? currentScheme.colors.warning :
-                        currentScheme.colors.info,
-                    }}
-                  />
-                </Box>
-                
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  {feature.title}
-                </Typography>
-                
-                <Typography variant="body2" color={currentScheme.colors.text.secondary} paragraph>
-                  {feature.description}
-                </Typography>
-                
-                <Button
-                  variant="contained"
-                  fullWidth
-                  href={feature.path}
-                  disabled={feature.status === 'soon'}
-                  sx={{
-                    background: `linear-gradient(135deg, ${currentScheme.colors.primary} 0%, ${currentScheme.colors.secondary} 100%)`,
-                    '&:hover': {
-                      background: `linear-gradient(135deg, ${currentScheme.colors.primary}CC 0%, ${currentScheme.colors.secondary}CC 100%)`,
-                    },
-                  }}
-                >
-                  {feature.status === 'soon' ? 'Coming Soon' : 'Explore'}
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+                    {feature.status === 'soon' ? 'Coming Soon' : 'Explore'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </Box>
+          );
+        })}
+      </Box>
 
-      {/* Quick Stats */}
+      {/* Quick Stats using Flexbox */}
       <Card
         sx={{
           mt: 4,
@@ -169,48 +223,47 @@ export default function AdvancePage() {
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             🚀 Advanced Features Stats
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={6} sm={3}>
-              <Box textAlign="center">
-                <Typography variant="h4" fontWeight="bold" color={currentScheme.colors.primary}>
-                  4
-                </Typography>
-                <Typography variant="body2" color={currentScheme.colors.text.secondary}>
-                  Total Features
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Box textAlign="center">
-                <Typography variant="h4" fontWeight="bold" color={currentScheme.colors.success}>
-                  2
-                </Typography>
-                <Typography variant="body2" color={currentScheme.colors.text.secondary}>
-                  Active Now
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Box textAlign="center">
-                <Typography variant="h4" fontWeight="bold" color={currentScheme.colors.warning}>
-                  1
-                </Typography>
-                <Typography variant="body2" color={currentScheme.colors.text.secondary}>
-                  In Beta
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Box textAlign="center">
-                <Typography variant="h4" fontWeight="bold" color={currentScheme.colors.info}>
-                  1
-                </Typography>
-                <Typography variant="body2" color={currentScheme.colors.text.secondary}>
-                  Coming Soon
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 2,
+            }}
+          >
+            <Box sx={{ flex: '1 1 calc(25% - 8px)', minWidth: '120px' }} textAlign="center">
+              <Typography variant="h4" fontWeight="bold" color={statsColors.primary}>
+                4
+              </Typography>
+              <Typography variant="body2" color={currentScheme.colors.text.secondary}>
+                Total Features
+              </Typography>
+            </Box>
+            <Box sx={{ flex: '1 1 calc(25% - 8px)', minWidth: '120px' }} textAlign="center">
+              <Typography variant="h4" fontWeight="bold" color={statsColors.success}>
+                2
+              </Typography>
+              <Typography variant="body2" color={currentScheme.colors.text.secondary}>
+                Active Now
+              </Typography>
+            </Box>
+            <Box sx={{ flex: '1 1 calc(25% - 8px)', minWidth: '120px' }} textAlign="center">
+              <Typography variant="h4" fontWeight="bold" color={statsColors.warning}>
+                1
+              </Typography>
+              <Typography variant="body2" color={currentScheme.colors.text.secondary}>
+                In Beta
+              </Typography>
+            </Box>
+            <Box sx={{ flex: '1 1 calc(25% - 8px)', minWidth: '120px' }} textAlign="center">
+              <Typography variant="h4" fontWeight="bold" color={statsColors.info}>
+                1
+              </Typography>
+              <Typography variant="body2" color={currentScheme.colors.text.secondary}>
+                Coming Soon
+              </Typography>
+            </Box>
+          </Box>
         </CardContent>
       </Card>
     </Box>

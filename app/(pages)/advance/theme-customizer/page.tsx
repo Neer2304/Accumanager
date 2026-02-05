@@ -8,13 +8,8 @@ import {
   CardContent,
   Typography,
   Button,
-  Grid,
   Chip,
   Divider,
-  TextField,
-  Slider,
-  FormControlLabel,
-  Switch,
 } from '@mui/material'
 import { useAdvanceThemeContext } from '@/contexts/AdvanceThemeContexts'
 import { ADVANCE_COLOR_SCHEMES } from '@/contexts/AdvanceThemeContexts'
@@ -56,9 +51,16 @@ export default function ThemeCustomizerPage() {
         </CardContent>
       </Card>
 
-      <Grid container spacing={3}>
+      {/* Main Content using Flexbox */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 3,
+        }}
+      >
         {/* Left Column - Color Schemes */}
-        <Grid item xs={12} md={6}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Card
             sx={{
               background: currentScheme.colors.components.card,
@@ -120,10 +122,10 @@ export default function ThemeCustomizerPage() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Right Column - Preview */}
-        <Grid item xs={12} md={6}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Card
             sx={{
               background: currentScheme.colors.components.card,
@@ -251,8 +253,8 @@ export default function ThemeCustomizerPage() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Box>
   )
 }
