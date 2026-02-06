@@ -26,6 +26,7 @@ import {
   Badge,
   Typography as MuiTypography,
   CircularProgress,
+  Fade,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -39,10 +40,15 @@ import {
   MarkEmailRead as MarkReadIcon,
   Circle as CircleIcon,
   HelpCenter,
+  Brightness4,
+  Brightness7,
+  Search,
+  Apps,
 } from "@mui/icons-material";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
+import { useTheme as useThemeContext } from '@/contexts/ThemeContext';
 
 interface Props {
   children: React.ReactElement;
@@ -73,6 +79,9 @@ export const LandingHeader: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isTablet = useMediaQuery(theme.breakpoints.between("sm", "lg"));
+
+  const { mode, toggleTheme } = useThemeContext();
+  const darkMode = mode === 'dark';
 
   const { isAuthenticated, user, logout, isLoading } = useAuth();
   const router = useRouter();
@@ -111,7 +120,6 @@ export const LandingHeader: React.FC = () => {
     router.push("/");
   };
 
-  // Fetch notifications
   const fetchNotifications = async () => {
     if (!isAuthenticated) return;
 
@@ -129,7 +137,7 @@ export const LandingHeader: React.FC = () => {
         if (result.success) {
           setNotifications(result.data || []);
           const unread = (result.data || []).filter(
-            (n: Notification) => !n.isRead
+            (n: Notification) => !n.isRead,
           ).length;
           setUnreadCount(unread);
         }
@@ -155,11 +163,10 @@ export const LandingHeader: React.FC = () => {
       if (res.ok) {
         const result = await res.json();
         if (result.success) {
-          // Update local state
           setNotifications((prev) =>
             prev.map((n) =>
-              n._id === notificationId ? { ...n, isRead: true } : n
-            )
+              n._id === notificationId ? { ...n, isRead: true } : n,
+            ),
           );
           setUnreadCount((prev) => Math.max(0, prev - 1));
         }
@@ -207,7 +214,6 @@ export const LandingHeader: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated) {
       fetchNotifications();
-      // Refresh notifications every 30 seconds
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
     }
@@ -215,12 +221,12 @@ export const LandingHeader: React.FC = () => {
 
   const getNotificationColor = (type: string) => {
     const colors = {
-      info: theme.palette.info.main,
-      success: theme.palette.success.main,
-      warning: theme.palette.warning.main,
-      error: theme.palette.error.main,
+      info: "#4285f4",
+      success: "#34a853",
+      warning: "#fbbc05",
+      error: "#ea4335",
     };
-    return colors[type as keyof typeof colors] || theme.palette.info.main;
+    return colors[type as keyof typeof colors] || "#4285f4";
   };
 
   const formatTime = (dateString: string) => {
@@ -272,12 +278,14 @@ export const LandingHeader: React.FC = () => {
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+        color: darkMode ? '#e8eaed' : '#202124',
       }}
     >
       <Box
         sx={{
           p: 3,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          borderBottom: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -289,18 +297,19 @@ export const LandingHeader: React.FC = () => {
           href="/"
           onClick={handleDrawerToggle}
           sx={{
-            fontWeight: "bold",
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            backgroundClip: "text",
-            WebkitBackgroundClip: "text",
-            color: "transparent",
+            fontWeight: 500,
+            color: darkMode ? '#e8eaed' : '#202124',
             textDecoration: "none",
             fontSize: { xs: "1.1rem", sm: "1.25rem" },
           }}
         >
           AccumaManage
         </Typography>
-        <IconButton onClick={handleDrawerToggle} size="small">
+        <IconButton 
+          onClick={handleDrawerToggle} 
+          size="small"
+          sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+        >
           <CloseIcon />
         </IconButton>
       </Box>
@@ -308,30 +317,27 @@ export const LandingHeader: React.FC = () => {
       <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
         {isAuthenticated ? (
           <>
-            {/* User Info in Drawer */}
             <Box
               sx={{
                 p: 2,
-                mb: 2,
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.primary.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                mb: 3,
+                borderRadius: '12px',
+                backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+                border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
               }}
             >
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}
-              >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
                 <Avatar
                   sx={{
                     width: { xs: 40, sm: 48 },
                     height: { xs: 40, sm: 48 },
-                    bgcolor: theme.palette.primary.main,
+                    backgroundColor: '#4285f4',
                   }}
                 >
                   {user?.name?.charAt(0) || <AccountCircle />}
                 </Avatar>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="subtitle1" fontWeight={600} noWrap>
+                  <Typography variant="subtitle1" fontWeight={500} noWrap>
                     {user?.name || "User"}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" noWrap>
@@ -341,13 +347,14 @@ export const LandingHeader: React.FC = () => {
               </Box>
               {unreadCount > 0 && (
                 <Chip
-                  label={`${unreadCount} unread notification${
-                    unreadCount !== 1 ? "s" : ""
-                  }`}
+                  label={`${unreadCount} unread`}
                   size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{ mt: 1 }}
+                  sx={{ 
+                    mt: 1,
+                    backgroundColor: darkMode ? '#303134' : '#ffffff',
+                    border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
                   onClick={handleNotificationMenuOpen}
                   clickable
                 />
@@ -362,27 +369,43 @@ export const LandingHeader: React.FC = () => {
                   href={item.href}
                   onClick={handleDrawerToggle}
                   sx={{
-                    borderRadius: 1,
-                    mb: 0.5,
+                    borderRadius: '8px',
+                    mb: 1,
                     "&:hover": {
-                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      backgroundColor: darkMode ? '#303134' : '#f8f9fa',
                     },
                   }}
                 >
-                  <Box sx={{ mr: 2, color: theme.palette.primary.main }}>
+                  <Box sx={{ mr: 2, color: '#4285f4' }}>
                     {item.icon}
                   </Box>
                   <ListItemText
                     primary={item.name}
                     primaryTypographyProps={{
                       fontSize: { xs: "0.9rem", sm: "0.95rem" },
+                      color: darkMode ? '#e8eaed' : '#202124',
                     }}
                   />
                 </ListItem>
               ))}
             </List>
 
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
+
+            <Box sx={{ px: 2, py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                Theme
+              </Typography>
+              <IconButton
+                onClick={toggleTheme}
+                size="small"
+                sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+              >
+                {darkMode ? <Brightness7 /> : <Brightness4 />}
+              </IconButton>
+            </Box>
+
+            <Divider sx={{ my: 2, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
 
             <Button
               variant="outlined"
@@ -392,6 +415,13 @@ export const LandingHeader: React.FC = () => {
               sx={{
                 mt: 2,
                 py: { xs: 0.75, sm: 1 },
+                borderRadius: '20px',
+                borderColor: darkMode ? '#3c4043' : '#dadce0',
+                color: darkMode ? '#e8eaed' : '#202124',
+                '&:hover': {
+                  borderColor: darkMode ? '#5f6368' : '#4285f4',
+                  backgroundColor: darkMode ? 'rgba(66, 133, 244, 0.1)' : 'rgba(66, 133, 244, 0.04)',
+                }
               }}
             >
               Sign Out
@@ -407,10 +437,10 @@ export const LandingHeader: React.FC = () => {
                   href={item.href}
                   onClick={handleDrawerToggle}
                   sx={{
-                    borderRadius: 1,
-                    mb: 0.5,
+                    borderRadius: '8px',
+                    mb: 1,
                     "&:hover": {
-                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      backgroundColor: darkMode ? '#303134' : '#f8f9fa',
                     },
                   }}
                 >
@@ -418,11 +448,25 @@ export const LandingHeader: React.FC = () => {
                     primary={item.name}
                     primaryTypographyProps={{
                       fontSize: { xs: "0.95rem", sm: "1rem" },
+                      color: darkMode ? '#e8eaed' : '#202124',
                     }}
                   />
                 </ListItem>
               ))}
             </List>
+
+            <Box sx={{ px: 2, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                Theme
+              </Typography>
+              <IconButton
+                onClick={toggleTheme}
+                size="small"
+                sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+              >
+                {darkMode ? <Brightness7 /> : <Brightness4 />}
+              </IconButton>
+            </Box>
 
             <Box
               sx={{ mt: 4, display: "flex", flexDirection: "column", gap: 1.5 }}
@@ -436,6 +480,13 @@ export const LandingHeader: React.FC = () => {
                 sx={{
                   py: { xs: 0.75, sm: 1 },
                   fontSize: { xs: "0.875rem", sm: "0.95rem" },
+                  backgroundColor: '#4285f4',
+                  color: "white",
+                  borderRadius: '20px',
+                  textTransform: 'none',
+                  "&:hover": {
+                    backgroundColor: '#3367d6',
+                  },
                 }}
               >
                 Start Free Trial
@@ -449,6 +500,14 @@ export const LandingHeader: React.FC = () => {
                 sx={{
                   py: { xs: 0.75, sm: 1 },
                   fontSize: { xs: "0.875rem", sm: "0.95rem" },
+                  borderRadius: '20px',
+                  textTransform: 'none',
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  '&:hover': {
+                    borderColor: darkMode ? '#5f6368' : '#4285f4',
+                    backgroundColor: darkMode ? 'rgba(66, 133, 244, 0.1)' : 'rgba(66, 133, 244, 0.04)',
+                  }
                 }}
               >
                 Sign In
@@ -466,20 +525,27 @@ export const LandingHeader: React.FC = () => {
         <AppBar
           position="fixed"
           sx={{
-            backgroundColor: "rgba(255, 255, 255, 0.98)",
+            backgroundColor: darkMode 
+              ? alpha('#202124', 0.98)
+              : alpha('#ffffff', 0.98),
             backdropFilter: "blur(20px)",
-            color: "text.primary",
-            boxShadow: "0 1px 10px rgba(0,0,0,0.08)",
-            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            color: darkMode ? '#e8eaed' : '#202124',
+            boxShadow: darkMode 
+              ? '0 1px 3px rgba(0,0,0,0.3)'
+              : '0 1px 3px rgba(0,0,0,0.08)',
+            borderBottom: darkMode 
+              ? '1px solid #3c4043'
+              : '1px solid #dadce0',
           }}
         >
           <Container maxWidth="xl">
             <Toolbar
               sx={{
                 justifyContent: "space-between",
-                py: { xs: 1, sm: 1.5 },
+                py: { xs: 1, sm: 1 },
                 px: { xs: 1, sm: 0 },
                 gap: 1,
+                minHeight: '64px',
               }}
             >
               {/* Logo */}
@@ -492,24 +558,37 @@ export const LandingHeader: React.FC = () => {
                 }}
               >
                 <Typography
-                  variant={isMobile ? "h6" : "h5"}
+                  variant="h6"
                   component={Link}
                   href="/"
                   sx={{
-                    fontWeight: "bold",
-                    background:
-                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    backgroundClip: "text",
-                    WebkitBackgroundClip: "text",
-                    color: "transparent",
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
                     textDecoration: "none",
                     fontSize: {
                       xs: "1.1rem",
                       sm: "1.25rem",
                       md: "1.5rem",
                     },
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
                   }}
                 >
+                  <Box component="span" sx={{ 
+                    width: 32, 
+                    height: 32, 
+                    borderRadius: '8px',
+                    backgroundColor: '#4285f4',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '0.9rem',
+                  }}>
+                    A
+                  </Box>
                   AccumaManage
                 </Typography>
               </Box>
@@ -519,43 +598,63 @@ export const LandingHeader: React.FC = () => {
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  gap: { xs: 1, sm: 2 },
+                  gap: { xs: 0.5, sm: 1 },
                 }}
               >
-                {/* Notifications Icon (only when authenticated) */}
-                {isAuthenticated && (
+                {/* Theme Toggle */}
+                <Fade in>
                   <IconButton
-                    onClick={handleNotificationMenuOpen}
+                    onClick={toggleTheme}
+                    size="small"
                     sx={{
-                      borderRadius: "8px",
-                      color: "primary.main",
+                      color: darkMode ? '#e8eaed' : '#5f6368',
+                      borderRadius: "50%",
                       "&:hover": {
-                        backgroundColor: "action.hover",
-                        color: "primary.main",
+                        backgroundColor: darkMode 
+                          ? 'rgba(255,255,255,0.1)' 
+                          : 'rgba(0,0,0,0.04)',
                       },
                     }}
                   >
-                    <Badge badgeContent={unreadCount} color="error">
-                      <NotificationsIcon />
-                    </Badge>
+                    {darkMode ? <Brightness7 /> : <Brightness4 />}
                   </IconButton>
+                </Fade>
+
+                {/* Notifications Icon */}
+                {isAuthenticated && (
+                  <Fade in>
+                    <IconButton
+                      onClick={handleNotificationMenuOpen}
+                      sx={{
+                        borderRadius: "50%",
+                        color: darkMode ? '#e8eaed' : '#5f6368',
+                        "&:hover": {
+                          backgroundColor: darkMode 
+                            ? 'rgba(255,255,255,0.1)' 
+                            : 'rgba(0,0,0,0.04)',
+                        },
+                      }}
+                    >
+                      <Badge badgeContent={unreadCount} color="error">
+                        <NotificationsIcon />
+                      </Badge>
+                    </IconButton>
+                  </Fade>
                 )}
 
-                {/* User Icon for Mobile/Tab when authenticated */}
+                {/* User Icon for Mobile/Tab */}
                 {isAuthenticated && isMobile && (
                   <>
-                    {/* User Avatar for Mobile */}
                     <IconButton
                       onClick={handleMenuOpen}
                       size="small"
                       sx={{
                         p: 0.5,
-                        border: `2px solid ${alpha(
-                          theme.palette.primary.main,
-                          0.2
-                        )}`,
+                        border: darkMode 
+                          ? '2px solid #3c4043'
+                          : '2px solid #dadce0',
                         "&:hover": {
-                          borderColor: theme.palette.primary.main,
+                          borderColor: '#4285f4',
                         },
                         display: { xs: "flex", md: "none" },
                       }}
@@ -564,14 +663,13 @@ export const LandingHeader: React.FC = () => {
                         sx={{
                           width: 32,
                           height: 32,
-                          bgcolor: theme.palette.primary.main,
+                          backgroundColor: '#4285f4',
                         }}
                       >
                         {user?.name?.charAt(0) || <AccountCircle />}
                       </Avatar>
                     </IconButton>
 
-                    {/* Mobile Menu for User Actions */}
                     <Menu
                       anchorEl={anchorEl}
                       open={Boolean(anchorEl)}
@@ -581,19 +679,23 @@ export const LandingHeader: React.FC = () => {
                         "& .MuiPaper-root": {
                           mt: 1.5,
                           minWidth: 200,
-                          borderRadius: 2,
+                          borderRadius: '12px',
+                          backgroundColor: darkMode ? '#303134' : '#ffffff',
+                          border: darkMode 
+                            ? '1px solid #3c4043'
+                            : '1px solid #dadce0',
                         },
                       }}
                     >
                       <Box sx={{ p: 2, pb: 1 }}>
-                        <MuiTypography variant="subtitle1" fontWeight={600}>
+                        <MuiTypography variant="subtitle1" fontWeight={500} color={darkMode ? '#e8eaed' : '#202124'}>
                           {user?.name || "User"}
                         </MuiTypography>
-                        <MuiTypography variant="caption" color="text.secondary">
+                        <MuiTypography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                           {user?.email || ""}
                         </MuiTypography>
                       </Box>
-                      <Divider sx={{ my: 1 }} />
+                      <Divider sx={{ my: 1, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
                       {userMenuItems.map((item) => (
                         <MenuItem
                           key={item.name}
@@ -603,18 +705,34 @@ export const LandingHeader: React.FC = () => {
                             handleMenuClose();
                             handleDrawerToggle();
                           }}
+                          sx={{
+                            color: darkMode ? '#e8eaed' : '#202124',
+                            '&:hover': {
+                              backgroundColor: darkMode 
+                                ? 'rgba(255,255,255,0.05)' 
+                                : 'rgba(0,0,0,0.04)',
+                            }
+                          }}
                         >
-                          <Box
-                            sx={{ mr: 2, color: theme.palette.primary.main }}
-                          >
+                          <Box sx={{ mr: 2, color: '#4285f4' }}>
                             {item.icon}
                           </Box>
                           {item.name}
                         </MenuItem>
                       ))}
-                      <Divider sx={{ my: 1 }} />
-                      <MenuItem onClick={handleLogout}>
-                        <Box sx={{ mr: 2, color: theme.palette.error.main }}>
+                      <Divider sx={{ my: 1, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
+                      <MenuItem 
+                        onClick={handleLogout}
+                        sx={{
+                          color: '#ea4335',
+                          '&:hover': {
+                            backgroundColor: darkMode 
+                              ? 'rgba(234, 67, 53, 0.1)' 
+                              : 'rgba(234, 67, 53, 0.04)',
+                          }
+                        }}
+                      >
+                        <Box sx={{ mr: 2 }}>
                           <ExitToApp fontSize="small" />
                         </Box>
                         Sign Out
@@ -629,7 +747,7 @@ export const LandingHeader: React.FC = () => {
                     sx={{
                       display: "flex",
                       alignItems: "center",
-                      gap: { md: 3, lg: 2 },
+                      gap: { md: 1, lg: 2 },
                     }}
                   >
                     {!isAuthenticated ? (
@@ -640,12 +758,17 @@ export const LandingHeader: React.FC = () => {
                             component="a"
                             href={item.href}
                             sx={{
-                              color: "text.primary",
-                              fontWeight: 500,
-                              fontSize: { md: "0.9rem", lg: "1rem" },
+                              color: darkMode ? '#e8eaed' : '#5f6368',
+                              fontWeight: 400,
+                              fontSize: { md: "0.9rem", lg: "0.95rem" },
+                              textTransform: 'none',
+                              borderRadius: '20px',
+                              px: 2,
                               "&:hover": {
-                                color: "primary.main",
-                                backgroundColor: "transparent",
+                                backgroundColor: darkMode 
+                                  ? 'rgba(255,255,255,0.05)' 
+                                  : 'rgba(0,0,0,0.04)',
+                                color: darkMode ? '#e8eaed' : '#202124',
                               },
                             }}
                           >
@@ -659,6 +782,16 @@ export const LandingHeader: React.FC = () => {
                           sx={{
                             ml: 1,
                             fontSize: { md: "0.875rem", lg: "0.95rem" },
+                            borderRadius: '20px',
+                            textTransform: 'none',
+                            borderColor: darkMode ? '#3c4043' : '#dadce0',
+                            color: darkMode ? '#e8eaed' : '#202124',
+                            '&:hover': {
+                              borderColor: '#4285f4',
+                              backgroundColor: darkMode 
+                                ? 'rgba(66, 133, 244, 0.1)' 
+                                : 'rgba(66, 133, 244, 0.04)',
+                            }
                           }}
                         >
                           Sign In
@@ -669,12 +802,15 @@ export const LandingHeader: React.FC = () => {
                           href="/dashboard"
                           sx={{
                             ml: 1,
-                            background:
-                              "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                            backgroundColor: '#4285f4',
+                            color: "white",
                             fontSize: { md: "0.875rem", lg: "0.95rem" },
+                            borderRadius: '20px',
+                            textTransform: 'none',
+                            px: 3,
                             "&:hover": {
-                              background:
-                                "linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)",
+                              backgroundColor: '#3367d6',
+                              boxShadow: '0 2px 8px rgba(66, 133, 244, 0.3)',
                             },
                           }}
                         >
@@ -688,9 +824,17 @@ export const LandingHeader: React.FC = () => {
                           component={Link}
                           href="/dashboard"
                           sx={{
-                            color: "primary.main",
-                            fontWeight: 500,
-                            fontSize: { md: "0.9rem", lg: "1rem" },
+                            color: darkMode ? '#e8eaed' : '#202124',
+                            fontWeight: 400,
+                            fontSize: { md: "0.9rem", lg: "0.95rem" },
+                            textTransform: 'none',
+                            borderRadius: '20px',
+                            px: 2,
+                            "&:hover": {
+                              backgroundColor: darkMode 
+                                ? 'rgba(255,255,255,0.05)' 
+                                : 'rgba(0,0,0,0.04)',
+                            }
                           }}
                         >
                           Dashboard
@@ -700,9 +844,17 @@ export const LandingHeader: React.FC = () => {
                           component={Link}
                           href="/pricing"
                           sx={{
-                            color: "primary.main",
-                            fontWeight: 500,
-                            fontSize: { md: "0.9rem", lg: "1rem" },
+                            color: darkMode ? '#e8eaed' : '#202124',
+                            fontWeight: 400,
+                            fontSize: { md: "0.9rem", lg: "0.95rem" },
+                            textTransform: 'none',
+                            borderRadius: '20px',
+                            px: 2,
+                            "&:hover": {
+                              backgroundColor: darkMode 
+                                ? 'rgba(255,255,255,0.05)' 
+                                : 'rgba(0,0,0,0.04)',
+                            }
                           }}
                         >
                           Pricing
@@ -714,12 +866,11 @@ export const LandingHeader: React.FC = () => {
                             onClick={handleMenuOpen}
                             sx={{
                               p: 0.5,
-                              border: `2px solid ${alpha(
-                                theme.palette.primary.main,
-                                0.2
-                              )}`,
+                              border: darkMode 
+                                ? '2px solid #3c4043'
+                                : '2px solid #dadce0',
                               "&:hover": {
-                                borderColor: theme.palette.primary.main,
+                                borderColor: '#4285f4',
                               },
                             }}
                           >
@@ -727,7 +878,7 @@ export const LandingHeader: React.FC = () => {
                               sx={{
                                 width: { md: 36, lg: 40 },
                                 height: { md: 36, lg: 40 },
-                                bgcolor: theme.palette.primary.main,
+                                backgroundColor: '#4285f4',
                               }}
                             >
                               {user?.name?.charAt(0) || <AccountCircle />}
@@ -738,15 +889,24 @@ export const LandingHeader: React.FC = () => {
                             open={Boolean(anchorEl)}
                             onClose={handleMenuClose}
                             PaperProps={{
-                              elevation: 3,
                               sx: {
                                 mt: 1.5,
                                 minWidth: 200,
-                                borderRadius: 2,
+                                borderRadius: '12px',
+                                backgroundColor: darkMode ? '#303134' : '#ffffff',
+                                border: darkMode 
+                                  ? '1px solid #3c4043'
+                                  : '1px solid #dadce0',
                                 "& .MuiMenuItem-root": {
                                   px: 2,
                                   py: 1.5,
                                   fontSize: "0.9rem",
+                                  color: darkMode ? '#e8eaed' : '#202124',
+                                  '&:hover': {
+                                    backgroundColor: darkMode 
+                                      ? 'rgba(255,255,255,0.05)' 
+                                      : 'rgba(0,0,0,0.04)',
+                                  }
                                 },
                               },
                             }}
@@ -754,18 +914,19 @@ export const LandingHeader: React.FC = () => {
                             <Box sx={{ p: 2, pb: 1 }}>
                               <MuiTypography
                                 variant="subtitle1"
-                                fontWeight={600}
+                                fontWeight={500}
+                                color={darkMode ? '#e8eaed' : '#202124'}
                               >
                                 {user?.name || "User"}
                               </MuiTypography>
                               <MuiTypography
                                 variant="caption"
-                                color="text.secondary"
+                                color={darkMode ? '#9aa0a6' : '#5f6368'}
                               >
                                 {user?.email || ""}
                               </MuiTypography>
                             </Box>
-                            <Divider sx={{ my: 1 }} />
+                            <Divider sx={{ my: 1, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
                             {userMenuItems.map((item) => (
                               <MenuItem
                                 key={item.name}
@@ -773,22 +934,25 @@ export const LandingHeader: React.FC = () => {
                                 href={item.href}
                                 onClick={handleMenuClose}
                               >
-                                <Box
-                                  sx={{
-                                    mr: 2,
-                                    color: theme.palette.primary.main,
-                                  }}
-                                >
+                                <Box sx={{ mr: 2, color: '#4285f4' }}>
                                   {item.icon}
                                 </Box>
                                 {item.name}
                               </MenuItem>
                             ))}
-                            <Divider sx={{ my: 1 }} />
-                            <MenuItem onClick={handleLogout}>
-                              <Box
-                                sx={{ mr: 2, color: theme.palette.error.main }}
-                              >
+                            <Divider sx={{ my: 1, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
+                            <MenuItem 
+                              onClick={handleLogout}
+                              sx={{
+                                color: '#ea4335',
+                                '&:hover': {
+                                  backgroundColor: darkMode 
+                                    ? 'rgba(234, 67, 53, 0.1)' 
+                                    : 'rgba(234, 67, 53, 0.04)',
+                                }
+                              }}
+                            >
+                              <Box sx={{ mr: 2 }}>
                                 <ExitToApp fontSize="small" />
                               </Box>
                               Sign Out
@@ -802,13 +966,11 @@ export const LandingHeader: React.FC = () => {
 
                 {/* Mobile Menu Button */}
                 <IconButton
-                  color="inherit"
-                  aria-label="open drawer"
-                  edge="end"
                   onClick={handleDrawerToggle}
                   sx={{
                     display: { md: "none" },
                     ml: isAuthenticated ? 0 : 1,
+                    color: darkMode ? '#e8eaed' : '#202124',
                   }}
                 >
                   <MenuIcon />
@@ -829,14 +991,19 @@ export const LandingHeader: React.FC = () => {
             mt: 1.5,
             width: { xs: 300, sm: 380 },
             maxHeight: 400,
-            borderRadius: "12px",
-            boxShadow: "0 4px 20px 0 rgba(0,0,0,0.1)",
+            borderRadius: '12px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: darkMode 
+              ? '1px solid #3c4043'
+              : '1px solid #dadce0',
+            boxShadow: darkMode 
+              ? '0 4px 20px rgba(0,0,0,0.3)'
+              : '0 4px 20px rgba(0,0,0,0.1)',
           },
         }}
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        {/* Notifications Header */}
         <Box sx={{ p: 2, pb: 1 }}>
           <Box
             sx={{
@@ -845,7 +1012,7 @@ export const LandingHeader: React.FC = () => {
               alignItems: "center",
             }}
           >
-            <MuiTypography variant="h6" fontWeight="600">
+            <MuiTypography variant="h6" fontWeight="500" color={darkMode ? '#e8eaed' : '#202124'}>
               Notifications
             </MuiTypography>
             {unreadCount > 0 && (
@@ -854,6 +1021,10 @@ export const LandingHeader: React.FC = () => {
                 startIcon={<MarkReadIcon />}
                 onClick={handleMarkAllAsRead}
                 disabled={notificationsLoading}
+                sx={{
+                  color: '#4285f4',
+                  textTransform: 'none',
+                }}
               >
                 Mark all read
               </Button>
@@ -862,7 +1033,7 @@ export const LandingHeader: React.FC = () => {
           {unreadCount > 0 && (
             <MuiTypography
               variant="body2"
-              color="text.secondary"
+              color={darkMode ? '#9aa0a6' : '#5f6368'}
               sx={{ mt: 0.5 }}
             >
               {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
@@ -870,9 +1041,8 @@ export const LandingHeader: React.FC = () => {
           )}
         </Box>
 
-        <Divider />
+        <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
 
-        {/* Notifications List */}
         <Box sx={{ maxHeight: 300, overflow: "auto" }}>
           {notificationsLoading ? (
             <Box
@@ -894,7 +1064,7 @@ export const LandingHeader: React.FC = () => {
                 width: "100%",
               }}
             >
-              <MuiTypography variant="body2" color="text.secondary">
+              <MuiTypography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                 No notifications
               </MuiTypography>
             </Box>
@@ -911,13 +1081,17 @@ export const LandingHeader: React.FC = () => {
                     cursor: "pointer",
                     backgroundColor: notification.isRead
                       ? "transparent"
-                      : alpha(theme.palette.primary.main, 0.05),
+                      : alpha(getNotificationColor(notification.type), darkMode ? 0.1 : 0.05),
                     "&:hover": {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                      backgroundColor: darkMode 
+                        ? 'rgba(255,255,255,0.05)' 
+                        : 'rgba(0,0,0,0.04)',
                     },
                     py: 1.5,
                     px: 2,
-                    borderBottom: "1px solid rgba(0,0,0,0.05)",
+                    borderBottom: darkMode 
+                      ? '1px solid #3c4043'
+                      : '1px solid rgba(0,0,0,0.05)',
                     "&:last-child": {
                       borderBottom: "none",
                     },
@@ -945,14 +1119,15 @@ export const LandingHeader: React.FC = () => {
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <MuiTypography
                           variant="subtitle2"
-                          fontWeight={notification.isRead ? "normal" : "600"}
+                          fontWeight={notification.isRead ? "normal" : "500"}
                           sx={{ lineHeight: 1.3 }}
+                          color={darkMode ? '#e8eaed' : '#202124'}
                         >
                           {notification.title}
                         </MuiTypography>
                         <MuiTypography
                           variant="body2"
-                          color="text.secondary"
+                          color={darkMode ? '#9aa0a6' : '#5f6368'}
                           sx={{
                             lineHeight: 1.4,
                             mt: 0.5,
@@ -966,7 +1141,7 @@ export const LandingHeader: React.FC = () => {
                         </MuiTypography>
                         <MuiTypography
                           variant="caption"
-                          color="text.secondary"
+                          color={darkMode ? '#9aa0a6' : '#5f6368'}
                           sx={{ mt: 0.5, display: "block" }}
                         >
                           {formatTime(notification.createdAt)}
@@ -980,22 +1155,28 @@ export const LandingHeader: React.FC = () => {
           )}
         </Box>
 
-        {/* View All Notifications - FIXED: Removed Fragment */}
         {notifications.length > 0 && (
-          <>
-            <Divider />
+          <Box>
+            <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
             <MenuItem
               onClick={() => {
                 router.push("/notifications");
                 handleNotificationMenuClose();
               }}
-              sx={{ justifyContent: "center" }}
+              sx={{ 
+                justifyContent: "center",
+                '&:hover': {
+                  backgroundColor: darkMode 
+                    ? 'rgba(255,255,255,0.05)' 
+                    : 'rgba(0,0,0,0.04)',
+                }
+              }}
             >
-              <MuiTypography variant="body2" color="primary">
+              <MuiTypography variant="body2" color="#4285f4">
                 View all notifications
               </MuiTypography>
             </MenuItem>
-          </>
+          </Box>
         )}
       </Menu>
 

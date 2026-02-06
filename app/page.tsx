@@ -13,7 +13,9 @@ import {
   CircularProgress,
   Alert,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  alpha,
+  Fade,
 } from "@mui/material";
 import {
   RocketLaunch,
@@ -24,10 +26,13 @@ import {
   Security,
   Speed,
   Star,
+  ArrowForward,
+  CheckCircle,
 } from "@mui/icons-material";
 import Link from "next/link";
 import { LandingHeader } from "@/components/landing/Header";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme as useThemeContext } from '@/contexts/ThemeContext';
 
 interface Review {
   _id: string;
@@ -47,11 +52,15 @@ interface ReviewSummary {
 }
 
 export default function LandingPage() {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'lg'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { mode } = useThemeContext();
+  const darkMode = mode === 'dark';
+  
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,40 +68,40 @@ export default function LandingPage() {
 
   const features = [
     {
-      icon: <Analytics sx={{ fontSize: { xs: 32, sm: 40 } }} />,
+      icon: <Analytics sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
       title: "Sales Analytics",
-      description: "Track your revenue, monitor sales trends, and make data-driven decisions with real-time analytics.",
-      color: "#2563eb",
+      description: "Track revenue, monitor trends, and make data-driven decisions.",
+      color: "#4285f4",
     },
     {
-      icon: <Inventory sx={{ fontSize: { xs: 32, sm: 40 } }} />,
-      title: "Inventory Management",
-      description: "Manage stock levels, track products, and automate reordering with smart inventory controls.",
-      color: "#059669",
+      icon: <Inventory sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
+      title: "Inventory",
+      description: "Manage stock levels and automate reordering.",
+      color: "#34a853",
     },
     {
-      icon: <People sx={{ fontSize: { xs: 32, sm: 40 } }} />,
+      icon: <People sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
       title: "Customer CRM",
-      description: "Build lasting relationships with comprehensive customer profiles and interaction tracking.",
-      color: "#dc2626",
+      description: "Build relationships with customer profiles and tracking.",
+      color: "#ea4335",
     },
     {
-      icon: <Receipt sx={{ fontSize: { xs: 32, sm: 40 } }} />,
-      title: "Invoice & Billing",
-      description: "Create professional invoices, track payments, and manage your billing effortlessly.",
-      color: "#7c3aed",
+      icon: <Receipt sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
+      title: "Invoicing",
+      description: "Create professional invoices and track payments.",
+      color: "#fbbc05",
     },
     {
-      icon: <Security sx={{ fontSize: { xs: 32, sm: 40 } }} />,
-      title: "Secure & Compliant",
-      description: "Enterprise-grade security with GST compliance and data protection built-in.",
-      color: "#ea580c",
+      icon: <Security sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
+      title: "Security",
+      description: "Enterprise-grade security with compliance built-in.",
+      color: "#4285f4",
     },
     {
-      icon: <Speed sx={{ fontSize: { xs: 32, sm: 40 } }} />,
-      title: "Real-time Updates",
-      description: "Live sync across all devices with instant updates and collaborative features.",
-      color: "#db2777",
+      icon: <Speed sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
+      title: "Real-time",
+      description: "Live sync across all devices with instant updates.",
+      color: "#34a853",
     },
   ];
 
@@ -128,19 +137,41 @@ export default function LandingPage() {
     });
   };
 
+  const getResponsiveTypography = (mobile: string, tablet: string, desktop: string) => {
+    if (isMobile) return mobile;
+    if (isTablet) return tablet;
+    return desktop;
+  };
+
   return (
-    <Box sx={{ minHeight: "100vh" }}>
+    <Box sx={{ 
+      minHeight: "100vh",
+      backgroundColor: darkMode ? '#202124' : '#ffffff',
+      color: darkMode ? '#e8eaed' : '#202124',
+      transition: 'all 0.3s ease',
+    }}>
       <LandingHeader />
 
       {/* Hero Section */}
       <Box
         sx={{
-          pt: { xs: 10, sm: 12, md: 16 },
-          pb: { xs: 6, sm: 8, md: 12 },
-          background: "linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%)",
+          pt: { xs: 8, sm: 10, md: 12 },
+          pb: { xs: 6, sm: 8, md: 10 },
+          background: darkMode 
+            ? 'linear-gradient(135deg, #0d47a1 0%, #311b92 100%)'
+            : 'linear-gradient(135deg, #1a73e8 0%, #4285f4 100%)',
           color: "white",
           position: "relative",
           overflow: "hidden",
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 70%)',
+          }
         }}
       >
         <Container maxWidth="lg">
@@ -154,49 +185,75 @@ export default function LandingPage() {
           >
             <Box sx={{ flex: 1, textAlign: { xs: "center", md: "left" } }}>
               <Typography
-                variant={isMobile ? "h3" : isTablet ? "h2" : "h1"}
+                variant="h1"
                 component="h1"
-                fontWeight="bold"
+                fontWeight={500}
                 gutterBottom
                 sx={{
-                  fontSize: { 
-                    xs: "2rem", 
-                    sm: "2.5rem", 
-                    md: "3.5rem",
-                    lg: "4rem" 
-                  },
-                  lineHeight: 1.2,
+                  fontSize: getResponsiveTypography('2rem', '2.5rem', '3rem'),
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.02em',
                   color: "white",
+                  mb: 2,
                 }}
               >
-                Streamline Your Business with{" "}
+                Streamline Your Business
                 <Box
                   component="span"
                   sx={{
-                    background: "linear-gradient(45deg, #FFD700, #FFA500)",
-                    backgroundClip: "text",
-                    WebkitBackgroundClip: "text",
-                    color: "transparent",
+                    display: 'block',
+                    mt: 1,
+                    fontWeight: 400,
+                    fontSize: getResponsiveTypography('0.8em', '0.85em', '0.9em'),
+                    opacity: 0.9,
                   }}
                 >
-                  AccumaManage
+                  with AccumaManage
                 </Box>
               </Typography>
               <Typography
-                variant={isMobile ? "h6" : "h5"}
+                variant="h6"
                 sx={{
                   mb: 4,
-                  opacity: 0.95,
-                  fontSize: { 
-                    xs: "1rem", 
-                    sm: "1.1rem", 
-                    md: "1.25rem" 
-                  },
+                  opacity: 0.9,
+                  fontSize: getResponsiveTypography('1rem', '1.1rem', '1.25rem'),
+                  fontWeight: 300,
                   color: "white",
                 }}
               >
-                All-in-one business management platform for inventory, sales, customers, and invoicing. Grow your business with powerful tools designed for modern enterprises.
+                All-in-one platform for modern business management
               </Typography>
+              
+              <Box sx={{ 
+                mb: 4,
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: { xs: 1, sm: 2 },
+                justifyContent: { xs: 'center', md: 'flex-start' }
+              }}>
+                {['Inventory', 'Sales', 'CRM', 'Invoicing'].map((item) => (
+                  <Box key={item} sx={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    mr: { xs: 1, sm: 2 },
+                    mb: 1 
+                  }}>
+                    <CheckCircle sx={{ 
+                      fontSize: getResponsiveTypography('14px', '15px', '16px'), 
+                      mr: 0.75, 
+                      color: '#34a853' 
+                    }} />
+                    <Typography 
+                      variant="body2" 
+                      color="white"
+                      sx={{ fontSize: getResponsiveTypography('0.85rem', '0.9rem', '1rem') }}
+                    >
+                      {item}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+
               <Stack
                 direction={{ xs: "column", sm: "row" }}
                 spacing={2}
@@ -212,16 +269,20 @@ export default function LandingPage() {
                       size={isMobile ? "medium" : "large"}
                       component={Link}
                       href="/dashboard"
+                      endIcon={<ArrowForward />}
                       sx={{
-                        px: { xs: 3, sm: 4 },
-                        py: { xs: 1.25, sm: 1.5 },
-                        fontSize: { xs: "0.95rem", sm: "1.1rem" },
-                        background: "linear-gradient(45deg, #FFD700, #FFA500)",
-                        color: "black",
-                        fontWeight: "bold",
+                        px: getResponsiveTypography('3', '4', '5'),
+                        py: getResponsiveTypography('1.25', '1.5', '1.75'),
+                        fontSize: getResponsiveTypography('0.95rem', '1rem', '1.1rem'),
+                        backgroundColor: '#34a853',
+                        color: "white",
+                        fontWeight: 500,
                         minWidth: { xs: "100%", sm: "auto" },
+                        borderRadius: '20px',
+                        textTransform: 'none',
                         "&:hover": {
-                          background: "linear-gradient(45deg, #FFC400, #FF8C00)",
+                          backgroundColor: '#2d9248',
+                          boxShadow: '0 4px 12px rgba(52, 168, 83, 0.3)',
                         },
                       }}
                     >
@@ -233,12 +294,14 @@ export default function LandingPage() {
                       component={Link}
                       href="/login"
                       sx={{
-                        px: { xs: 3, sm: 4 },
-                        py: { xs: 1.25, sm: 1.5 },
-                        fontSize: { xs: "0.95rem", sm: "1.1rem" },
+                        px: getResponsiveTypography('3', '4', '5'),
+                        py: getResponsiveTypography('1.25', '1.5', '1.75'),
+                        fontSize: getResponsiveTypography('0.95rem', '1rem', '1.1rem'),
                         borderColor: "white",
                         color: "white",
                         minWidth: { xs: "100%", sm: "auto" },
+                        borderRadius: '20px',
+                        textTransform: 'none',
                         "&:hover": {
                           borderColor: "white",
                           backgroundColor: "rgba(255,255,255,0.1)",
@@ -254,16 +317,20 @@ export default function LandingPage() {
                     size={isMobile ? "medium" : "large"}
                     component={Link}
                     href="/dashboard"
+                    endIcon={<ArrowForward />}
                     sx={{
-                      px: { xs: 3, sm: 4 },
-                      py: { xs: 1.25, sm: 1.5 },
-                      fontSize: { xs: "0.95rem", sm: "1.1rem" },
-                      background: "linear-gradient(45deg, #FFD700, #FFA500)",
-                      color: "black",
-                      fontWeight: "bold",
+                      px: getResponsiveTypography('3', '4', '5'),
+                      py: getResponsiveTypography('1.25', '1.5', '1.75'),
+                      fontSize: getResponsiveTypography('0.95rem', '1rem', '1.1rem'),
+                      backgroundColor: '#34a853',
+                      color: "white",
+                      fontWeight: 500,
                       minWidth: { xs: "100%", sm: "auto" },
+                      borderRadius: '20px',
+                      textTransform: 'none',
                       "&:hover": {
-                        background: "linear-gradient(45deg, #FFC400, #FF8C00)",
+                        backgroundColor: '#2d9248',
+                        boxShadow: '0 4px 12px rgba(52, 168, 83, 0.3)',
                       },
                     }}
                   >
@@ -274,180 +341,272 @@ export default function LandingPage() {
             </Box>
             <Box sx={{ 
               flex: 1, 
-              position: "relative", 
-              textAlign: "center",
+              position: "relative",
               display: { xs: "none", md: "block" }
             }}>
-              <Paper
-                elevation={24}
+              <Box
                 sx={{
-                  p: { xs: 3, md: 4 },
-                  background: "rgba(255, 255, 255, 0.1)",
-                  backdropFilter: "blur(20px)",
-                  borderRadius: { xs: 3, md: 4 },
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '-20px',
+                    right: '-20px',
+                    width: '160px',
+                    height: '160px',
+                    background: 'radial-gradient(circle, rgba(52, 168, 83, 0.3) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                  }
                 }}
               >
-                <RocketLaunch
-                  sx={{ 
-                    fontSize: { xs: 80, md: 120 }, 
-                    opacity: 0.9, 
-                    mb: 2, 
-                    color: "#FFD700" 
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: { xs: 2, md: 3 },
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    backdropFilter: 'blur(20px)',
+                    borderRadius: '20px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    position: 'relative',
+                    zIndex: 1,
                   }}
-                />
-                <Typography variant="h6" fontWeight="bold" color="white">
-                  Everything You Need in One Platform
-                </Typography>
-              </Paper>
+                >
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    mb: 2 
+                  }}>
+                    {[1, 2, 3, 4].map((item) => (
+                      <Box key={item} sx={{ 
+                        p: 1.5, 
+                        bgcolor: 'rgba(255,255,255,0.05)', 
+                        borderRadius: '10px',
+                        textAlign: 'center',
+                        flex: 1,
+                        mx: 0.5
+                      }}>
+                        <Typography variant="h5" color="white" fontWeight={500}>
+                          {item * 25}%
+                        </Typography>
+                        <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                          Efficiency
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                  <RocketLaunch
+                    sx={{ 
+                      fontSize: 60, 
+                      mb: 2, 
+                      color: "#34a853" 
+                    }}
+                  />
+                  <Typography variant="subtitle1" fontWeight={500} color="white">
+                    Everything You Need
+                  </Typography>
+                </Paper>
+              </Box>
             </Box>
           </Box>
         </Container>
       </Box>
 
       {/* Features Section */}
-      <Box id="features" sx={{ py: { xs: 6, sm: 8, md: 12 } }}>
+      <Box sx={{ 
+        py: { xs: 6, sm: 8, md: 10 },
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+      }}>
         <Container maxWidth="lg">
-          <Typography
-            variant={isMobile ? "h4" : isTablet ? "h3" : "h2"}
-            component="h2"
-            textAlign="center"
-            fontWeight="bold"
-            gutterBottom
-            color="text.primary"
-            sx={{ mb: { xs: 2, sm: 3 } }}
-          >
-            Powerful Features for Your Business
-          </Typography>
-          <Typography
-            variant={isMobile ? "body1" : "h6"}
-            color="text.secondary"
-            textAlign="center"
-            sx={{ 
-              mb: { xs: 4, sm: 6, md: 8 }, 
-              maxWidth: 600, 
-              mx: "auto",
-              px: { xs: 2, sm: 0 }
-            }}
-          >
-            Designed to streamline your operations and boost productivity with intuitive tools and automation.
-          </Typography>
+          <Box sx={{ textAlign: 'center', mb: { xs: 4, sm: 5, md: 6 } }}>
+            <Typography
+              variant="h2"
+              component="h2"
+              fontWeight={500}
+              gutterBottom
+              color={darkMode ? "#e8eaed" : "#202124"}
+              sx={{ 
+                fontSize: getResponsiveTypography('1.75rem', '2rem', '2.25rem'),
+                mb: 2
+              }}
+            >
+              Powerful Features
+            </Typography>
+            <Typography
+              variant="body1"
+              color={darkMode ? "#9aa0a6" : "#5f6368"}
+              sx={{ 
+                maxWidth: 500, 
+                mx: "auto",
+                fontWeight: 300,
+                fontSize: getResponsiveTypography('0.9rem', '1rem', '1.1rem'),
+              }}
+            >
+              Streamline operations with intuitive tools and automation
+            </Typography>
+          </Box>
 
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                md: "repeat(3, 1fr)",
-              },
-              gap: { xs: 3, sm: 4 },
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: { xs: 2, sm: 3 },
+              justifyContent: 'center',
             }}
           >
-            {features.map((feature) => (
-              <Card
+            {features.map((feature, index) => (
+              <Box
                 key={feature.title}
                 sx={{
-                  height: "100%",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "translateY(-8px)",
-                    boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+                  width: { 
+                    xs: 'calc(50% - 8px)',
+                    sm: 'calc(33.333% - 16px)',
+                    md: 'calc(25% - 16px)',
+                    lg: 'calc(33.333% - 16px)'
                   },
+                  minWidth: { xs: 140, sm: 160 },
                 }}
               >
-                <CardContent sx={{ 
-                  p: { xs: 2.5, sm: 3, md: 4 }, 
-                  textAlign: "center",
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}>
-                  <Box sx={{ color: feature.color, mb: 2 }}>
-                    {feature.icon}
-                  </Box>
-                  <Typography
-                    variant={isMobile ? "h6" : "h5"}
-                    fontWeight="bold"
-                    gutterBottom
-                    color="text.primary"
-                    sx={{ mb: { xs: 1, sm: 2 } }}
+                <Fade in timeout={(index + 1) * 150}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      transition: 'all 0.3s ease',
+                      backgroundColor: darkMode ? '#303134' : '#ffffff',
+                      color: darkMode ? '#e8eaed' : '#202124',
+                      borderRadius: '12px',
+                      border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: darkMode 
+                          ? '0 6px 16px rgba(0,0,0,0.3)'
+                          : '0 6px 16px rgba(0,0,0,0.1)',
+                      },
+                    }}
                   >
-                    {feature.title}
-                  </Typography>
-                  <Typography 
-                    variant={isMobile ? "body2" : "body1"} 
-                    color="text.secondary"
-                    sx={{ lineHeight: 1.6 }}
-                  >
-                    {feature.description}
-                  </Typography>
-                </CardContent>
-              </Card>
+                    <CardContent sx={{ 
+                      p: { xs: 2, sm: 2.5 }, 
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                    }}>
+                      <Box sx={{ 
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: { xs: 44, sm: 48 },
+                        height: { xs: 44, sm: 48 },
+                        borderRadius: '10px',
+                        backgroundColor: alpha(feature.color, 0.1),
+                        color: feature.color,
+                        mb: 2,
+                      }}>
+                        {feature.icon}
+                      </Box>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight={500}
+                        gutterBottom
+                        sx={{ 
+                          mb: 1,
+                          fontSize: getResponsiveTypography('0.9rem', '1rem', '1.1rem'),
+                          lineHeight: 1.2
+                        }}
+                      >
+                        {feature.title}
+                      </Typography>
+                      <Typography 
+                        variant="body2" 
+                        color={darkMode ? "#9aa0a6" : "#5f6368"}
+                        sx={{ 
+                          lineHeight: 1.4,
+                          fontSize: getResponsiveTypography('0.75rem', '0.8rem', '0.85rem'),
+                        }}
+                      >
+                        {feature.description}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Fade>
+              </Box>
             ))}
           </Box>
         </Container>
       </Box>
 
       {/* Testimonials Section */}
-      <Box sx={{ py: { xs: 6, sm: 8, md: 12 } }}>
+      <Box sx={{ 
+        py: { xs: 6, sm: 8, md: 10 },
+        backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+      }}>
         <Container maxWidth="lg">
-          <Typography
-            variant={isMobile ? "h4" : isTablet ? "h3" : "h2"}
-            component="h2"
-            textAlign="center"
-            fontWeight="bold"
-            gutterBottom
-            color="text.primary"
-            sx={{ mb: { xs: 2, sm: 3 } }}
-          >
-            Trusted by Businesses
-          </Typography>
-          <Typography
-            variant={isMobile ? "body1" : "h6"}
-            color="text.secondary"
-            textAlign="center"
-            sx={{ 
-              mb: { xs: 4, sm: 6, md: 8 }, 
-              maxWidth: 600, 
-              mx: "auto",
-              px: { xs: 2, sm: 0 }
-            }}
-          >
-            Join hundreds of businesses that trust AccumaManage to power their operations.
-          </Typography>
+          <Box sx={{ textAlign: 'center', mb: { xs: 4, sm: 5, md: 6 } }}>
+            <Typography
+              variant="h2"
+              component="h2"
+              fontWeight={500}
+              gutterBottom
+              color={darkMode ? "#e8eaed" : "#202124"}
+              sx={{ 
+                fontSize: getResponsiveTypography('1.75rem', '2rem', '2.25rem'),
+                mb: 2
+              }}
+            >
+              Trusted by Businesses
+            </Typography>
+            <Typography
+              variant="body1"
+              color={darkMode ? "#9aa0a6" : "#5f6368"}
+              sx={{ 
+                maxWidth: 500, 
+                mx: "auto",
+                fontWeight: 300,
+                fontSize: getResponsiveTypography('0.9rem', '1rem', '1.1rem'),
+              }}
+            >
+              Join hundreds of businesses that trust AccumaManage
+            </Typography>
+          </Box>
 
           {error && (
             <Alert severity="error" sx={{ 
               mb: 4, 
-              maxWidth: 600, 
+              maxWidth: 500, 
               mx: "auto",
-              fontSize: { xs: "0.875rem", sm: "1rem" }
+              borderRadius: '10px',
+              fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem'),
             }}>
               {error}
             </Alert>
           )}
 
           {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-              <CircularProgress />
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+              <CircularProgress size={isMobile ? 30 : 40} />
             </Box>
           ) : reviews.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 8 }}>
+            <Box sx={{ textAlign: "center", py: 6 }}>
               <Typography 
-                variant={isMobile ? "h6" : "h5"} 
-                color="text.primary" 
+                variant="h6" 
+                color={darkMode ? "#e8eaed" : "#202124"} 
                 gutterBottom
-                sx={{ mb: 2 }}
+                sx={{ 
+                  mb: 2,
+                  fontSize: getResponsiveTypography('1.1rem', '1.25rem', '1.5rem'),
+                }}
               >
                 Be the First to Review!
               </Typography>
               <Typography 
-                variant={isMobile ? "body2" : "body1"} 
-                color="text.secondary" 
-                sx={{ mb: 3, maxWidth: 500, mx: "auto" }}
+                variant="body1" 
+                color={darkMode ? "#9aa0a6" : "#5f6368"} 
+                sx={{ 
+                  mb: 3, 
+                  maxWidth: 400, 
+                  mx: "auto",
+                  fontSize: getResponsiveTypography('0.85rem', '0.9rem', '1rem'),
+                }}
               >
                 Our platform is new and we're excited to hear from our first users.
               </Typography>
@@ -456,102 +615,135 @@ export default function LandingPage() {
                   variant="contained"
                   component={Link}
                   href="/signup"
-                  size={isMobile ? "medium" : "large"}
+                  endIcon={<ArrowForward />}
                   sx={{
-                    background: "linear-gradient(45deg, #FFD700, #FFA500)",
-                    color: "black",
-                    fontWeight: "bold",
-                    px: { xs: 3, sm: 4 },
-                    py: { xs: 1, sm: 1.5 }
+                    backgroundColor: '#4285f4',
+                    color: "white",
+                    fontWeight: 500,
+                    borderRadius: '20px',
+                    px: getResponsiveTypography('3', '4', '5'),
+                    py: getResponsiveTypography('1', '1.25', '1.5'),
+                    fontSize: getResponsiveTypography('0.85rem', '0.9rem', '1rem'),
+                    "&:hover": {
+                      backgroundColor: '#3367d6',
+                    },
                   }}
                 >
-                  Join Now and Be the First Reviewer
+                  Join Now and Review
                 </Button>
               )}
             </Box>
           ) : (
             <Box
               sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  md: "repeat(3, 1fr)",
-                },
-                gap: { xs: 3, sm: 4 },
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: { xs: 2, sm: 3 },
+                justifyContent: 'center',
               }}
             >
               {reviews.map((review) => (
-                <Paper
+                <Box
                   key={review._id}
                   sx={{
-                    p: { xs: 2.5, sm: 3, md: 4 },
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    transition: "all 0.3s ease",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+                    width: { 
+                      xs: '100%',
+                      sm: 'calc(50% - 12px)',
+                      md: 'calc(33.333% - 16px)'
                     },
+                    maxWidth: 400,
                   }}
                 >
-                  <Box sx={{ display: "flex", mb: 2 }}>
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        sx={{
-                          color: i < review.rating ? "#FFD700" : "#e5e7eb",
-                          fontSize: { xs: 18, sm: 20 },
-                        }}
-                      />
-                    ))}
-                  </Box>
-                  <Typography
-                    variant={isMobile ? "subtitle1" : "h6"}
-                    fontWeight="bold"
-                    gutterBottom
-                    color="text.primary"
-                    sx={{ mb: 2 }}
-                  >
-                    {review.title}
-                  </Typography>
-                  <Typography
-                    variant={isMobile ? "body2" : "body1"}
-                    sx={{ 
-                      mb: 3, 
-                      fontStyle: "italic",
-                      flex: 1 
-                    }}
-                    color="text.primary"
-                  >
-                    "{review.comment}"
-                  </Typography>
-                  <Box
+                  <Paper
                     sx={{
+                      p: { xs: 2, sm: 2.5 },
+                      height: '100%',
                       display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      mt: "auto",
+                      flexDirection: "column",
+                      transition: "all 0.3s ease",
+                      backgroundColor: darkMode ? '#303134' : '#ffffff',
+                      color: darkMode ? '#e8eaed' : '#202124',
+                      borderRadius: '12px',
+                      border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+                      "&:hover": {
+                        boxShadow: darkMode 
+                          ? '0 6px 16px rgba(0,0,0,0.3)'
+                          : '0 6px 16px rgba(0,0,0,0.1)',
+                      },
                     }}
                   >
-                    <Box>
-                      <Typography
-                        variant={isMobile ? "body2" : "subtitle1"}
-                        fontWeight="bold"
-                        color="text.primary"
+                    <Box sx={{ display: "flex", mb: 1.5 }}>
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          sx={{
+                            color: i < review.rating ? "#fbbc05" : darkMode ? "#5f6368" : "#dadce0",
+                            fontSize: getResponsiveTypography('16px', '18px', '20px'),
+                          }}
+                        />
+                      ))}
+                    </Box>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight={500}
+                      gutterBottom
+                      sx={{ 
+                        mb: 1.5,
+                        fontSize: getResponsiveTypography('0.95rem', '1rem', '1.1rem'),
+                        lineHeight: 1.2
+                      }}
+                    >
+                      {review.title}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ 
+                        mb: 2, 
+                        fontStyle: "italic",
+                        flex: 1,
+                        color: darkMode ? "#9aa0a6" : "#5f6368",
+                        fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem'),
+                        lineHeight: 1.4
+                      }}
+                    >
+                      "{review.comment}"
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mt: "auto",
+                        pt: 1.5,
+                        borderTop: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          fontWeight={500}
+                          sx={{ fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem') }}
+                        >
+                          {review.userName}
+                        </Typography>
+                        <Typography 
+                          variant="caption" 
+                          color={darkMode ? "#9aa0a6" : "#5f6368"}
+                          sx={{ fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem') }}
+                        >
+                          {review.userCompany}
+                        </Typography>
+                      </Box>
+                      <Typography 
+                        variant="caption" 
+                        color={darkMode ? "#9aa0a6" : "#5f6368"}
+                        sx={{ fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem') }}
                       >
-                        {review.userName}
-                      </Typography>
-                      <Typography variant={isMobile ? "caption" : "body2"} color="text.secondary">
-                        {review.userCompany}
+                        {formatDate(review.createdAt)}
                       </Typography>
                     </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatDate(review.createdAt)}
-                    </Typography>
-                  </Box>
-                </Paper>
+                  </Paper>
+                </Box>
               ))}
             </Box>
           )}
@@ -559,14 +751,24 @@ export default function LandingPage() {
           {summary && !loading && (
             <Box sx={{ textAlign: "center", mt: { xs: 6, sm: 8 } }}>
               <Typography
-                variant={isMobile ? "h5" : "h4"}
-                fontWeight="bold"
+                variant="h3"
+                fontWeight={500}
                 gutterBottom
-                color="text.primary"
+                sx={{ 
+                  fontSize: getResponsiveTypography('2rem', '2.25rem', '2.5rem'),
+                  mb: 1
+                }}
               >
                 {summary.averageRating.toFixed(1)} ★
               </Typography>
-              <Typography variant={isMobile ? "body2" : "body1"} color="text.secondary">
+              <Typography 
+                variant="body1" 
+                color={darkMode ? "#9aa0a6" : "#5f6368"} 
+                sx={{ 
+                  mb: 2,
+                  fontSize: getResponsiveTypography('0.85rem', '0.9rem', '1rem'),
+                }}
+              >
                 Average rating from {summary.totalReviews} verified reviews
               </Typography>
               <Button
@@ -574,8 +776,16 @@ export default function LandingPage() {
                 href="/reviews"
                 variant="outlined"
                 sx={{ 
-                  mt: 2,
-                  fontSize: { xs: "0.875rem", sm: "1rem" }
+                  borderRadius: '20px',
+                  px: getResponsiveTypography('3', '4', '5'),
+                  py: getResponsiveTypography('0.75', '1', '1.25'),
+                  fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem'),
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  '&:hover': {
+                    borderColor: darkMode ? '#5f6368' : '#4285f4',
+                    backgroundColor: darkMode ? 'rgba(66, 133, 244, 0.1)' : 'rgba(66, 133, 244, 0.04)',
+                  }
                 }}
               >
                 Read All Reviews
@@ -586,92 +796,124 @@ export default function LandingPage() {
       </Box>
 
       {/* CTA Section */}
-      <Box sx={{ py: { xs: 6, sm: 8, md: 12 } }}>
+      <Box sx={{ 
+        py: { xs: 6, sm: 8, md: 10 },
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+      }}>
         <Container maxWidth="md">
           <Paper
             sx={{
-              p: { xs: 3, sm: 4, md: 6 },
+              p: { xs: 3, sm: 4, md: 5 },
               textAlign: "center",
-              background: "linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%)",
+              background: darkMode 
+                ? 'linear-gradient(135deg, #0d47a1 0%, #311b92 100%)'
+                : 'linear-gradient(135deg, #1a73e8 0%, #4285f4 100%)',
               color: "white",
-              borderRadius: { xs: 3, md: 4 },
+              borderRadius: '20px',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 60%)',
+              }
             }}
           >
             <Typography
-              variant={isMobile ? "h4" : isTablet ? "h3" : "h2"}
+              variant="h2"
               component="h2"
-              fontWeight="bold"
+              fontWeight={500}
               gutterBottom
-              color="white"
-              sx={{ mb: { xs: 2, sm: 3, md: 4 } }}
+              sx={{ 
+                fontSize: getResponsiveTypography('1.5rem', '1.75rem', '2rem'),
+                mb: { xs: 2, sm: 3 },
+                position: 'relative',
+                zIndex: 1,
+              }}
             >
               Ready to Transform Your Business?
             </Typography>
             <Typography
-              variant={isMobile ? "body1" : "h6"}
+              variant="body1"
               sx={{ 
                 mb: { xs: 3, sm: 4 }, 
-                opacity: 0.95,
-                px: { xs: 1, sm: 0 }
+                opacity: 0.9,
+                fontWeight: 300,
+                position: 'relative',
+                zIndex: 1,
+                fontSize: getResponsiveTypography('0.9rem', '1rem', '1.1rem'),
               }}
-              color="white"
             >
-              Join thousands of businesses using AccumaManage to streamline their operations.
+              Join thousands of businesses using AccumaManage
             </Typography>
-            {!isAuthenticated && !authLoading ? (
-              <Button
-                variant="contained"
-                size={isMobile ? "medium" : "large"}
-                component={Link}
-                href="/dashboard"
-                sx={{
-                  px: { xs: 4, sm: 6 },
-                  py: { xs: 1.25, sm: 1.5 },
-                  fontSize: { xs: "0.95rem", sm: "1.1rem" },
-                  background: "linear-gradient(45deg, #FFD700, #FFA500)",
-                  color: "black",
-                  fontWeight: "bold",
-                  "&:hover": {
-                    background: "linear-gradient(45deg, #FFC400, #FF8C00)",
-                  },
-                }}
-              >
-                Start Your Free Trial
-              </Button>
-            ) : (
-              <Button
-                variant="contained"
-                size={isMobile ? "medium" : "large"}
-                component={Link}
-                href="/dashboard"
-                sx={{
-                  px: { xs: 4, sm: 6 },
-                  py: { xs: 1.25, sm: 1.5 },
-                  fontSize: { xs: "0.95rem", sm: "1.1rem" },
-                  background: "linear-gradient(45deg, #FFD700, #FFA500)",
-                  color: "black",
-                  fontWeight: "bold",
-                  "&:hover": {
-                    background: "linear-gradient(45deg, #FFC400, #FF8C00)",
-                  },
-                }}
-              >
-                Go to Dashboard
-              </Button>
-            )}
-            {!isAuthenticated && !authLoading && (
-              <Typography
-                variant="body2"
-                sx={{ 
-                  mt: 2, 
-                  opacity: 0.9,
-                  fontSize: { xs: "0.75rem", sm: "0.875rem" }
-                }}
-                color="white"
-              >
-                No credit card required • 14-day free trial • Cancel anytime
-              </Typography>
-            )}
+            <Box sx={{ position: 'relative', zIndex: 1 }}>
+              {!isAuthenticated && !authLoading ? (
+                <Button
+                  variant="contained"
+                  size={isMobile ? "medium" : "large"}
+                  component={Link}
+                  href="/dashboard"
+                  endIcon={<ArrowForward />}
+                  sx={{
+                    px: getResponsiveTypography('4', '5', '6'),
+                    py: getResponsiveTypography('1.25', '1.5', '1.75'),
+                    fontSize: getResponsiveTypography('0.95rem', '1rem', '1.1rem'),
+                    backgroundColor: '#34a853',
+                    color: "white",
+                    fontWeight: 500,
+                    borderRadius: '20px',
+                    textTransform: 'none',
+                    "&:hover": {
+                      backgroundColor: '#2d9248',
+                      boxShadow: '0 6px 16px rgba(52, 168, 83, 0.3)',
+                    },
+                  }}
+                >
+                  Start Your Free Trial
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  size={isMobile ? "medium" : "large"}
+                  component={Link}
+                  href="/dashboard"
+                  endIcon={<ArrowForward />}
+                  sx={{
+                    px: getResponsiveTypography('4', '5', '6'),
+                    py: getResponsiveTypography('1.25', '1.5', '1.75'),
+                    fontSize: getResponsiveTypography('0.95rem', '1rem', '1.1rem'),
+                    backgroundColor: '#34a853',
+                    color: "white",
+                    fontWeight: 500,
+                    borderRadius: '20px',
+                    textTransform: 'none',
+                    "&:hover": {
+                      backgroundColor: '#2d9248',
+                      boxShadow: '0 6px 16px rgba(52, 168, 83, 0.3)',
+                    },
+                  }}
+                >
+                  Go to Dashboard
+                </Button>
+              )}
+              {!isAuthenticated && !authLoading && (
+                <Typography
+                  variant="caption"
+                  sx={{ 
+                    mt: 2, 
+                    opacity: 0.9,
+                    display: 'block',
+                    fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem'),
+                  }}
+                >
+                  No credit card required • 14-day free trial • Cancel anytime
+                </Typography>
+              )}
+            </Box>
           </Paper>
         </Container>
       </Box>
@@ -680,129 +922,130 @@ export default function LandingPage() {
       <Box
         component="footer"
         sx={{
-          py: { xs: 3, sm: 4, md: 6 },
-          background: "linear-gradient(135deg, #111827 0%, #1f2937 100%)",
-          color: "white",
+          py: { xs: 3, sm: 4, md: 5 },
+          backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+          color: darkMode ? '#e8eaed' : '#202124',
+          borderTop: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
         }}
       >
         <Container maxWidth="lg">
           <Box
             sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              gap: { xs: 4, sm: 6 },
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              gap: { xs: 3, sm: 4 },
               mb: { xs: 3, sm: 4 },
             }}
           >
-            <Box sx={{ flex: 2 }}>
+            <Box sx={{ flex: 1 }}>
               <Typography
-                variant={isMobile ? "h6" : "h5"}
-                fontWeight="bold"
+                variant="h6"
+                fontWeight={500}
                 gutterBottom
-                color="white"
+                sx={{ 
+                  mb: 2,
+                  fontSize: getResponsiveTypography('1rem', '1.1rem', '1.25rem'),
+                }}
               >
                 AccumaManage
               </Typography>
               <Typography
-                variant={isMobile ? "body2" : "body1"}
+                variant="body2"
                 sx={{ 
                   opacity: 0.8, 
                   mb: 2,
-                  fontSize: { xs: "0.875rem", sm: "1rem" }
+                  maxWidth: 400,
+                  fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem'),
                 }}
-                color="white"
               >
-                Streamlining business operations for modern enterprises with powerful, intuitive tools that drive growth and efficiency.
+                Streamlining business operations for modern enterprises with powerful tools.
               </Typography>
             </Box>
             <Box
               sx={{
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
+                display: 'flex',
                 gap: { xs: 3, sm: 4 },
-                flex: 2,
+                flex: 1,
               }}
             >
-              <Box sx={{ flex: 1 }}>
+              <Box>
                 <Typography 
-                  variant={isMobile ? "subtitle1" : "h6"} 
+                  variant="subtitle2" 
                   gutterBottom 
-                  color="white"
-                  sx={{ mb: { xs: 1, sm: 2 } }}
+                  sx={{ 
+                    mb: 1.5, 
+                    fontWeight: 500,
+                    fontSize: getResponsiveTypography('0.85rem', '0.9rem', '1rem'),
+                  }}
                 >
                   Product
                 </Typography>
-                <Stack spacing={0.5}>
+                <Stack spacing={1}>
                   {["Features", "Pricing", "Solutions"].map((item) => (
-                    <Button
+                    <Typography
                       key={item}
-                      component="a"
+                      component={Link}
                       href={item === "Pricing" ? "/pricing" : `#${item.toLowerCase()}`}
                       sx={{
-                        color: "white",
-                        opacity: 0.8,
-                        justifyContent: "flex-start",
-                        fontSize: { xs: "0.875rem", sm: "1rem" },
-                        p: 0,
-                        minHeight: "auto",
-                        "&:hover": {
-                          opacity: 1,
-                          backgroundColor: "transparent",
-                        },
+                        textDecoration: 'none',
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
+                        fontSize: getResponsiveTypography('0.75rem', '0.8rem', '0.85rem'),
+                        '&:hover': {
+                          color: darkMode ? '#e8eaed' : '#202124',
+                        }
                       }}
                     >
                       {item}
-                    </Button>
+                    </Typography>
                   ))}
                 </Stack>
               </Box>
-              <Box sx={{ flex: 1 }}>
+              <Box>
                 <Typography 
-                  variant={isMobile ? "subtitle1" : "h6"} 
+                  variant="subtitle2" 
                   gutterBottom 
-                  color="white"
-                  sx={{ mb: { xs: 1, sm: 2 } }}
+                  sx={{ 
+                    mb: 1.5, 
+                    fontWeight: 500,
+                    fontSize: getResponsiveTypography('0.85rem', '0.9rem', '1rem'),
+                  }}
                 >
                   Company
                 </Typography>
-                <Stack spacing={0.5}>
+                <Stack spacing={1}>
                   {["About", "Contact", "Sign In"].map((item) => (
-                    <Button
+                    <Typography
                       key={item}
-                      component={item === "Sign In" ? Link : "a"}
+                      component={Link}
                       href={item === "Sign In" ? "/login" : `#${item.toLowerCase()}`}
                       sx={{
-                        color: "white",
-                        opacity: 0.8,
-                        justifyContent: "flex-start",
-                        fontSize: { xs: "0.875rem", sm: "1rem" },
-                        p: 0,
-                        minHeight: "auto",
-                        "&:hover": {
-                          opacity: 1,
-                          backgroundColor: "transparent",
-                        },
+                        textDecoration: 'none',
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
+                        fontSize: getResponsiveTypography('0.75rem', '0.8rem', '0.85rem'),
+                        '&:hover': {
+                          color: darkMode ? '#e8eaed' : '#202124',
+                        }
                       }}
                     >
                       {item}
-                    </Button>
+                    </Typography>
                   ))}
                 </Stack>
               </Box>
             </Box>
           </Box>
           <Box sx={{ 
-            borderTop: "1px solid rgba(255,255,255,0.1)", 
-            pt: { xs: 2, sm: 3 } 
+            borderTop: darkMode ? '1px solid #3c4043' : '1px solid #dadce0', 
+            pt: { xs: 2, sm: 3 },
+            mt: { xs: 3, sm: 4 },
+            textAlign: 'center',
           }}>
             <Typography
-              variant="body2"
+              variant="caption"
               sx={{ 
-                opacity: 0.6, 
-                textAlign: "center",
-                fontSize: { xs: "0.75rem", sm: "0.875rem" }
+                opacity: 0.6,
+                fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem'),
               }}
-              color="white"
             >
               © {new Date().getFullYear()} AccumaManage. All rights reserved.
             </Typography>

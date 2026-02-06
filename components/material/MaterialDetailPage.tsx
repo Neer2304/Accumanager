@@ -1225,6 +1225,7 @@ export const MaterialDetailPage: React.FC = () => {
                             primary="Stock Status"
                             secondary={
                               <Chip
+                                component="span"
                                 label={getStatusLabel(material.status)}
                                 size="small"
                                 sx={{
@@ -1233,6 +1234,7 @@ export const MaterialDetailPage: React.FC = () => {
                                     0.1
                                   ),
                                   color: getStatusColor(material.status),
+                                  display: 'inline-flex',
                                 }}
                               />
                             }
