@@ -50,19 +50,55 @@ import {
   Inventory,
   AddShoppingCart,
   RemoveShoppingCart,
-  SwapHoriz,
-  TrendingFlat,
   MoreVert,
   Visibility,
   PictureAsPdf as PdfIcon,
   InsertDriveFile as ExcelIcon,
   CloudDownload as CloudDownloadIcon,
   DateRange,
-  Clear
+  Clear,
+  Email,
+  Phone,
+  AttachMoney,
+  LocalShipping,
+  Receipt
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { MainLayout } from '@/components/Layout/MainLayout';
-import { HistoryFilters, HistoryRecord } from '@/types/material.types';
+
+// Define History Record type based on your API
+export interface HistoryRecord {
+  _id: string;
+  type: 'usage' | 'restock';
+  date: string;
+  materialId: string;
+  materialName: string;
+  materialSku: string;
+  quantity: number;
+  unit: string;
+  user?: string;
+  project?: string;
+  note?: string;
+  cost?: number;
+  total?: number;
+  supplier?: string;
+  supplierCode?: string;
+  purchaseOrder?: string;
+  icon: string;
+  color: string;
+  details?: string;
+}
+
+export interface HistoryFilters {
+  type: 'all' | 'usage' | 'restock';
+  search: string;
+  startDate: string;
+  endDate: string;
+  page: number;
+  limit: number;
+  materialId?: string;
+  supplierName?: string;
+}
 
 export default function HistoryPage() {
   const theme = useTheme();
@@ -76,8 +112,7 @@ export default function HistoryPage() {
   const [exportMenuAnchor, setExportMenuAnchor] = useState<HTMLElement | null>(null);
   const [filters, setFilters] = useState<HistoryFilters>({
     type: 'all',
-    materialId: '',
-    userId: '',
+    search: '',
     startDate: '',
     endDate: '',
     page: 1,
@@ -91,7 +126,10 @@ export default function HistoryPage() {
   });
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
 
+  // Fetch history from API
   const fetchHistory = async () => {
     try {
       setLoading(true);
@@ -99,18 +137,31 @@ export default function HistoryPage() {
       
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, String(value));
+        if (value && value !== 'all') params.append(key, String(value));
       });
       
-      const response = await fetch(`/api/material/history?${params}`);
+      const response = await fetch(`/api/material/suppliers/history?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.success) {
-        setHistory(data.data.records || []);
+        // Ensure each record has a unique ID
+        const historyData = data.data.activity || [];
+        const uniqueHistory = historyData.map((record: any, index: number) => ({
+          ...record,
+          // Generate a unique ID if missing or duplicate
+          _id: record._id || `history_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`
+        }));
+        
+        setHistory(uniqueHistory);
         setPagination({
-          page: data.data.pagination?.page - 1 || 0,
+          page: (data.data.pagination?.page || 1) - 1,
           limit: data.data.pagination?.limit || 20,
-          total: data.data.pagination?.total || 0,
+          total: data.data.pagination?.total || uniqueHistory.length || 0,
           pages: data.data.pagination?.pages || 1,
         });
       } else {
@@ -118,14 +169,42 @@ export default function HistoryPage() {
       }
     } catch (err) {
       console.error('Fetch error:', err);
-      setError('Error fetching history. Please try again.');
+      setError(err instanceof Error ? err.message : 'Error fetching history. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch materials for filter dropdown
+  const fetchMaterials = async () => {
+    try {
+      const response = await fetch('/api/material');
+      const data = await response.json();
+      if (data.success) {
+        setMaterials(data.data.materials || []);
+      }
+    } catch (err) {
+      console.error('Fetch materials error:', err);
+    }
+  };
+
+  // Fetch suppliers for filter dropdown
+  const fetchSuppliers = async () => {
+    try {
+      const response = await fetch('/api/material/suppliers');
+      const data = await response.json();
+      if (data.success) {
+        setSuppliers(data.data.suppliers || []);
+      }
+    } catch (err) {
+      console.error('Fetch suppliers error:', err);
+    }
+  };
+
   useEffect(() => {
     fetchHistory();
+    fetchMaterials();
+    fetchSuppliers();
   }, [filters]);
 
   const handleExportClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -163,8 +242,7 @@ export default function HistoryPage() {
   const handleClearFilters = () => {
     setFilters({
       type: 'all',
-      materialId: '',
-      userId: '',
+      search: '',
       startDate: '',
       endDate: '',
       page: 1,
@@ -189,8 +267,6 @@ export default function HistoryPage() {
     switch (type) {
       case 'usage': return <RemoveShoppingCart />;
       case 'restock': return <AddShoppingCart />;
-      case 'transfer': return <SwapHoriz />;
-      case 'adjustment': return <TrendingFlat />;
       default: return <History />;
     }
   };
@@ -199,10 +275,48 @@ export default function HistoryPage() {
     switch (type) {
       case 'usage': return '#ea4335';
       case 'restock': return '#34a853';
-      case 'transfer': return '#4285f4';
-      case 'adjustment': return '#fbbc04';
       default: return '#9aa0a6';
     }
+  };
+
+  const getActivityText = (type: string) => {
+    switch (type) {
+      case 'usage': return 'Material Usage';
+      case 'restock': return 'Stock Restock';
+      default: return 'Activity';
+    }
+  };
+
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return '$0';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Function to generate a unique key for each record
+  const getRecordKey = (record: HistoryRecord, index: number) => {
+    // Use the record's _id if it exists and is not empty
+    if (record._id && record._id.trim() !== '') {
+      return record._id;
+    }
+    
+    // Otherwise, generate a unique key based on the record's data
+    return `history_${record.type}_${record.materialId}_${record.date}_${index}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
   if (loading && !history.length) {
@@ -305,16 +419,45 @@ export default function HistoryPage() {
                     <MenuItem value="all">All Activities</MenuItem>
                     <MenuItem value="usage">Usage</MenuItem>
                     <MenuItem value="restock">Restock</MenuItem>
-                    <MenuItem value="transfer">Transfer</MenuItem>
-                    <MenuItem value="adjustment">Adjustment</MenuItem>
                   </Select>
                 </FormControl>
 
-                <TextField size="small" placeholder="Search material..." value={filters.materialId} onChange={(e) => handleFilterChange('materialId', e.target.value)} sx={{ flex: 1 }} InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> }} />
+                <TextField 
+                  size="small" 
+                  placeholder="Search..." 
+                  value={filters.search} 
+                  onChange={(e) => handleFilterChange('search', e.target.value)} 
+                  sx={{ flex: 1 }} 
+                  InputProps={{ 
+                    startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> 
+                  }} 
+                />
 
                 <Stack direction="row" spacing={1} sx={{ flex: 1 }}>
-                  <TextField size="small" type="date" label="From" value={filters.startDate} onChange={(e) => handleFilterChange('startDate', e.target.value)} InputLabelProps={{ shrink: true }} InputProps={{ startAdornment: <InputAdornment position="start"><DateRange fontSize="small" /></InputAdornment> }} />
-                  <TextField size="small" type="date" label="To" value={filters.endDate} onChange={(e) => handleFilterChange('endDate', e.target.value)} InputLabelProps={{ shrink: true }} InputProps={{ startAdornment: <InputAdornment position="start"><DateRange fontSize="small" /></InputAdornment> }} />
+                  <TextField 
+                    size="small" 
+                    type="date" 
+                    label="From" 
+                    value={filters.startDate} 
+                    onChange={(e) => handleFilterChange('startDate', e.target.value)} 
+                    InputLabelProps={{ shrink: true }} 
+                    InputProps={{ 
+                      startAdornment: <InputAdornment position="start"><DateRange fontSize="small" /></InputAdornment> 
+                    }} 
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField 
+                    size="small" 
+                    type="date" 
+                    label="To" 
+                    value={filters.endDate} 
+                    onChange={(e) => handleFilterChange('endDate', e.target.value)} 
+                    InputLabelProps={{ shrink: true }} 
+                    InputProps={{ 
+                      startAdornment: <InputAdornment position="start"><DateRange fontSize="small" /></InputAdornment> 
+                    }} 
+                    sx={{ flex: 1 }}
+                  />
                 </Stack>
               </Stack>
             </Stack>
@@ -328,9 +471,9 @@ export default function HistoryPage() {
               { title: 'Total Records', value: pagination.total, icon: <History />, color: '#4285f4', description: 'All activities' },
               { title: 'Usage Records', value: history.filter(h => h.type === 'usage').length, icon: <RemoveShoppingCart />, color: '#ea4335', description: 'Material usage' },
               { title: 'Restock Records', value: history.filter(h => h.type === 'restock').length, icon: <AddShoppingCart />, color: '#34a853', description: 'Stock additions' },
-              { title: 'Transfer Records', value: history.filter(h => h.type === 'transfer').length, icon: <SwapHoriz />, color: '#4285f4', description: 'Warehouse transfers' },
+              { title: 'Suppliers Active', value: [...new Set(history.filter(h => h.type === 'restock').map(h => h.supplier).filter(Boolean))].length, icon: <Person />, color: '#fbbc04', description: 'Active suppliers' },
             ].map((stat, index) => (
-              <Paper key={index} sx={{ flex: '1 1 calc(25% - 24px)', minWidth: { xs: 'calc(50% - 12px)', sm: 'calc(25% - 24px)' }, p: { xs: 1.5, sm: 2, md: 3 }, borderRadius: '16px', backgroundColor: darkMode ? '#303134' : '#ffffff', border: `1px solid ${alpha(stat.color, 0.2)}`, background: darkMode ? `linear-gradient(135deg, ${alpha(stat.color, 0.1)} 0%, ${alpha(stat.color, 0.05)} 100%)` : `linear-gradient(135deg, ${alpha(stat.color, 0.08)} 0%, ${alpha(stat.color, 0.03)} 100%)`, transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 8px 24px ${alpha(stat.color, 0.15)}` } }}>
+              <Paper key={`stat-${index}`} sx={{ flex: '1 1 calc(25% - 24px)', minWidth: { xs: 'calc(50% - 12px)', sm: 'calc(25% - 24px)' }, p: { xs: 1.5, sm: 2, md: 3 }, borderRadius: '16px', backgroundColor: darkMode ? '#303134' : '#ffffff', border: `1px solid ${alpha(stat.color, 0.2)}`, background: darkMode ? `linear-gradient(135deg, ${alpha(stat.color, 0.1)} 0%, ${alpha(stat.color, 0.05)} 100%)` : `linear-gradient(135deg, ${alpha(stat.color, 0.08)} 0%, ${alpha(stat.color, 0.03)} 100%)`, transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 8px 24px ${alpha(stat.color, 0.15)}` } }}>
                 <Stack spacing={1}>
                   <Stack direction="row" alignItems="center" spacing={1.5}>
                     <Box sx={{ p: { xs: 0.75, sm: 1 }, borderRadius: '10px', backgroundColor: alpha(stat.color, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -359,134 +502,236 @@ export default function HistoryPage() {
                     <TableCell sx={{ fontWeight: 600, color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>Material</TableCell>
                     <TableCell sx={{ fontWeight: 600, color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>Quantity</TableCell>
                     <TableCell sx={{ fontWeight: 600, color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>User/Supplier</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>Cost</TableCell>
                     <TableCell sx={{ fontWeight: 600, color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>Date & Time</TableCell>
                     <TableCell sx={{ fontWeight: 600, color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {history.map((record) => (
-                    <TableRow key={record._id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                      <TableCell>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Box sx={{ color: getActivityColor(record.type), display: 'flex', alignItems: 'center' }}>{getActivityIcon(record.type)}</Box>
-                          <Typography variant="body2" sx={{ textTransform: 'capitalize', fontWeight: 500, color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>{record.type}</Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        <Stack spacing={0.5}>
-                          <Typography variant="body2" sx={{ fontWeight: 500, color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>{record.materialName}</Typography>
-                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>{record.sku}</Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        <Chip label={`${record.quantity} ${record.unit}`} size="small" sx={{ backgroundColor: getActivityColor(record.type) === '#ea4335' ? (darkMode ? '#5c1a1a' : '#fce8e6') : getActivityColor(record.type) === '#34a853' ? (darkMode ? '#0d652d' : '#d9f0e1') : (darkMode ? '#1c3f91' : '#e8f0fe'), color: getActivityColor(record.type) === '#ea4335' ? (darkMode ? '#ea4335' : '#5c1a1a') : getActivityColor(record.type) === '#34a853' ? (darkMode ? '#34a853' : '#0d652d') : (darkMode ? '#8ab4f8' : '#1a73e8'), fontWeight: 500, fontSize: { xs: '0.7rem', sm: '0.75rem' } }} />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>
-                          {record.type === 'usage' ? record.user : record.type === 'restock' ? record.supplier : 'System'}
+                  {history.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
+                        <Typography variant="body1" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          No activity history found
                         </Typography>
-                        {record.project && <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>{record.project}</Typography>}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>
-                          {new Date(record.date).toLocaleDateString()}
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block', mt: 1 }}>
+                          Start by using or restocking materials to see activity here
                         </Typography>
-                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                          {new Date(record.date).toLocaleTimeString()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <IconButton size="small" onClick={() => handleViewDetails(record)} sx={{ color: darkMode ? '#8ab4f8' : '#4285f4' }}>
-                          <Visibility fontSize="small" />
-                        </IconButton>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    history.map((record, index) => {
+                      // Generate a unique key for each record
+                      const recordKey = getRecordKey(record, index);
+                      
+                      return (
+                        <TableRow key={recordKey} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                          <TableCell>
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <Box sx={{ color: getActivityColor(record.type), display: 'flex', alignItems: 'center' }}>{getActivityIcon(record.type)}</Box>
+                              <Typography variant="body2" sx={{ fontWeight: 500, color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>
+                                {getActivityText(record.type)}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2" sx={{ fontWeight: 500, color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>{record.materialName}</Typography>
+                              <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>SKU: {record.materialSku}</Typography>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={`${record.quantity} ${record.unit}`} 
+                              size="small" 
+                              sx={{ 
+                                backgroundColor: record.type === 'usage' 
+                                  ? (darkMode ? '#5c1a1a' : '#fce8e6') 
+                                  : (darkMode ? '#0d652d' : '#d9f0e1'),
+                                color: record.type === 'usage' 
+                                  ? (darkMode ? '#ea4335' : '#5c1a1a') 
+                                  : (darkMode ? '#34a853' : '#0d652d'),
+                                fontWeight: 500, 
+                                fontSize: { xs: '0.7rem', sm: '0.75rem' } 
+                              }} 
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>
+                              {record.type === 'usage' ? record.user || 'Unknown' : record.supplier || 'Unknown Supplier'}
+                            </Typography>
+                            {record.project && (
+                              <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                                {record.project}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>
+                              {formatCurrency(record.type === 'usage' ? record.cost : record.total)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '0.8rem', sm: '0.85rem' } }}>
+                              {formatDate(record.date)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton size="small" onClick={() => handleViewDetails(record)} sx={{ color: darkMode ? '#8ab4f8' : '#4285f4' }}>
+                              <Visibility fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
 
-            <TablePagination
-              rowsPerPageOptions={[10, 20, 50, 100]}
-              component="div"
-              count={pagination.total}
-              rowsPerPage={filters.limit}
-              page={pagination.page}
-              onPageChange={handlePageChange}
-              onRowsPerPageChange={handleRowsPerPageChange}
-              sx={{
-                borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                  color: darkMode ? '#e8eaed' : '#202124',
-                  fontSize: { xs: '0.8rem', sm: '0.85rem' }
-                }
-              }}
-            />
+            {history.length > 0 && (
+              <TablePagination
+                rowsPerPageOptions={[10, 20, 50, 100]}
+                component="div"
+                count={pagination.total}
+                rowsPerPage={filters.limit}
+                page={pagination.page}
+                onPageChange={handlePageChange}
+                onRowsPerPageChange={handleRowsPerPageChange}
+                sx={{
+                  borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    fontSize: { xs: '0.8rem', sm: '0.85rem' }
+                  }
+                }}
+              />
+            )}
           </Paper>
         </Fade>
 
         {/* Details Dialog */}
-        <Dialog open={detailsDialogOpen} onClose={() => setDetailsDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { backgroundColor: darkMode ? '#303134' : '#ffffff', color: darkMode ? '#e8eaed' : '#202124', borderRadius: '16px', border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0' } }}>
+        <Dialog open={detailsDialogOpen} onClose={() => setDetailsDialogOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { backgroundColor: darkMode ? '#303134' : '#ffffff', color: darkMode ? '#e8eaed' : '#202124', borderRadius: '16px', border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0' } }}>
           {selectedRecord && (
             <>
               <DialogTitle sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }, color: darkMode ? '#e8eaed' : '#202124' }}>
                 Activity Details
               </DialogTitle>
               <DialogContent>
-                <Stack spacing={2}>
-                  <Stack direction="row" alignItems="center" spacing={1.5}>
-                    <Box sx={{ p: 1, borderRadius: '8px', backgroundColor: alpha(getActivityColor(selectedRecord.type), 0.1) }}>
+                <Stack spacing={3}>
+                  {/* Header */}
+                  <Stack direction="row" alignItems="center" spacing={2}>
+                    <Box sx={{ p: 1.5, borderRadius: '10px', backgroundColor: alpha(getActivityColor(selectedRecord.type), 0.1) }}>
                       {getActivityIcon(selectedRecord.type)}
                     </Box>
                     <Box>
-                      <Typography variant="h6" sx={{ textTransform: 'capitalize', color: getActivityColor(selectedRecord.type) }}>{selectedRecord.type}</Typography>
-                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>Activity Type</Typography>
+                      <Typography variant="h6" sx={{ textTransform: 'capitalize', color: getActivityColor(selectedRecord.type) }}>
+                        {getActivityText(selectedRecord.type)}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                        Activity ID: {selectedRecord._id}
+                      </Typography>
                     </Box>
                   </Stack>
 
                   <Divider />
 
-                  <Stack spacing={1.5}>
-                    <Box>
-                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block' }}>Material</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500 }}>{selectedRecord.materialName} ({selectedRecord.sku})</Typography>
+                  {/* Activity Details */}
+                  <Stack spacing={2}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
+                      <Stack spacing={2} sx={{ flex: 1 }}>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block', fontWeight: 500 }}>Material Information</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>{selectedRecord.materialName}</Typography>
+                          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
+                            <Inventory fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                              SKU: {selectedRecord.materialSku}
+                            </Typography>
+                          </Stack>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block', fontWeight: 500 }}>Quantity</Typography>
+                          <Typography variant="h6" sx={{ color: getActivityColor(selectedRecord.type) }}>
+                            {selectedRecord.quantity} {selectedRecord.unit}
+                          </Typography>
+                        </Box>
+
+                        {selectedRecord.type === 'restock' && (
+                          <Box>
+                            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block', fontWeight: 500 }}>Purchase Details</Typography>
+                            <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                              {selectedRecord.purchaseOrder && (
+                                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <Receipt fontSize="small" /> PO: {selectedRecord.purchaseOrder}
+                                </Typography>
+                              )}
+                              {selectedRecord.supplier && (
+                                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <Person fontSize="small" /> {selectedRecord.supplier}
+                                </Typography>
+                              )}
+                            </Stack>
+                          </Box>
+                        )}
+                      </Stack>
+
+                      <Stack spacing={2} sx={{ flex: 1 }}>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block', fontWeight: 500 }}>Cost Information</Typography>
+                          <Typography variant="h6" sx={{ color: '#34a853' }}>
+                            {formatCurrency(selectedRecord.type === 'usage' ? selectedRecord.cost : selectedRecord.total)}
+                          </Typography>
+                          {selectedRecord.type === 'restock' && selectedRecord.cost && (
+                            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mt: 0.5 }}>
+                              Unit Cost: {formatCurrency(selectedRecord.cost)}
+                            </Typography>
+                          )}
+                        </Box>
+
+                        <Box>
+                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block', fontWeight: 500 }}>Date & Time</Typography>
+                          <Typography variant="body1">{formatDate(selectedRecord.date)}</Typography>
+                        </Box>
+
+                        {selectedRecord.type === 'usage' && selectedRecord.user && (
+                          <Box>
+                            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block', fontWeight: 500 }}>User Information</Typography>
+                            <Typography variant="body1">{selectedRecord.user}</Typography>
+                            {selectedRecord.project && (
+                              <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mt: 0.5 }}>
+                                Project: {selectedRecord.project}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Stack>
                     </Box>
 
-                    <Box>
-                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block' }}>Quantity</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500, color: getActivityColor(selectedRecord.type) }}>{selectedRecord.quantity} {selectedRecord.unit}</Typography>
-                    </Box>
-
-                    {selectedRecord.user && (
-                      <Box>
-                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block' }}>User</Typography>
-                        <Typography variant="body1">{selectedRecord.user}</Typography>
-                      </Box>
-                    )}
-
-                    {selectedRecord.supplier && (
-                      <Box>
-                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block' }}>Supplier</Typography>
-                        <Typography variant="body1">{selectedRecord.supplier}</Typography>
-                      </Box>
-                    )}
-
-                    {selectedRecord.project && (
-                      <Box>
-                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block' }}>Project</Typography>
-                        <Typography variant="body1">{selectedRecord.project}</Typography>
-                      </Box>
-                    )}
-
-                    <Box>
-                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block' }}>Date & Time</Typography>
-                      <Typography variant="body1">{new Date(selectedRecord.date).toLocaleString()}</Typography>
-                    </Box>
-
+                    {/* Notes */}
                     {selectedRecord.note && (
                       <Box>
-                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block' }}>Notes</Typography>
-                        <Typography variant="body1" sx={{ fontStyle: 'italic' }}>{selectedRecord.note}</Typography>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block', fontWeight: 500 }}>Notes</Typography>
+                        <Paper sx={{ 
+                          p: 2, 
+                          mt: 1, 
+                          backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                          border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+                          borderRadius: '8px'
+                        }}>
+                          <Typography variant="body1" sx={{ color: darkMode ? '#e8eaed' : '#202124', fontStyle: 'italic' }}>
+                            {selectedRecord.note}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    )}
+
+                    {/* Additional Details */}
+                    {selectedRecord.details && (
+                      <Box>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block', fontWeight: 500 }}>Additional Details</Typography>
+                        <Typography variant="body1">{selectedRecord.details}</Typography>
                       </Box>
                     )}
                   </Stack>
