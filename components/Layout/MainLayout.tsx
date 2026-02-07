@@ -18,10 +18,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, title }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          mt: 8, // Account for header height
-          backgroundColor: 'background.default',
-          minHeight: 'calc(100vh - 64px)'
+          p: { xs: 2, sm: 3 },
+          mt: 8,
+          backgroundColor: (theme) => 
+            theme.palette.mode === 'dark' ? '#202124' : '#ffffff',
+          minHeight: 'calc(100vh - 64px)',
         }}
       >
         {children}
