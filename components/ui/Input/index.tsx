@@ -1,4 +1,4 @@
-// components/ui/Input/index.tsx
+// components/ui/Input/index.tsx - UPDATED VERSION
 "use client";
 
 import React from 'react';
@@ -6,9 +6,11 @@ import {
   TextField as MuiTextField,
   TextFieldProps as MuiTextFieldProps,
   InputAdornment,
+  IconButton,
   alpha,
   useTheme,
 } from '@mui/material';
+import { Clear as ClearIcon } from '@mui/icons-material';
 
 interface InputProps extends Omit<MuiTextFieldProps, 'variant'> {
   startIcon?: React.ReactNode;
@@ -19,6 +21,8 @@ interface InputProps extends Omit<MuiTextFieldProps, 'variant'> {
   size?: 'small' | 'medium';
   fullWidth?: boolean;
   label?: string;
+  clearable?: boolean;
+  onClear?: () => void;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -30,11 +34,35 @@ export const Input: React.FC<InputProps> = ({
   size = 'medium',
   fullWidth = true,
   label,
+  clearable = false,
+  onClear,
   sx = {},
   ...props
 }) => {
   const theme = useTheme();
   const darkMode = theme.palette.mode === 'dark';
+
+  const handleClear = () => {
+    if (onClear && props.value) {
+      onClear();
+    }
+  };
+
+  const endAdornment = clearable && props.value ? (
+    <InputAdornment position="end">
+      <IconButton
+        size="small"
+        onClick={handleClear}
+        sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
+      >
+        <ClearIcon fontSize="small" />
+      </IconButton>
+    </InputAdornment>
+  ) : endIcon ? (
+    <InputAdornment position="end" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+      {endIcon}
+    </InputAdornment>
+  ) : undefined;
 
   return (
     <MuiTextField
@@ -92,11 +120,7 @@ export const Input: React.FC<InputProps> = ({
             {startIcon}
           </InputAdornment>
         ) : undefined,
-        endAdornment: endIcon ? (
-          <InputAdornment position="end" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-            {endIcon}
-          </InputAdornment>
-        ) : undefined,
+        endAdornment,
       }}
       {...props}
     />

@@ -1,4 +1,5 @@
-import { Box } from "@mui/material";
+// components/events/EventGrid.tsx - UPDATED DESIGN
+import { Box, useTheme, alpha, Avatar, Typography } from "@mui/material";
 import { EventCard } from "./EventCard";
 import { EventSkeleton } from "./EventSkeleton";
 import { EmptyState } from "./EmptyState";
@@ -17,6 +18,9 @@ export const EventGrid: React.FC<EventGridProps> = ({
   search, 
   onMenuOpen 
 }) => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+
   if (loading) {
     return <EventSkeleton />;
   }

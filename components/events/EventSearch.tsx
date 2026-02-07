@@ -1,6 +1,8 @@
+// components/events/EventSearch.tsx - UPDATED DESIGN
 import { Box, TextField, Button } from "@mui/material";
 import { Add as AddIcon, Search as SearchIcon } from "@mui/icons-material";
 import Link from "next/link";
+import { Input } from "@/components/ui/Input";
 
 interface EventSearchProps {
   search: string;
@@ -17,34 +19,32 @@ export const EventSearch: React.FC<EventSearchProps> = ({
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        mb: 4,
         gap: 2,
       }}
     >
-      <TextField
+      <Input
         placeholder="Search events..."
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <SearchIcon sx={{ color: "text.secondary", mr: 1 }} />
-          ),
-        }}
+        startIcon={<SearchIcon />}
+        size="small"
         sx={{
           flex: 1,
           maxWidth: 400,
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 2,
-          },
         }}
-        size="small"
+        clearable={!!search}
+        onClear={() => onSearchChange('')}
       />
       <Button
         variant="contained"
         startIcon={<AddIcon />}
         component={Link}
         href="/events/add"
-        sx={{ borderRadius: 2 }}
+        sx={{ 
+          borderRadius: 2,
+          backgroundColor: '#34a853',
+          '&:hover': { backgroundColor: '#2d9248' }
+        }}
       >
         Create New Event
       </Button>
