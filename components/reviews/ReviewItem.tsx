@@ -1,9 +1,12 @@
+// components/reviews/ReviewItem.tsx
 "use client";
 
 import React from 'react';
-import { Box, Typography, Avatar, Chip, Rating } from '@mui/material';
-import { CombinedIcon } from '../ui/icons2';
-import { Card2 } from '../ui/card2';
+import { Box, Typography, Rating, useTheme } from '@mui/material';
+import { Verified, ThumbUp, Business, Person } from '@mui/icons-material';
+import { Card } from '@/components/ui/Card';
+import { Avatar } from '@/components/ui/Avatar';
+import { Chip } from '@/components/ui/Chip';
 import { Review } from '@/types/reviews';
 
 interface ReviewItemProps {
@@ -11,37 +14,48 @@ interface ReviewItemProps {
 }
 
 export const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      month: 'long',
+      month: 'short',
       day: 'numeric',
-      year: 'numeric'
-    })
-  }
+      year: 'numeric',
+    });
+  };
 
   return (
-    <Card2 sx={{ p: { xs: 3, sm: 4 }, borderRadius: 2 }}>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
+    <Card hover sx={{ overflow: 'hidden' }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3, p: 3 }}>
         {/* User Info */}
-        <Box sx={{ display: 'flex', gap: 2, minWidth: 200 }}>
+        <Box sx={{ display: 'flex', gap: 2, minWidth: { xs: '100%', sm: 200 } }}>
           <Avatar
-            sx={{ 
-              width: 56, 
-              height: 56,
-              bgcolor: 'primary.main'
+            size="lg"
+            sx={{
+              bgcolor: '#4285f4',
             }}
           >
-            {review.userName?.charAt(0) || 'U'}
+            {review.userName?.charAt(0)?.toUpperCase() || 'U'}
           </Avatar>
-          <Box>
-            <Typography variant="subtitle1" fontWeight="bold">
-              {review.userName}
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="subtitle1" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+              {review.userName || 'Anonymous User'}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {review.userCompany || review.userRole || 'Customer'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
+            {(review.userCompany || review.userRole) && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                {review.userCompany ? (
+                  <Business sx={{ fontSize: 14, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                ) : (
+                  <Person sx={{ fontSize: 14, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                )}
+                <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                  {review.userCompany || review.userRole || 'Customer'}
+                </Typography>
+              </Box>
+            )}
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', display: 'block' }}>
               {formatDate(review.createdAt)}
             </Typography>
           </Box>
@@ -49,39 +63,56 @@ export const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
 
         {/* Review Content */}
         <Box sx={{ flex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
-            <Rating value={review.rating} readOnly size="small" />
-            <Typography variant="h5" fontWeight="bold">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, flexWrap: 'wrap' }}>
+            <Rating 
+              value={review.rating} 
+              readOnly 
+              size="small"
+              sx={{
+                '& .MuiRating-icon': {
+                  color: '#fbbc04',
+                }
+              }}
+            />
+            <Typography variant="h6" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               {review.title}
             </Typography>
             {review.featured && (
               <Chip
-                icon={<CombinedIcon name="Verified" size={14} />}
+                icon={<Verified sx={{ fontSize: 14 }} />}
                 label="Featured"
                 size="small"
                 color="primary"
-                variant="outlined"
+                variant="filled"
               />
             )}
           </Box>
 
-          <Typography variant="body1" color="text.secondary" paragraph>
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              color: darkMode ? '#e8eaed' : '#202124',
+              lineHeight: 1.6,
+              mb: 2,
+            }}
+          >
             {review.comment}
           </Typography>
 
           {/* Review Stats */}
           {review.helpful > 0 && (
-            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
               <Chip
-                icon={<CombinedIcon name="ThumbUp" size={14} />}
-                label={`${review.helpful} helpful`}
+                icon={<ThumbUp sx={{ fontSize: 14 }} />}
+                label={`${review.helpful} people found this helpful`}
                 size="small"
+                color="primary"
                 variant="outlined"
               />
             </Box>
           )}
         </Box>
       </Box>
-    </Card2>
+    </Card>
   );
 };
