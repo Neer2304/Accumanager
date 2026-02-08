@@ -1,4 +1,3 @@
-// app/api/page.tsx
 "use client";
 
 import React, { useState } from 'react';
@@ -6,25 +5,15 @@ import {
   Box,
   Container,
   Typography,
-  Card,
-  CardContent,
   Stack,
-  Button,
-  Paper,
+  useTheme,
+  alpha,
+  Breadcrumbs,
   Divider,
-  Chip,
   IconButton,
   Collapse,
-  useTheme,
-  useMediaQuery,
-  TextField,
-  MenuItem,
-  Alert,
-  Tooltip,
-  alpha,
   Fade,
-  Grid,
-  useMediaQuery as useMuiMediaQuery,
+  Tooltip,
 } from '@mui/material';
 import {
   ContentCopy,
@@ -37,9 +26,15 @@ import {
   CheckCircle,
   Search,
   FilterList,
+  Home as HomeIcon,
 } from '@mui/icons-material';
-import { MainLayout } from '@/components/Layout/MainLayout';
 import Link from 'next/link';
+import { MainLayout } from '@/components/Layout/MainLayout';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
+import { Input } from '@/components/ui/Input';
+import { Alert } from '@/components/ui/Alert';
 
 interface Endpoint {
   id: string;
@@ -61,25 +56,8 @@ interface Endpoint {
 
 export default function ApiDocumentationPage() {
   const theme = useTheme();
-  const isXS = useMediaQuery(theme.breakpoints.down('xs'));
-  const isSM = useMediaQuery(theme.breakpoints.down('sm'));
-  const isMD = useMediaQuery(theme.breakpoints.down('md'));
-  const isLG = useMediaQuery(theme.breakpoints.down('lg'));
+  const darkMode = theme.palette.mode === 'dark';
   
-  const getResponsiveTypography = (xs: string, sm: string, md: string, lg: string) => {
-    if (isXS) return xs;
-    if (isSM) return sm;
-    if (isMD) return md;
-    return lg;
-  };
-
-  const getGridColumns = () => {
-    if (isXS) return 1;
-    if (isSM) return 2;
-    if (isMD) return 3;
-    return 4;
-  };
-
   const [expandedEndpoint, setExpandedEndpoint] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -204,11 +182,11 @@ export default function ApiDocumentationPage() {
 
   const getMethodColor = (method: string) => {
     switch (method) {
-      case 'GET': return theme.palette.success.main;
-      case 'POST': return theme.palette.info.main;
-      case 'PUT': return theme.palette.warning.main;
-      case 'DELETE': return theme.palette.error.main;
-      default: return theme.palette.text.secondary;
+      case 'GET': return '#34a853'; // Green
+      case 'POST': return '#4285f4'; // Blue
+      case 'PUT': return '#fbbc04'; // Yellow
+      case 'DELETE': return '#ea4335'; // Red
+      default: return darkMode ? '#9aa0a6' : '#5f6368';
     }
   };
 
@@ -226,399 +204,413 @@ export default function ApiDocumentationPage() {
 
   return (
     <MainLayout title="API Documentation">
-      <Container maxWidth="lg" sx={{ 
-        py: isXS ? 1 : isSM ? 2 : 3,
-        px: isXS ? 1 : isSM ? 2 : 3 
+      <Box sx={{ 
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+        color: darkMode ? '#e8eaed' : '#202124',
+        minHeight: '100vh',
       }}>
         {/* Header */}
-        <Box sx={{ mb: isXS ? 2 : isSM ? 3 : 4 }}>
-          <Typography 
-            variant="h4" 
-            fontWeight={700} 
-            gutterBottom
-            sx={{ 
-              fontSize: getResponsiveTypography('1.5rem', '1.75rem', '2rem', '2.25rem'),
-              mb: isXS ? 1 : 2 
-            }}
-          >
-            API Documentation
-          </Typography>
-          
-          <Typography 
-            variant="body1" 
-            color="text.secondary" 
-            sx={{ 
-              mb: isXS ? 2 : 3,
-              fontSize: getResponsiveTypography('0.85rem', '0.9rem', '1rem', '1.05rem')
-            }}
-          >
-            Documentation for all available REST APIs in AccumaManage
-          </Typography>
-
-          {/* Quick Stats */}
-          <Grid 
-            container 
-            spacing={isXS ? 1 : 2} 
-            sx={{ mb: isXS ? 2 : 3 }}
-          >
-            <Grid item xs={12} sm={4}>
-              <Paper sx={{ 
-                p: isXS ? 1.5 : 2, 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: isXS ? 1 : 2,
-                height: '100%'
-              }}>
-                <Http sx={{ 
-                  color: 'primary.main',
-                  fontSize: getResponsiveTypography('20px', '22px', '24px', '26px')
-                }} />
-                <Box>
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{ 
-                      fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                    }}
-                  >
-                    Total Endpoints
-                  </Typography>
-                  <Typography 
-                    variant="h6"
-                    sx={{ 
-                      fontSize: getResponsiveTypography('1.1rem', '1.2rem', '1.3rem', '1.4rem')
-                    }}
-                  >
-                    {endpoints.length}
-                  </Typography>
-                </Box>
-              </Paper>
-            </Grid>
-            
-            <Grid item xs={12} sm={4}>
-              <Paper sx={{ 
-                p: isXS ? 1.5 : 2, 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: isXS ? 1 : 2,
-                height: '100%'
-              }}>
-                <Security sx={{ 
-                  color: 'success.main',
-                  fontSize: getResponsiveTypography('20px', '22px', '24px', '26px')
-                }} />
-                <Box>
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{ 
-                      fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                    }}
-                  >
-                    Requires Auth
-                  </Typography>
-                  <Typography 
-                    variant="h6"
-                    sx={{ 
-                      fontSize: getResponsiveTypography('1.1rem', '1.2rem', '1.3rem', '1.4rem')
-                    }}
-                  >
-                    {endpoints.filter(e => e.requiresAuth).length}
-                  </Typography>
-                </Box>
-              </Paper>
-            </Grid>
-            
-            <Grid item xs={12} sm={4}>
-              <Paper sx={{ 
-                p: isXS ? 1.5 : 2, 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: isXS ? 1 : 2,
-                height: '100%'
-              }}>
-                <Speed sx={{ 
-                  color: 'info.main',
-                  fontSize: getResponsiveTypography('20px', '22px', '24px', '26px')
-                }} />
-                <Box>
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{ 
-                      fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                    }}
-                  >
-                    Categories
-                  </Typography>
-                  <Typography 
-                    variant="h6"
-                    sx={{ 
-                      fontSize: getResponsiveTypography('1.1rem', '1.2rem', '1.3rem', '1.4rem')
-                    }}
-                  >
-                    {categories.length - 1}
-                  </Typography>
-                </Box>
-              </Paper>
-            </Grid>
-          </Grid>
-
-          {/* Filters */}
-          <Paper sx={{ 
-            p: isXS ? 1.5 : 2, 
-            mb: isXS ? 2 : 3 
+        <Box sx={{ 
+          p: { xs: 1, sm: 2, md: 3 },
+          borderBottom: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+          background: darkMode 
+            ? 'linear-gradient(135deg, #0d3064 0%, #202124 100%)'
+            : 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)',
+        }}>
+          <Breadcrumbs sx={{ 
+            mb: { xs: 1, sm: 2 }, 
+            fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.85rem' } 
           }}>
-            <Stack 
-              direction={{ xs: 'column', sm: 'row' }} 
-              spacing={isXS ? 1.5 : 2} 
-              alignItems="center"
+            <Link 
+              href="/dashboard" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none', 
+                color: darkMode ? '#9aa0a6' : '#5f6368', 
+                fontWeight: 300,
+              }}
             >
-              <TextField
-                placeholder="Search APIs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                size="small"
-                sx={{ flex: 1 }}
-                InputProps={{
-                  startAdornment: <Search sx={{ 
-                    mr: 1, 
-                    color: 'text.secondary',
-                    fontSize: getResponsiveTypography('18px', '20px', '22px', '24px')
-                  }} />,
-                }}
-                inputProps={{
-                  style: {
-                    fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
-                  }
-                }}
-              />
-              
-              <TextField
-                select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                size="small"
+              <HomeIcon sx={{ mr: 0.5, fontSize: { xs: '14px', sm: '16px', md: '18px' } }} />
+              Dashboard
+            </Link>
+            <Typography color={darkMode ? '#e8eaed' : '#202124'} fontWeight={400}>
+              API Documentation
+            </Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ 
+            textAlign: 'center', 
+            mb: { xs: 2, sm: 3, md: 4 },
+            px: { xs: 1, sm: 2, md: 3 },
+          }}>
+            <Typography 
+              variant="h4" 
+              fontWeight={500} 
+              gutterBottom
+              sx={{ 
+                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+              }}
+            >
+              📚 API Documentation
+            </Typography>
+            
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: darkMode ? '#9aa0a6' : '#5f6368', 
+                fontWeight: 300,
+                fontSize: { xs: '0.85rem', sm: '1rem', md: '1.125rem' },
+                lineHeight: 1.5,
+                maxWidth: 600,
+                mx: 'auto',
+              }}
+            >
+              Documentation for all available REST APIs in AccumaManage
+            </Typography>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: 2,
+            flexWrap: 'wrap',
+            mt: 3,
+          }}>
+            <Chip
+              label={`${endpoints.length} Endpoints`}
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.08),
+                borderColor: alpha('#4285f4', 0.3),
+                color: darkMode ? '#8ab4f8' : '#4285f4',
+              }}
+            />
+            <Chip
+              label="Authentication Required"
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#34a853', 0.1) : alpha('#34a853', 0.08),
+                borderColor: alpha('#34a853', 0.3),
+                color: darkMode ? '#81c995' : '#34a853',
+              }}
+            />
+            <Chip
+              label="REST API"
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#fbbc04', 0.1) : alpha('#fbbc04', 0.08),
+                borderColor: alpha('#fbbc04', 0.3),
+                color: darkMode ? '#fdd663' : '#fbbc04',
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Main Content */}
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+          {/* Quick Stats */}
+          <Box sx={{ 
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: { xs: 1.5, sm: 2, md: 3 },
+            mb: { xs: 2, sm: 3, md: 4 },
+          }}>
+            {[
+              { 
+                title: 'Total Endpoints', 
+                value: endpoints.length, 
+                icon: '🔌', 
+                color: '#4285f4',
+                description: 'Available API endpoints' 
+              },
+              { 
+                title: 'Requires Auth', 
+                value: endpoints.filter(e => e.requiresAuth).length, 
+                icon: '🔐', 
+                color: '#34a853',
+                description: 'Authentication needed' 
+              },
+              { 
+                title: 'Categories', 
+                value: categories.length - 1, 
+                icon: '📂', 
+                color: '#ea4335',
+                description: 'API categories' 
+              },
+              { 
+                title: 'Methods', 
+                value: 4, 
+                icon: '🔄', 
+                color: '#fbbc04',
+                description: 'HTTP methods' 
+              },
+            ].map((stat, index) => (
+              <Card 
+                key={`stat-${index}`}
+                hover
                 sx={{ 
-                  minWidth: isXS ? '100%' : isSM ? 120 : 150 
-                }}
-                InputProps={{
-                  startAdornment: <FilterList sx={{ 
-                    mr: 1, 
-                    color: 'text.secondary',
-                    fontSize: getResponsiveTypography('18px', '20px', '22px', '24px')
-                  }} />,
-                }}
-                SelectProps={{
-                  sx: {
-                    fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
-                  }
+                  flex: '1 1 calc(25% - 12px)', 
+                  minWidth: { xs: 'calc(50% - 12px)', sm: 'calc(25% - 12px)' },
+                  p: { xs: 1.5, sm: 2, md: 3 }, 
+                  borderRadius: '16px', 
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${alpha(stat.color, 0.2)}`,
+                  background: darkMode 
+                    ? `linear-gradient(135deg, ${alpha(stat.color, 0.1)} 0%, ${alpha(stat.color, 0.05)} 100%)`
+                    : `linear-gradient(135deg, ${alpha(stat.color, 0.08)} 0%, ${alpha(stat.color, 0.03)} 100%)`,
+                  transition: 'all 0.3s ease',
+                  '&:hover': { 
+                    transform: 'translateY(-2px)', 
+                    boxShadow: `0 8px 24px ${alpha(stat.color, 0.15)}`,
+                  },
                 }}
               >
-                {categories.map((category) => (
-                  <MenuItem 
-                    key={category.value} 
-                    value={category.value}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box>
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          color: darkMode ? '#9aa0a6' : '#5f6368', 
+                          fontWeight: 400,
+                          fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                          display: 'block',
+                        }}
+                      >
+                        {stat.title}
+                      </Typography>
+                      <Typography 
+                        variant="h4"
+                        sx={{ 
+                          color: stat.color, 
+                          fontWeight: 600,
+                          fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                        }}
+                      >
+                        {stat.value}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ 
+                      p: { xs: 0.75, sm: 1 }, 
+                      borderRadius: '10px', 
+                      backgroundColor: alpha(stat.color, 0.1),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                    }}>
+                      {stat.icon}
+                    </Box>
+                  </Box>
+                  
+                  <Typography 
+                    variant="caption" 
                     sx={{ 
-                      fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontSize: { xs: '0.6rem', sm: '0.65rem', md: '0.7rem' },
+                      display: 'block',
                     }}
                   >
-                    {category.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Stack>
-          </Paper>
+                    {stat.description}
+                  </Typography>
+                </Box>
+              </Card>
+            ))}
+          </Box>
+
+          {/* Header Controls */}
+          <Card
+            title="🔍 API Explorer"
+            subtitle="Browse and test all available endpoints"
+            hover
+            sx={{ 
+              mb: { xs: 2, sm: 3, md: 4 },
+              backgroundColor: darkMode ? '#202124' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}
+          >
+            <Box sx={{ mt: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                <Input
+                  fullWidth
+                  placeholder="Search APIs by title or description..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  startIcon={<Search />}
+                />
+                
+                <Input
+                  select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  sx={{ minWidth: { xs: '100%', sm: 200 } }}
+                  startIcon={<FilterList />}
+                >
+                  {categories.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </Input>
+              </Box>
+            </Box>
+          </Card>
 
           {/* Getting Started Alert */}
-          <Alert 
-            severity="info" 
-            sx={{ 
-              mb: isXS ? 2 : 3,
-              py: isXS ? 1 : 1.5,
-              fontSize: getResponsiveTypography('0.75rem', '0.8rem', '0.85rem', '0.9rem')
-            }}
+          <Alert
+            severity="info"
+            title="🔑 Authentication Required"
+            message="All API requests require authentication. Get your API key from Settings."
             action={
-              <Button 
+              <Button
+                variant="outlined"
                 component={Link} 
-                href="/dashboard/settings/api" 
-                size="small"
-                color="inherit"
-                sx={{ 
-                  fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem'),
-                  py: isXS ? 0.5 : 0.75
+                href="/dashboard/settings/api"
+                sx={{
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  color: darkMode ? '#e8eaed' : '#202124',
                 }}
+                size="small"
               >
                 Get API Key
               </Button>
             }
-          >
-            All API requests require authentication. Get your API key from Settings.
-          </Alert>
-        </Box>
+            sx={{ mb: 3 }}
+          />
 
-        {/* API Endpoints */}
-        <Stack spacing={isXS ? 2 : 3}>
-          {filteredEndpoints.map((endpoint) => (
-            <Fade in key={endpoint.id}>
-              <Card sx={{ 
-                borderRadius: isXS ? 8 : 12,
-                overflow: 'hidden'
-              }}>
-                <CardContent sx={{ p: '0 !important' }}>
-                  {/* Endpoint Header */}
-                  <Box
-                    sx={{
-                      p: isXS ? 2 : 3,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: isXS ? 'column' : 'row',
-                      alignItems: isXS ? 'flex-start' : 'center',
-                      justifyContent: 'space-between',
-                      gap: isXS ? 1 : 0,
-                      '&:hover': {
-                        backgroundColor: alpha(theme.palette.action.hover, 0.04),
-                      },
-                    }}
-                    onClick={() => setExpandedEndpoint(
-                      expandedEndpoint === endpoint.id ? null : endpoint.id
-                    )}
-                  >
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: isXS ? 1 : 2, 
-                      flex: 1,
-                      width: '100%'
-                    }}>
-                      <Chip
-                        label={endpoint.method}
-                        size={isXS ? "small" : "medium"}
-                        sx={{
-                          backgroundColor: getMethodColor(endpoint.method),
-                          color: 'white',
-                          fontWeight: 600,
-                          minWidth: isXS ? 55 : 70,
-                          height: isXS ? 24 : 32,
-                          fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                        }}
-                      />
-                      
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography 
-                          variant={isXS ? "subtitle1" : "h6"} 
-                          fontWeight={600}
-                          sx={{ 
-                            fontSize: getResponsiveTypography('0.9rem', '1rem', '1.1rem', '1.2rem'),
-                            mb: 0.5,
-                            wordBreak: 'break-word'
+          {/* API Endpoints */}
+          <Stack spacing={2}>
+            {filteredEndpoints.map((endpoint) => (
+              <Fade in key={endpoint.id}>
+                <Card
+                  hover
+                  sx={{
+                    backgroundColor: darkMode ? '#303134' : '#ffffff',
+                    border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                    {/* Endpoint Header */}
+                    <Box
+                      sx={{
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        alignItems: { xs: 'flex-start', sm: 'center' },
+                        justifyContent: 'space-between',
+                        gap: { xs: 1, sm: 0 },
+                        mb: expandedEndpoint === endpoint.id ? 2 : 0,
+                      }}
+                      onClick={() => setExpandedEndpoint(
+                        expandedEndpoint === endpoint.id ? null : endpoint.id
+                      )}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, width: '100%' }}>
+                        <Chip
+                          label={endpoint.method}
+                          size="small"
+                          sx={{
+                            backgroundColor: getMethodColor(endpoint.method),
+                            color: 'white',
+                            fontWeight: 600,
+                            minWidth: 70,
                           }}
-                        >
-                          {endpoint.title}
-                        </Typography>
+                        />
                         
-                        <Typography 
-                          variant="body2" 
-                          color="text.secondary"
-                          sx={{ 
-                            fontSize: getResponsiveTypography('0.75rem', '0.8rem', '0.85rem', '0.9rem'),
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden'
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography 
+                            variant="h6" 
+                            fontWeight={600}
+                            sx={{ 
+                              mb: 0.5,
+                              wordBreak: 'break-word'
+                            }}
+                          >
+                            {endpoint.title}
+                          </Typography>
+                          
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary"
+                            sx={{ 
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden'
+                            }}
+                          >
+                            {endpoint.description}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 1,
+                        mt: { xs: 1, sm: 0 },
+                        width: { xs: '100%', sm: 'auto' }
+                      }}>
+                        <Chip
+                          label={endpoint.category}
+                          size="small"
+                          variant="outlined"
+                        />
+                        
+                        {endpoint.requiresAuth && (
+                          <Tooltip title="Requires authentication">
+                            <Lock sx={{ color: '#fbbc04' }} />
+                          </Tooltip>
+                        )}
+                        
+                        <ExpandMore
+                          sx={{
+                            transform: expandedEndpoint === endpoint.id ? 'rotate(180deg)' : 'none',
+                            transition: 'transform 0.3s ease',
                           }}
-                        >
-                          {endpoint.description}
-                        </Typography>
+                        />
                       </Box>
                     </Box>
-                    
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: isXS ? 0.5 : 1,
-                      mt: isXS ? 1 : 0,
-                      width: isXS ? '100%' : 'auto'
-                    }}>
-                      <Chip
-                        label={endpoint.category}
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                          fontSize: getResponsiveTypography('0.65rem', '0.7rem', '0.75rem', '0.8rem'),
-                          height: isXS ? 20 : 24
-                        }}
-                      />
-                      
-                      {endpoint.requiresAuth && (
-                        <Tooltip title="Requires authentication">
-                          <Lock sx={{ 
-                            fontSize: getResponsiveTypography('14px', '16px', '18px', '20px'),
-                            color: 'warning.main'
-                          }} />
-                        </Tooltip>
-                      )}
-                      
-                      <ExpandMore
-                        sx={{
-                          transform: expandedEndpoint === endpoint.id ? 'rotate(180deg)' : 'none',
-                          transition: 'transform 0.3s ease',
-                          fontSize: getResponsiveTypography('20px', '22px', '24px', '26px')
-                        }}
-                      />
-                    </Box>
-                  </Box>
 
-                  {/* Expanded Content */}
-                  <Collapse in={expandedEndpoint === endpoint.id}>
-                    <Box sx={{ p: isXS ? 2 : 3, pt: 0 }}>
-                      <Divider sx={{ my: isXS ? 1.5 : 2 }} />
+                    {/* Expanded Content */}
+                    <Collapse in={expandedEndpoint === endpoint.id}>
+                      <Divider sx={{ my: 2 }} />
 
                       {/* Path */}
-                      <Box sx={{ mb: isXS ? 2 : 3 }}>
-                        <Typography 
-                          variant="subtitle2" 
-                          fontWeight={600} 
-                          gutterBottom
-                          sx={{ 
-                            fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
-                          }}
-                        >
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                           Endpoint
                         </Typography>
                         
-                        <Paper
+                        <Card
+                          hover
                           sx={{
-                            p: isXS ? 1 : 1.5,
-                            backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f8f9fa',
+                            p: 2,
+                            backgroundColor: darkMode ? '#1e293b' : '#f8fafc',
                             fontFamily: 'monospace',
                             display: 'flex',
-                            flexDirection: isXS ? 'column' : 'row',
-                            alignItems: isXS ? 'flex-start' : 'center',
+                            alignItems: 'center',
                             justifyContent: 'space-between',
-                            gap: isXS ? 1 : 0,
-                            overflow: 'auto'
+                            overflow: 'auto',
                           }}
                         >
-                          <Box sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center',
-                            gap: 1,
-                            width: isXS ? '100%' : 'auto'
-                          }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
                             <span style={{ 
                               color: getMethodColor(endpoint.method), 
                               fontWeight: 600,
-                              fontSize: getResponsiveTypography('0.75rem', '0.8rem', '0.85rem', '0.9rem'),
-                              minWidth: isXS ? 40 : 50
+                              minWidth: 50
                             }}>
                               {endpoint.method}
                             </span>
                             
                             <span style={{ 
-                              marginLeft: isXS ? 0 : 8,
+                              marginLeft: 8,
                               flex: 1,
-                              fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem'),
                               wordBreak: 'break-all'
                             }}>
                               https://api.accumamanage.com{endpoint.path}
@@ -629,84 +621,44 @@ export default function ApiDocumentationPage() {
                             <IconButton 
                               size="small" 
                               onClick={() => handleCopy(`https://api.accumamanage.com${endpoint.path}`)}
-                              sx={{ 
-                                mt: isXS ? 1 : 0,
-                                alignSelf: isXS ? 'flex-end' : 'center'
-                              }}
                             >
-                              <ContentCopy sx={{ 
-                                fontSize: getResponsiveTypography('16px', '18px', '20px', '22px')
-                              }} />
+                              <ContentCopy />
                             </IconButton>
                           </Tooltip>
-                        </Paper>
+                        </Card>
                       </Box>
 
                       {/* Parameters */}
                       {endpoint.parameters && endpoint.parameters.length > 0 && (
-                        <Box sx={{ mb: isXS ? 2 : 3 }}>
-                          <Typography 
-                            variant="subtitle2" 
-                            fontWeight={600} 
-                            gutterBottom
-                            sx={{ 
-                              fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
-                            }}
-                          >
+                        <Box sx={{ mb: 3 }}>
+                          <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                             Parameters
                           </Typography>
                           
-                          <Paper sx={{ overflow: 'auto' }}>
+                          <Card sx={{ overflow: 'auto' }}>
                             <Box
                               sx={{
                                 display: 'grid',
-                                gridTemplateColumns: `repeat(${getGridColumns()}, 1fr)`,
+                                gridTemplateColumns: 'repeat(4, 1fr)',
                                 gap: 0.5,
-                                p: isXS ? 1 : 1.5,
-                                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                                borderBottom: `1px solid ${theme.palette.divider}`,
-                                minWidth: 'fit-content'
+                                p: 1.5,
+                                backgroundColor: alpha('#4285f4', 0.1),
+                                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                                minWidth: 'fit-content',
                               }}
                             >
-                              <Typography 
-                                variant="caption" 
-                                fontWeight={600}
-                                sx={{ 
-                                  fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                                }}
-                              >
+                              <Typography variant="caption" fontWeight={600}>
                                 Name
                               </Typography>
-                              <Typography 
-                                variant="caption" 
-                                fontWeight={600}
-                                sx={{ 
-                                  fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                                }}
-                              >
+                              <Typography variant="caption" fontWeight={600}>
                                 Type
                               </Typography>
-                              <Typography 
-                                variant="caption" 
-                                fontWeight={600}
-                                sx={{ 
-                                  fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                                }}
-                              >
+                              <Typography variant="caption" fontWeight={600}>
                                 Required
                               </Typography>
-                              
-                              {!isSM && (
-                                <Typography 
-                                  variant="caption" 
-                                  fontWeight={600}
-                                  sx={{ 
-                                    fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                                  }}
-                                >
-                                  Description
-                                </Typography>
-                              )}
+                              <Typography variant="caption" fontWeight={600}>
+                                Description
+                              </Typography>
                             </Box>
                             
                             {endpoint.parameters.map((param, index) => (
@@ -714,352 +666,211 @@ export default function ApiDocumentationPage() {
                                 key={index}
                                 sx={{
                                   display: 'grid',
-                                  gridTemplateColumns: `repeat(${getGridColumns()}, 1fr)`,
+                                  gridTemplateColumns: 'repeat(4, 1fr)',
                                   gap: 0.5,
-                                  p: isXS ? 1 : 1.5,
+                                  p: 1.5,
                                   borderBottom: index < endpoint.parameters!.length - 1 
-                                    ? `1px solid ${theme.palette.divider}` 
+                                    ? `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` 
                                     : 'none',
                                   minWidth: 'fit-content',
                                   '&:hover': {
-                                    backgroundColor: alpha(theme.palette.action.hover, 0.04),
+                                    backgroundColor: alpha('#000000', darkMode ? 0.05 : 0.02),
                                   },
                                 }}
                               >
-                                <Typography 
-                                  variant="caption" 
-                                  sx={{ 
-                                    fontFamily: 'monospace',
-                                    fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                                  }}
-                                >
+                                <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
                                   {param.name}
                                 </Typography>
                                 
-                                <Typography 
-                                  variant="caption" 
-                                  color="text.secondary"
-                                  sx={{ 
-                                    fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                                  }}
-                                >
+                                <Typography variant="caption" color="text.secondary">
                                   {param.type}
                                 </Typography>
                                 
-                                <Typography 
-                                  variant="caption" 
-                                  color={param.required ? 'error.main' : 'success.main'}
-                                  sx={{ 
-                                    fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                                  }}
-                                >
+                                <Typography variant="caption" color={param.required ? '#ea4335' : '#34a853'}>
                                   {param.required ? 'Yes' : 'No'}
                                 </Typography>
                                 
-                                {!isSM && (
-                                  <Typography 
-                                    variant="caption" 
-                                    color="text.secondary"
-                                    sx={{ 
-                                      fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                                    }}
-                                  >
-                                    {param.description}
-                                  </Typography>
-                                )}
+                                <Typography variant="caption" color="text.secondary">
+                                  {param.description}
+                                </Typography>
                               </Box>
                             ))}
-                          </Paper>
+                          </Card>
                         </Box>
                       )}
 
                       {/* Examples */}
                       <Box sx={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
-                        gap: isXS ? 2 : 3 
+                        display: 'flex',
+                        flexDirection: { xs: 'column', md: 'row' },
+                        gap: 3 
                       }}>
                         {endpoint.exampleRequest && (
-                          <Box>
-                            <Typography 
-                              variant="subtitle2" 
-                              fontWeight={600} 
-                              gutterBottom
-                              sx={{ 
-                                fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
-                              }}
-                            >
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                               Example Request
                             </Typography>
                             
-                            <Paper
+                            <Card
+                              hover
                               sx={{
-                                p: isXS ? 1 : 1.5,
-                                backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f8f9fa',
+                                p: 2,
+                                backgroundColor: darkMode ? '#1e293b' : '#f8fafc',
                                 fontFamily: 'monospace',
                                 whiteSpace: 'pre-wrap',
                                 position: 'relative',
                                 maxHeight: 200,
-                                overflow: 'auto'
+                                overflow: 'auto',
                               }}
                             >
-                              <Box sx={{ 
-                                fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem'),
-                                lineHeight: 1.5
-                              }}>
-                                {endpoint.exampleRequest}
-                              </Box>
+                              {endpoint.exampleRequest}
                               
                               <Tooltip title="Copy example">
                                 <IconButton 
                                   size="small" 
                                   sx={{ 
                                     position: 'absolute', 
-                                    top: 4, 
-                                    right: 4 
+                                    top: 8, 
+                                    right: 8 
                                   }}
                                   onClick={() => handleCopy(endpoint.exampleRequest!)}
                                 >
-                                  <ContentCopy sx={{ 
-                                    fontSize: getResponsiveTypography('16px', '18px', '20px', '22px')
-                                  }} />
+                                  <ContentCopy />
                                 </IconButton>
                               </Tooltip>
-                            </Paper>
+                            </Card>
                           </Box>
                         )}
 
                         {endpoint.exampleResponse && (
-                          <Box>
-                            <Typography 
-                              variant="subtitle2" 
-                              fontWeight={600} 
-                              gutterBottom
-                              sx={{ 
-                                fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
-                              }}
-                            >
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                               Example Response
                             </Typography>
                             
-                            <Paper
+                            <Card
+                              hover
                               sx={{
-                                p: isXS ? 1 : 1.5,
-                                backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f8f9fa',
+                                p: 2,
+                                backgroundColor: darkMode ? '#1e293b' : '#f8fafc',
                                 fontFamily: 'monospace',
                                 whiteSpace: 'pre-wrap',
                                 position: 'relative',
                                 maxHeight: 200,
-                                overflow: 'auto'
+                                overflow: 'auto',
                               }}
                             >
-                              <Box sx={{ 
-                                fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem'),
-                                lineHeight: 1.5
-                              }}>
-                                {endpoint.exampleResponse}
-                              </Box>
+                              {endpoint.exampleResponse}
                               
                               <Tooltip title="Copy example">
                                 <IconButton 
                                   size="small" 
                                   sx={{ 
                                     position: 'absolute', 
-                                    top: 4, 
-                                    right: 4 
+                                    top: 8, 
+                                    right: 8 
                                   }}
                                   onClick={() => handleCopy(endpoint.exampleResponse!)}
                                 >
-                                  <ContentCopy sx={{ 
-                                    fontSize: getResponsiveTypography('16px', '18px', '20px', '22px')
-                                  }} />
+                                  <ContentCopy />
                                 </IconButton>
                               </Tooltip>
-                            </Paper>
+                            </Card>
                           </Box>
                         )}
                       </Box>
-                    </Box>
-                  </Collapse>
-                </CardContent>
-              </Card>
-            </Fade>
-          ))}
-        </Stack>
+                    </Collapse>
+                  </Box>
+                </Card>
+              </Fade>
+            ))}
+          </Stack>
 
-        {/* No Results */}
-        {filteredEndpoints.length === 0 && (
-          <Card sx={{ 
-            textAlign: 'center', 
-            py: isXS ? 4 : 6,
-            px: isXS ? 2 : 3
-          }}>
-            <Code sx={{ 
-              fontSize: getResponsiveTypography('36px', '42px', '48px', '54px'), 
-              color: 'text.secondary', 
-              mb: isXS ? 1.5 : 2 
-            }} />
-            
-            <Typography 
-              variant="h6" 
-              gutterBottom
-              sx={{ 
-                fontSize: getResponsiveTypography('1rem', '1.1rem', '1.2rem', '1.3rem')
-              }}
-            >
-              No APIs Found
-            </Typography>
-            
-            <Typography 
-              variant="body2" 
-              color="text.secondary" 
-              sx={{ 
-                mb: isXS ? 2 : 3,
-                fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
-              }}
-            >
-              Try adjusting your search or filter criteria
-            </Typography>
-            
-            <Button 
-              onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}
-              size={isXS ? "small" : "medium"}
-              sx={{ 
-                fontSize: getResponsiveTypography('0.75rem', '0.8rem', '0.85rem', '0.9rem')
-              }}
-            >
-              Clear Filters
-            </Button>
+          {/* No Results */}
+          {filteredEndpoints.length === 0 && (
+            <Card sx={{ 
+              textAlign: 'center', 
+              py: 6,
+              px: 3,
+              mt: 4,
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}>
+              <Code sx={{ fontSize: 60, color: darkMode ? '#9aa0a6' : '#5f6368', mb: 2 }} />
+              
+              <Typography variant="h6" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                No APIs Found
+              </Typography>
+              
+              <Typography variant="body2" sx={{ 
+                mb: 3,
+                maxWidth: 500,
+                mx: 'auto',
+                color: darkMode ? '#9aa0a6' : '#5f6368',
+              }}>
+                Try adjusting your search or filter criteria
+              </Typography>
+              
+              <Button 
+                onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}
+                variant="outlined"
+                sx={{
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                }}
+              >
+                Clear Filters
+              </Button>
+            </Card>
+          )}
+
+          {/* API Usage Notes */}
+          <Card
+            title="📋 API Usage Notes"
+            subtitle="Important information for API consumers"
+            hover
+            sx={{
+              mt: 4,
+              backgroundColor: darkMode ? '#202124' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}
+          >
+            <Box sx={{ 
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              gap: 3,
+              mt: 2,
+            }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                  🔑 Authentication
+                </Typography>
+                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                  Include API key in header: <code>Authorization: Bearer YOUR_API_KEY</code>
+                </Typography>
+              </Box>
+              
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                  ⚡ Rate Limiting
+                </Typography>
+                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                  100 requests per minute per API key
+                </Typography>
+              </Box>
+              
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                  🛡️ Error Handling
+                </Typography>
+                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                  Returns JSON with status code and error message
+                </Typography>
+              </Box>
+            </Box>
           </Card>
-        )}
-
-        {/* API Usage Notes */}
-        <Card sx={{ 
-          mt: isXS ? 3 : 4,
-          borderRadius: isXS ? 8 : 12
-        }}>
-          <CardContent sx={{ 
-            p: isXS ? 2 : 3 
-          }}>
-            <Typography 
-              variant="h6" 
-              gutterBottom 
-              fontWeight={600}
-              sx={{ 
-                fontSize: getResponsiveTypography('1rem', '1.1rem', '1.2rem', '1.3rem')
-              }}
-            >
-              API Usage Notes
-            </Typography>
-            
-            <Stack spacing={isXS ? 1.5 : 2}>
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'flex-start', 
-                gap: isXS ? 1 : 1.5 
-              }}>
-                <CheckCircle sx={{ 
-                  color: 'success.main', 
-                  mt: 0.25,
-                  fontSize: getResponsiveTypography('18px', '20px', '22px', '24px')
-                }} />
-                
-                <Box>
-                  <Typography 
-                    variant="subtitle2" 
-                    gutterBottom
-                    sx={{ 
-                      fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
-                    }}
-                  >
-                    Authentication
-                  </Typography>
-                  
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{ 
-                      fontSize: getResponsiveTypography('0.75rem', '0.8rem', '0.85rem', '0.9rem')
-                    }}
-                  >
-                    Include API key in header: <code style={{ 
-                      fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem', '0.85rem')
-                    }}>Authorization: Bearer YOUR_API_KEY</code>
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'flex-start', 
-                gap: isXS ? 1 : 1.5 
-              }}>
-                <CheckCircle sx={{ 
-                  color: 'success.main', 
-                  mt: 0.25,
-                  fontSize: getResponsiveTypography('18px', '20px', '22px', '24px')
-                }} />
-                
-                <Box>
-                  <Typography 
-                    variant="subtitle2" 
-                    gutterBottom
-                    sx={{ 
-                      fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
-                    }}
-                  >
-                    Rate Limiting
-                  </Typography>
-                  
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{ 
-                      fontSize: getResponsiveTypography('0.75rem', '0.8rem', '0.85rem', '0.9rem')
-                    }}
-                  >
-                    100 requests per minute per API key
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'flex-start', 
-                gap: isXS ? 1 : 1.5 
-              }}>
-                <CheckCircle sx={{ 
-                  color: 'success.main', 
-                  mt: 0.25,
-                  fontSize: getResponsiveTypography('18px', '20px', '22px', '24px')
-                }} />
-                
-                <Box>
-                  <Typography 
-                    variant="subtitle2" 
-                    gutterBottom
-                    sx={{ 
-                      fontSize: getResponsiveTypography('0.8rem', '0.85rem', '0.9rem', '0.95rem')
-                    }}
-                  >
-                    Error Handling
-                  </Typography>
-                  
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{ 
-                      fontSize: getResponsiveTypography('0.75rem', '0.8rem', '0.85rem', '0.9rem')
-                    }}
-                  >
-                    Returns JSON with status code and error message
-                  </Typography>
-                </Box>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-      </Container>
+        </Container>
+      </Box>
     </MainLayout>
   );
 }
