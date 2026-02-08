@@ -7,24 +7,19 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
   LinearProgress,
   Chip,
-  IconButton,
-  Paper,
+  Button,
+  Tabs,
+  Tab,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
   Divider,
-  Button,
-  Tabs,
-  Tab,
-  Avatar,
-  AvatarGroup,
-  Tooltip,
   Alert,
   CircularProgress,
+  alpha,
 } from '@mui/material'
 import {
   TrendingUp,
@@ -33,19 +28,14 @@ import {
   Inventory,
   AccessTime,
   EmojiEvents,
-  ShowChart,
-  BarChart,
-  PieChart,
   Refresh,
   Download,
   Settings,
-  Notifications,
   ArrowUpward,
   ArrowDownward,
-  MoreVert,
   CheckCircle,
   Warning,
-  Error,
+  Error as ErrorIcon,
   Info,
   Timeline,
   AccountBalance,
@@ -59,12 +49,50 @@ import ActivityFeed from '@/components/advance/ActivityFeed'
 import QuickActions from '@/components/advance/QuickActions'
 import PerformanceWidget from '@/components/advance/PerformanceWidget'
 
+// Google colors
+const googleColors = {
+  blue: '#4285F4',
+  green: '#34A853',
+  yellow: '#FBBC04',
+  red: '#EA4335',
+  
+  light: {
+    background: '#FFFFFF',
+    surface: '#F8F9FA',
+    textPrimary: '#202124',
+    textSecondary: '#5F6368',
+    border: '#DADCE0',
+    card: '#FFFFFF',
+    chipBackground: '#F1F3F4',
+    header: '#FFFFFF',
+    sidebar: '#FFFFFF',
+    hover: '#F8F9FA',
+    active: '#E8F0FE',
+  },
+  
+  dark: {
+    background: '#202124',
+    surface: '#303134',
+    textPrimary: '#E8EAED',
+    textSecondary: '#9AA0A6',
+    border: '#3C4043',
+    card: '#303134',
+    chipBackground: '#3C4043',
+    header: '#303134',
+    sidebar: '#202124',
+    hover: '#3C4043',
+    active: '#5F6368',
+  }
+}
+
 export default function AdvanceDashboardPage() {
-  const { currentScheme } = useAdvanceThemeContext()
+  const { currentScheme, mode } = useAdvanceThemeContext()
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [activeTab, setActiveTab] = useState(0)
   const [timeRange, setTimeRange] = useState('monthly')
+
+  const currentColors = mode === 'dark' ? googleColors.dark : googleColors.light
 
   useEffect(() => {
     fetchDashboardData()
@@ -91,7 +119,14 @@ export default function AdvanceDashboardPage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '80vh',
+        backgroundColor: currentColors.background,
+        transition: 'background-color 0.3s ease'
+      }}>
         <CircularProgress />
       </Box>
     )
@@ -99,11 +134,28 @@ export default function AdvanceDashboardPage() {
 
   if (!dashboardData) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography variant="h6" color="text.secondary">
+      <Box sx={{ 
+        p: 3, 
+        textAlign: 'center',
+        backgroundColor: currentColors.background,
+        minHeight: '100vh',
+        color: currentColors.textPrimary,
+        transition: 'background-color 0.3s ease'
+      }}>
+        <Typography variant="h6" color={currentColors.textSecondary}>
           No dashboard data available
         </Typography>
-        <Button onClick={fetchDashboardData} sx={{ mt: 2 }}>
+        <Button 
+          onClick={fetchDashboardData} 
+          sx={{ 
+            mt: 2,
+            backgroundColor: googleColors.blue,
+            color: 'white',
+            '&:hover': {
+              backgroundColor: '#3367D6',
+            }
+          }}
+        >
           Retry
         </Button>
       </Box>
@@ -121,20 +173,34 @@ export default function AdvanceDashboardPage() {
   } = dashboardData
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ 
+      p: { xs: 2, md: 3 },
+      backgroundColor: currentColors.background,
+      minHeight: '100vh',
+      color: currentColors.textPrimary,
+      transition: 'background-color 0.3s ease'
+    }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
-          <Box display="flex" alignItems="center" gap={2}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          flexWrap: 'wrap', 
+          gap: 2,
+          mb: 3 
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Box
               sx={{
                 width: 60,
                 height: 60,
                 borderRadius: 3,
-                background: `linear-gradient(135deg, ${currentScheme.colors.primary} 0%, ${currentScheme.colors.secondary} 100%)`,
+                background: `linear-gradient(135deg, ${googleColors.blue} 0%, ${googleColors.green} 100%)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(66,133,244,0.4)',
               }}
             >
               <DashboardIcon sx={{ fontSize: 32, color: 'white' }} />
@@ -143,20 +209,27 @@ export default function AdvanceDashboardPage() {
               <Typography variant="h4" fontWeight="bold">
                 🚀 Advance Dashboard
               </Typography>
-              <Typography variant="body1" color={currentScheme.colors.text.secondary}>
+              <Typography variant="body1" color={currentColors.textSecondary}>
                 Real-time insights & performance analytics
               </Typography>
             </Box>
           </Box>
           
-          <Box display="flex" gap={1} flexWrap="wrap">
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Button
               variant="outlined"
               startIcon={<Refresh />}
               onClick={handleRefresh}
               sx={{
-                borderColor: currentScheme.colors.components.border,
-                color: currentScheme.colors.text.primary,
+                border: `1px solid ${currentColors.border}`,
+                color: currentColors.textPrimary,
+                borderRadius: '8px',
+                textTransform: 'none',
+                fontWeight: 500,
+                '&:hover': {
+                  borderColor: googleColors.blue,
+                  backgroundColor: alpha(googleColors.blue, 0.04),
+                }
               }}
             >
               Refresh
@@ -165,8 +238,15 @@ export default function AdvanceDashboardPage() {
               variant="outlined"
               startIcon={<Download />}
               sx={{
-                borderColor: currentScheme.colors.components.border,
-                color: currentScheme.colors.text.primary,
+                border: `1px solid ${currentColors.border}`,
+                color: currentColors.textPrimary,
+                borderRadius: '8px',
+                textTransform: 'none',
+                fontWeight: 500,
+                '&:hover': {
+                  borderColor: googleColors.green,
+                  backgroundColor: alpha(googleColors.green, 0.04),
+                }
               }}
             >
               Export
@@ -175,7 +255,18 @@ export default function AdvanceDashboardPage() {
               variant="contained"
               startIcon={<Settings />}
               sx={{
-                background: `linear-gradient(135deg, ${currentScheme.colors.primary} 0%, ${currentScheme.colors.secondary} 100%)`,
+                background: `linear-gradient(135deg, ${googleColors.blue} 0%, ${googleColors.green} 100%)`,
+                color: 'white',
+                borderRadius: '8px',
+                textTransform: 'none',
+                fontWeight: 500,
+                boxShadow: mode === 'dark' 
+                  ? '0 2px 4px rgba(0,0,0,0.4)' 
+                  : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+                '&:hover': {
+                  background: `linear-gradient(135deg, ${googleColors.blue}CC 0%, ${googleColors.green}CC 100%)`,
+                  boxShadow: '0 4px 12px rgba(66,133,244,0.3)',
+                },
               }}
             >
               Settings
@@ -189,13 +280,22 @@ export default function AdvanceDashboardPage() {
             value={timeRange} 
             onChange={(_, newValue) => setTimeRange(newValue)}
             sx={{
+              borderBottom: `1px solid ${currentColors.border}`,
               '& .MuiTab-root': {
-                color: currentScheme.colors.text.secondary,
+                color: currentColors.textSecondary,
                 minHeight: 36,
+                textTransform: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 500,
               },
               '& .Mui-selected': {
-                color: currentScheme.colors.primary,
-                fontWeight: 'bold',
+                color: googleColors.blue,
+                fontWeight: 600,
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: googleColors.blue,
+                height: 3,
+                borderRadius: '3px 3px 0 0',
               },
             }}
           >
@@ -208,10 +308,21 @@ export default function AdvanceDashboardPage() {
         </Box>
       </Box>
 
-      {/* Quick Stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      {/* Quick Stats - Using Flexbox instead of Grid */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        gap: 3, 
+        mb: 4 
+      }}>
         {summary?.quickStats?.map((stat: any, index: number) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <Box
+            key={index}
+            sx={{
+              flex: '1 1 calc(25% - 36px)',
+              minWidth: '220px',
+            }}
+          >
             <MetricCard
               title={stat.title}
               value={stat.value}
@@ -223,25 +334,76 @@ export default function AdvanceDashboardPage() {
                 index === 2 ? 'warning' : 'success'
               }
             />
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
 
-      {/* Main Content */}
-      <Grid container spacing={3}>
+      {/* Main Content - Using Flexbox */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', lg: 'row' }, 
+        gap: 3 
+      }}>
         {/* Left Column - Charts & Metrics */}
-        <Grid item xs={12} lg={8}>
-          {/* Revenue & Growth Chart */}
-          <Card sx={{ mb: 3, background: currentScheme.colors.components.card }}>
+        <Box sx={{ 
+          flex: { lg: '2 1 0%' },
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3
+        }}>
+          {/* Performance Overview Chart */}
+          <Card
+            sx={{
+              background: currentColors.card,
+              border: `1px solid ${currentColors.border}`,
+              borderRadius: '16px',
+              transition: 'all 0.3s ease',
+              boxShadow: mode === 'dark' 
+                ? '0 2px 4px rgba(0,0,0,0.4)' 
+                : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+            }}
+          >
             <CardContent>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                mb: 3 
+              }}>
                 <Typography variant="h6" fontWeight="bold">
                   Performance Overview
                 </Typography>
-                <Box display="flex" gap={1}>
-                  <Chip label="Revenue" size="small" color="primary" />
-                  <Chip label="Customers" size="small" color="secondary" />
-                  <Chip label="Engagement" size="small" color="warning" />
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Chip 
+                    label="Revenue" 
+                    size="small" 
+                    sx={{
+                      backgroundColor: alpha(googleColors.blue, 0.1),
+                      color: googleColors.blue,
+                      border: `1px solid ${alpha(googleColors.blue, 0.3)}`,
+                      fontWeight: 500,
+                    }}
+                  />
+                  <Chip 
+                    label="Customers" 
+                    size="small"
+                    sx={{
+                      backgroundColor: alpha(googleColors.green, 0.1),
+                      color: googleColors.green,
+                      border: `1px solid ${alpha(googleColors.green, 0.3)}`,
+                      fontWeight: 500,
+                    }}
+                  />
+                  <Chip 
+                    label="Engagement" 
+                    size="small"
+                    sx={{
+                      backgroundColor: alpha(googleColors.yellow, 0.1),
+                      color: googleColors.yellow,
+                      border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+                      fontWeight: 500,
+                    }}
+                  />
                 </Box>
               </Box>
               
@@ -251,169 +413,269 @@ export default function AdvanceDashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Goals & Progress */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', background: currentScheme.colors.components.card }}>
-                <CardContent>
-                  <Typography variant="h6" fontWeight="bold" mb={2}>
-                    Daily Goals
-                  </Typography>
-                  
-                  {/* Screen Time Goal */}
-                  <Box sx={{ mb: 3 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                      <Typography variant="body2">Screen Time</Typography>
-                      <Typography variant="body2" fontWeight="bold">
-                        {goals.currentDailyProgress.toFixed(1)}h / {goals.dailyScreenTimeGoal}h
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={(goals.currentDailyProgress / goals.dailyScreenTimeGoal) * 100}
-                      sx={{
-                        height: 8,
-                        borderRadius: 4,
-                        '& .MuiLinearProgress-bar': {
-                          background: `linear-gradient(90deg, ${currentScheme.colors.primary} 0%, ${currentScheme.colors.secondary} 100%)`,
-                        },
-                      }}
-                    />
+          {/* Goals & Progress - Using Flexbox */}
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', md: 'row' }, 
+            gap: 3 
+          }}>
+            {/* Daily Goals Card */}
+            <Card
+              sx={{
+                flex: '1 1 50%',
+                background: currentColors.card,
+                border: `1px solid ${currentColors.border}`,
+                borderRadius: '16px',
+                transition: 'all 0.3s ease',
+                boxShadow: mode === 'dark' 
+                  ? '0 2px 4px rgba(0,0,0,0.4)' 
+                  : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" fontWeight="bold" mb={2}>
+                  Daily Goals
+                </Typography>
+                
+                {/* Screen Time Goal */}
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    mb: 1 
+                  }}>
+                    <Typography variant="body2">Screen Time</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {goals.currentDailyProgress.toFixed(1)}h / {goals.dailyScreenTimeGoal}h
+                    </Typography>
                   </Box>
-                  
-                  {/* Revenue Goal */}
-                  <Box sx={{ mb: 3 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                      <Typography variant="body2">Monthly Revenue</Typography>
-                      <Typography variant="body2" fontWeight="bold">
-                        ₹{goals.revenueGoal.current?.toLocaleString()} / ₹{goals.revenueGoal.target?.toLocaleString()}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={goals.revenueGoal.progress || 0}
-                      sx={{
-                        height: 8,
+                  <LinearProgress
+                    variant="determinate"
+                    value={(goals.currentDailyProgress / goals.dailyScreenTimeGoal) * 100}
+                    sx={{
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: currentColors.chipBackground,
+                      '& .MuiLinearProgress-bar': {
+                        background: `linear-gradient(90deg, ${googleColors.blue} 0%, ${googleColors.green} 100%)`,
                         borderRadius: 4,
-                        '& .MuiLinearProgress-bar': {
-                          background: currentScheme.colors.buttons.success,
-                        },
-                      }}
-                    />
-                  </Box>
-                  
-                  {/* Customer Goal */}
-                  <Box>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                      <Typography variant="body2">New Customers</Typography>
-                      <Typography variant="body2" fontWeight="bold">
-                        {goals.customerGoal.current} / {goals.customerGoal.target}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={goals.customerGoal.progress || 0}
-                      sx={{
-                        height: 8,
-                        borderRadius: 4,
-                        '& .MuiLinearProgress-bar': {
-                          background: currentScheme.colors.buttons.info,
-                        },
-                      }}
-                    />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', background: currentScheme.colors.components.card }}>
-                <CardContent>
-                  <Typography variant="h6" fontWeight="bold" mb={2}>
-                    Productivity Metrics
-                  </Typography>
-                  
-                  <PerformanceWidget
-                    productivityScore={engagementMetrics.productivityScore}
-                    avgSessionLength={engagementMetrics.avgSessionLength}
-                    streakDays={engagementMetrics.streakDays}
-                    mostUsedFeature={engagementMetrics.mostUsedFeature}
+                      },
+                    }}
                   />
-                  
-                  <Divider sx={{ my: 2 }} />
-                  
-                  <Typography variant="subtitle2" fontWeight="medium" gutterBottom>
-                    Time Distribution
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {Object.entries(engagementMetrics.timeDistribution).map(([key, value]: [string, any]) => (
-                      <Box key={key} display="flex" alignItems="center" justifyContent="space-between">
-                        <Typography variant="caption" textTransform="capitalize">
-                          {key}
-                        </Typography>
-                        <Typography variant="caption" fontWeight="medium">
-                          {value.toFixed(1)}h
-                        </Typography>
-                      </Box>
-                    ))}
+                </Box>
+                
+                {/* Revenue Goal */}
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    mb: 1 
+                  }}>
+                    <Typography variant="body2">Monthly Revenue</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      ₹{goals.revenueGoal.current?.toLocaleString()} / ₹{goals.revenueGoal.target?.toLocaleString()}
+                    </Typography>
                   </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+                  <LinearProgress
+                    variant="determinate"
+                    value={goals.revenueGoal.progress || 0}
+                    sx={{
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: currentColors.chipBackground,
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: googleColors.green,
+                        borderRadius: 4,
+                      },
+                    }}
+                  />
+                </Box>
+                
+                {/* Customer Goal */}
+                <Box>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    mb: 1 
+                  }}>
+                    <Typography variant="body2">New Customers</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {goals.customerGoal.current} / {goals.customerGoal.target}
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={goals.customerGoal.progress || 0}
+                    sx={{
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: currentColors.chipBackground,
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: googleColors.blue,
+                        borderRadius: 4,
+                      },
+                    }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Productivity Metrics Card */}
+            <Card
+              sx={{
+                flex: '1 1 50%',
+                background: currentColors.card,
+                border: `1px solid ${currentColors.border}`,
+                borderRadius: '16px',
+                transition: 'all 0.3s ease',
+                boxShadow: mode === 'dark' 
+                  ? '0 2px 4px rgba(0,0,0,0.4)' 
+                  : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" fontWeight="bold" mb={2}>
+                  Productivity Metrics
+                </Typography>
+                
+                <PerformanceWidget
+                  productivityScore={engagementMetrics.productivityScore}
+                  avgSessionLength={engagementMetrics.avgSessionLength}
+                  streakDays={engagementMetrics.streakDays}
+                  mostUsedFeature={engagementMetrics.mostUsedFeature}
+                />
+                
+                <Divider sx={{ 
+                  my: 2, 
+                  borderColor: currentColors.border 
+                }} />
+                
+                <Typography variant="subtitle2" fontWeight="medium" gutterBottom>
+                  Time Distribution
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {Object.entries(engagementMetrics.timeDistribution).map(([key, value]: [string, any]) => (
+                    <Box key={key} sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between' 
+                    }}>
+                      <Typography variant="caption" textTransform="capitalize" color={currentColors.textSecondary}>
+                        {key}
+                      </Typography>
+                      <Typography variant="caption" fontWeight="medium">
+                        {value.toFixed(1)}h
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
 
           {/* Insights & Recommendations */}
           {insights?.length > 0 && (
-            <Card sx={{ background: currentScheme.colors.components.card }}>
+            <Card
+              sx={{
+                background: currentColors.card,
+                border: `1px solid ${currentColors.border}`,
+                borderRadius: '16px',
+                transition: 'all 0.3s ease',
+                boxShadow: mode === 'dark' 
+                  ? '0 2px 4px rgba(0,0,0,0.4)' 
+                  : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+              }}
+            >
               <CardContent>
                 <Typography variant="h6" fontWeight="bold" mb={3}>
                   Insights & Recommendations
                 </Typography>
                 
-                <Grid container spacing={2}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {insights.map((insight: any, index: number) => (
-                    <Grid item xs={12} key={index}>
+                    <Box key={index}>
                       <Alert
                         severity={insight.type}
                         sx={{
-                          background: getAlertBackground(insight.type, currentScheme),
-                          border: `1px solid ${getAlertBorder(insight.type, currentScheme)}`,
+                          background: getAlertBackground(insight.type, mode),
+                          border: `1px solid ${getAlertBorder(insight.type, mode)}`,
+                          borderRadius: '12px',
+                          alignItems: 'flex-start',
+                          '& .MuiAlert-icon': {
+                            alignItems: 'center',
+                          }
                         }}
                       >
                         <Box>
                           <Typography variant="subtitle2" fontWeight="bold">
                             {insight.title}
                           </Typography>
-                          <Typography variant="body2" sx={{ mt: 0.5 }}>
+                          <Typography variant="body2" sx={{ mt: 0.5, color: currentColors.textSecondary }}>
                             {insight.message}
                           </Typography>
                           {insight.suggestion && (
-                            <Typography variant="caption" sx={{ mt: 1, display: 'block', fontStyle: 'italic' }}>
+                            <Typography variant="caption" sx={{ 
+                              mt: 1, 
+                              display: 'block', 
+                              fontStyle: 'italic',
+                              color: currentColors.textSecondary 
+                            }}>
                               💡 {insight.suggestion}
                             </Typography>
                           )}
                         </Box>
                       </Alert>
-                    </Grid>
+                    </Box>
                   ))}
-                </Grid>
+                </Box>
               </CardContent>
             </Card>
           )}
-        </Grid>
+        </Box>
 
         {/* Right Column - Activity & Details */}
-        <Grid item xs={12} lg={4}>
+        <Box sx={{ 
+          flex: { lg: '1 1 0%' },
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3,
+          minWidth: { lg: '300px' }
+        }}>
           {/* Recent Activity */}
-          <Card sx={{ mb: 3, background: currentScheme.colors.components.card }}>
+          <Card
+            sx={{
+              background: currentColors.card,
+              border: `1px solid ${currentColors.border}`,
+              borderRadius: '16px',
+              transition: 'all 0.3s ease',
+              boxShadow: mode === 'dark' 
+                ? '0 2px 4px rgba(0,0,0,0.4)' 
+                : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+            }}
+          >
             <CardContent>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                mb: 3 
+              }}>
                 <Typography variant="h6" fontWeight="bold">
                   Recent Activity
                 </Typography>
                 <Button
                   size="small"
-                  sx={{ color: currentScheme.colors.primary }}
+                  sx={{ 
+                    color: googleColors.blue,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    '&:hover': {
+                      backgroundColor: alpha(googleColors.blue, 0.04),
+                    }
+                  }}
                 >
                   View All
                 </Button>
@@ -424,7 +686,17 @@ export default function AdvanceDashboardPage() {
           </Card>
 
           {/* Quick Actions */}
-          <Card sx={{ mb: 3, background: currentScheme.colors.components.card }}>
+          <Card
+            sx={{
+              background: currentColors.card,
+              border: `1px solid ${currentColors.border}`,
+              borderRadius: '16px',
+              transition: 'all 0.3s ease',
+              boxShadow: mode === 'dark' 
+                ? '0 2px 4px rgba(0,0,0,0.4)' 
+                : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+            }}
+          >
             <CardContent>
               <Typography variant="h6" fontWeight="bold" mb={3}>
                 Quick Actions
@@ -435,7 +707,17 @@ export default function AdvanceDashboardPage() {
           </Card>
 
           {/* System Status */}
-          <Card sx={{ background: currentScheme.colors.components.card }}>
+          <Card
+            sx={{
+              background: currentColors.card,
+              border: `1px solid ${currentColors.border}`,
+              borderRadius: '16px',
+              transition: 'all 0.3s ease',
+              boxShadow: mode === 'dark' 
+                ? '0 2px 4px rgba(0,0,0,0.4)' 
+                : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+            }}
+          >
             <CardContent>
               <Typography variant="h6" fontWeight="bold" mb={3}>
                 System Status
@@ -444,53 +726,92 @@ export default function AdvanceDashboardPage() {
               <List disablePadding>
                 <ListItem disablePadding sx={{ mb: 2 }}>
                   <ListItemIcon sx={{ minWidth: 40 }}>
-                    <CheckCircle color="success" />
+                    <CheckCircle sx={{ color: googleColors.green }} />
                   </ListItemIcon>
                   <ListItemText 
                     primary="API Server" 
                     secondary="Operational" 
-                    secondaryTypographyProps={{ color: 'success.main' }}
+                    primaryTypographyProps={{ 
+                      fontSize: '0.9rem',
+                      color: currentColors.textPrimary
+                    }}
+                    secondaryTypographyProps={{ 
+                      fontSize: '0.8rem',
+                      color: googleColors.green,
+                      fontWeight: 500
+                    }}
                   />
                 </ListItem>
                 
                 <ListItem disablePadding sx={{ mb: 2 }}>
                   <ListItemIcon sx={{ minWidth: 40 }}>
-                    <CheckCircle color="success" />
+                    <CheckCircle sx={{ color: googleColors.green }} />
                   </ListItemIcon>
                   <ListItemText 
                     primary="Database" 
                     secondary="Healthy" 
-                    secondaryTypographyProps={{ color: 'success.main' }}
+                    primaryTypographyProps={{ 
+                      fontSize: '0.9rem',
+                      color: currentColors.textPrimary
+                    }}
+                    secondaryTypographyProps={{ 
+                      fontSize: '0.8rem',
+                      color: googleColors.green,
+                      fontWeight: 500
+                    }}
                   />
                 </ListItem>
                 
                 <ListItem disablePadding sx={{ mb: 2 }}>
                   <ListItemIcon sx={{ minWidth: 40 }}>
-                    <Warning color="warning" />
+                    <Warning sx={{ color: googleColors.yellow }} />
                   </ListItemIcon>
                   <ListItemText 
                     primary="Email Service" 
                     secondary="Degraded" 
-                    secondaryTypographyProps={{ color: 'warning.main' }}
+                    primaryTypographyProps={{ 
+                      fontSize: '0.9rem',
+                      color: currentColors.textPrimary
+                    }}
+                    secondaryTypographyProps={{ 
+                      fontSize: '0.8rem',
+                      color: googleColors.yellow,
+                      fontWeight: 500
+                    }}
                   />
                 </ListItem>
                 
                 <ListItem disablePadding>
                   <ListItemIcon sx={{ minWidth: 40 }}>
-                    <CheckCircle color="success" />
+                    <CheckCircle sx={{ color: googleColors.green }} />
                   </ListItemIcon>
                   <ListItemText 
                     primary="Payment Gateway" 
                     secondary="Operational" 
-                    secondaryTypographyProps={{ color: 'success.main' }}
+                    primaryTypographyProps={{ 
+                      fontSize: '0.9rem',
+                      color: currentColors.textPrimary
+                    }}
+                    secondaryTypographyProps={{ 
+                      fontSize: '0.8rem',
+                      color: googleColors.green,
+                      fontWeight: 500
+                    }}
                   />
                 </ListItem>
               </List>
               
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ 
+                my: 2, 
+                borderColor: currentColors.border 
+              }} />
               
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography variant="body2" color="text.secondary">
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center' 
+              }}>
+                <Typography variant="body2" color={currentColors.textSecondary}>
                   Last updated
                 </Typography>
                 <Typography variant="body2" fontWeight="medium">
@@ -499,35 +820,37 @@ export default function AdvanceDashboardPage() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Box>
   )
 }
 
-// Helper functions
-function getAlertBackground(type: string, scheme: any) {
+// Helper functions for Google-themed alerts
+function getAlertBackground(type: string, mode: string) {
+  const lightMode = mode === 'light'
   switch (type) {
     case 'success':
-      return `${scheme.colors.buttons.success}15`
+      return lightMode ? alpha(googleColors.green, 0.08) : alpha(googleColors.green, 0.15)
     case 'warning':
-      return `${scheme.colors.buttons.warning}15`
+      return lightMode ? alpha(googleColors.yellow, 0.08) : alpha(googleColors.yellow, 0.15)
     case 'error':
-      return `${scheme.colors.buttons.error}15`
+      return lightMode ? alpha(googleColors.red, 0.08) : alpha(googleColors.red, 0.15)
     default:
-      return `${scheme.colors.buttons.info}15`
+      return lightMode ? alpha(googleColors.blue, 0.08) : alpha(googleColors.blue, 0.15)
   }
 }
 
-function getAlertBorder(type: string, scheme: any) {
+function getAlertBorder(type: string, mode: string) {
+  const lightMode = mode === 'light'
   switch (type) {
     case 'success':
-      return `${scheme.colors.buttons.success}30`
+      return lightMode ? alpha(googleColors.green, 0.2) : alpha(googleColors.green, 0.3)
     case 'warning':
-      return `${scheme.colors.buttons.warning}30`
+      return lightMode ? alpha(googleColors.yellow, 0.2) : alpha(googleColors.yellow, 0.3)
     case 'error':
-      return `${scheme.colors.buttons.error}30`
+      return lightMode ? alpha(googleColors.red, 0.2) : alpha(googleColors.red, 0.3)
     default:
-      return `${scheme.colors.buttons.info}30`
+      return lightMode ? alpha(googleColors.blue, 0.2) : alpha(googleColors.blue, 0.3)
   }
 }
