@@ -1,27 +1,14 @@
-// components/ThemeCustomizer.tsx
 'use client'
 import React, { useState } from 'react';
 import {
   Box,
-  Button,
-  Card,
-  CardContent,
+  Container,
+  useTheme,
+  alpha,
+  Breadcrumbs,
   Typography,
-  TextField,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormControl,
-  Slider,
-  Chip,
-  Switch,
-  FormControlLabel,
-  Paper,
   Divider,
-  IconButton,
-  Stack,
-  Alert,
-  Tooltip,
+  Slider,
 } from '@mui/material';
 import {
   Palette as PaletteIcon,
@@ -32,8 +19,16 @@ import {
   Refresh as RefreshIcon,
   CheckCircle as CheckIcon,
   Gradient as GradientIcon,
+  Home as HomeIcon,
 } from '@mui/icons-material';
-import { useColorScheme, ColorPreferences, ColorScheme } from '@/hooks/useColorScheme';
+import Link from 'next/link';
+import { MainLayout } from '@/components/Layout/MainLayout';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
+import { Input } from '@/components/ui/Input';
+import { Alert } from '@/components/ui/Alert';
+import { useColorScheme, ColorPreferences } from '@/hooks/useColorScheme';
 
 interface ComponentPreview {
   name: string;
@@ -41,11 +36,13 @@ interface ComponentPreview {
 }
 
 const ThemeCustomizer: React.FC = () => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+  
   const [customPreferences, setCustomPreferences] = useState<ColorPreferences>({});
   const [selectedSchemeId, setSelectedSchemeId] = useState<string>('modern-dark');
   const [noteColor, setNoteColor] = useState<string>('#dbeafe');
   const [gradientAngle, setGradientAngle] = useState<number>(90);
-  const [darkMode, setDarkMode] = useState<boolean>(true);
   
   const { 
     currentScheme,
@@ -140,9 +137,9 @@ const ThemeCustomizer: React.FC = () => {
     {
       name: 'Header',
       component: (
-        <Paper 
+        <Card 
+          hover
           sx={{ 
-            p: 2, 
             backgroundColor: headerStyles.backgroundColor,
             color: headerStyles.color,
             border: `1px solid ${headerStyles.borderColor}`,
@@ -154,7 +151,7 @@ const ThemeCustomizer: React.FC = () => {
           <Typography variant="body2" sx={{ color: headerStyles.color, opacity: 0.8 }}>
             Navbar with menu items
           </Typography>
-        </Paper>
+        </Card>
       ),
     },
     {
@@ -177,35 +174,33 @@ const ThemeCustomizer: React.FC = () => {
     {
       name: 'Note Card',
       component: (
-        <Card sx={{ 
-          backgroundColor: noteCardStyles.backgroundColor,
-          color: noteCardStyles.color,
-          border: `2px solid ${noteCardStyles.borderColor}`,
-          maxWidth: 200,
-        }}>
-          <CardContent>
-            <Typography variant="body2" sx={{ color: noteCardStyles.color }}>
-              Sample note with this color scheme
-            </Typography>
-          </CardContent>
+        <Card 
+          hover
+          sx={{ 
+            backgroundColor: noteCardStyles.backgroundColor,
+            color: noteCardStyles.color,
+            border: `2px solid ${noteCardStyles.borderColor}`,
+            maxWidth: 200,
+          }}
+        >
+          <Typography variant="body2" sx={{ color: noteCardStyles.color }}>
+            Sample note with this color scheme
+          </Typography>
         </Card>
       ),
     },
     {
       name: 'Input Field',
       component: (
-        <TextField
+        <Input
           label="Sample Input"
-          variant="outlined"
-          size="small"
+          value=""
+          onChange={() => {}}
+          placeholder="Type here..."
           sx={{
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: inputStyles.backgroundColor,
-              color: inputStyles.color,
-              '& fieldset': {
-                borderColor: inputStyles.borderColor,
-              },
-            },
+            backgroundColor: inputStyles.backgroundColor,
+            color: inputStyles.color,
+            borderColor: inputStyles.borderColor,
           }}
         />
       ),
@@ -213,7 +208,7 @@ const ThemeCustomizer: React.FC = () => {
     {
       name: 'Status Buttons',
       component: (
-        <Stack direction="row" spacing={1}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="contained"
             size="small"
@@ -244,131 +239,215 @@ const ThemeCustomizer: React.FC = () => {
           >
             Error
           </Button>
-        </Stack>
+        </Box>
       ),
     },
   ];
 
   return (
-    <Box sx={{ p: 3, backgroundColor: currentScheme.colors.background, color: textPrimary, minHeight: '100vh' }}>
-      <Paper sx={{ p: 3, mb: 3, backgroundColor: cardStyles.backgroundColor, color: cardStyles.color }}>
-        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-          <Box display="flex" alignItems="center" gap={2}>
-            <PaletteIcon sx={{ color: accentColor, fontSize: 32 }} />
-            <Typography variant="h4" sx={{ color: textPrimary }}>
+    <MainLayout title="Theme Customizer">
+      <Box sx={{ 
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+        color: darkMode ? '#e8eaed' : '#202124',
+        minHeight: '100vh',
+      }}>
+        {/* Header */}
+        <Box sx={{ 
+          p: { xs: 1, sm: 2, md: 3 },
+          borderBottom: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+          background: darkMode 
+            ? 'linear-gradient(135deg, #0d3064 0%, #202124 100%)'
+            : 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)',
+        }}>
+          <Breadcrumbs sx={{ 
+            mb: { xs: 1, sm: 2 }, 
+            fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.85rem' } 
+          }}>
+            <Link 
+              href="/dashboard" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none', 
+                color: darkMode ? '#9aa0a6' : '#5f6368', 
+                fontWeight: 300,
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: { xs: '14px', sm: '16px', md: '18px' } }} />
+              Dashboard
+            </Link>
+            <Typography color={darkMode ? '#e8eaed' : '#202124'} fontWeight={400}>
               Theme Customizer
             </Typography>
-          </Box>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={darkMode}
-                onChange={(e) => setDarkMode(e.target.checked)}
-                color="primary"
-              />
-            }
-            label={
-              <Box display="flex" alignItems="center" gap={1}>
-                {darkMode ? <DarkModeIcon /> : <LightModeIcon />}
-                <Typography>{darkMode ? 'Dark Mode' : 'Light Mode'}</Typography>
-              </Box>
-            }
-          />
-        </Box>
-        
-        <Typography variant="body1" sx={{ color: textSecondary, mb: 3 }}>
-          Customize your application's appearance with pre-built themes or create your own color scheme.
-        </Typography>
-      </Paper>
+          </Breadcrumbs>
 
-      {/* Use Flexbox instead of Grid */}
-      <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} gap={3}>
-        {/* Left Column: Color Scheme Selection */}
-        <Box flex={1}>
-          <Card sx={{ 
-            backgroundColor: cardStyles.backgroundColor, 
-            color: cardStyles.color,
-            height: '100%',
+          <Box sx={{ 
+            textAlign: 'center', 
+            mb: { xs: 2, sm: 3, md: 4 },
+            px: { xs: 1, sm: 2, md: 3 },
           }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, color: textPrimary }}>
-                <PaletteIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Color Schemes
-              </Typography>
-              
-              <FormControl fullWidth sx={{ mb: 3 }}>
-                <InputLabel sx={{ color: textSecondary }}>Select a Theme</InputLabel>
-                <Select
-                  value={selectedSchemeId}
+            <Typography 
+              variant="h4" 
+              fontWeight={500} 
+              gutterBottom
+              sx={{ 
+                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+              }}
+            >
+              🎨 Theme Customizer
+            </Typography>
+            
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: darkMode ? '#9aa0a6' : '#5f6368', 
+                fontWeight: 300,
+                fontSize: { xs: '0.85rem', sm: '1rem', md: '1.125rem' },
+                lineHeight: 1.5,
+                maxWidth: 600,
+                mx: 'auto',
+              }}
+            >
+              Customize your application's appearance with pre-built themes or create your own color scheme
+            </Typography>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: 2,
+            flexWrap: 'wrap',
+            mt: 3,
+          }}>
+            <Chip
+              label="Color Customization"
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.08),
+                borderColor: alpha('#4285f4', 0.3),
+                color: darkMode ? '#8ab4f8' : '#4285f4',
+              }}
+            />
+            <Chip
+              label="Live Preview"
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#34a853', 0.1) : alpha('#34a853', 0.08),
+                borderColor: alpha('#34a853', 0.3),
+                color: darkMode ? '#81c995' : '#34a853',
+              }}
+            />
+            <Chip
+              label="Accessibility Check"
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#fbbc04', 0.1) : alpha('#fbbc04', 0.08),
+                borderColor: alpha('#fbbc04', 0.3),
+                color: darkMode ? '#fdd663' : '#fbbc04',
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Main Content */}
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+          {/* Current Scheme Info */}
+          <Card
+            title="🎯 Current Theme"
+            subtitle={`${currentScheme.name} - ${currentScheme.description}`}
+            hover
+            sx={{ 
+              mb: { xs: 2, sm: 3, md: 4 },
+              backgroundColor: darkMode ? '#202124' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}
+          >
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 2, 
+              flexWrap: 'wrap',
+              mt: 2,
+              justifyContent: 'center'
+            }}>
+              <Chip 
+                label="Primary Color" 
+                sx={{ 
+                  backgroundColor: primaryColor, 
+                  color: getAccessibleColorPair(primaryColor).text,
+                  fontWeight: 'bold',
+                }} 
+              />
+              <Chip 
+                label="Secondary Color" 
+                sx={{ 
+                  backgroundColor: secondaryColor, 
+                  color: getAccessibleColorPair(secondaryColor).text,
+                  fontWeight: 'bold',
+                }} 
+              />
+              <Chip 
+                label="Accent Color" 
+                sx={{ 
+                  backgroundColor: accentColor, 
+                  color: getAccessibleColorPair(accentColor).text,
+                  fontWeight: 'bold',
+                }} 
+              />
+            </Box>
+          </Card>
+
+          {/* Main Customization Area */}
+          <Box sx={{ 
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: 3,
+            mb: { xs: 2, sm: 3, md: 4 },
+          }}>
+            {/* Left Column: Color Scheme Selection */}
+            <Box sx={{ flex: 1 }}>
+              <Card
+                title="🎨 Color Schemes"
+                subtitle="Choose from pre-designed themes"
+                hover
+                sx={{
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  height: '100%',
+                }}
+              >
+                <Input
+                  select
+                  fullWidth
                   label="Select a Theme"
+                  value={selectedSchemeId}
                   onChange={(e) => handleSchemeSelect(e.target.value)}
-                  sx={{ 
-                    backgroundColor: inputStyles.backgroundColor,
-                    color: inputStyles.color,
-                    '& .MuiSelect-icon': { color: textSecondary },
-                  }}
+                  sx={{ mb: 3, mt: 2 }}
                 >
                   {colorSchemes.map((scheme) => (
-                    <MenuItem key={scheme.id} value={scheme.id}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Box
-                          sx={{
-                            width: 20,
-                            height: 20,
-                            backgroundColor: scheme.colors.primary,
-                            borderRadius: '4px',
-                            border: '1px solid rgba(0,0,0,0.1)',
-                          }}
-                        />
-                        {scheme.name}
-                      </Box>
-                    </MenuItem>
+                    <option key={scheme.id} value={scheme.id}>
+                      {scheme.name}
+                    </option>
                   ))}
-                </Select>
-              </FormControl>
+                </Input>
 
-              <Typography variant="subtitle2" sx={{ mb: 2, color: textSecondary }}>
-                Current Scheme: {currentScheme.name}
-              </Typography>
-              
-              <Box display="flex" gap={1} flexWrap="wrap" mb={3}>
-                <Chip 
-                  label="Primary" 
-                  sx={{ 
-                    backgroundColor: primaryColor, 
-                    color: getAccessibleColorPair(primaryColor).text 
-                  }} 
-                />
-                <Chip 
-                  label="Secondary" 
-                  sx={{ 
-                    backgroundColor: secondaryColor, 
-                    color: getAccessibleColorPair(secondaryColor).text 
-                  }} 
-                />
-                <Chip 
-                  label="Accent" 
-                  sx={{ 
-                    backgroundColor: accentColor, 
-                    color: getAccessibleColorPair(accentColor).text 
-                  }} 
-                />
-              </Box>
+                <Divider sx={{ my: 2, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
 
-              <Divider sx={{ my: 2, borderColor: cardStyles.borderColor }} />
-
-              <Typography variant="subtitle2" sx={{ mb: 2, color: textSecondary }}>
-                Note Colors
-              </Typography>
-              
-              <Box display="flex" flexWrap="wrap" gap={1}>
-                {noteColors.slice(0, 12).map((colorCombo, index) => (
-                  <Tooltip title={`Text: ${colorCombo.text}`} key={index}>
-                    <IconButton
+                <Typography variant="body2" sx={{ mb: 2, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                  Note Colors
+                </Typography>
+                
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  {noteColors.slice(0, 12).map((colorCombo, index) => (
+                    <Button
+                      key={index}
                       onClick={() => setNoteColor(colorCombo.background)}
                       sx={{
                         width: 40,
                         height: 40,
+                        minWidth: 40,
+                        padding: 0,
                         backgroundColor: colorCombo.background,
                         border: noteColor === colorCombo.background 
                           ? `2px solid ${accentColor}` 
@@ -385,301 +464,370 @@ const ThemeCustomizer: React.FC = () => {
                           fontSize: 16,
                         }} />
                       )}
-                    </IconButton>
-                  </Tooltip>
-                ))}
-              </Box>
-
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<RefreshIcon />}
-                onClick={handleRandomize}
-                sx={{ mt: 2 }}
-              >
-                Randomize Colors
-              </Button>
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Middle Column: Component Previews */}
-        <Box flex={1}>
-          <Card sx={{ 
-            backgroundColor: cardStyles.backgroundColor, 
-            color: cardStyles.color,
-            height: '100%',
-          }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, color: textPrimary }}>
-                <ColorizeIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Component Previews
-              </Typography>
-
-              <Stack spacing={3}>
-                {componentPreviews.map((preview) => (
-                  <Box key={preview.name}>
-                    <Typography variant="subtitle2" sx={{ mb: 1, color: textSecondary }}>
-                      {preview.name}
-                    </Typography>
-                    {preview.component}
-                  </Box>
-                ))}
-              </Stack>
-
-              <Divider sx={{ my: 3, borderColor: cardStyles.borderColor }} />
-
-              <Typography variant="subtitle2" sx={{ mb: 2, color: textSecondary }}>
-                <GradientIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Gradient Preview
-              </Typography>
-              
-              <Box
-                sx={{
-                  height: 100,
-                  borderRadius: 2,
-                  background: getGradientBackground(gradientAngle),
-                  mb: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Typography sx={{ 
-                  color: getTextColorForBackground(primaryColor),
-                  fontWeight: 'bold',
-                }}>
-                  Gradient Background
-                </Typography>
-              </Box>
-
-              <Box display="flex" alignItems="center" gap={2}>
-                <Typography variant="body2" sx={{ color: textSecondary }}>
-                  Angle: {gradientAngle}°
-                </Typography>
-                <Slider
-                  value={gradientAngle}
-                  onChange={(_, value) => setGradientAngle(value as number)}
-                  min={0}
-                  max={360}
-                  sx={{ flex: 1 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Right Column: Customization Controls */}
-        <Box flex={1}>
-          <Card sx={{ 
-            backgroundColor: cardStyles.backgroundColor, 
-            color: cardStyles.color,
-            height: '100%',
-          }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, color: textPrimary }}>
-                <ContrastIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Custom Colors
-              </Typography>
-
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1, color: textSecondary }}>
-                    Header Color
-                  </Typography>
-                  <Box display="flex" gap={1}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={customPreferences.headerColor || ''}
-                      onChange={(e) => setCustomPreferences(prev => ({
-                        ...prev,
-                        headerColor: e.target.value,
-                      }))}
-                      placeholder="#1e293b"
-                      sx={{
-                        backgroundColor: inputStyles.backgroundColor,
-                        '& .MuiOutlinedInput-root': {
-                          color: inputStyles.color,
-                        },
-                      }}
-                    />
-                    <input
-                      type="color"
-                      value={customPreferences.headerColor || currentScheme.colors.components.header}
-                      onChange={(e) => setCustomPreferences(prev => ({
-                        ...prev,
-                        headerColor: e.target.value,
-                      }))}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 4,
-                        border: `1px solid ${inputStyles.borderColor}`,
-                        cursor: 'pointer',
-                      }}
-                    />
-                  </Box>
-                  {!isHeaderAccessible && customPreferences.headerColor && (
-                    <Alert severity="warning" sx={{ mt: 1 }}>
-                      Low contrast with text: {accessiblePair.text}
-                    </Alert>
-                  )}
-                </Box>
-
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1, color: textSecondary }}>
-                    Button Color
-                  </Typography>
-                  <input
-                    type="color"
-                    value={customPreferences.buttonColor || currentScheme.colors.buttons.primary}
-                    onChange={(e) => setCustomPreferences(prev => ({
-                      ...prev,
-                      buttonColor: e.target.value,
-                    }))}
-                    style={{
-                      width: '100%',
-                      height: 40,
-                      borderRadius: 4,
-                      border: `1px solid ${inputStyles.borderColor}`,
-                      cursor: 'pointer',
-                    }}
-                  />
-                </Box>
-
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1, color: textSecondary }}>
-                    Text Color
-                  </Typography>
-                  <Box display="flex" gap={1}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={customPreferences.textColor || ''}
-                      onChange={(e) => setCustomPreferences(prev => ({
-                        ...prev,
-                        textColor: e.target.value,
-                      }))}
-                      placeholder="#f8fafc"
-                      sx={{
-                        backgroundColor: inputStyles.backgroundColor,
-                        '& .MuiOutlinedInput-root': {
-                          color: inputStyles.color,
-                        },
-                      }}
-                    />
-                    <input
-                      type="color"
-                      value={customPreferences.textColor || currentScheme.colors.text.primary}
-                      onChange={(e) => setCustomPreferences(prev => ({
-                        ...prev,
-                        textColor: e.target.value,
-                      }))}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 4,
-                        border: `1px solid ${inputStyles.borderColor}`,
-                        cursor: 'pointer',
-                      }}
-                    />
-                  </Box>
-                </Box>
-
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1, color: textSecondary }}>
-                    Accent Color
-                  </Typography>
-                  <input
-                    type="color"
-                    value={customPreferences.accentColor || currentScheme.colors.accent}
-                    onChange={(e) => setCustomPreferences(prev => ({
-                      ...prev,
-                      accentColor: e.target.value,
-                    }))}
-                    style={{
-                      width: '100%',
-                      height: 40,
-                      borderRadius: 4,
-                      border: `1px solid ${inputStyles.borderColor}`,
-                      cursor: 'pointer',
-                    }}
-                  />
-                </Box>
-
-                <Divider sx={{ borderColor: cardStyles.borderColor }} />
-
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1, color: textSecondary }}>
-                    Accessibility Check
-                  </Typography>
-                  <Box display="flex" gap={2} alignItems="center">
-                    <Box
-                      sx={{
-                        width: 60,
-                        height: 60,
-                        backgroundColor: accessiblePair.background,
-                        borderRadius: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: `2px solid ${inputStyles.borderColor}`,
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: accessiblePair.text,
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        Aa
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" sx={{ color: textPrimary }}>
-                        Contrast: {getContrastRatio(
-                          accessiblePair.background, 
-                          accessiblePair.text
-                        ).toFixed(2)}:1
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: textSecondary }}>
-                        {isAccessibleCombination(accessiblePair.background, accessiblePair.text)
-                          ? '✓ WCAG AA Compliant'
-                          : '⚠️ Low Contrast'
-                        }
-                      </Typography>
-                    </Box>
-                  </Box>
+                    </Button>
+                  ))}
                 </Box>
 
                 <Button
                   fullWidth
-                  variant="contained"
-                  startIcon={<CheckIcon />}
-                  onClick={handleApplyCustom}
+                  variant="outlined"
+                  onClick={handleRandomize}
+                  startIcon={<RefreshIcon />}
                   sx={{
-                    backgroundColor: primaryButtonStyles.backgroundColor,
-                    color: primaryButtonStyles.color,
-                    mt: 2,
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
                   }}
                 >
-                  Apply Custom Colors
+                  Randomize Colors
                 </Button>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-      </Box>
+              </Card>
+            </Box>
 
-      {/* Current Scheme Info */}
-      <Paper sx={{ p: 2, mt: 3, backgroundColor: cardStyles.backgroundColor, color: cardStyles.color }}>
-        <Typography variant="body2" sx={{ color: textSecondary }}>
-          Current Scheme: <strong style={{ color: textPrimary }}>{currentScheme.name}</strong> - {currentScheme.description}
-        </Typography>
-      </Paper>
-    </Box>
+            {/* Middle Column: Component Previews */}
+            <Box sx={{ flex: 1 }}>
+              <Card
+                title="👀 Component Previews"
+                subtitle="See how your theme looks"
+                hover
+                sx={{
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  height: '100%',
+                }}
+              >
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+                  {componentPreviews.map((preview) => (
+                    <Box key={preview.name}>
+                      <Typography variant="body2" sx={{ mb: 1, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                        {preview.name}
+                      </Typography>
+                      {preview.component}
+                    </Box>
+                  ))}
+                </Box>
+
+                <Divider sx={{ my: 3, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
+
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 2, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                    <GradientIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Gradient Preview
+                  </Typography>
+                  
+                  <Card
+                    hover
+                    sx={{
+                      height: 100,
+                      borderRadius: 2,
+                      background: getGradientBackground(gradientAngle),
+                      mb: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography sx={{ 
+                      color: getTextColorForBackground(primaryColor),
+                      fontWeight: 'bold',
+                    }}>
+                      Gradient Background
+                    </Typography>
+                  </Card>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', minWidth: 60 }}>
+                      Angle: {gradientAngle}°
+                    </Typography>
+                    <Slider
+                      value={gradientAngle}
+                      onChange={(_, value) => setGradientAngle(value as number)}
+                      min={0}
+                      max={360}
+                      sx={{ flex: 1 }}
+                    />
+                  </Box>
+                </Box>
+              </Card>
+            </Box>
+
+            {/* Right Column: Customization Controls */}
+            <Box sx={{ flex: 1 }}>
+              <Card
+                title="🎛️ Custom Colors"
+                subtitle="Create your own color scheme"
+                hover
+                sx={{
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  height: '100%',
+                }}
+              >
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+                  {/* Header Color */}
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Header Color
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Input
+                        fullWidth
+                        value={customPreferences.headerColor || ''}
+                        onChange={(e) => setCustomPreferences(prev => ({
+                          ...prev,
+                          headerColor: e.target.value,
+                        }))}
+                        placeholder="#1e293b"
+                      />
+                      <input
+                        type="color"
+                        value={customPreferences.headerColor || currentScheme.colors.components.header}
+                        onChange={(e) => setCustomPreferences(prev => ({
+                          ...prev,
+                          headerColor: e.target.value,
+                        }))}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 8,
+                          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                          cursor: 'pointer',
+                          backgroundColor: 'transparent',
+                        }}
+                      />
+                    </Box>
+                    {!isHeaderAccessible && customPreferences.headerColor && (
+                      <Alert
+                        severity="warning"
+                        message={`Low contrast with text: ${accessiblePair.text}`}
+                        sx={{ mt: 1 }}
+                      />
+                    )}
+                  </Box>
+
+                  {/* Button Color */}
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Button Color
+                    </Typography>
+                    <input
+                      type="color"
+                      value={customPreferences.buttonColor || currentScheme.colors.buttons.primary}
+                      onChange={(e) => setCustomPreferences(prev => ({
+                        ...prev,
+                        buttonColor: e.target.value,
+                      }))}
+                      style={{
+                        width: '100%',
+                        height: 40,
+                        borderRadius: 8,
+                        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent',
+                      }}
+                    />
+                  </Box>
+
+                  {/* Text Color */}
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Text Color
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Input
+                        fullWidth
+                        value={customPreferences.textColor || ''}
+                        onChange={(e) => setCustomPreferences(prev => ({
+                          ...prev,
+                          textColor: e.target.value,
+                        }))}
+                        placeholder="#f8fafc"
+                      />
+                      <input
+                        type="color"
+                        value={customPreferences.textColor || currentScheme.colors.text.primary}
+                        onChange={(e) => setCustomPreferences(prev => ({
+                          ...prev,
+                          textColor: e.target.value,
+                        }))}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 8,
+                          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                          cursor: 'pointer',
+                          backgroundColor: 'transparent',
+                        }}
+                      />
+                    </Box>
+                  </Box>
+
+                  {/* Accent Color */}
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Accent Color
+                    </Typography>
+                    <input
+                      type="color"
+                      value={customPreferences.accentColor || currentScheme.colors.accent}
+                      onChange={(e) => setCustomPreferences(prev => ({
+                        ...prev,
+                        accentColor: e.target.value,
+                      }))}
+                      style={{
+                        width: '100%',
+                        height: 40,
+                        borderRadius: 8,
+                        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent',
+                      }}
+                    />
+                  </Box>
+
+                  <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
+
+                  {/* Accessibility Check */}
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 2, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Accessibility Check
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                      <Card
+                        hover
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          backgroundColor: accessiblePair.background,
+                          borderRadius: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: accessiblePair.text,
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          Aa
+                        </Typography>
+                      </Card>
+                      <Box>
+                        <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                          Contrast: {getContrastRatio(
+                            accessiblePair.background, 
+                            accessiblePair.text
+                          ).toFixed(2)}:1
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          {isAccessibleCombination(accessiblePair.background, accessiblePair.text)
+                            ? '✓ WCAG AA Compliant'
+                            : '⚠️ Low Contrast'
+                          }
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={handleApplyCustom}
+                    startIcon={<CheckIcon />}
+                    sx={{
+                      backgroundColor: '#34a853',
+                      '&:hover': { backgroundColor: '#2d9248' },
+                      mt: 2,
+                    }}
+                  >
+                    Apply Custom Colors
+                  </Button>
+                </Box>
+              </Card>
+            </Box>
+          </Box>
+
+          {/* Accessibility Info */}
+          <Card
+            title="📊 Accessibility Information"
+            subtitle="WCAG compliance and contrast ratios"
+            hover
+            sx={{
+              backgroundColor: darkMode ? '#202124' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}
+          >
+            <Box sx={{ 
+              display: 'flex', 
+              flexWrap: 'wrap', 
+              gap: 2, 
+              mt: 2,
+              justifyContent: 'space-between'
+            }}>
+              <Card
+                hover
+                sx={{
+                  flex: 1,
+                  minWidth: 200,
+                  p: 2,
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}
+              >
+                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mb: 1 }}>
+                  Text Contrast
+                </Typography>
+                <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                  {getContrastRatio(accessiblePair.background, accessiblePair.text).toFixed(2)}:1
+                </Typography>
+              </Card>
+
+              <Card
+                hover
+                sx={{
+                  flex: 1,
+                  minWidth: 200,
+                  p: 2,
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}
+              >
+                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mb: 1 }}>
+                  WCAG Level
+                </Typography>
+                <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                  {getContrastRatio(accessiblePair.background, accessiblePair.text) >= 4.5 
+                    ? 'AA ✓' 
+                    : 'Needs Improvement'
+                  }
+                </Typography>
+              </Card>
+
+              <Card
+                hover
+                sx={{
+                  flex: 1,
+                  minWidth: 200,
+                  p: 2,
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}
+              >
+                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mb: 1 }}>
+                  Current Theme
+                </Typography>
+                <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                  {currentScheme.name}
+                </Typography>
+              </Card>
+            </Box>
+          </Card>
+        </Container>
+      </Box>
+    </MainLayout>
   );
 };
 

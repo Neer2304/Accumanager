@@ -4,21 +4,14 @@ import React, { useState, useEffect } from 'react'
 import {
   Box,
   Typography,
-  Paper,
-  TextField,
-  Button,
-  Card,
-  CardContent,
-  Alert,
+  Container,
+  useTheme,
+  alpha,
+  Breadcrumbs,
+  Stack,
   Stepper,
   Step,
   StepLabel,
-  Stack,
-  Divider,
-  Chip,
-  Breadcrumbs,
-  Link as MuiLink,
-  Container,
 } from '@mui/material'
 import {
   Business as BusinessIcon,
@@ -32,6 +25,11 @@ import {
 import Link from 'next/link'
 import { MainLayout } from '@/components/Layout/MainLayout'
 import { useAuth } from '@/hooks/useAuth'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Chip } from '@/components/ui/Chip'
+import { Input } from '@/components/ui/Input'
+import { Alert } from '@/components/ui/Alert'
 
 interface BusinessFormData {
   businessName: string
@@ -49,6 +47,9 @@ interface BusinessFormData {
 const steps = ['Business Info', 'Address Details', 'Contact Info']
 
 export default function BusinessSetupPage() {
+  const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
+  
   const { user } = useAuth()
   const [activeStep, setActiveStep] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -307,12 +308,17 @@ GENERATED ON: ${new Date().toLocaleString()}
       case 0:
         return (
           <Stack spacing={3}>
-            <Typography variant="h6" color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              color: darkMode ? '#e8eaed' : '#202124',
+            }}>
               <BusinessIcon />
               Business Information
             </Typography>
             
-            <TextField
+            <Input
               fullWidth
               label="Business Name *"
               value={formData.businessName}
@@ -323,7 +329,7 @@ GENERATED ON: ${new Date().toLocaleString()}
               error={!formData.businessName.trim() && activeStep === 0}
             />
             
-            <TextField
+            <Input
               fullWidth
               label="GST Number *"
               value={formData.gstNumber}
@@ -335,7 +341,7 @@ GENERATED ON: ${new Date().toLocaleString()}
               error={formData.gstNumber.length !== 15 && activeStep === 0}
             />
             
-            <TextField
+            <Input
               fullWidth
               label="Business Logo URL (Optional)"
               value={formData.logo}
@@ -349,12 +355,17 @@ GENERATED ON: ${new Date().toLocaleString()}
       case 1:
         return (
           <Stack spacing={3}>
-            <Typography variant="h6" color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              color: darkMode ? '#e8eaed' : '#202124',
+            }}>
               <LocationIcon />
               Address Details
             </Typography>
             
-            <TextField
+            <Input
               fullWidth
               label="Address *"
               value={formData.address}
@@ -367,7 +378,7 @@ GENERATED ON: ${new Date().toLocaleString()}
             />
             
             <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-              <TextField
+              <Input
                 fullWidth
                 label="City *"
                 value={formData.city}
@@ -377,7 +388,7 @@ GENERATED ON: ${new Date().toLocaleString()}
                 error={!formData.city.trim() && activeStep === 1}
               />
               
-              <TextField
+              <Input
                 fullWidth
                 label="State *"
                 value={formData.state}
@@ -389,7 +400,7 @@ GENERATED ON: ${new Date().toLocaleString()}
             </Box>
             
             <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-              <TextField
+              <Input
                 fullWidth
                 label="Pincode *"
                 value={formData.pincode}
@@ -400,7 +411,7 @@ GENERATED ON: ${new Date().toLocaleString()}
                 error={(formData.pincode.length !== 6) && activeStep === 1}
               />
               
-              <TextField
+              <Input
                 fullWidth
                 label="Country"
                 value={formData.country}
@@ -414,12 +425,17 @@ GENERATED ON: ${new Date().toLocaleString()}
       case 2:
         return (
           <Stack spacing={3}>
-            <Typography variant="h6" color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              color: darkMode ? '#e8eaed' : '#202124',
+            }}>
               <ContactIcon />
               Contact Information
             </Typography>
             
-            <TextField
+            <Input
               fullWidth
               label="Phone Number *"
               value={formData.phone}
@@ -431,7 +447,7 @@ GENERATED ON: ${new Date().toLocaleString()}
               error={(formData.phone.length !== 10) && activeStep === 2}
             />
             
-            <TextField
+            <Input
               fullWidth
               label="Email Address *"
               type="email"
@@ -452,246 +468,330 @@ GENERATED ON: ${new Date().toLocaleString()}
 
   return (
     <MainLayout title="Business Management">
-      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
-        {/* Header - Similar to other pages */}
-        <Box sx={{ mb: 4 }}>
-          {/* Back Button */}
-          <Button
-            startIcon={<BackIcon />}
-            onClick={handleBackToDashboard}
-            sx={{ mb: 2 }}
-            size="small"
-            variant="outlined"
-          >
-            Back to Dashboard
-          </Button>
-
-          {/* Breadcrumbs */}
-          <Breadcrumbs sx={{ mb: 2 }}>
-            <MuiLink
-              component={Link}
-              href="/dashboard"
-              sx={{ 
+      <Box sx={{ 
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+        color: darkMode ? '#e8eaed' : '#202124',
+        minHeight: '100vh',
+      }}>
+        {/* Header */}
+        <Box sx={{ 
+          p: { xs: 1, sm: 2, md: 3 },
+          borderBottom: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+          background: darkMode 
+            ? 'linear-gradient(135deg, #0d3064 0%, #202124 100%)'
+            : 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)',
+        }}>
+          <Breadcrumbs sx={{ 
+            mb: { xs: 1, sm: 2 }, 
+            fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.85rem' } 
+          }}>
+            <Link 
+              href="/dashboard" 
+              style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                textDecoration: 'none',
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main' }
+                textDecoration: 'none', 
+                color: darkMode ? '#9aa0a6' : '#5f6368', 
+                fontWeight: 300,
               }}
             >
-              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              <HomeIcon sx={{ mr: 0.5, fontSize: { xs: '14px', sm: '16px', md: '18px' } }} />
               Dashboard
-            </MuiLink>
-            <Typography color="text.primary">Business</Typography>
+            </Link>
+            <Typography color={darkMode ? '#e8eaed' : '#202124'} fontWeight={400}>
+              Business
+            </Typography>
           </Breadcrumbs>
 
-          {/* Main Header */}
           <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: 2,
-            mb: 3
+            textAlign: 'center', 
+            mb: { xs: 2, sm: 3, md: 4 },
+            px: { xs: 1, sm: 2, md: 3 },
           }}>
-            <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
-                🏢 Business Management
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {business 
-                  ? 'Manage your business profile for invoicing and compliance'
-                  : 'Setup your business profile to start creating professional invoices'
-                }
-              </Typography>
-            </Box>
-
-            <Stack 
-              direction="row" 
-              spacing={1}
-              alignItems="center"
+            <Typography 
+              variant="h4" 
+              fontWeight={500} 
+              gutterBottom
               sx={{ 
-                width: { xs: '100%', sm: 'auto' },
-                justifyContent: { xs: 'space-between', sm: 'flex-end' }
+                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
               }}
             >
-              {/* Status Chip */}
-              <Chip 
-                label={business ? "Profile Created" : "Setup Required"}
-                size="small"
-                color={business ? "success" : "warning"}
-                variant="outlined"
-              />
-
-              {/* Download Button */}
-              {business && (
-                <Button
-                  variant="outlined"
-                  startIcon={<Download />}
-                  onClick={handleDownloadProfile}
-                  size="small"
-                  sx={{
-                    borderRadius: 2,
-                    borderColor: 'primary.main',
-                    color: 'primary.main',
-                    '&:hover': {
-                      borderColor: 'primary.dark',
-                    }
-                  }}
-                >
-                  Download Profile
-                </Button>
-              )}
-            </Stack>
+              Business Management
+            </Typography>
+            
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: darkMode ? '#9aa0a6' : '#5f6368', 
+                fontWeight: 300,
+                fontSize: { xs: '0.85rem', sm: '1rem', md: '1.125rem' },
+                lineHeight: 1.5,
+                maxWidth: 600,
+                mx: 'auto',
+              }}
+            >
+              {business 
+                ? 'Manage your business profile for invoicing and compliance'
+                : 'Setup your business profile to start creating professional invoices'
+              }
+            </Typography>
           </Box>
 
-          {/* Status Bar */}
-          <Paper
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              backgroundColor: 'background.paper',
-              border: '1px solid',
-              borderColor: 'divider',
-              mb: 3,
-            }}
-          >
-            <Box
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: 2,
+            flexWrap: 'wrap',
+            mt: 3,
+          }}>
+            <Chip
+              label={business ? "Profile Created" : "Setup Required"}
+              variant="outlined"
               sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 2,
+                backgroundColor: business 
+                  ? (darkMode ? alpha('#34a853', 0.1) : alpha('#34a853', 0.08))
+                  : (darkMode ? alpha('#fbbc04', 0.1) : alpha('#fbbc04', 0.08)),
+                borderColor: business ? alpha('#34a853', 0.3) : alpha('#fbbc04', 0.3),
+                color: business 
+                  ? (darkMode ? '#81c995' : '#34a853')
+                  : (darkMode ? '#fdd663' : '#fbbc04'),
               }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <BusinessIcon color="primary" />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Current Status
-                  </Typography>
-                  <Typography variant="body1" fontWeight="medium">
-                    {business ? `Profile: ${business.businessName}` : 'Business Profile Not Setup'}
-                  </Typography>
-                </Box>
-              </Box>
-              
-              {business && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    GST: <strong>{business.gstNumber}</strong>
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Location: <strong>{business.city}, {business.state}</strong>
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-          </Paper>
+            />
+            
+            {business && (
+              <Chip
+                label={`GST: ${business.gstNumber}`}
+                variant="outlined"
+                sx={{
+                  backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.08),
+                  borderColor: alpha('#4285f4', 0.3),
+                  color: darkMode ? '#8ab4f8' : '#4285f4',
+                }}
+              />
+            )}
+          </Box>
         </Box>
 
-        {/* Alerts */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError('')}>
-            {error}
-          </Alert>
-        )}
-        
-        {success && (
-          <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setSuccess('')}>
-            {success}
-          </Alert>
-        )}
+        {/* Main Content */}
+        <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+          {/* Alerts */}
+          {error && (
+            <Alert
+              severity="error"
+              message={error}
+              dismissible
+              onDismiss={() => setError('')}
+              sx={{ mb: 3 }}
+            />
+          )}
+          
+          {success && (
+            <Alert
+              severity="success"
+              message={success}
+              dismissible
+              onDismiss={() => setSuccess('')}
+              sx={{ mb: 3 }}
+            />
+          )}
 
-        {/* Stepper */}
-        <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
-          <CardContent sx={{ p: 3 }}>
-            <Stepper activeStep={activeStep} alternativeLabel>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-          </CardContent>
-        </Card>
-
-        {/* Form Content */}
-        <Card sx={{ borderRadius: 2, boxShadow: 2, mb: 3 }}>
-          <CardContent sx={{ p: 4 }}>
-            {renderStepContent(activeStep)}
-
-            {/* Navigation Buttons */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-              <Button
-                onClick={handleBack}
-                disabled={activeStep === 0}
-                variant="outlined"
-                sx={{ borderRadius: 2 }}
-              >
-                Back
-              </Button>
-
-              {activeStep === steps.length - 1 ? (
+          {/* Status Card */}
+          <Card
+            title={business ? "🏢 Business Profile Created" : "⚙️ Business Setup Required"}
+            subtitle={business ? `Business: ${business.businessName} • ${business.city}, ${business.state}` : 'Complete the setup process to create invoices'}
+            action={
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <Button
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  variant="contained"
-                  size="large"
-                  startIcon={isLoading ? null : <CheckCircleIcon />}
-                  sx={{ 
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #1976d2 0%, #115293 100%)',
-                    boxShadow: 2,
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #115293 0%, #0d47a1 100%)',
-                      boxShadow: 4,
-                    }
+                  variant="outlined"
+                  onClick={handleBackToDashboard}
+                  startIcon={<BackIcon />}
+                  sx={{
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
                   }}
                 >
-                  {isLoading ? 'Saving...' : business ? 'Update Business' : 'Save Business'}
+                  Back
                 </Button>
-              ) : (
-                <Button 
-                  onClick={handleNext} 
-                  variant="contained" 
-                  sx={{ 
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #1976d2 0%, #115293 100%)',
-                  }}
-                >
-                  Next
-                </Button>
-              )}
-            </Box>
-          </CardContent>
-        </Card>
+                {business && (
+                  <Button
+                    variant="contained"
+                    onClick={handleDownloadProfile}
+                    startIcon={<Download />}
+                    sx={{ 
+                      backgroundColor: '#34a853',
+                      '&:hover': { backgroundColor: '#2d9248' }
+                    }}
+                  >
+                    Download Profile
+                  </Button>
+                )}
+              </Box>
+            }
+            hover
+            sx={{ 
+              mb: { xs: 2, sm: 3, md: 4 },
+              backgroundColor: darkMode ? '#202124' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}
+          />
 
-        {/* Quick Info */}
-        <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <BusinessIcon />
-              Why setup business profile?
-            </Typography>
-            <Stack spacing={1}>
-              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Stepper */}
+          <Card
+            hover
+            sx={{ 
+              mb: { xs: 2, sm: 3, md: 4 },
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              borderRadius: '16px',
+            }}
+          >
+            <Box sx={{ p: 3 }}>
+              <Stepper 
+                activeStep={activeStep} 
+                alternativeLabel
+                sx={{
+                  '& .MuiStepLabel-root .Mui-completed': {
+                    color: darkMode ? '#8ab4f8' : '#4285f4',
+                  },
+                  '& .MuiStepLabel-root .Mui-active': {
+                    color: darkMode ? '#8ab4f8' : '#4285f4',
+                  },
+                  '& .MuiStepLabel-root .Mui-disabled .MuiStepIcon-root': {
+                    color: darkMode ? '#3c4043' : '#dadce0',
+                  },
+                }}
+              >
+                {steps.map((label) => (
+                  <Step key={label}>
+                    <StepLabel 
+                      sx={{
+                        '& .MuiStepLabel-label': {
+                          color: darkMode ? '#e8eaed' : '#202124',
+                          fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                        },
+                      }}
+                    >
+                      {label}
+                    </StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+            </Box>
+          </Card>
+
+          {/* Form Content */}
+          <Card
+            hover
+            sx={{ 
+              mb: { xs: 2, sm: 3, md: 4 },
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              borderRadius: '16px',
+            }}
+          >
+            <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+              {renderStepContent(activeStep)}
+
+              {/* Navigation Buttons */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+                <Button
+                  onClick={handleBack}
+                  disabled={activeStep === 0}
+                  variant="outlined"
+                  sx={{
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    minWidth: 100,
+                  }}
+                >
+                  Back
+                </Button>
+
+                {activeStep === steps.length - 1 ? (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                    variant="contained"
+                    startIcon={isLoading ? undefined : <CheckCircleIcon />}
+                    sx={{ 
+                      backgroundColor: '#34a853',
+                      '&:hover': { backgroundColor: '#2d9248' },
+                      minWidth: 180,
+                    }}
+                  >
+                    {isLoading ? 'Saving...' : business ? 'Update Business' : 'Save Business'}
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleNext} 
+                    variant="contained"
+                    sx={{ 
+                      backgroundColor: '#4285f4',
+                      '&:hover': { backgroundColor: '#3367d6' },
+                      minWidth: 100,
+                    }}
+                  >
+                    Next
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </Card>
+
+          {/* Info Card */}
+          <Card
+            title="📋 Why setup business profile?"
+            subtitle="Essential information for business setup"
+            hover
+            sx={{ 
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              borderRadius: '16px',
+            }}
+          >
+            <Stack spacing={1.5} sx={{ mt: 2 }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  fontSize: '0.875rem',
+                }}
+              >
                 • Required for generating GST-compliant invoices
               </Typography>
-              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  fontSize: '0.875rem',
+                }}
+              >
                 • Auto-calculates CGST/SGST or IGST based on your business state
               </Typography>
-              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  fontSize: '0.875rem',
+                }}
+              >
                 • Professional invoices with your business details
               </Typography>
-              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  fontSize: '0.875rem',
+                }}
+              >
                 • Required for tax compliance and record keeping
               </Typography>
             </Stack>
-          </CardContent>
-        </Card>
-      </Container>
+          </Card>
+        </Container>
+      </Box>
     </MainLayout>
   )
 }

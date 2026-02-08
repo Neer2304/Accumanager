@@ -4,102 +4,29 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  ListItemSecondaryAction,
-  Avatar,
-  Chip,
-  Button,
-  IconButton,
-  TextField,
-  Divider,
-  Badge,
-  CircularProgress,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Menu,
-  MenuItem,
-  Tooltip,
-  Stack,
-  Card,
-  CardContent,
-  CardActions,
-  Tabs,
-  Tab,
-  InputAdornment,
-  Fab,
+  Container,
   useTheme,
   alpha,
-  ListItemIcon,
-  Container,
-  Skeleton,
+  Breadcrumbs,
+  CircularProgress,
 } from '@mui/material';
 import {
-  PersonAdd as PersonAddIcon,
-  Email as EmailIcon,
-  Check as CheckIcon,
-  Close as CloseIcon,
-  MoreVert as MoreIcon,
-  Send as SendIcon,
-  Refresh as RefreshIcon,
-  FilterList as FilterIcon,
-  Search as SearchIcon,
-  MarkEmailRead as MarkEmailReadIcon,
-  Delete as DeleteIcon,
-  Archive as ArchiveIcon,
-  Reply as ReplyIcon,
-  Forward as ForwardIcon,
-  Star as StarIcon,
-  StarBorder as StarBorderIcon,
-  Videocam as VideoCallIcon,
-  CalendarToday as CalendarIcon,
-  AccessTime as TimeIcon,
-  Groups as GroupsIcon,
-  Business as BusinessIcon,
-  People as PeopleIcon,
-  Lock as LockIcon,
-  Add as AddIcon,
-  Chat as ChatIcon,
-  Notifications as NotificationsIcon,
-  MailOutline as MailOutlineIcon,
-  Inbox as InboxIcon,
-  Outbox as OutboxIcon,
-  Drafts as DraftsIcon,
-  LabelImportant as LabelImportantIcon,
-  Link as LinkIcon,
-  Download as DownloadIcon,
-  ContentCopy as CopyIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-  Pending as PendingIcon,
-  MarkEmailUnread as MarkEmailUnreadIcon,
-  PictureAsPdf as PdfIcon,
-  Description as DescriptionIcon,
-  InsertDriveFile as InsertDriveFileIcon,
-  Construction as ConstructionIcon,
+  Home as HomeIcon,
+  Mail as MailIcon,
 } from '@mui/icons-material';
+import Link from 'next/link';
 import { MainLayout } from '@/components/Layout/MainLayout';
-import { useRouter } from 'next/navigation';
-import { useTheme as useCustomTheme } from '@/contexts/ThemeContext';
-import { format } from 'date-fns';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
+import { Input } from '@/components/ui/Input';
+import { Alert } from '@/components/ui/Alert';
 
-// Import our new components
-import { Button2 } from '@/components/ui/button2';
-import { Input2 } from '@/components/ui/input2';
-import { Card2 } from '@/components/ui/card2';
-import { Alert2 } from '@/components/ui/alert2';
-import { Badge2 } from '@/components/ui/badge2';
-import { CombinedIcon } from '@/components/ui/icons2';
-import { MessageListSkeleton, MessageDetailSkeleton } from '@/components/ui/skeleton2';
-import { MessageList } from '@/components/messages/MessageList';
-import { MessageDetail } from '@/components/messages/MessageDetail';
-import { MessageToolbar } from '@/components/messages/MessageToolbar';
+// Import message components
+import { MessageGrid } from '@/components/messages/MessageGrid';
+import { MessageSearch } from '@/components/messages/MessageSearch';
+import { MessageMenu } from '@/components/messages/MessageMenu';
+import { useMessages } from '@/components/messages/useMessages';
 
 interface Message {
   _id: string;
@@ -131,747 +58,471 @@ interface Message {
   updatedAt: string;
 }
 
-function MessagesPage() {
-  const router = useRouter();
+export default function MessagesPage() {
   const theme = useTheme();
-  const { mode } = useCustomTheme();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [filteredMessages, setFilteredMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [activeTab, setActiveTab] = useState(0);
+  const darkMode = theme.palette.mode === 'dark';
+  
+  const [search, setSearch] = useState("");
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterMenuAnchor, setFilterMenuAnchor] = useState<null | HTMLElement>(null);
-  const [messageMenuAnchor, setMessageMenuAnchor] = useState<null | HTMLElement>(null);
-  const [selectedMessageForMenu, setSelectedMessageForMenu] = useState<Message | null>(null);
-  const [composeDialogOpen, setComposeDialogOpen] = useState(false);
-  const [newMessage, setNewMessage] = useState({
-    to: '',
-    subject: '',
-    content: '',
-    type: 'direct_message' as 'direct_message' | 'meeting_invite',
-    meetingDetails: {
-      title: '',
-      date: '',
-      time: '',
-      link: '',
-      type: 'internal' as 'internal' | 'client' | 'partner' | 'team',
-    },
-  });
+  const [activeTab, setActiveTab] = useState(0);
+  const [composeOpen, setComposeOpen] = useState(false);
 
-  useEffect(() => {
-    fetchMessages();
-  }, []);
+  // Using custom hook for messages
+  const { 
+    messages, 
+    loading, 
+    deleteMessage, 
+    archiveMessage, 
+    markAsRead, 
+    toggleStar,
+    refetch 
+  } = useMessages();
 
-  useEffect(() => {
-    filterMessages();
-  }, [searchQuery, activeTab, messages]);
+  // Filter logic
+  const filteredMessages = messages.filter(
+    (message) =>
+      message.subject.toLowerCase().includes(search.toLowerCase()) ||
+      message.content.toLowerCase().includes(search.toLowerCase()) ||
+      message.senderName.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const fetchMessages = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch('/api/messages', {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data.messages || []);
-      } else {
-        setError('Failed to load messages');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
-      console.error('Error fetching messages:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterMessages = () => {
-    let filtered = [...messages];
-    
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(msg =>
-        msg.subject.toLowerCase().includes(query) ||
-        msg.content.toLowerCase().includes(query) ||
-        msg.senderName.toLowerCase().includes(query) ||
-        msg.senderEmail.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by tab
-    switch (activeTab) {
-      case 0: // Inbox
-        filtered = filtered.filter(msg => 
-          ['pending', 'read', 'unread'].includes(msg.status) && 
-          msg.type !== 'system_notification'
-        );
-        break;
-      case 1: // Unread
-        filtered = filtered.filter(msg => msg.status === 'unread');
-        break;
-      case 2: // Starred
-        filtered = filtered.filter(msg => msg.isStarred);
-        break;
-      case 3: // Meeting Invites
-        filtered = filtered.filter(msg => msg.type === 'meeting_invite');
-        break;
-      case 4: // Sent
-        filtered = filtered.filter(msg => msg.senderEmail === 'currentuser@example.com');
-        break;
-      case 5: // Archived
-        filtered = filtered.filter(msg => msg.status === 'archived');
-        break;
-      case 6: // Trash
-        filtered = filtered.filter(msg => msg.status === 'deleted');
-        break;
-    }
-
-    setFilteredMessages(filtered);
-  };
-
-  const handleTabChange = (newValue: number) => {
-    setActiveTab(newValue);
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
-  };
-
-  const handleMessageClick = (message: Message) => {
+  // Event handlers
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    message: Message
+  ) => {
+    setMenuAnchor(event.currentTarget);
     setSelectedMessage(message);
-    if (message.status === 'unread') {
-      markAsRead(message._id);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+    setSelectedMessage(null);
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!selectedMessage) return;
+
+    const success = await deleteMessage(selectedMessage._id);
+    if (success) {
+      refetch();
+    } else {
+      console.error("Failed to delete message");
     }
+    handleMenuClose();
   };
 
-  const handleMessageMenuOpen = (event: React.MouseEvent<HTMLElement>, message: Message) => {
-    event.stopPropagation();
-    setMessageMenuAnchor(event.currentTarget);
-    setSelectedMessageForMenu(message);
+  const handleRefresh = () => {
+    refetch();
   };
 
-  const handleMessageMenuClose = () => {
-    setMessageMenuAnchor(null);
-    setSelectedMessageForMenu(null);
-  };
-
-  const markAsRead = async (messageId: string) => {
-    try {
-      const response = await fetch('/api/messages', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messageId,
-          action: 'read',
-        }),
-      });
-
-      if (response.ok) {
-        setMessages(prev => prev.map(msg =>
-          msg._id === messageId ? { ...msg, status: 'read' } : msg
-        ));
-      }
-    } catch (err) {
-      console.error('Failed to mark as read:', err);
-    }
-  };
-
-  const toggleStar = async (messageId: string) => {
-    try {
-      const response = await fetch('/api/messages', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messageId,
-          action: 'star',
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(prev => prev.map(msg =>
-          msg._id === messageId ? { ...msg, isStarred: data.data.isStarred } : msg
-        ));
-      }
-    } catch (err) {
-      console.error('Failed to toggle star:', err);
-    }
-  };
-
-  const deleteMessage = async (messageId: string) => {
-    try {
-      const response = await fetch('/api/messages', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messageId,
-          action: 'delete',
-        }),
-      });
-
-      if (response.ok) {
-        setMessages(prev => prev.map(msg =>
-          msg._id === messageId ? { ...msg, status: 'deleted' } : msg
-        ));
-        setSuccess('Message moved to trash');
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        setError('Failed to delete message');
-      }
-    } catch (err) {
-      setError('Failed to delete message');
-      console.error('Error deleting message:', err);
-    }
-  };
-
-  const archiveMessage = async (messageId: string) => {
-    try {
-      const response = await fetch('/api/messages', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messageId,
-          action: 'archive',
-        }),
-      });
-
-      if (response.ok) {
-        setMessages(prev => prev.map(msg =>
-          msg._id === messageId ? { ...msg, status: 'archived' } : msg
-        ));
-        setSuccess('Message archived');
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        setError('Failed to archive message');
-      }
-    } catch (err) {
-      setError('Failed to archive message');
-      console.error('Error archiving message:', err);
-    }
-  };
-
-  const respondToMeetingInvite = async (messageId: string, response: 'accepted' | 'declined') => {
-    try {
-      const apiResponse = await fetch('/api/messages', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messageId,
-          action: 'respond',
-          data: { response },
-        }),
-      });
-
-      if (apiResponse.ok) {
-        setMessages(prev => prev.map(msg =>
-          msg._id === messageId ? { ...msg, status: response } : msg
-        ));
-        setSuccess(`Meeting invite ${response}`);
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        setError('Failed to respond to meeting invite');
-      }
-    } catch (err) {
-      setError('Failed to respond to meeting invite');
-      console.error('Error responding to meeting invite:', err);
-    }
-  };
-
-  const handleComposeMessage = () => {
-    setComposeDialogOpen(true);
-  };
-
-  const handleSendMessage = async () => {
-    if (!newMessage.to || !newMessage.subject || !newMessage.content) {
-      setError('Please fill all required fields');
-      return;
-    }
-
-    try {
-      const messageData: any = {
-        to: newMessage.to,
-        subject: newMessage.subject,
-        content: newMessage.content,
-        type: newMessage.type,
-      };
-
-      if (newMessage.type === 'meeting_invite') {
-        messageData.meetingDetails = newMessage.meetingDetails;
-      }
-
-      const response = await fetch('/api/messages', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(messageData),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(prev => [data.data, ...prev]);
-        setComposeDialogOpen(false);
-        setNewMessage({
-          to: '',
-          subject: '',
-          content: '',
-          type: 'direct_message',
-          meetingDetails: {
-            title: '',
-            date: '',
-            time: '',
-            link: '',
-            type: 'internal',
-          },
-        });
-        setSuccess('Message sent successfully');
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to send message');
-      }
-    } catch (err) {
-      setError('Failed to send message');
-      console.error('Error sending message:', err);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (diffInDays === 0) {
-        return format(date, 'HH:mm');
-      } else if (diffInDays === 1) {
-        return 'Yesterday';
-      } else if (diffInDays < 7) {
-        return format(date, 'EEEE');
-      } else {
-        return format(date, 'MMM d');
-      }
-    } catch (error) {
-      return 'Invalid date';
-    }
-  };
+  // Stats calculation
+  const totalMessages = messages.length;
+  const unreadMessages = messages.filter(m => m.status === 'unread').length;
+  const starredMessages = messages.filter(m => m.isStarred).length;
+  const meetingInvites = messages.filter(m => m.type === 'meeting_invite').length;
+  const pendingMeetings = messages.filter(m => 
+    m.type === 'meeting_invite' && m.status === 'pending'
+  ).length;
+  const sentMessages = messages.filter(m => m.senderEmail === 'currentuser@example.com').length; // Changed this
 
   const tabs = [
-    { 
-      label: 'Inbox', 
-      icon: <CombinedIcon name="Inbox" size={16} />, 
-      count: messages.filter(m => ['read', 'unread'].includes(m.status)).length 
-    },
-    { 
-      label: 'Unread', 
-      icon: <CombinedIcon name="MarkEmailUnread" size={16} />, 
-      count: messages.filter(m => m.status === 'unread').length 
-    },
-    { 
-      label: 'Starred', 
-      icon: <CombinedIcon name="Star" size={16} />, 
-      count: messages.filter(m => m.isStarred).length 
-    },
-    { 
-      label: 'Meeting Invites', 
-      icon: <CombinedIcon name="Videocam" size={16} />, 
-      count: messages.filter(m => m.type === 'meeting_invite').length 
-    },
-    { 
-      label: 'Sent', 
-      icon: <CombinedIcon name="Outbox" size={16} />, 
-      count: messages.filter(m => m.senderEmail === 'currentuser@example.com').length 
-    },
-    { 
-      label: 'Archived', 
-      icon: <CombinedIcon name="Archive" size={16} />, 
-      count: messages.filter(m => m.status === 'archived').length 
-    },
-    { 
-      label: 'Trash', 
-      icon: <CombinedIcon name="Delete" size={16} />, 
-      count: messages.filter(m => m.status === 'deleted').length 
-    },
+    { label: 'Inbox', count: messages.filter(m => ['read', 'unread'].includes(m.status)).length },
+    { label: 'Unread', count: unreadMessages },
+    { label: 'Starred', count: starredMessages },
+    { label: 'Meetings', count: meetingInvites },
+    { label: 'Sent', count: sentMessages }, // Fixed: Using senderEmail check instead of status
+    { label: 'Archived', count: messages.filter(m => m.status === 'archived').length },
   ];
+
+  if (loading) {
+    return (
+      <MainLayout title="Messages">
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '60vh',
+          backgroundColor: darkMode ? '#202124' : '#ffffff',
+        }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124', mb: 2 }}>
+              Loading messages...
+            </Typography>
+            <CircularProgress sx={{ color: '#4285f4' }} />
+          </Box>
+        </Box>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Messages">
       <Box sx={{ 
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+        color: darkMode ? '#e8eaed' : '#202124',
         minHeight: '100vh',
-        bgcolor: theme.palette.mode === 'dark' ? '#0f172a' : '#f8fafc',
-        color: theme.palette.text.primary,
-        p: { xs: 1, sm: 2, md: 3 },
       }}>
-        {/* Development Warning */}
-        <Alert2 
-          severity="warning" 
+        {/* Development Warning - Moved to top */}
+        <Alert
+          severity="warning"
           title="⚠️ Messaging System Under Development"
           message="This feature is currently in development. Real data integration will be available soon."
-          icon={<CombinedIcon name="Construction" />}
-          sx={{ mb: 3 }}
+          sx={{ 
+            mb: 2,
+            borderRadius: 2,
+            borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          }}
         />
 
         {/* Header */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" fontWeight="bold" sx={{ mb: 1, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-            Messages
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage your conversations, meeting invites, and notifications
-          </Typography>
-        </Box>
-
-        {/* Alerts */}
-        {error && (
-          <Alert2 severity="error" message={error} dismissible onDismiss={() => setError('')} sx={{ mb: 3 }} />
-        )}
-        {success && (
-          <Alert2 severity="success" message={success} dismissible onDismiss={() => setSuccess('')} sx={{ mb: 3 }} />
-        )}
-
         <Box sx={{ 
-          display: 'flex', 
-          flexDirection: { xs: 'column', md: selectedMessage ? 'row' : 'column' },
-          gap: 3,
-          height: { xs: 'auto', md: 'calc(100vh - 250px)' }
+          p: { xs: 1, sm: 2, md: 3 },
+          borderBottom: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+          background: darkMode 
+            ? 'linear-gradient(135deg, #0d3064 0%, #202124 100%)'
+            : 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)',
         }}>
-          {/* Left Panel - Message List */}
-          <Box sx={{ 
-            flex: { md: selectedMessage ? 1 : 1 },
-            minWidth: { md: selectedMessage ? 350 : 'auto' },
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
+          <Breadcrumbs sx={{ 
+            mb: { xs: 1, sm: 2 }, 
+            fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.85rem' } 
           }}>
-            {/* Toolbar */}
-            <Card2>
-              <MessageToolbar
-                searchQuery={searchQuery}
-                onSearchChange={handleSearch}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-                tabs={tabs}
-                onRefresh={fetchMessages}
-                onCompose={handleComposeMessage}
-                loading={loading}
-              />
-            </Card2>
-
-            {/* Message List */}
-            <MessageList
-              messages={filteredMessages}
-              loading={loading}
-              selectedMessageId={selectedMessage?._id || null}
-              onMessageClick={handleMessageClick}
-              onToggleStar={toggleStar}
-              onMenuOpen={handleMessageMenuOpen}
-              formatDate={formatDate}
-            />
-          </Box>
-
-          {/* Right Panel - Message Details */}
-          {selectedMessage && (
-            <Box sx={{ 
-              flex: { md: 2 },
-              display: 'flex',
-              flexDirection: 'column',
-              minWidth: 0,
-            }}>
-              <MessageDetail
-                message={selectedMessage}
-                loading={false}
-                onToggleStar={toggleStar}
-                onArchive={archiveMessage}
-                onDelete={deleteMessage}
-                onRespondToMeeting={respondToMeetingInvite}
-                onReply={() => console.log('Reply to', selectedMessage._id)}
-                onForward={() => console.log('Forward', selectedMessage._id)}
-              />
-            </Box>
-          )}
-        </Box>
-
-        {/* Compose Message Dialog */}
-        <Dialog
-          open={composeDialogOpen}
-          onClose={() => setComposeDialogOpen(false)}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 3,
-              maxHeight: '90vh',
-              m: { xs: 1, sm: 2 },
-            },
-          }}
-        >
-          <DialogTitle sx={{ pb: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
-            <Typography variant="h6" fontWeight="bold">
-              New Message
-            </Typography>
-          </DialogTitle>
-          <DialogContent sx={{ pt: 3 }}>
-            <Stack spacing={2}>
-              <Input2
-                select
-                label="Message Type"
-                value={newMessage.type}
-                onChange={(e) => setNewMessage({ ...newMessage, type: e.target.value as any })}
-                size="small"
-                SelectProps={{
-                  native: true,
-                }}
-              >
-                <option value="direct_message">Direct Message</option>
-                <option value="meeting_invite">Meeting Invitation</option>
-              </Input2>
-
-              <Input2
-                label="To"
-                value={newMessage.to}
-                onChange={(e) => setNewMessage({ ...newMessage, to: e.target.value })}
-                placeholder="email@example.com"
-                required
-                size="small"
-                startIcon={<CombinedIcon name="Email" size={16} />}
-              />
-
-              <Input2
-                label="Subject"
-                value={newMessage.subject}
-                onChange={(e) => setNewMessage({ ...newMessage, subject: e.target.value })}
-                placeholder="Enter subject..."
-                required
-                size="small"
-              />
-
-              {newMessage.type === 'meeting_invite' && (
-                <Card2 sx={{ border: `1px solid ${theme.palette.divider}`, p: 1.5, borderRadius: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Meeting Details
-                  </Typography>
-                  <Stack spacing={2}>
-                    <Input2
-                      label="Meeting Title"
-                      value={newMessage.meetingDetails.title}
-                      onChange={(e) => setNewMessage({
-                        ...newMessage,
-                        meetingDetails: { ...newMessage.meetingDetails, title: e.target.value }
-                      })}
-                      placeholder="Team Meeting, Client Call..."
-                      size="small"
-                    />
-                    <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
-                      <Input2
-                        label="Date"
-                        type="date"
-                        value={newMessage.meetingDetails.date}
-                        onChange={(e) => setNewMessage({
-                          ...newMessage,
-                          meetingDetails: { ...newMessage.meetingDetails, date: e.target.value }
-                        })}
-                        InputLabelProps={{ shrink: true }}
-                        fullWidth
-                        size="small"
-                      />
-                      <Input2
-                        label="Time"
-                        type="time"
-                        value={newMessage.meetingDetails.time}
-                        onChange={(e) => setNewMessage({
-                          ...newMessage,
-                          meetingDetails: { ...newMessage.meetingDetails, time: e.target.value }
-                        })}
-                        InputLabelProps={{ shrink: true }}
-                        fullWidth
-                        size="small"
-                      />
-                    </Box>
-                    <Input2
-                      label="Meeting Link"
-                      value={newMessage.meetingDetails.link}
-                      onChange={(e) => setNewMessage({
-                        ...newMessage,
-                        meetingDetails: { ...newMessage.meetingDetails, link: e.target.value }
-                      })}
-                      placeholder="https://meet.accumanage.com/..."
-                      size="small"
-                    />
-                    <Input2
-                      select
-                      label="Meeting Type"
-                      value={newMessage.meetingDetails.type}
-                      onChange={(e) => setNewMessage({
-                        ...newMessage,
-                        meetingDetails: { ...newMessage.meetingDetails, type: e.target.value as any }
-                      })}
-                      size="small"
-                      SelectProps={{
-                        native: true,
-                      }}
-                    >
-                      <option value="internal">Internal</option>
-                      <option value="client">Client</option>
-                      <option value="partner">Partner</option>
-                      <option value="team">Team</option>
-                    </Input2>
-                  </Stack>
-                </Card2>
-              )}
-
-              <Input2
-                label="Message"
-                value={newMessage.content}
-                onChange={(e) => setNewMessage({ ...newMessage, content: e.target.value })}
-                multiline
-                rows={4}
-                placeholder="Type your message here..."
-                required
-                size="small"
-              />
-            </Stack>
-          </DialogContent>
-          <DialogActions sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
-            <Button2 
-              onClick={() => setComposeDialogOpen(false)} 
-              sx={{ borderRadius: 2 }}
-              size="small"
-              variant="outlined"
-            >
-              Cancel
-            </Button2>
-            <Button2
-              onClick={handleSendMessage}
-              variant="contained"
-              iconLeft={<CombinedIcon name="Send" size={16} />}
-              sx={{ borderRadius: 2 }}
-              size="small"
-            >
-              Send Message
-            </Button2>
-          </DialogActions>
-        </Dialog>
-
-        {/* Message Context Menu */}
-        <Menu
-          anchorEl={messageMenuAnchor}
-          open={Boolean(messageMenuAnchor)}
-          onClose={handleMessageMenuClose}
-          PaperProps={{
-            sx: {
-              borderRadius: 2,
-              minWidth: 180,
-              boxShadow: theme.shadows[8],
-            },
-          }}
-        >
-          <MenuItem 
-            onClick={() => {
-              if (selectedMessageForMenu) {
-                toggleStar(selectedMessageForMenu._id);
-              }
-              handleMessageMenuClose();
-            }}
-            sx={{ borderRadius: 1, mx: 1, my: 0.5 }}
-          >
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              {selectedMessageForMenu?.isStarred ? 
-                <CombinedIcon name="StarBorder" size={16} /> : 
-                <CombinedIcon name="Star" size={16} />
-              }
-            </ListItemIcon>
-            <ListItemText 
-              primaryTypographyProps={{ fontSize: '0.875rem' }}
-            >
-              {selectedMessageForMenu?.isStarred ? 'Unstar' : 'Star'}
-            </ListItemText>
-          </MenuItem>
-          <MenuItem 
-            onClick={() => {
-              if (selectedMessageForMenu) {
-                archiveMessage(selectedMessageForMenu._id);
-              }
-              handleMessageMenuClose();
-            }}
-            sx={{ borderRadius: 1, mx: 1, my: 0.5 }}
-          >
-            <ListItemIcon sx={{ minWidth: 36 }}>
-              <CombinedIcon name="Archive" size={16} />
-            </ListItemIcon>
-            <ListItemText primaryTypographyProps={{ fontSize: '0.875rem' }}>
-              Archive
-            </ListItemText>
-          </MenuItem>
-          <Divider />
-          <MenuItem 
-            onClick={() => {
-              if (selectedMessageForMenu) {
-                deleteMessage(selectedMessageForMenu._id);
-              }
-              handleMessageMenuClose();
-            }}
-            sx={{ 
-              borderRadius: 1, 
-              mx: 1, 
-              my: 0.5,
-              color: theme.palette.error.main,
-            }}
-          >
-            <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
-              <CombinedIcon name="Delete" size={16} />
-            </ListItemIcon>
-            <ListItemText 
-              primaryTypographyProps={{ 
-                fontSize: '0.875rem',
-                color: 'inherit'
+            <Link 
+              href="/dashboard" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                textDecoration: 'none', 
+                color: darkMode ? '#9aa0a6' : '#5f6368', 
+                fontWeight: 300,
               }}
             >
-              Delete
-            </ListItemText>
-          </MenuItem>
-        </Menu>
+              <HomeIcon sx={{ mr: 0.5, fontSize: { xs: '14px', sm: '16px', md: '18px' } }} />
+              Dashboard
+            </Link>
+            <Typography color={darkMode ? '#e8eaed' : '#202124'} fontWeight={400}>
+              Messages
+            </Typography>
+          </Breadcrumbs>
 
-        {/* Floating Action Button */}
-        <Fab
-          color="primary"
-          aria-label="compose message"
-          onClick={handleComposeMessage}
-          sx={{
-            position: 'fixed',
-            bottom: { xs: 16, sm: 32 },
-            right: { xs: 16, sm: 32 },
-            width: { xs: 48, sm: 56 },
-            height: { xs: 48, sm: 56 },
-            bgcolor: theme.palette.primary.main,
-            color: 'white',
-            '&:hover': {
-              bgcolor: theme.palette.primary.dark,
-              transform: 'scale(1.1)',
-            },
-            transition: 'all 0.3s',
-            boxShadow: theme.shadows[8],
-            display: { xs: selectedMessage ? 'none' : 'flex', sm: 'flex' },
-          }}
-        >
-          <CombinedIcon name="Add" size={24} />
-        </Fab>
+          <Box sx={{ 
+            textAlign: 'center', 
+            mb: { xs: 2, sm: 3, md: 4 },
+            px: { xs: 1, sm: 2, md: 3 },
+          }}>
+            <Typography 
+              variant="h4" 
+              fontWeight={500} 
+              gutterBottom
+              sx={{ 
+                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+              }}
+            >
+              Message Center
+            </Typography>
+            
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: darkMode ? '#9aa0a6' : '#5f6368', 
+                fontWeight: 300,
+                fontSize: { xs: '0.85rem', sm: '1rem', md: '1.125rem' },
+                lineHeight: 1.5,
+                maxWidth: 600,
+                mx: 'auto',
+              }}
+            >
+              Manage your conversations, meeting invites, and notifications
+            </Typography>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: 2,
+            flexWrap: 'wrap',
+            mt: 3,
+          }}>
+            <Chip
+              label={`${totalMessages} Total Messages`}
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.08),
+                borderColor: alpha('#4285f4', 0.3),
+                color: darkMode ? '#8ab4f8' : '#4285f4',
+              }}
+            />
+            <Chip
+              label={`${unreadMessages} Unread`}
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#ea4335', 0.1) : alpha('#ea4335', 0.08),
+                borderColor: alpha('#ea4335', 0.3),
+                color: darkMode ? '#f28b82' : '#ea4335',
+              }}
+            />
+            <Chip
+              label={`${meetingInvites} Meetings`}
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#34a853', 0.1) : alpha('#34a853', 0.08),
+                borderColor: alpha('#34a853', 0.3),
+                color: darkMode ? '#81c995' : '#34a853',
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Main Content */}
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+          {/* Header Controls */}
+          <Card
+            title="Messages"
+            subtitle={`${filteredMessages.length} messages • ${unreadMessages} unread`}
+            action={
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleRefresh}
+                  sx={{
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
+                  Refresh
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => setComposeOpen(true)}
+                  startIcon={<MailIcon />}
+                  sx={{ 
+                    backgroundColor: '#34a853',
+                    '&:hover': { backgroundColor: '#2d9248' }
+                  }}
+                >
+                  Compose
+                </Button>
+              </Box>
+            }
+            hover
+            sx={{ 
+              mb: { xs: 2, sm: 3, md: 4 },
+              backgroundColor: darkMode ? '#202124' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}
+          >
+            {/* Search and Tabs */}
+            <Box sx={{ mt: 2 }}>
+              <MessageSearch 
+                search={search} 
+                onSearchChange={setSearch} 
+              />
+              
+              {/* Tabs */}
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1, 
+                flexWrap: 'wrap',
+                mt: 2,
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                pb: 1,
+              }}>
+                {tabs.map((tab, index) => (
+                  <Button
+                    key={tab.label}
+                    variant={activeTab === index ? "contained" : "outlined"}
+                    onClick={() => setActiveTab(index)}
+                    sx={{
+                      borderRadius: '20px',
+                      minWidth: 'auto',
+                      px: 2,
+                      py: 0.5,
+                      fontSize: '0.75rem',
+                      backgroundColor: activeTab === index 
+                        ? (darkMode ? '#4285f4' : '#4285f4')
+                        : 'transparent',
+                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      color: activeTab === index 
+                        ? '#ffffff'
+                        : (darkMode ? '#e8eaed' : '#202124'),
+                      '&:hover': {
+                        backgroundColor: activeTab === index 
+                          ? (darkMode ? '#3367d6' : '#3367d6')
+                          : (darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.08)),
+                      },
+                    }}
+                  >
+                    {tab.label}
+                    {tab.count > 0 && (
+                      <Chip
+                        label={tab.count}
+                        size="small"
+                        sx={{
+                          ml: 1,
+                          height: '18px',
+                          fontSize: '0.6rem',
+                          backgroundColor: activeTab === index
+                            ? alpha('#ffffff', 0.2)
+                            : (darkMode ? '#3c4043' : '#f1f3f4'),
+                          color: activeTab === index
+                            ? '#ffffff'
+                            : (darkMode ? '#e8eaed' : '#202124'),
+                        }}
+                      />
+                    )}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
+          </Card>
+
+          {/* Stats Overview */}
+          <Box sx={{ 
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: { xs: 1.5, sm: 2, md: 3 },
+            mb: { xs: 2, sm: 3, md: 4 },
+          }}>
+            {[
+              { 
+                title: 'Total Messages', 
+                value: totalMessages, 
+                icon: '📧', 
+                color: '#4285f4',
+                description: 'All messages' 
+              },
+              { 
+                title: 'Unread', 
+                value: unreadMessages, 
+                icon: '🔴', 
+                color: '#ea4335',
+                description: 'Require attention' 
+              },
+              { 
+                title: 'Starred', 
+                value: starredMessages, 
+                icon: '⭐', 
+                color: '#fbbc04',
+                description: 'Important messages' 
+              },
+              { 
+                title: 'Meeting Invites', 
+                value: meetingInvites, 
+                icon: '📅', 
+                color: '#34a853',
+                description: 'Meeting requests' 
+              },
+              { 
+                title: 'Pending Responses', 
+                value: pendingMeetings, 
+                icon: '⏳', 
+                color: '#8ab4f8',
+                description: 'Awaiting response' 
+              },
+              { 
+                title: 'Attachments', 
+                value: messages.reduce((acc, m) => acc + (m.attachments?.length || 0), 0), 
+                icon: '📎', 
+                color: '#ff6d01',
+                description: 'Files shared' 
+              },
+            ].map((stat, index) => (
+              <Card 
+                key={`stat-${index}`}
+                hover
+                sx={{ 
+                  flex: '1 1 calc(33.333% - 16px)', 
+                  minWidth: { xs: 'calc(50% - 12px)', sm: 'calc(33.333% - 16px)' },
+                  p: { xs: 1.5, sm: 2, md: 3 }, 
+                  borderRadius: '16px', 
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${alpha(stat.color, 0.2)}`,
+                  background: darkMode 
+                    ? `linear-gradient(135deg, ${alpha(stat.color, 0.1)} 0%, ${alpha(stat.color, 0.05)} 100%)`
+                    : `linear-gradient(135deg, ${alpha(stat.color, 0.08)} 0%, ${alpha(stat.color, 0.03)} 100%)`,
+                  transition: 'all 0.3s ease',
+                  '&:hover': { 
+                    transform: 'translateY(-2px)', 
+                    boxShadow: `0 8px 24px ${alpha(stat.color, 0.15)}`,
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box>
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          color: darkMode ? '#9aa0a6' : '#5f6368', 
+                          fontWeight: 400,
+                          fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                          display: 'block',
+                        }}
+                      >
+                        {stat.title}
+                      </Typography>
+                      <Typography 
+                        variant="h4"
+                        sx={{ 
+                          color: stat.color, 
+                          fontWeight: 600,
+                          fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                        }}
+                      >
+                        {stat.value}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ 
+                      p: { xs: 0.75, sm: 1 }, 
+                      borderRadius: '10px', 
+                      backgroundColor: alpha(stat.color, 0.1),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                    }}>
+                      {stat.icon}
+                    </Box>
+                  </Box>
+                  
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontSize: { xs: '0.6rem', sm: '0.65rem', md: '0.7rem' },
+                      display: 'block',
+                    }}
+                  >
+                    {stat.description}
+                  </Typography>
+                </Box>
+              </Card>
+            ))}
+          </Box>
+
+          {/* Message Grid */}
+          <MessageGrid
+            messages={filteredMessages}
+            loading={loading}
+            search={search}
+            onMenuOpen={handleMenuOpen}
+            activeTab={activeTab}
+          />
+
+          {/* Message Menu */}
+          <MessageMenu
+            anchorEl={menuAnchor}
+            selectedMessage={selectedMessage}
+            onClose={handleMenuClose}
+            onDelete={handleDeleteMessage}
+            onArchive={() => selectedMessage && archiveMessage(selectedMessage._id)}
+            onStar={() => selectedMessage && toggleStar(selectedMessage._id)}
+          />
+        </Container>
       </Box>
     </MainLayout>
   );
 }
-
-export default MessagesPage;
