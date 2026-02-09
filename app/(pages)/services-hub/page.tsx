@@ -1,7 +1,7 @@
 // app/(pages)/services-hub/page.tsx
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Box,
   Card,
@@ -20,6 +20,8 @@ import {
   ListItemButton,
   useTheme,
   IconButton,
+  Button,
+  CircularProgress,
 } from '@mui/material'
 import {
   Search,
@@ -295,6 +297,8 @@ export default function ServicesHubPage() {
   const [activeCategory, setActiveCategory] = useState('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(6) // Start with 6 services
+  const [loadingMore, setLoadingMore] = useState(false)
 
   // Filter services based on search and category
   const filteredServices = useMemo(() => {
@@ -311,6 +315,29 @@ export default function ServicesHubPage() {
       return matchesSearch && matchesCategory
     })
   }, [searchQuery, activeCategory])
+
+  // Reset visible count when filter changes
+  useEffect(() => {
+    setVisibleCount(6)
+  }, [searchQuery, activeCategory])
+
+  // Get visible services based on current count
+  const visibleServices = useMemo(() => {
+    return filteredServices.slice(0, visibleCount)
+  }, [filteredServices, visibleCount])
+
+  // Load more services
+  const loadMoreServices = () => {
+    setLoadingMore(true)
+    // Simulate loading delay
+    setTimeout(() => {
+      setVisibleCount(prev => prev + 6)
+      setLoadingMore(false)
+    }, 500)
+  }
+
+  // Check if there are more services to load
+  const hasMoreServices = visibleCount < filteredServices.length
 
   // Calculate stats
   const totalServices = allServices.length
@@ -398,7 +425,6 @@ export default function ServicesHubPage() {
                     sx={{ 
                       borderRadius: '8px', 
                       mb: 0.5,
-                    //   backgroundColor: activeCategory === category.id ? alpha(theme.palette[category.color].main, 0.1) : 'transparent'
                     }}
                     onClick={() => {
                       setActiveCategory(category.id)
@@ -507,6 +533,11 @@ export default function ServicesHubPage() {
               <Typography variant="h5" fontWeight="bold" gutterBottom>
                 {activeCategory === 'all' ? 'All Services' : 
                   serviceCategories.find(c => c.id === activeCategory)?.name} ({filteredServices.length})
+                {visibleServices.length < filteredServices.length && (
+                  <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                    (Showing {visibleServices.length} of {filteredServices.length})
+                  </Typography>
+                )}
               </Typography>
 
               {viewMode === 'grid' ? (
@@ -519,7 +550,7 @@ export default function ServicesHubPage() {
                   },
                   gap: 2,
                 }}>
-                  {filteredServices.map((service) => (
+                  {visibleServices.map((service) => (
                     <ServiceCard
                       key={service.id}
                       service={service}
@@ -529,7 +560,7 @@ export default function ServicesHubPage() {
                 </Box>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {filteredServices.map((service) => (
+                  {visibleServices.map((service) => (
                     <ServiceCard
                       key={service.id}
                       service={service}
@@ -558,6 +589,45 @@ export default function ServicesHubPage() {
                   </Typography>
                 </Card>
               )}
+
+              {/* Load More Button */}
+              {hasMoreServices && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  mt: 4,
+                  mb: 2,
+                }}>
+                  <Button
+                    variant="outlined"
+                    onClick={loadMoreServices}
+                    disabled={loadingMore}
+                    startIcon={loadingMore ? <CircularProgress size={20} /> : null}
+                    sx={{ 
+                      px: 4, 
+                      py: 1.5,
+                      borderRadius: '8px',
+                    }}
+                  >
+                    {loadingMore ? 'Loading...' : `Load More (${filteredServices.length - visibleServices.length} more)`}
+                  </Button>
+                </Box>
+              )}
+
+              {/* Show message when all services are loaded */}
+              {!hasMoreServices && filteredServices.length > 0 && (
+                <Box sx={{ 
+                  textAlign: 'center', 
+                  mt: 4,
+                  py: 2,
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                }}>
+                  <Typography variant="body2" color="text.secondary">
+                    All {filteredServices.length} services loaded
+                  </Typography>
+                </Box>
+              )}
             </Box>
           </Box>
 
@@ -570,8 +640,6 @@ export default function ServicesHubPage() {
             gap: 2,
           }}>
             <QuickStats stats={quickStats} />
-            
-            {/* <RecentActivity activities={recentActivity} /> */}
             
             <ServiceStatus 
               services={allServices}
