@@ -1,4 +1,3 @@
-// components/community/FollowDialog.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -21,6 +20,7 @@ import {
   Divider,
   Alert,
   Badge,
+  alpha,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -31,6 +31,7 @@ import {
   Message as MessageIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
+import { useTheme } from "@mui/material/styles";
 
 interface User {
   _id: string;
@@ -85,6 +86,9 @@ export default function FollowDialog({
   title = "Connections",
 }: FollowDialogProps) {
   const router = useRouter();
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+  
   const [activeTab, setActiveTab] = useState(type === "followers" ? 0 : 1);
   const [followers, setFollowers] = useState<User[]>([]);
   const [following, setFollowing] = useState<User[]>([]);
@@ -103,7 +107,6 @@ export default function FollowDialog({
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Get current user ID
   useEffect(() => {
     const getCurrentUser = async () => {
       try {
@@ -194,7 +197,6 @@ export default function FollowDialog({
     }
   };
 
-  // Handle follow/unfollow
   const handleFollowToggle = async (
     user: User,
     isCurrentlyFollowing: boolean,
@@ -224,7 +226,6 @@ export default function FollowDialog({
             const errorText = await response.text();
             if (errorText) errorMessage = `${errorMessage}: ${errorText}`;
           } catch {
-            // Ignore if can't get text
           }
         }
 
@@ -234,7 +235,6 @@ export default function FollowDialog({
       const data = await response.json();
 
       if (data.success) {
-        // Immediately update the user in the current list
         const updateUserInList = (
           users: User[],
           userId: string,
@@ -266,33 +266,17 @@ export default function FollowDialog({
           );
         }
 
-        // Show success message
-        const action = isCurrentlyFollowing ? "unfollowed" : "followed";
-        console.log(`Successfully ${action} ${user.username}`);
+        console.log(`Successfully ${isCurrentlyFollowing ? 'unfollowed' : 'followed'} ${user.username}`);
       } else {
         throw new Error(data.message || "Failed to follow/unfollow");
       }
     } catch (error) {
       console.error("Failed to toggle follow:", error);
-
-      // Show error message to user
-      let userErrorMessage = "Failed to perform action";
-      if (error instanceof Error) {
-        if (error.message.includes("405")) {
-          userErrorMessage = "Action not allowed. Please refresh the page.";
-        }
-        // You could add more specific error handling here
-      }
-
-      // Optionally show an error toast
-      // toast.error(userErrorMessage);
-      console.error(userErrorMessage);
     } finally {
       setFollowLoading((prev) => ({ ...prev, [user._id]: false }));
     }
   };
 
-  // Load data when dialog opens or tab changes
   useEffect(() => {
     if (open) {
       if (activeTab === 0) {
@@ -319,11 +303,9 @@ export default function FollowDialog({
 
   const handleMessage = (userId: string) => {
     onClose();
-    // Navigate to messages page or open message dialog
     router.push(`/messages?userId=${userId}`);
   };
 
-  // Filter users based on search query
   const filterUsers = (users: User[]) => {
     if (!searchQuery.trim()) return users;
 
@@ -341,7 +323,6 @@ export default function FollowDialog({
   const currentUsers = activeTab === 0 ? followers : following;
   const filteredUsers = filterUsers(currentUsers);
 
-  // Check if user is the current user (hide follow button for own profile)
   const isCurrentUser = (userId: string) => {
     if (!currentUserId) return false;
     return (
@@ -358,10 +339,11 @@ export default function FollowDialog({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
+          borderRadius: 2,
           maxHeight: "85vh",
           minHeight: "400px",
-          overflow: "hidden",
+          bgcolor: darkMode ? '#202124' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
         },
       }}
     >
@@ -373,15 +355,15 @@ export default function FollowDialog({
           py: 2,
           px: 3,
           borderBottom: 1,
-          borderColor: "divider",
-          bgcolor: "background.paper",
+          borderColor: darkMode ? '#3c4043' : '#dadce0',
+          bgcolor: darkMode ? '#202124' : '#ffffff',
           position: "sticky",
           top: 0,
           zIndex: 1,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="h6" component="span" fontWeight={600}>
+          <Typography variant="h6" component="span" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
             {title}
           </Typography>
         </Box>
@@ -389,8 +371,9 @@ export default function FollowDialog({
           onClick={onClose}
           size="small"
           sx={{
-            "&:hover": {
-              bgcolor: "action.hover",
+            color: darkMode ? '#9aa0a6' : '#5f6368',
+            '&:hover': {
+              bgcolor: darkMode ? '#303134' : '#f8f9fa',
             },
           }}
         >
@@ -398,13 +381,12 @@ export default function FollowDialog({
         </IconButton>
       </DialogTitle>
 
-      {/* Tabs */}
       <Box
         sx={{
           borderBottom: 1,
-          borderColor: "divider",
+          borderColor: darkMode ? '#3c4043' : '#dadce0',
           px: 3,
-          bgcolor: "background.paper",
+          bgcolor: darkMode ? '#202124' : '#ffffff',
           position: "sticky",
           top: 64,
           zIndex: 1,
@@ -415,14 +397,19 @@ export default function FollowDialog({
           onChange={handleTabChange}
           variant="fullWidth"
           sx={{
-            "& .MuiTab-root": {
+            '& .MuiTab-root': {
               py: 1.5,
               minHeight: "48px",
               textTransform: "none",
               fontSize: "0.95rem",
+              color: darkMode ? '#9aa0a6' : '#5f6368',
+              '&.Mui-selected': {
+                color: '#4285f4',
+                fontWeight: 600,
+              },
             },
-            "& .Mui-selected": {
-              fontWeight: 600,
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#4285f4',
             },
           }}
         >
@@ -435,13 +422,14 @@ export default function FollowDialog({
                 {stats.followerCount > 0 && (
                   <Badge
                     badgeContent={formatNumber(stats.followerCount)}
-                    color="primary"
                     sx={{
-                      "& .MuiBadge-badge": {
+                      '& .MuiBadge-badge': {
                         fontSize: "0.65rem",
                         height: "18px",
                         minWidth: "18px",
                         borderRadius: "9px",
+                        backgroundColor: '#4285f4',
+                        color: 'white',
                       },
                     }}
                   />
@@ -458,13 +446,14 @@ export default function FollowDialog({
                 {stats.followingCount > 0 && (
                   <Badge
                     badgeContent={formatNumber(stats.followingCount)}
-                    color="primary"
                     sx={{
-                      "& .MuiBadge-badge": {
+                      '& .MuiBadge-badge': {
                         fontSize: "0.65rem",
                         height: "18px",
                         minWidth: "18px",
                         borderRadius: "9px",
+                        backgroundColor: '#4285f4',
+                        color: 'white',
                       },
                     }}
                   />
@@ -475,17 +464,16 @@ export default function FollowDialog({
         </Tabs>
       </Box>
 
-      {/* Search */}
       <Box
         sx={{
           px: 3,
           py: 2,
-          bgcolor: "background.paper",
+          bgcolor: darkMode ? '#202124' : '#ffffff',
           position: "sticky",
           top: 112,
           zIndex: 1,
           borderBottom: 1,
-          borderColor: "divider",
+          borderColor: darkMode ? '#3c4043' : '#dadce0',
         }}
       >
         <TextField
@@ -497,40 +485,48 @@ export default function FollowDialog({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
+                <SearchIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
               </InputAdornment>
             ),
+            sx: { color: darkMode ? '#e8eaed' : '#202124' }
           }}
           sx={{
-            "& .MuiOutlinedInput-root": {
+            '& .MuiOutlinedInput-root': {
               borderRadius: 2,
-              bgcolor: "background.default",
+              bgcolor: darkMode ? '#303134' : '#f8f9fa',
+              '& fieldset': {
+                borderColor: darkMode ? '#3c4043' : '#dadce0',
+              },
+              '&:hover fieldset': {
+                borderColor: '#4285f4',
+              },
             },
           }}
         />
       </Box>
 
-      {/* Error Message */}
       {error && (
         <Box sx={{ px: 3, py: 2 }}>
           <Alert
             severity="error"
             onClose={() => setError(null)}
-            sx={{ borderRadius: 2 }}
+            sx={{ 
+              borderRadius: 2,
+              bgcolor: darkMode ? '#3c1e1e' : '#fdecea',
+            }}
           >
             {error}
           </Alert>
         </Box>
       )}
 
-      {/* Content */}
       <DialogContent
         sx={{
           p: 0,
           display: "flex",
           flexDirection: "column",
           minHeight: "300px",
-          bgcolor: "background.default",
+          bgcolor: darkMode ? '#202124' : '#ffffff',
         }}
       >
         {loading.followers && activeTab === 0 ? (
@@ -544,8 +540,8 @@ export default function FollowDialog({
               gap: 2,
             }}
           >
-            <CircularProgress />
-            <Typography variant="body2" color="text.secondary">
+            <CircularProgress sx={{ color: '#4285f4' }} />
+            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               Loading followers...
             </Typography>
           </Box>
@@ -560,8 +556,8 @@ export default function FollowDialog({
               gap: 2,
             }}
           >
-            <CircularProgress />
-            <Typography variant="body2" color="text.secondary">
+            <CircularProgress sx={{ color: '#4285f4' }} />
+            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               Loading following...
             </Typography>
           </Box>
@@ -580,12 +576,12 @@ export default function FollowDialog({
               <PersonIcon
                 sx={{
                   fontSize: 64,
-                  color: "text.secondary",
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
                   opacity: 0.3,
                   mb: 2,
                 }}
               />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
+              <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }} gutterBottom>
                 {searchQuery.trim()
                   ? "No users found"
                   : `No ${activeTab === 0 ? "followers" : "following"} yet`}
@@ -593,8 +589,7 @@ export default function FollowDialog({
               {!searchQuery.trim() && (
                 <Typography
                   variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
+                  sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mt: 1 }}
                 >
                   {activeTab === 0
                     ? "When someone follows this user, they'll appear here."
@@ -614,14 +609,13 @@ export default function FollowDialog({
                     p: 2,
                     gap: 2,
                     transition: "all 0.2s",
-                    "&:hover": {
-                      backgroundColor: "action.hover",
+                    '&:hover': {
+                      backgroundColor: darkMode ? '#303134' : '#f8f9fa',
                     },
                     cursor: "pointer",
                   }}
                   onClick={() => handleViewProfile(user.username)}
                 >
-                  {/* Avatar */}
                   <Box sx={{ flexShrink: 0 }}>
                     <Avatar
                       src={user.avatar}
@@ -629,7 +623,7 @@ export default function FollowDialog({
                         width: 56,
                         height: 56,
                         border: "2px solid",
-                        borderColor: "background.paper",
+                        borderColor: darkMode ? '#202124' : '#ffffff',
                         boxShadow: 1,
                       }}
                     >
@@ -639,7 +633,6 @@ export default function FollowDialog({
                     </Avatar>
                   </Box>
 
-                  {/* User Info */}
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Box
                       sx={{
@@ -649,23 +642,21 @@ export default function FollowDialog({
                         mb: 0.5,
                       }}
                     >
-                      <Typography variant="subtitle2" fontWeight={600} noWrap>
+                      <Typography variant="subtitle2" fontWeight={600} noWrap sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                         {user.userId?.name || user.username || "Unknown User"}
                       </Typography>
                       {user.isVerified && (
                         <VerifiedIcon
                           fontSize="small"
-                          color="primary"
-                          sx={{ flexShrink: 0 }}
+                          sx={{ flexShrink: 0, color: '#4285f4' }}
                         />
                       )}
                     </Box>
 
                     <Typography
                       variant="caption"
-                      color="text.secondary"
                       noWrap
-                      sx={{ display: "block", mb: 0.5 }}
+                      sx={{ display: "block", mb: 0.5, color: darkMode ? '#9aa0a6' : '#5f6368' }}
                     >
                       @{user.username || "unknown"}
                     </Typography>
@@ -673,7 +664,6 @@ export default function FollowDialog({
                     {user.bio && (
                       <Typography
                         variant="body2"
-                        color="text.secondary"
                         sx={{
                           display: "-webkit-box",
                           WebkitLineClamp: 2,
@@ -682,13 +672,13 @@ export default function FollowDialog({
                           textOverflow: "ellipsis",
                           lineHeight: 1.4,
                           fontSize: "0.85rem",
+                          color: darkMode ? '#9aa0a6' : '#5f6368',
                         }}
                       >
                         {user.bio}
                       </Typography>
                     )}
 
-                    {/* Stats */}
                     <Box
                       sx={{
                         display: "flex",
@@ -698,7 +688,7 @@ export default function FollowDialog({
                         flexWrap: "wrap",
                       }}
                     >
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                         <strong>
                           {formatNumber(
                             user.communityStats?.followerCount || 0,
@@ -706,7 +696,7 @@ export default function FollowDialog({
                         </strong>{" "}
                         followers
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                         <strong>
                           {formatNumber(user.communityStats?.totalPosts || 0)}
                         </strong>{" "}
@@ -714,7 +704,6 @@ export default function FollowDialog({
                       </Typography>
                     </Box>
 
-                    {/* Badges */}
                     {user.expertInCategories &&
                       user.expertInCategories.length > 0 && (
                         <Box
@@ -735,9 +724,9 @@ export default function FollowDialog({
                                 sx={{
                                   height: "22px",
                                   fontSize: "0.65rem",
-                                  bgcolor: "primary.50",
-                                  color: "primary.700",
-                                  borderColor: "primary.200",
+                                  bgcolor: darkMode ? '#303134' : '#f1f3f4',
+                                  color: darkMode ? '#8ab4f8' : '#4285f4',
+                                  borderColor: darkMode ? '#5f6368' : '#dadce0',
                                 }}
                                 variant="outlined"
                               />
@@ -746,16 +735,14 @@ export default function FollowDialog({
                       )}
                   </Box>
 
-                  {/* Action Buttons */}
                   <Box
                     sx={{
                       flexShrink: 0,
                       display: "flex",
                       gap: 1,
                     }}
-                    onClick={(e) => e.stopPropagation()} // Prevent profile navigation
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Message Button */}
                     {!isCurrentUser(user.userId?._id || user._id) && (
                       <IconButton
                         size="small"
@@ -764,16 +751,19 @@ export default function FollowDialog({
                         }
                         sx={{
                           border: 1,
-                          borderColor: "divider",
+                          borderColor: darkMode ? '#5f6368' : '#dadce0',
                           borderRadius: 1,
                           p: 0.75,
+                          color: darkMode ? '#e8eaed' : '#202124',
+                          '&:hover': {
+                            backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
+                          },
                         }}
                       >
                         <MessageIcon fontSize="small" />
                       </IconButton>
                     )}
 
-                    {/* Follow/Unfollow Button - Only show for non-current users */}
                     {!isCurrentUser(user.userId?._id || user._id) && (
                       <Button
                         size="small"
@@ -783,6 +773,19 @@ export default function FollowDialog({
                           borderRadius: 1.5,
                           textTransform: "none",
                           fontWeight: 500,
+                          ...(user.isFollowing ? {
+                            borderColor: darkMode ? '#5f6368' : '#dadce0',
+                            color: darkMode ? '#e8eaed' : '#202124',
+                            '&:hover': {
+                              borderColor: '#4285f4',
+                              backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                            },
+                          } : {
+                            backgroundColor: '#4285f4',
+                            '&:hover': {
+                              backgroundColor: '#3367d6',
+                            },
+                          }),
                         }}
                         onClick={() =>
                           handleFollowToggle(user, !!user.isFollowing)
@@ -790,7 +793,7 @@ export default function FollowDialog({
                         disabled={followLoading[user._id]}
                         startIcon={
                           followLoading[user._id] ? (
-                            <CircularProgress size={16} />
+                            <CircularProgress size={16} sx={{ color: user.isFollowing ? '#4285f4' : 'white' }} />
                           ) : undefined
                         }
                       >
@@ -804,26 +807,29 @@ export default function FollowDialog({
                   </Box>
                 </Box>
 
-                {/* Divider except for last item */}
-                {index < filteredUsers.length - 1 && <Divider sx={{ mx: 2 }} />}
+                {index < filteredUsers.length - 1 && (
+                  <Divider sx={{ 
+                    mx: 2,
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  }} />
+                )}
               </React.Fragment>
             ))}
           </Box>
         )}
       </DialogContent>
 
-      {/* Footer */}
       <DialogActions
         sx={{
           px: 3,
           py: 2,
           borderTop: 1,
-          borderColor: "divider",
-          bgcolor: "background.paper",
+          borderColor: darkMode ? '#3c4043' : '#dadce0',
+          bgcolor: darkMode ? '#202124' : '#ffffff',
           justifyContent: "space-between",
         }}
       >
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
           Showing {filteredUsers.length} of{" "}
           {formatNumber(
             activeTab === 0 ? stats.followerCount : stats.followingCount,
@@ -831,7 +837,7 @@ export default function FollowDialog({
           {activeTab === 0 ? "followers" : "following"}
         </Typography>
 
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
           Click on a user to view their profile
         </Typography>
       </DialogActions>

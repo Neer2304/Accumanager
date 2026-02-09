@@ -6,7 +6,6 @@ import {
   Typography,
   TextField,
   Button,
-  Paper,
   Card,
   CardContent,
   IconButton,
@@ -18,7 +17,6 @@ import {
   TableHead,
   TableRow,
   Tooltip,
-  Stack,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -65,15 +63,18 @@ import {
   MonetizationOn,
   Category,
   Scale,
-  Person
+  Person,
+  CalendarToday,
+  AttachMoney,
+  AccountBalance,
+  Store
 } from '@mui/icons-material'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { useProducts } from '@/hooks/useProducts'
 import { MainLayout } from '@/components/Layout/MainLayout'
 
-// Types
+// Types (keep as is)
 interface CalculatorProduct {
   id: string
   _id?: string
@@ -132,11 +133,12 @@ interface SavedCalculation {
 
 const ProductCalculator: React.FC = () => {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const { user, isAuthenticated, getUserDisplayName, isLoading: authLoading } = useAuth()
   const { products: allProducts, isLoading: productsLoading, refetch: refetchProducts, isOnline } = useProducts()
 
-  // State
+  // State (keep as is)
   const [items, setItems] = useState<CalculatorItem[]>([])
   const [result, setResult] = useState<CalculationResult>({
     subtotal: 0,
@@ -167,16 +169,10 @@ const ProductCalculator: React.FC = () => {
   })
   const [bulkDiscount, setBulkDiscount] = useState<number>(0)
 
-  // Refs
-  const resultRef = useRef<HTMLDivElement>(null)
-
-  // Convert hook products to calculator format
+  // Convert hook products to calculator format (keep as is)
   const products = React.useMemo(() => {
     return allProducts.map((product): CalculatorProduct => {
-      // Calculate total stock from variations
       const totalStock = product.variations.reduce((sum, variation) => sum + (variation.stock || 0), 0);
-      
-      // Calculate GST rate from gstDetails
       const gstRate = (product.gstDetails?.cgstRate || 0) + (product.gstDetails?.sgstRate || 0);
       
       return {
@@ -199,7 +195,7 @@ const ProductCalculator: React.FC = () => {
     });
   }, [allProducts]);
 
-  // Memoized calculate function
+  // Calculation functions (keep as is)
   const calculateAll = useCallback(() => {
     if (items.length === 0) {
       setResult({
@@ -246,7 +242,6 @@ const ProductCalculator: React.FC = () => {
       }
     })
 
-    // Apply bulk discount
     const bulkDiscountAmount = (subtotal * bulkDiscount) / 100
     const finalSubtotal = subtotal - bulkDiscountAmount - discountTotal
     const finalGstTotal = (finalSubtotal * getAverageGstRate()) / 100
@@ -256,7 +251,6 @@ const ProductCalculator: React.FC = () => {
     const roi = totalCost > 0 ? (profit / totalCost) * 100 : 0
     const breakEvenUnits = totalCost > 0 ? Math.ceil(totalCost / getAverageSellingPrice()) : 0
 
-    // Only update items if they actually changed
     const itemsChanged = JSON.stringify(items) !== JSON.stringify(updatedItems)
     if (itemsChanged) {
       setItems(updatedItems)
@@ -275,16 +269,8 @@ const ProductCalculator: React.FC = () => {
     }
 
     setResult(finalResult)
+  }, [items, bulkDiscount])
 
-    // Scroll to result on mobile
-    if (isMobile && resultRef.current) {
-      setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      }, 300)
-    }
-  }, [items, bulkDiscount, isMobile])
-
-  // Calculate helper functions
   const getAverageGstRate = useCallback(() => {
     if (items.length === 0) return 0
     const total = items.reduce((sum, item) => sum + item.product.gstRate, 0)
@@ -298,40 +284,17 @@ const ProductCalculator: React.FC = () => {
     return total / totalQuantity
   }, [items])
 
-  // Initialize calculations when items change
   useEffect(() => {
     calculateAll()
   }, [calculateAll])
 
-  // Load saved calculations
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      loadUserSavedCalculations()
-    }
-  }, [isAuthenticated, user])
-
-  const loadUserSavedCalculations = async () => {
-    if (!isAuthenticated || !user) return
-
-    try {
-      // Load from localStorage
-      const saved = localStorage.getItem(`saved_calculations_${user.id}`)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        setSavedCalculations(parsed)
-      }
-    } catch (error) {
-      console.error('Error loading saved calculations:', error)
-    }
-  }
-
+  // Rest of functions (keep as is) - addItem, removeItem, updateItem, etc.
   const addItem = () => {
     if (!selectedProduct) {
       showSnackbar('Please select a product', 'error')
       return
     }
 
-    // Check if product belongs to current user
     if (selectedProduct.userId && user && selectedProduct.userId !== user.id) {
       showSnackbar('This product does not belong to your account', 'error')
       return
@@ -398,7 +361,6 @@ const ProductCalculator: React.FC = () => {
       userId: user.id
     }
 
-    // Save to localStorage
     const updatedCalculations = [saveData, ...savedCalculations]
     localStorage.setItem(`saved_calculations_${user.id}`, JSON.stringify(updatedCalculations))
     
@@ -410,7 +372,6 @@ const ProductCalculator: React.FC = () => {
   }
 
   const loadCalculation = (calculation: SavedCalculation) => {
-    // Check if calculation belongs to current user
     if (calculation.userId && user && calculation.userId !== user.id) {
       showSnackbar('You cannot load this calculation', 'error')
       return
@@ -513,14 +474,32 @@ Break-even: ${result.breakEvenUnits} units
     window.history.back()
   }
 
-  // Filter products based on search and user
+  // Load saved calculations
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadUserSavedCalculations()
+    }
+  }, [isAuthenticated, user])
+
+  const loadUserSavedCalculations = async () => {
+    if (!isAuthenticated || !user) return
+
+    try {
+      const saved = localStorage.getItem(`saved_calculations_${user.id}`)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setSavedCalculations(parsed)
+      }
+    } catch (error) {
+      console.error('Error loading saved calculations:', error)
+    }
+  }
+
   const filteredProducts = products.filter(product => {
-    // Check if product belongs to current user
     if (product.userId && user && product.userId !== user.id) {
       return false
     }
     
-    // Search filter
     return (
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -563,20 +542,27 @@ Break-even: ${result.breakEvenUnits} units
               p: 4,
               textAlign: 'center',
               borderRadius: 3,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.1)'
+              backgroundColor: darkMode ? '#202124' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              boxShadow: darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)'
             }}>
-              <MonetizationOn sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+              <MonetizationOn sx={{ fontSize: 64, color: '#34a853', mb: 2 }} />
+              <Typography variant="h4" fontWeight={500} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                 Profit Calculator
               </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              <Typography variant="body1" sx={{ mb: 3, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                 Please login to use the calculator and access your products
               </Typography>
               <Button
                 variant="contained"
                 size="large"
                 onClick={() => window.location.href = '/login'}
-                sx={{ borderRadius: 2, px: 4 }}
+                sx={{ 
+                  borderRadius: 2, 
+                  px: 4,
+                  backgroundColor: '#34a853',
+                  '&:hover': { backgroundColor: '#2d9248' }
+                }}
               >
                 Login to Continue
               </Button>
@@ -589,19 +575,23 @@ Break-even: ${result.breakEvenUnits} units
 
   return (
     <MainLayout title="Profit Calculator">
-      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
-        {/* Header - New style added */}
-        <Box sx={{ mb: 4 }}>
-          <Button
-            startIcon={<BackIcon />}
-            onClick={handleBack}
-            sx={{ mb: 2 }}
-            size="small"
-          >
-            Back to Dashboard
-          </Button>
-
-          <Breadcrumbs sx={{ mb: 2 }}>
+      <Box sx={{ 
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+        color: darkMode ? '#e8eaed' : '#202124',
+        minHeight: '100vh',
+      }}>
+        {/* Header */}
+        <Box sx={{ 
+          p: { xs: 2, sm: 3 },
+          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          background: darkMode 
+            ? 'linear-gradient(135deg, #0d3064 0%, #202124 100%)'
+            : 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)',
+        }}>
+          <Breadcrumbs sx={{ 
+            mb: { xs: 1, sm: 2 }, 
+            fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.85rem' } 
+          }}>
             <MuiLink
               component={Link}
               href="/dashboard"
@@ -609,14 +599,16 @@ Break-even: ${result.breakEvenUnits} units
                 display: 'flex', 
                 alignItems: 'center', 
                 textDecoration: 'none',
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main' }
+                color: darkMode ? '#9aa0a6' : '#5f6368',
+                '&:hover': { color: darkMode ? '#8ab4f8' : '#4285f4' }
               }}
             >
-              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+              <HomeIcon sx={{ mr: 0.5, fontSize: { xs: '14px', sm: '16px', md: '18px' } }} />
               Dashboard
             </MuiLink>
-            <Typography color="text.primary">Calculator</Typography>
+            <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+              Calculator
+            </Typography>
           </Breadcrumbs>
 
           <Box sx={{ 
@@ -628,317 +620,248 @@ Break-even: ${result.breakEvenUnits} units
             mb: 3
           }}>
             <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+              <Typography variant="h4" fontWeight={500} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                 Profit Calculator
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                 Calculate profits, margins, and ROI for your products
               </Typography>
             </Box>
 
-            <Stack 
-              direction={{ xs: 'column', sm: 'row' }} 
-              spacing={1}
-              alignItems={{ xs: 'stretch', sm: 'center' }}
-              sx={{ width: { xs: '100%', sm: 'auto' } }}
-            >
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
               {!isOnline && (
                 <Chip 
                   label="Offline Mode" 
                   size="small" 
-                  color="warning" 
-                  variant="outlined"
-                  sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                  sx={{
+                    backgroundColor: darkMode ? alpha('#fbbc04', 0.1) : alpha('#fbbc04', 0.08),
+                    borderColor: alpha('#fbbc04', 0.3),
+                    color: darkMode ? '#fdd663' : '#fbbc04',
+                  }}
                 />
               )}
-              <Typography variant="caption" color="text.secondary" sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+              <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                 Welcome, {getUserDisplayName()} • {products.length} Products
               </Typography>
-            </Stack>
+            </Box>
           </Box>
         </Box>
 
-        {/* Main Calculator Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        {/* Main Content */}
+        <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+          {/* Header Card */}
           <Card sx={{
-            borderRadius: { xs: 2, sm: 3, md: 4 },
-            boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
-            overflow: 'hidden',
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            background: theme.palette.background.paper,
-            mt: 2
+            mb: 3,
+            borderRadius: 3,
+            backgroundColor: darkMode ? '#202124' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)',
           }}>
-            {/* Header Card */}
             <Box sx={{
-              p: { xs: 2, sm: 3, md: 4 },
-              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden'
+              p: 3,
+              background: darkMode 
+                ? `linear-gradient(135deg, ${alpha('#4285f4', 0.8)} 0%, ${alpha('#0d3064', 0.9)} 100%)`
+                : `linear-gradient(135deg, ${alpha('#4285f4', 0.9)} 0%, ${alpha('#0d3064', 0.9)} 100%)`,
+              color: '#ffffff',
+              borderRadius: '12px 12px 0 0',
             }}>
-              <Box sx={{
-                position: 'absolute',
-                top: -50,
-                right: -50,
-                width: 200,
-                height: 200,
-                borderRadius: '50%',
-                background: alpha('#fff', 0.1),
-                animation: 'float 6s ease-in-out infinite'
-              }} />
-              
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Box sx={{
-                    width: { xs: 48, sm: 56 },
-                    height: { xs: 48, sm: 56 },
+                    width: 56,
+                    height: 56,
                     borderRadius: 2,
-                    background: alpha('#fff', 0.2),
+                    backgroundColor: alpha('#ffffff', 0.2),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backdropFilter: 'blur(10px)'
+                    backdropFilter: 'blur(10px)',
                   }}>
-                    <MonetizationOn sx={{ fontSize: { xs: 24, sm: 28 }, color: 'white' }} />
+                    <Calculate sx={{ fontSize: 28, color: '#ffffff' }} />
                   </Box>
                   <Box>
-                    <Typography variant={isMobile ? "h5" : "h4"} fontWeight={700} gutterBottom>
-                      Advanced Calculator
+                    <Typography variant="h5" fontWeight={600} gutterBottom>
+                      Profit Calculator
                     </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Person fontSize="small" />
-                      Welcome, {getUserDisplayName()} • {products.length} Products
-                      {!isOnline && (
-                        <Chip 
-                          label="Offline" 
-                          size="small" 
-                          color="warning" 
-                          sx={{ ml: 1, fontSize: '0.7rem' }}
-                        />
-                      )}
+                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                      {getUserDisplayName()} • {products.length} Products
                     </Typography>
                   </Box>
                 </Box>
 
-                <Stack direction="row" spacing={1} sx={{ mt: { xs: 2, sm: 0 } }}>
-                  <Tooltip title="Refresh Products">
-                    <IconButton 
-                      onClick={() => refetchProducts()}
-                      disabled={productsLoading}
-                      sx={{ 
-                        background: alpha('#fff', 0.2), 
-                        color: 'white',
-                        '&:hover': { background: alpha('#fff', 0.3) }
-                      }}
-                    >
-                      {productsLoading ? <CircularProgress size={24} color="inherit" /> : <Refresh />}
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="View History">
-                    <IconButton 
-                      onClick={() => setShowHistory(true)}
-                      sx={{ 
-                        background: alpha('#fff', 0.2), 
-                        color: 'white',
-                        '&:hover': { background: alpha('#fff', 0.3) }
-                      }}
-                    >
-                      <History />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Save Calculation">
-                    <IconButton 
-                      onClick={() => setSaveDialogOpen(true)}
-                      disabled={items.length === 0}
-                      sx={{ 
-                        background: alpha('#fff', 0.2), 
-                        color: 'white',
-                        '&:hover': { background: alpha('#fff', 0.3) }
-                      }}
-                    >
-                      <Save />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Export PDF">
-                    <IconButton 
-                      onClick={exportToPDF}
-                      disabled={items.length === 0}
-                      sx={{ 
-                        background: alpha('#fff', 0.2), 
-                        color: 'white',
-                        '&:hover': { background: alpha('#fff', 0.3) }
-                      }}
-                    >
-                      <Download />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-              </Stack>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <IconButton
+                    onClick={() => refetchProducts()}
+                    disabled={productsLoading}
+                    sx={{
+                      backgroundColor: alpha('#ffffff', 0.2),
+                      color: '#ffffff',
+                      '&:hover': { backgroundColor: alpha('#ffffff', 0.3) }
+                    }}
+                  >
+                    {productsLoading ? <CircularProgress size={24} color="inherit" /> : <Refresh />}
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setShowHistory(true)}
+                    sx={{
+                      backgroundColor: alpha('#ffffff', 0.2),
+                      color: '#ffffff',
+                      '&:hover': { backgroundColor: alpha('#ffffff', 0.3) }
+                    }}
+                  >
+                    <History />
+                  </IconButton>
+                </Box>
+              </Box>
             </Box>
 
-            {/* Main Content */}
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ p: { xs: 2, sm: 3 } }}>
-              {/* Left Section - Product Selection */}
-              <Box sx={{ flex: 1, minWidth: { md: 400 } }}>
-                <Card sx={{ 
-                  height: '100%',
-                  borderRadius: 3,
-                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                  background: alpha(theme.palette.background.paper, 0.5)
+            {/* Calculator Layout */}
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', md: 'row' },
+              gap: 3,
+              p: 3
+            }}>
+              {/* Left Column - Product Selection */}
+              <Box sx={{ 
+                flex: 1,
+                minWidth: { md: 400 }
+              }}>
+                <Card sx={{
+                  borderRadius: 2,
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  height: '100%'
                 }}>
                   <CardContent>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                      <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <ShoppingCart /> My Products
-                        {!isOnline && (
-                          <Chip 
-                            label="Offline" 
-                            size="small" 
-                            color="warning" 
-                            variant="outlined"
-                            sx={{ ml: 1 }}
-                          />
-                        )}
-                      </Typography>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        {productsLoading && <CircularProgress size={20} />}
-                        <Typography variant="caption" color="text.secondary">
-                          {products.length} products
-                        </Typography>
-                      </Stack>
-                    </Stack>
+                    <Typography variant="h6" fontWeight={500} gutterBottom sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 1,
+                      color: darkMode ? '#e8eaed' : '#202124'
+                    }}>
+                      <Store /> My Products
+                    </Typography>
 
-                    {/* Product Search */}
+                    {/* Search */}
                     <TextField
                       fullWidth
-                      placeholder="Search your products..."
+                      placeholder="Search products..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
+                      sx={{ mb: 2 }}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <Search />
+                            <Search sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
                           </InputAdornment>
                         ),
                       }}
-                      sx={{ mb: 3 }}
                     />
 
                     {/* Product List */}
                     {productsLoading ? (
                       <Box sx={{ textAlign: 'center', py: 4 }}>
                         <CircularProgress />
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                        <Typography variant="body2" sx={{ mt: 2, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                           Loading products...
                         </Typography>
                       </Box>
                     ) : products.length === 0 ? (
                       <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <Inventory sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                        <Typography color="text.secondary">
+                        <Inventory sx={{ fontSize: 48, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }} />
+                        <Typography sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                           No products found
-                        </Typography>
-                        <Typography variant="body2" color="text.disabled" sx={{ mb: 3 }}>
-                          Add products first to use the calculator
                         </Typography>
                         <Button
                           variant="outlined"
                           onClick={() => window.location.href = '/products/add'}
                           disabled={!isOnline}
+                          sx={{ mt: 2 }}
                         >
                           Add Products
                         </Button>
                       </Box>
                     ) : (
-                      <Stack spacing={2} sx={{ maxHeight: 300, overflowY: 'auto', p: 1 }}>
+                      <Box sx={{ 
+                        maxHeight: 300, 
+                        overflowY: 'auto',
+                        p: 1,
+                        backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                        borderRadius: 2,
+                        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`
+                      }}>
                         {filteredProducts.map((product) => (
                           <Card
                             key={product.id || product._id}
-                            variant="outlined"
                             sx={{
                               p: 2,
+                              mb: 1,
                               borderRadius: 2,
                               cursor: 'pointer',
-                              border: selectedProduct?.id === product.id ? `2px solid ${theme.palette.primary.main}` : undefined,
-                              background: selectedProduct?.id === product.id ? alpha(theme.palette.primary.main, 0.05) : undefined,
-                              transition: 'all 0.2s',
+                              backgroundColor: selectedProduct?.id === product.id 
+                                ? (darkMode ? alpha('#4285f4', 0.2) : alpha('#4285f4', 0.1))
+                                : (darkMode ? '#202124' : '#ffffff'),
+                              border: selectedProduct?.id === product.id 
+                                ? `2px solid ${darkMode ? '#8ab4f8' : '#4285f4'}`
+                                : `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                               '&:hover': {
+                                backgroundColor: darkMode ? '#303134' : '#f8f9fa',
                                 transform: 'translateY(-2px)',
-                                boxShadow: theme.shadows[2]
-                              }
+                                boxShadow: darkMode 
+                                  ? '0 4px 8px rgba(0,0,0,0.3)'
+                                  : '0 4px 8px rgba(0,0,0,0.1)'
+                              },
+                              transition: 'all 0.2s ease'
                             }}
                             onClick={() => setSelectedProduct(product)}
                           >
-                            <Stack spacing={1}>
-                              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                                <Typography variant="subtitle2" fontWeight={600}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="subtitle2" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                                   {product.name}
                                 </Typography>
-                                <Chip 
-                                  label={`${product.gstRate}% GST`} 
-                                  size="small" 
-                                  variant="outlined"
-                                />
-                              </Stack>
-                              <Stack direction="row" spacing={2} alignItems="center">
-                                <Stack spacing={0.5} flex={1}>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {product.category}
-                                  </Typography>
-                                  {product.sku && (
-                                    <Typography variant="caption" color="text.secondary">
-                                      SKU: {product.sku}
-                                    </Typography>
-                                  )}
-                                  {product.hsnCode && (
-                                    <Typography variant="caption" color="text.secondary">
-                                      HSN: {product.hsnCode}
-                                    </Typography>
-                                  )}
-                                </Stack>
-                                <Stack spacing={0.5} alignItems="flex-end">
-                                  <Typography variant="body2" fontWeight={600} color="primary">
-                                    ₹{product.price}
-                                  </Typography>
-                                  <Typography variant="caption" color="error">
-                                    Cost: ₹{product.costPrice}
-                                  </Typography>
-                                </Stack>
-                              </Stack>
-                              {product.stock > 0 && (
-                                <LinearProgress 
-                                  variant="determinate" 
-                                  value={Math.min((product.stock / 100) * 100, 100)}
-                                  color={product.stock < 10 ? 'error' : product.stock < 30 ? 'warning' : 'success'}
-                                  sx={{ height: 4, borderRadius: 2 }}
-                                />
-                              )}
-                            </Stack>
+                                <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                                  {product.category}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                                  <Chip 
+                                    label={`₹${product.price}`} 
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: darkMode ? alpha('#34a853', 0.2) : alpha('#34a853', 0.1),
+                                      color: darkMode ? '#81c995' : '#34a853',
+                                    }}
+                                  />
+                                  <Chip 
+                                    label={`${product.gstRate}% GST`} 
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: darkMode ? alpha('#ea4335', 0.2) : alpha('#ea4335', 0.1),
+                                      color: darkMode ? '#f28b82' : '#ea4335',
+                                    }}
+                                  />
+                                </Box>
+                              </Box>
+                              <Typography variant="caption" sx={{ color: darkMode ? '#81c995' : '#34a853', fontWeight: 500 }}>
+                                Stock: {product.stock}
+                              </Typography>
+                            </Box>
                           </Card>
                         ))}
-                      </Stack>
+                      </Box>
                     )}
 
                     {/* Input Form */}
-                    <Stack spacing={2} sx={{ mt: 3 }}>
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                    <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Box sx={{ display: 'flex', gap: 2 }}>
                         <TextField
                           fullWidth
                           label="Quantity"
                           type="number"
                           value={quantity}
                           onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Inventory />
-                              </InputAdornment>
-                            ),
-                          }}
+                          sx={{ flex: 1 }}
                         />
                         <TextField
                           fullWidth
@@ -946,18 +869,12 @@ Break-even: ${result.breakEvenUnits} units
                           type="number"
                           value={discount}
                           onChange={(e) => setDiscount(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
+                          sx={{ flex: 1 }}
                           InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Percent />
-                              </InputAdornment>
-                            ),
-                            endAdornment: (
-                              <InputAdornment position="end">%</InputAdornment>
-                            ),
+                            endAdornment: <InputAdornment position="end">%</InputAdornment>,
                           }}
                         />
-                      </Stack>
+                      </Box>
                       
                       <Select
                         fullWidth
@@ -974,86 +891,135 @@ Break-even: ${result.breakEvenUnits} units
                         startIcon={<Add />}
                         onClick={addItem}
                         disabled={!selectedProduct}
-                        sx={{ py: 1.5, borderRadius: 2 }}
+                        sx={{ 
+                          py: 1.5,
+                          backgroundColor: '#34a853',
+                          '&:hover': { backgroundColor: '#2d9248' }
+                        }}
                       >
                         Add to Calculation
                       </Button>
-                    </Stack>
+                    </Box>
                   </CardContent>
                 </Card>
               </Box>
 
-              {/* Right Section - Items & Results */}
-              <Box sx={{ flex: 1, minWidth: { md: 500 } }}>
-                <Stack spacing={3}>
-                  {/* Items Table */}
-                  <Card sx={{ borderRadius: 3 }}>
-                    <CardContent>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                        <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Receipt /> Items ({items.length})
-                        </Typography>
-                        <Tooltip title="Clear All">
-                          <IconButton 
-                            onClick={clearAll} 
-                            disabled={items.length === 0}
-                            size="small"
-                            color="error"
-                          >
-                            <ClearAll />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
+              {/* Right Column - Items & Results */}
+              <Box sx={{ flex: 1 }}>
+                {/* Items Card */}
+                <Card sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" fontWeight={500} sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 1,
+                        color: darkMode ? '#e8eaed' : '#202124'
+                      }}>
+                        <ShoppingCart /> Items ({items.length})
+                      </Typography>
+                      <IconButton 
+                        onClick={clearAll} 
+                        disabled={items.length === 0}
+                        size="small"
+                        sx={{ color: darkMode ? '#f28b82' : '#ea4335' }}
+                      >
+                        <ClearAll />
+                      </IconButton>
+                    </Box>
 
-                      {items.length === 0 ? (
-                        <Box sx={{ textAlign: 'center', py: 4 }}>
-                          <Inventory sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                          <Typography color="text.secondary">
-                            No items added yet
-                          </Typography>
-                          <Typography variant="body2" color="text.disabled">
-                            Select products and add them to start calculating
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <TableContainer sx={{ maxHeight: 300, borderRadius: 2 }}>
+                    {items.length === 0 ? (
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <Receipt sx={{ fontSize: 48, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }} />
+                        <Typography sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          No items added yet
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <>
+                        <TableContainer sx={{ 
+                          maxHeight: 300, 
+                          borderRadius: 2,
+                          backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`
+                        }}>
                           <Table stickyHeader size="small">
                             <TableHead>
                               <TableRow>
-                                <TableCell>Product</TableCell>
-                                <TableCell align="center">Qty</TableCell>
-                                <TableCell align="center">Disc</TableCell>
-                                <TableCell align="right">Profit</TableCell>
-                                <TableCell align="center">Actions</TableCell>
+                                <TableCell sx={{ 
+                                  backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+                                  color: darkMode ? '#e8eaed' : '#202124'
+                                }}>
+                                  Product
+                                </TableCell>
+                                <TableCell align="center" sx={{ 
+                                  backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+                                  color: darkMode ? '#e8eaed' : '#202124'
+                                }}>
+                                  Qty
+                                </TableCell>
+                                <TableCell align="center" sx={{ 
+                                  backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+                                  color: darkMode ? '#e8eaed' : '#202124'
+                                }}>
+                                  Disc
+                                </TableCell>
+                                <TableCell align="right" sx={{ 
+                                  backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+                                  color: darkMode ? '#e8eaed' : '#202124'
+                                }}>
+                                  Profit
+                                </TableCell>
+                                <TableCell align="center" sx={{ 
+                                  backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+                                  color: darkMode ? '#e8eaed' : '#202124'
+                                }}>
+                                  Actions
+                                </TableCell>
                               </TableRow>
                             </TableHead>
                             <TableBody>
                               {items.map((item) => (
-                                <TableRow key={item.id} hover>
+                                <TableRow 
+                                  key={item.id} 
+                                  hover
+                                  sx={{ 
+                                    '&:hover': {
+                                      backgroundColor: darkMode ? '#303134' : '#f8f9fa'
+                                    }
+                                  }}
+                                >
                                   <TableCell>
-                                    <Typography variant="body2" fontWeight={500}>
+                                    <Typography variant="body2" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                                       {item.product.name}
                                     </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      ₹{item.product.price} × {item.quantity} | Cost: ₹{item.product.costPrice}
+                                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                                      ₹{item.product.price} × {item.quantity}
                                     </Typography>
                                   </TableCell>
                                   <TableCell align="center">
-                                    <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                                       <IconButton 
                                         size="small"
                                         onClick={() => updateItem(item.id, 'quantity', Math.max(1, item.quantity - 1))}
                                       >
                                         <Remove fontSize="small" />
                                       </IconButton>
-                                      <Typography>{item.quantity}</Typography>
+                                      <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                        {item.quantity}
+                                      </Typography>
                                       <IconButton 
                                         size="small"
                                         onClick={() => updateItem(item.id, 'quantity', item.quantity + 1)}
                                       >
                                         <Add fontSize="small" />
                                       </IconButton>
-                                    </Stack>
+                                    </Box>
                                   </TableCell>
                                   <TableCell align="center">
                                     <TextField
@@ -1068,19 +1034,19 @@ Break-even: ${result.breakEvenUnits} units
                                     />
                                   </TableCell>
                                   <TableCell align="right">
-                                    <Stack spacing={0.5}>
-                                      <Typography fontWeight={600} color={item.profit >= 0 ? 'success.main' : 'error.main'}>
+                                    <Box>
+                                      <Typography fontWeight={600} color={item.profit >= 0 ? '#34a853' : '#ea4335'}>
                                         ₹{item.profit.toFixed(2)}
                                       </Typography>
-                                      <Typography variant="caption" color="text.secondary">
-                                        {item.margin.toFixed(1)}% margin
+                                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                                        {item.margin.toFixed(1)}%
                                       </Typography>
-                                    </Stack>
+                                    </Box>
                                   </TableCell>
                                   <TableCell align="center">
                                     <IconButton 
                                       size="small" 
-                                      color="error"
+                                      sx={{ color: darkMode ? '#f28b82' : '#ea4335' }}
                                       onClick={() => removeItem(item.id)}
                                     >
                                       <Delete fontSize="small" />
@@ -1091,13 +1057,22 @@ Break-even: ${result.breakEvenUnits} units
                             </TableBody>
                           </Table>
                         </TableContainer>
-                      )}
 
-                      {/* Bulk Discount */}
-                      {items.length > 0 && (
-                        <Paper sx={{ mt: 3, p: 2, background: alpha(theme.palette.warning.light, 0.1), borderRadius: 2 }}>
-                          <Stack direction="row" alignItems="center" justifyContent="space-between">
-                            <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {/* Bulk Discount */}
+                        <Box sx={{ 
+                          mt: 3, 
+                          p: 2, 
+                          backgroundColor: darkMode ? alpha('#fbbc04', 0.1) : alpha('#fbbc04', 0.05),
+                          borderRadius: 2,
+                          border: `1px solid ${darkMode ? alpha('#fbbc04', 0.3) : alpha('#fbbc04', 0.2)}`
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography variant="subtitle2" fontWeight={500} sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 1,
+                              color: darkMode ? '#fdd663' : '#fbbc04'
+                            }}>
                               <LocalOffer /> Apply Bulk Discount
                             </Typography>
                             <TextField
@@ -1107,389 +1082,482 @@ Break-even: ${result.breakEvenUnits} units
                               onChange={(e) => setBulkDiscount(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
                               sx={{ width: 120 }}
                               InputProps={{
-                                startAdornment: (
-                                  <InputAdornment position="start">
-                                    <Percent fontSize="small" />
-                                  </InputAdornment>
-                                ),
-                                endAdornment: <Typography variant="caption">%</Typography>
+                                endAdornment: <InputAdornment position="end">%</InputAdornment>,
                               }}
                             />
-                          </Stack>
-                        </Paper>
-                      )}
-                    </CardContent>
-                  </Card>
+                          </Box>
+                        </Box>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
 
-                  {/* Results Section */}
-                  <div ref={resultRef}>
-                    <Card sx={{ 
-                      borderRadius: 3,
-                      background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.success.light, 0.05)} 100%)`,
-                      border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+                {/* Results Card */}
+                <Card sx={{
+                  borderRadius: 2,
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  background: darkMode 
+                    ? `linear-gradient(135deg, ${alpha('#0d3064', 0.5)} 0%, ${alpha('#202124', 0.8)} 100%)`
+                    : `linear-gradient(135deg, ${alpha('#e3f2fd', 0.5)} 0%, ${alpha('#ffffff', 0.8)} 100%)`
+                }}>
+                  <CardContent>
+                    <Typography variant="h6" fontWeight={500} gutterBottom sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 1,
+                      color: darkMode ? '#e8eaed' : '#202124'
                     }}>
-                      <CardContent>
-                        <Typography variant="h6" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Calculate /> Profit Calculation Results
+                      <Calculate /> Profit Calculation Results
+                    </Typography>
+
+                    {/* Key Metrics */}
+                    <Box sx={{ 
+                      display: 'flex', 
+                      gap: 2, 
+                      mb: 3,
+                      flexDirection: { xs: 'column', sm: 'row' }
+                    }}>
+                      <Card sx={{ 
+                        flex: 1,
+                        p: 2,
+                        backgroundColor: darkMode ? '#202124' : '#ffffff',
+                        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        textAlign: 'center'
+                      }}>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          Total Revenue
                         </Typography>
+                        <Typography variant="h5" fontWeight={600} color="#4285f4">
+                          ₹{result.totalAmount.toFixed(2)}
+                        </Typography>
+                      </Card>
+                      <Card sx={{ 
+                        flex: 1,
+                        p: 2,
+                        backgroundColor: darkMode ? '#202124' : '#ffffff',
+                        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        textAlign: 'center'
+                      }}>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          Total Cost
+                        </Typography>
+                        <Typography variant="h5" fontWeight={600} color="#ea4335">
+                          ₹{result.totalCost.toFixed(2)}
+                        </Typography>
+                      </Card>
+                    </Box>
 
-                        {/* Key Metrics */}
-                        <Stack spacing={2} sx={{ mb: 3 }}>
-                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                            <Paper sx={{ 
-                              p: 2, 
-                              borderRadius: 2, 
-                              flex: 1,
-                              textAlign: 'center',
-                              background: alpha(theme.palette.primary.main, 0.05)
-                            }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Total Revenue
-                              </Typography>
-                              <Typography variant="h5" fontWeight={700} color="primary">
-                                ₹{result.totalAmount.toFixed(2)}
-                              </Typography>
-                            </Paper>
-                            <Paper sx={{ 
-                              p: 2, 
-                              borderRadius: 2, 
-                              flex: 1,
-                              textAlign: 'center',
-                              background: alpha(theme.palette.error.light, 0.05)
-                            }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Total Cost
-                              </Typography>
-                              <Typography variant="h5" fontWeight={700} color="error">
-                                ₹{result.totalCost.toFixed(2)}
-                              </Typography>
-                            </Paper>
-                          </Stack>
-
-                          {/* Profit Summary */}
-                          <Paper sx={{ 
-                            p: 2, 
-                            borderRadius: 2,
-                            background: alpha(theme.palette.success.main, 0.05),
-                            border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`
-                          }}>
-                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-                              <Box sx={{ flex: 1 }}>
-                                <Typography variant="subtitle2" fontWeight={600}>
-                                  Total Profit
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  After all discounts & GST
-                                </Typography>
-                              </Box>
-                              <Stack spacing={0.5} alignItems={{ xs: 'flex-start', sm: 'flex-end' }}>
-                                <Typography 
-                                  variant="h4" 
-                                  fontWeight={800}
-                                  color="success.main"
-                                  sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                                >
-                                  {result.profit >= 0 ? <TrendingUp /> : <TrendingDown />}
-                                  ₹{Math.abs(result.profit).toFixed(2)}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {result.margin.toFixed(2)}% Profit Margin
-                                </Typography>
-                              </Stack>
-                            </Stack>
-                          </Paper>
-                        </Stack>
-
-                        {/* Detailed Analysis */}
-                        <Stack spacing={2}>
-                          <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Scale /> Detailed Analysis
+                    {/* Profit Summary */}
+                    <Card sx={{ 
+                      p: 2,
+                      mb: 3,
+                      backgroundColor: darkMode ? alpha('#34a853', 0.1) : alpha('#34a853', 0.05),
+                      border: `1px solid ${darkMode ? alpha('#34a853', 0.3) : alpha('#34a853', 0.2)}`,
+                      borderRadius: 2
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600} sx={{ color: darkMode ? '#81c995' : '#34a853' }}>
+                            Total Profit
                           </Typography>
-                          
-                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                            <Paper sx={{ p: 2, borderRadius: 2, flex: 1 }}>
-                              <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                                GST Breakdown
-                              </Typography>
-                              <Stack spacing={1}>
-                                <Stack direction="row" justifyContent="space-between">
-                                  <Typography variant="body2">Subtotal:</Typography>
-                                  <Typography variant="body2" fontWeight={600}>₹{result.subtotal.toFixed(2)}</Typography>
-                                </Stack>
-                                <Stack direction="row" justifyContent="space-between">
-                                  <Typography variant="body2">Discount:</Typography>
-                                  <Typography variant="body2" fontWeight={600} color="error">-₹{result.discountTotal.toFixed(2)}</Typography>
-                                </Stack>
-                                <Stack direction="row" justifyContent="space-between">
-                                  <Typography variant="body2">GST Total:</Typography>
-                                  <Typography variant="body2" fontWeight={600}>₹{result.gstTotal.toFixed(2)}</Typography>
-                                </Stack>
-                              </Stack>
-                            </Paper>
-
-                            <Paper sx={{ p: 2, borderRadius: 2, flex: 1 }}>
-                              <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                                Business Metrics
-                              </Typography>
-                              <Stack spacing={1}>
-                                <Stack direction="row" justifyContent="space-between">
-                                  <Typography variant="body2">Return on Investment:</Typography>
-                                  <Typography variant="body2" fontWeight={600} color={result.roi >= 0 ? 'success.main' : 'error.main'}>
-                                    {result.roi.toFixed(2)}%
-                                  </Typography>
-                                </Stack>
-                                <Stack direction="row" justifyContent="space-between">
-                                  <Typography variant="body2">Break-even Units:</Typography>
-                                  <Typography variant="body2" fontWeight={600}>
-                                    {result.breakEvenUnits}
-                                  </Typography>
-                                </Stack>
-                                <Stack direction="row" justifyContent="space-between">
-                                  <Typography variant="body2">Avg. Selling Price:</Typography>
-                                  <Typography variant="body2" fontWeight={600}>
-                                    ₹{getAverageSellingPrice().toFixed(2)}
-                                  </Typography>
-                                </Stack>
-                              </Stack>
-                            </Paper>
-                          </Stack>
-                        </Stack>
-
-                        {/* Action Buttons */}
-                        {items.length > 0 && (
-                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 3 }}>
-                            <Button
-                              variant="outlined"
-                              startIcon={<ContentCopy />}
-                              onClick={copyToClipboard}
-                              fullWidth={isMobile}
-                            >
-                              Copy Results
-                            </Button>
-                            <Button
-                              variant="contained"
-                              startIcon={<Print />}
-                              onClick={() => window.print()}
-                              fullWidth={isMobile}
-                            >
-                              Print Report
-                            </Button>
-                          </Stack>
-                        )}
-                      </CardContent>
+                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                            After all discounts & GST
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography 
+                            variant="h4" 
+                            fontWeight={800}
+                            color="#34a853"
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                          >
+                            {result.profit >= 0 ? <TrendingUp /> : <TrendingDown />}
+                            ₹{Math.abs(result.profit).toFixed(2)}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                            {result.margin.toFixed(2)}% Profit Margin
+                          </Typography>
+                        </Box>
+                      </Box>
                     </Card>
-                  </div>
-                </Stack>
+
+                    {/* Detailed Analysis */}
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 1,
+                        color: darkMode ? '#e8eaed' : '#202124'
+                      }}>
+                        <Scale /> Detailed Analysis
+                      </Typography>
+                      
+                      <Box sx={{ 
+                        display: 'flex', 
+                        gap: 2,
+                        flexDirection: { xs: 'column', sm: 'row' }
+                      }}>
+                        <Card sx={{ 
+                          flex: 1,
+                          p: 2,
+                          backgroundColor: darkMode ? '#202124' : '#ffffff',
+                          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`
+                        }}>
+                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                            GST Breakdown
+                          </Typography>
+                          <Box sx={{ mt: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                Subtotal:
+                              </Typography>
+                              <Typography variant="body2" fontWeight={600}>₹{result.subtotal.toFixed(2)}</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                Discount:
+                              </Typography>
+                              <Typography variant="body2" fontWeight={600} color="#ea4335">
+                                -₹{result.discountTotal.toFixed(2)}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                GST Total:
+                              </Typography>
+                              <Typography variant="body2" fontWeight={600}>₹{result.gstTotal.toFixed(2)}</Typography>
+                            </Box>
+                          </Box>
+                        </Card>
+
+                        <Card sx={{ 
+                          flex: 1,
+                          p: 2,
+                          backgroundColor: darkMode ? '#202124' : '#ffffff',
+                          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`
+                        }}>
+                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                            Business Metrics
+                          </Typography>
+                          <Box sx={{ mt: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                ROI:
+                              </Typography>
+                              <Typography variant="body2" fontWeight={600} color={result.roi >= 0 ? '#34a853' : '#ea4335'}>
+                                {result.roi.toFixed(2)}%
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                Break-even Units:
+                              </Typography>
+                              <Typography variant="body2" fontWeight={600}>
+                                {result.breakEvenUnits}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                Avg. Selling Price:
+                              </Typography>
+                              <Typography variant="body2" fontWeight={600}>
+                                ₹{getAverageSellingPrice().toFixed(2)}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Card>
+                      </Box>
+                    </Box>
+
+                    {/* Action Buttons */}
+                    {items.length > 0 && (
+                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        <Button
+                          variant="outlined"
+                          startIcon={<ContentCopy />}
+                          onClick={copyToClipboard}
+                          sx={{
+                            borderColor: darkMode ? '#3c4043' : '#dadce0',
+                            color: darkMode ? '#e8eaed' : '#202124',
+                          }}
+                        >
+                          Copy Results
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          startIcon={<Save />}
+                          onClick={() => setSaveDialogOpen(true)}
+                          sx={{
+                            borderColor: darkMode ? '#3c4043' : '#dadce0',
+                            color: darkMode ? '#e8eaed' : '#202124',
+                          }}
+                        >
+                          Save Calculation
+                        </Button>
+                        <Button
+                          variant="contained"
+                          startIcon={<Download />}
+                          onClick={exportToPDF}
+                          sx={{
+                            backgroundColor: '#34a853',
+                            '&:hover': { backgroundColor: '#2d9248' }
+                          }}
+                        >
+                          Export Report
+                        </Button>
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
               </Box>
-            </Stack>
+            </Box>
           </Card>
-        </motion.div>
+        </Container>
+      </Box>
 
-        {/* History Dialog */}
-        <Dialog
-          open={showHistory}
-          onClose={() => setShowHistory(false)}
-          maxWidth="md"
-          fullWidth
-          fullScreen={isMobile}
-        >
-          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6" fontWeight={600}>
-              <History /> My Saved Calculations
-            </Typography>
-            <IconButton onClick={() => setShowHistory(false)}>
-              <Close />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent>
-            {savedCalculations.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <History sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                <Typography color="text.secondary">
-                  No saved calculations
-                </Typography>
-                <Typography variant="body2" color="text.disabled">
-                  Save your calculations to view them here
-                </Typography>
-              </Box>
-            ) : (
-              <Stack spacing={2}>
-                {savedCalculations.map((calc) => (
-                  <Card key={calc.id} variant="outlined">
-                    <CardContent>
-                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="subtitle1" fontWeight={600}>
-                            {calc.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(calc.timestamp).toLocaleString()}
-                          </Typography>
-                          {calc.notes && (
-                            <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-                              {calc.notes}
-                            </Typography>
-                          )}
-                        </Box>
-                        <Stack direction="row" spacing={1}>
-                          <Tooltip title="Load Calculation">
-                            <IconButton 
-                              size="small" 
-                              color="primary"
-                              onClick={() => loadCalculation(calc)}
-                            >
-                              <CloudDownload />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton 
-                              size="small" 
-                              color="error"
-                              onClick={() => deleteSavedCalculation(calc.id)}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </Stack>
-                      <Divider sx={{ my: 2 }} />
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Items
-                          </Typography>
-                          <Typography variant="body2" fontWeight={500}>
-                            {calc.items.length} products
-                          </Typography>
-                        </Box>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Total Amount
-                          </Typography>
-                          <Typography variant="body2" fontWeight={500} color="success.main">
-                            ₹{calc.result.totalAmount.toFixed(2)}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Profit
-                          </Typography>
-                          <Typography variant="body2" fontWeight={500} color="primary.main">
-                            ₹{calc.result.profit.toFixed(2)}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            ROI
-                          </Typography>
-                          <Typography variant="body2" fontWeight={500}>
-                            {calc.result.roi.toFixed(2)}%
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowHistory(false)}>
-              Close
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Save Dialog */}
-        <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Save Profit Calculation</DialogTitle>
-          <DialogContent>
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Saving as: <strong>{getUserDisplayName()}</strong>
-              </Typography>
-              <TextField
-                fullWidth
-                label="Calculation Name"
-                value={saveName}
-                onChange={(e) => setSaveName(e.target.value)}
-                placeholder="e.g., Q4 Bulk Order Analysis"
-                helperText="Give a descriptive name for this calculation"
-              />
-              <TextField
-                fullWidth
-                label="Notes (Optional)"
-                value={saveNotes}
-                onChange={(e) => setSaveNotes(e.target.value)}
-                multiline
-                rows={3}
-                placeholder="Add any notes about this calculation..."
-              />
-              
-              {/* Preview Summary */}
-              {items.length > 0 && (
-                <Paper sx={{ p: 2, background: alpha(theme.palette.primary.light, 0.05) }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Preview Summary:
-                  </Typography>
-                  <Stack spacing={0.5}>
-                    <Stack direction="row" justifyContent="space-between">
-                      <Typography variant="caption">Total Items:</Typography>
-                      <Typography variant="caption" fontWeight={600}>{items.length}</Typography>
-                    </Stack>
-                    <Stack direction="row" justifyContent="space-between">
-                      <Typography variant="caption">Total Profit:</Typography>
-                      <Typography variant="caption" fontWeight={600} color="success.main">
-                        ₹{result.profit.toFixed(2)}
-                      </Typography>
-                    </Stack>
-                    <Stack direction="row" justifyContent="space-between">
-                      <Typography variant="caption">ROI:</Typography>
-                      <Typography variant="caption" fontWeight={600}>
-                        {result.roi.toFixed(2)}%
-                      </Typography>
-                    </Stack>
-                  </Stack>
-                </Paper>
-              )}
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-            <Button 
-              onClick={saveCalculation}
-              variant="contained"
-              disabled={!saveName.trim() || items.length === 0}
-            >
-              Save Calculation
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={3000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        >
-          <Alert 
-            severity={snackbar.severity} 
-            sx={{ width: '100%' }}
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-
-        {/* Add CSS Animation */}
-        <style>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+      {/* History Dialog */}
+      <Dialog
+        open={showHistory}
+        onClose={() => setShowHistory(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            backgroundColor: darkMode ? '#202124' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
           }
-        `}</style>
-      </Container>
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`
+        }}>
+          <Typography variant="h6" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+            <History /> My Saved Calculations
+          </Typography>
+          <IconButton 
+            onClick={() => setShowHistory(false)}
+            sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {savedCalculations.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <History sx={{ fontSize: 48, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }} />
+              <Typography sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                No saved calculations
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+              {savedCalculations.map((calc) => (
+                <Card 
+                  key={calc.id} 
+                  sx={{
+                    backgroundColor: darkMode ? '#303134' : '#ffffff',
+                    border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                    '&:hover': {
+                      backgroundColor: darkMode ? '#3c4043' : '#f8f9fa'
+                    }
+                  }}
+                >
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle1" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                          {calc.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          {new Date(calc.timestamp).toLocaleString()}
+                        </Typography>
+                        {calc.notes && (
+                          <Typography variant="body2" sx={{ mt: 1, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                            {calc.notes}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => loadCalculation(calc)}
+                          sx={{ color: darkMode ? '#8ab4f8' : '#4285f4' }}
+                        >
+                          <CloudDownload />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => deleteSavedCalculation(calc.id)}
+                          sx={{ color: darkMode ? '#f28b82' : '#ea4335' }}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                    <Divider sx={{ my: 2, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
+                    <Box sx={{ 
+                      display: 'flex', 
+                      gap: 3,
+                      flexWrap: 'wrap'
+                    }}>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          Items
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                          {calc.items.length} products
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          Total Amount
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500} color="#34a853">
+                          ₹{calc.result.totalAmount.toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          Profit
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500} color="#4285f4">
+                          ₹{calc.result.profit.toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+          <Button 
+            onClick={() => setShowHistory(false)}
+            sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Save Dialog */}
+      <Dialog 
+        open={saveDialogOpen} 
+        onClose={() => setSaveDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            backgroundColor: darkMode ? '#202124' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+          Save Profit Calculation
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+              Saving as: <strong>{getUserDisplayName()}</strong>
+            </Typography>
+            <TextField
+              fullWidth
+              label="Calculation Name"
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              placeholder="e.g., Q4 Bulk Order Analysis"
+            />
+            <TextField
+              fullWidth
+              label="Notes (Optional)"
+              value={saveNotes}
+              onChange={(e) => setSaveNotes(e.target.value)}
+              multiline
+              rows={3}
+              placeholder="Add any notes about this calculation..."
+            />
+            
+            {items.length > 0 && (
+              <Card sx={{ 
+                p: 2, 
+                backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.05),
+                border: `1px solid ${darkMode ? alpha('#4285f4', 0.3) : alpha('#4285f4', 0.2)}`
+              }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                  Preview Summary:
+                </Typography>
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Total Items:
+                    </Typography>
+                    <Typography variant="caption" fontWeight={600}>{items.length}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Total Profit:
+                    </Typography>
+                    <Typography variant="caption" fontWeight={600} color="#34a853">
+                      ₹{result.profit.toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      ROI:
+                    </Typography>
+                    <Typography variant="caption" fontWeight={600}>
+                      {result.roi.toFixed(2)}%
+                    </Typography>
+                  </Box>
+                </Box>
+              </Card>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+          <Button 
+            onClick={() => setSaveDialogOpen(false)}
+            sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={saveCalculation}
+            variant="contained"
+            disabled={!saveName.trim() || items.length === 0}
+            sx={{ 
+              backgroundColor: '#34a853',
+              '&:hover': { backgroundColor: '#2d9248' }
+            }}
+          >
+            Save Calculation
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          severity={snackbar.severity} 
+          sx={{ width: '100%' }}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </MainLayout>
   )
 }

@@ -1,4 +1,3 @@
-// components/community/PostCard.tsx
 "use client";
 
 import React, { useState } from 'react';
@@ -34,6 +33,7 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/utils/formatUtils';
+import { useTheme } from '@mui/material/styles';
 
 interface PostCardProps {
   post: {
@@ -81,6 +81,8 @@ export default function PostCard({
   compact = false,
 }: PostCardProps) {
   const router = useRouter();
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
@@ -91,11 +93,9 @@ export default function PostCard({
     if (onLike) {
       await onLike(post._id);
     } else {
-      // Default like behavior
       setLiked(!liked);
       setLikeCount(prev => liked ? prev - 1 : prev + 1);
       
-      // Call API to like/unlike
       try {
         const response = await fetch(`/api/community/posts/${post._id}/like`, {
           method: liked ? 'DELETE' : 'POST',
@@ -103,7 +103,6 @@ export default function PostCard({
         });
         
         if (!response.ok) {
-          // Revert if API call fails
           setLiked(!liked);
           setLikeCount(prev => liked ? prev + 1 : prev - 1);
         }
@@ -121,7 +120,6 @@ export default function PostCard({
     } else {
       setBookmarked(!bookmarked);
       
-      // Call API to bookmark/unbookmark
       try {
         await fetch(`/api/community/posts/${post._id}/bookmark`, {
           method: bookmarked ? 'DELETE' : 'POST',
@@ -155,7 +153,6 @@ export default function PostCard({
     if (onShare) {
       onShare(post._id);
     } else {
-      // Default share behavior
       if (navigator.share) {
         navigator.share({
           title: post.title,
@@ -163,7 +160,6 @@ export default function PostCard({
           url: `${window.location.origin}/community/post/${post._id}`,
         });
       } else {
-        // Fallback: copy to clipboard
         navigator.clipboard.writeText(
           `${window.location.origin}/community/post/${post._id}`
         ).then(() => {
@@ -193,7 +189,6 @@ export default function PostCard({
           });
           
           if (response.ok) {
-            // Refresh or remove from list
             window.location.reload();
           }
         } catch (error) {
@@ -207,23 +202,21 @@ export default function PostCard({
     router.push(`/community/profile/${post.author._id}`);
   };
 
-  // Get role color
   const getRoleColor = (role?: string) => {
     switch (role?.toLowerCase()) {
-      case 'admin': return '#f44336';
-      case 'moderator': return '#2196f3';
-      case 'expert': return '#4caf50';
-      default: return '#757575';
+      case 'admin': return '#ea4335';
+      case 'moderator': return '#4285f4';
+      case 'expert': return '#34a853';
+      default: return darkMode ? '#9aa0a6' : '#5f6368';
     }
   };
 
-  // Get role background color
   const getRoleBgColor = (role?: string) => {
     switch (role?.toLowerCase()) {
-      case 'admin': return alpha('#f44336', 0.1);
-      case 'moderator': return alpha('#2196f3', 0.1);
-      case 'expert': return alpha('#4caf50', 0.1);
-      default: return alpha('#757575', 0.1);
+      case 'admin': return alpha('#ea4335', darkMode ? 0.2 : 0.1);
+      case 'moderator': return alpha('#4285f4', darkMode ? 0.2 : 0.1);
+      case 'expert': return alpha('#34a853', darkMode ? 0.2 : 0.1);
+      default: return alpha(darkMode ? '#9aa0a6' : '#5f6368', darkMode ? 0.2 : 0.1);
     }
   };
 
@@ -233,10 +226,11 @@ export default function PostCard({
         mb: compact ? 1 : 2,
         borderRadius: 2,
         border: post.isPinned ? '2px solid' : '1px solid',
-        borderColor: post.isPinned ? 'primary.main' : 'divider',
+        borderColor: post.isPinned ? '#fbbc04' : (darkMode ? '#3c4043' : '#dadce0'),
+        bgcolor: darkMode ? '#303134' : '#ffffff',
         position: 'relative',
         '&:hover': {
-          boxShadow: 2,
+          boxShadow: darkMode ? 0 : 2,
           transform: 'translateY(-2px)',
           transition: 'all 0.2s ease-in-out',
         },
@@ -246,12 +240,14 @@ export default function PostCard({
         <Chip
           label="Pinned"
           size="small"
-          color="primary"
           sx={{
             position: 'absolute',
             top: 12,
             right: 12,
             zIndex: 1,
+            bgcolor: '#fbbc04',
+            color: '#202124',
+            fontWeight: 500,
           }}
         />
       )}
@@ -260,12 +256,14 @@ export default function PostCard({
         <Chip
           label="Solved"
           size="small"
-          color="success"
           sx={{
             position: 'absolute',
             top: 12,
             right: post.isPinned ? 80 : 12,
             zIndex: 1,
+            bgcolor: '#34a853',
+            color: 'white',
+            fontWeight: 500,
           }}
         />
       )}
@@ -280,7 +278,7 @@ export default function PostCard({
               <Avatar
                 src={post.author.avatar}
                 sx={{
-                  bgcolor: (theme) => theme.palette.primary.main,
+                  bgcolor: '#4285f4',
                   cursor: 'pointer',
                   '&:hover': {
                     transform: 'scale(1.1)',
@@ -295,24 +293,29 @@ export default function PostCard({
         }
         action={
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Post Category */}
             {post.category && !compact && (
               <Chip
                 label={post.category}
                 size="small"
                 sx={{
-                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                  color: 'primary.main',
+                  bgcolor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
+                  color: '#4285f4',
                   fontWeight: 500,
+                  borderColor: darkMode ? '#5f6368' : '#dadce0',
                 }}
               />
             )}
             
-            {/* More Menu */}
             <IconButton
               aria-label="settings"
               onClick={handleMenuClick}
               size="small"
+              sx={{
+                color: darkMode ? '#9aa0a6' : '#5f6368',
+                '&:hover': {
+                  backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
+                },
+              }}
             >
               <MoreVertIcon />
             </IconButton>
@@ -324,20 +327,26 @@ export default function PostCard({
               PaperProps={{
                 sx: {
                   minWidth: 150,
+                  bgcolor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 },
               }}
             >
               <MenuItem onClick={handleShare}>
-                <ShareIcon fontSize="small" sx={{ mr: 1 }} />
-                Share
+                <ShareIcon fontSize="small" sx={{ mr: 1, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                  Share
+                </Typography>
               </MenuItem>
               {onEdit && (
                 <MenuItem onClick={handleEdit}>
-                  Edit
+                  <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                    Edit
+                  </Typography>
                 </MenuItem>
               )}
               {onDelete && (
-                <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+                <MenuItem onClick={handleDelete} sx={{ color: '#ea4335' }}>
                   Delete
                 </MenuItem>
               )}
@@ -349,7 +358,13 @@ export default function PostCard({
             <Typography 
               variant="subtitle1" 
               fontWeight={600}
-              sx={{ cursor: 'pointer' }}
+              sx={{ 
+                cursor: 'pointer',
+                color: darkMode ? '#e8eaed' : '#202124',
+                '&:hover': {
+                  color: '#4285f4',
+                },
+              }}
               onClick={handleViewAuthorProfile}
             >
               {post.author.name}
@@ -363,6 +378,7 @@ export default function PostCard({
                   color: getRoleColor(post.author.role),
                   fontSize: '0.7rem',
                   height: 20,
+                  borderColor: darkMode ? '#5f6368' : '#dadce0',
                 }}
               />
             )}
@@ -370,24 +386,24 @@ export default function PostCard({
         }
         subheader={
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5 }}>
-            <TimeIcon fontSize="inherit" sx={{ fontSize: 14 }} />
-            <Typography variant="caption" color="text.secondary">
+            <TimeIcon fontSize="inherit" sx={{ fontSize: 14, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               {formatDate(post.createdAt)}
             </Typography>
             {post.updatedAt && post.updatedAt !== post.createdAt && (
               <>
-                <Typography variant="caption" color="text.secondary">•</Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>•</Typography>
+                <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                   Updated {formatDate(post.updatedAt)}
                 </Typography>
               </>
             )}
             {!compact && (
               <>
-                <Typography variant="caption" color="text.secondary">•</Typography>
+                <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>•</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <VisibilityIcon fontSize="inherit" sx={{ fontSize: 14 }} />
-                  <Typography variant="caption" color="text.secondary">
+                  <VisibilityIcon fontSize="inherit" sx={{ fontSize: 14, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                     {post.views.toLocaleString()} views
                   </Typography>
                 </Box>
@@ -410,8 +426,9 @@ export default function PostCard({
           gutterBottom
           sx={{
             cursor: 'pointer',
+            color: darkMode ? '#e8eaed' : '#202124',
             '&:hover': {
-              color: 'primary.main',
+              color: '#4285f4',
             },
           }}
           onClick={handleViewPost}
@@ -422,14 +439,13 @@ export default function PostCard({
         {!compact && post.excerpt && (
           <Typography 
             variant="body2" 
-            color="text.secondary" 
-            paragraph
             sx={{
               cursor: 'pointer',
               display: '-webkit-box',
               WebkitLineClamp: 3,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
+              color: darkMode ? '#9aa0a6' : '#5f6368',
             }}
             onClick={handleViewPost}
           >
@@ -437,17 +453,19 @@ export default function PostCard({
           </Typography>
         )}
 
-        {/* Tags */}
         {post.tags && post.tags.length > 0 && !compact && (
           <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'wrap', gap: 1 }}>
             {post.tags.slice(0, 3).map((tag, index) => (
               <Chip
                 key={index}
-                icon={<TagIcon fontSize="small" />}
+                icon={<TagIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />}
                 label={tag}
                 size="small"
                 variant="outlined"
                 sx={{
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  borderColor: darkMode ? '#5f6368' : '#dadce0',
                   '& .MuiChip-icon': {
                     fontSize: 14,
                   },
@@ -459,6 +477,11 @@ export default function PostCard({
                 label={`+${post.tags.length - 3}`}
                 size="small"
                 variant="outlined"
+                sx={{
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  borderColor: darkMode ? '#5f6368' : '#dadce0',
+                }}
               />
             )}
           </Stack>
@@ -467,30 +490,31 @@ export default function PostCard({
 
       {showActions && (
         <>
-          <Divider />
+          <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
           <CardActions sx={{ px: 2, py: compact ? 0.5 : 1 }}>
             <Box sx={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-              {/* Like Button */}
               <Tooltip title={liked ? "Unlike" : "Like"}>
                 <Button
                   size="small"
                   startIcon={liked ? <ThumbUpIcon /> : <ThumbUpOutlinedIcon />}
                   onClick={handleLike}
                   sx={{
-                    color: liked ? 'primary.main' : 'text.secondary',
+                    color: liked ? '#ea4335' : (darkMode ? '#9aa0a6' : '#5f6368'),
                     minWidth: 'auto',
                     px: 1,
+                    '&:hover': {
+                      backgroundColor: alpha('#ea4335', darkMode ? 0.1 : 0.05),
+                    },
                   }}
                 >
                   {likeCount > 0 && (
-                    <Typography variant="body2" sx={{ ml: 0.5 }}>
+                    <Typography variant="body2" sx={{ ml: 0.5, color: darkMode ? '#e8eaed' : '#202124' }}>
                       {likeCount}
                     </Typography>
                   )}
                 </Button>
               </Tooltip>
 
-              {/* Comment Button */}
               <Tooltip title="Comment">
                 <Button
                   size="small"
@@ -503,49 +527,63 @@ export default function PostCard({
                     }
                   }}
                   sx={{
-                    color: 'text.secondary',
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
                     minWidth: 'auto',
                     px: 1,
+                    '&:hover': {
+                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                    },
                   }}
                 >
                   {post.commentCount > 0 && (
-                    <Typography variant="body2" sx={{ ml: 0.5 }}>
+                    <Typography variant="body2" sx={{ ml: 0.5, color: darkMode ? '#e8eaed' : '#202124' }}>
                       {post.commentCount}
                     </Typography>
                   )}
                 </Button>
               </Tooltip>
 
-              {/* Bookmark Button */}
               <Tooltip title={bookmarked ? "Remove bookmark" : "Bookmark"}>
                 <IconButton
                   size="small"
                   onClick={handleBookmark}
                   sx={{
-                    color: bookmarked ? 'secondary.main' : 'text.secondary',
+                    color: bookmarked ? '#4285f4' : (darkMode ? '#9aa0a6' : '#5f6368'),
+                    '&:hover': {
+                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                    },
                   }}
                 >
                   {bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
                 </IconButton>
               </Tooltip>
 
-              {/* Share Button */}
               <Tooltip title="Share">
                 <IconButton
                   size="small"
                   onClick={handleShare}
-                  sx={{ color: 'text.secondary' }}
+                  sx={{ 
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                    '&:hover': {
+                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                    },
+                  }}
                 >
                   <ShareIcon />
                 </IconButton>
               </Tooltip>
 
-              {/* View Post Button */}
               {!compact && (
                 <Button
                   size="small"
                   onClick={handleViewPost}
-                  sx={{ ml: 'auto' }}
+                  sx={{ 
+                    ml: 'auto',
+                    color: '#4285f4',
+                    '&:hover': {
+                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                    },
+                  }}
                 >
                   Read More
                 </Button>

@@ -1,10 +1,11 @@
-// hooks/useSubscription.ts - FIXED VERSION
+// hooks/useSubscription.ts - UPDATED VERSION
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from './useAuth';
 
 interface SubscriptionFeatures {
   maxCustomers: number;
   maxProducts: number;
+  maxEmployees: number;
   maxInvoices: number;
   maxStorageMB: number;
   [key: string]: number;
@@ -22,8 +23,9 @@ interface Subscription {
 }
 
 interface Usage {
-  products: number;
   customers: number;
+  products: number;
+  employees: number;
   invoices: number;
   storageMB: number;
 }
@@ -86,8 +88,28 @@ export const useSubscription = () => {
       console.log('✅ Subscription data received:', data);
       
       if (data.success) {
-        setSubscription(data.data);
-        setUsage(data.data.usage);
+        // Ensure the data has employees field
+        const subscriptionData = {
+          ...data.data,
+          limits: {
+            maxCustomers: data.data.limits?.maxCustomers || 0,
+            maxProducts: data.data.limits?.maxProducts || 0,
+            maxEmployees: data.data.limits?.maxEmployees || 0,
+            maxInvoices: data.data.limits?.maxInvoices || 0,
+            maxStorageMB: data.data.limits?.maxStorageMB || 0,
+          }
+        };
+        
+        const usageData = {
+          customers: data.data.usage?.customers || 0,
+          products: data.data.usage?.products || 0,
+          employees: data.data.usage?.employees || 0,
+          invoices: data.data.usage?.invoices || 0,
+          storageMB: data.data.usage?.storageMB || 0,
+        };
+        
+        setSubscription(subscriptionData);
+        setUsage(usageData);
         hasFetchedRef.current = true;
       } else {
         throw new Error(data.message || 'Failed to fetch subscription');
@@ -99,7 +121,7 @@ export const useSubscription = () => {
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [user]); // Only depend on user
+  }, [user]);
 
   // Fetch subscription only when user changes
   useEffect(() => {
@@ -132,7 +154,8 @@ export const useSubscription = () => {
     if (!subscription || !usage) return true; // Allow if no data
     
     const currentUsage = usage[resource] || 0;
-    const limit = subscription.limits[resource] || 0;
+    const limitKey = `max${resource.charAt(0).toUpperCase() + resource.slice(1)}` as keyof SubscriptionFeatures;
+    const limit = subscription.limits[limitKey] || 0;
     
     return currentUsage + amount <= limit;
   }, [subscription, usage]);
@@ -141,7 +164,8 @@ export const useSubscription = () => {
     if (!subscription || !usage) return 0;
     
     const currentUsage = usage[resource] || 0;
-    const limit = subscription.limits[resource] || 1;
+    const limitKey = `max${resource.charAt(0).toUpperCase() + resource.slice(1)}` as keyof SubscriptionFeatures;
+    const limit = subscription.limits[limitKey] || 1;
     
     return Math.min((currentUsage / limit) * 100, 100);
   }, [subscription, usage]);
@@ -150,13 +174,19 @@ export const useSubscription = () => {
     if (!subscription || !usage) return 0;
     
     const currentUsage = usage[resource] || 0;
-    const limit = subscription.limits[resource] || 0;
+    const limitKey = `max${resource.charAt(0).toUpperCase() + resource.slice(1)}` as keyof SubscriptionFeatures;
+    const limit = subscription.limits[limitKey] || 0;
     
     return Math.max(limit - currentUsage, 0);
   }, [subscription, usage]);
 
+  const canAddItem = useCallback((resource: keyof Usage, amount: number = 1): boolean => {
+    return checkLimit(resource, amount);
+  }, [checkLimit]);
+
   const canAddCustomer = useMemo(() => checkLimit('customers'), [checkLimit]);
   const canAddProduct = useMemo(() => checkLimit('products'), [checkLimit]);
+  const canAddEmployee = useMemo(() => checkLimit('employees'), [checkLimit]);
   const canAddInvoice = useMemo(() => checkLimit('invoices'), [checkLimit]);
 
   return {
@@ -168,8 +198,10 @@ export const useSubscription = () => {
     checkLimit,
     getUsagePercentage,
     getRemaining,
+    canAddItem,
     canAddCustomer,
     canAddProduct,
+    canAddEmployee,
     canAddInvoice,
   };
 };

@@ -1,4 +1,3 @@
-// components/community/UserPublicProfile.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -29,6 +28,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Breadcrumbs,
+  Link as MuiLink,
 } from "@mui/material";
 import {
   People as PeopleIcon,
@@ -49,9 +50,13 @@ import {
   Message as MessageIcon,
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
+  Home as HomeIcon,
+  Tag as TagIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import FollowDialog from "@/components/community/FollowDialog";
+import Link from "next/link";
+import { useTheme } from "@mui/material/styles";
 
 interface CommunityProfile {
   _id: string;
@@ -160,7 +165,6 @@ interface UserCardProps {
   onViewProfile?: (username: string) => void;
 }
 
-// Update the UserCard component inside UserPublicProfile.tsx
 const UserCard: React.FC<UserCardProps> = ({
   user,
   isFollowing = false,
@@ -168,33 +172,44 @@ const UserCard: React.FC<UserCardProps> = ({
   onUnfollow,
   onViewProfile,
 }) => {
-  // Debug the user data
-  console.log("UserCard rendering user:", {
-    username: user.username,
-    isFollowing: user.isFollowing || isFollowing,
-    followerCount: user.followerCount,
-    postCount: user.communityStats?.totalPosts,
-  });
-
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+  
   return (
-    <Card sx={{ height: "100%", borderRadius: 2 }}>
+    <Card sx={{ 
+      height: "100%", 
+      borderRadius: 2,
+      bgcolor: darkMode ? '#303134' : '#ffffff',
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+    }}>
       <CardContent>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-          <Avatar src={user.avatar} sx={{ width: 50, height: 50 }}>
+          <Avatar src={user.avatar} sx={{ 
+            width: 50, 
+            height: 50,
+            border: `2px solid ${darkMode ? '#202124' : '#ffffff'}`,
+          }}>
             {(user.userId?.name || user.username)?.charAt(0).toUpperCase()}
           </Avatar>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="body1" fontWeight={600}>
+            <Typography variant="body1" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               {user.userId?.name || user.username}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               @{user.username}
             </Typography>
           </Box>
         </Box>
 
         {user.bio && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography variant="body2" sx={{ 
+            mb: 2,
+            color: darkMode ? '#e8eaed' : '#202124',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}>
             {user.bio.length > 100
               ? user.bio.substring(0, 100) + "..."
               : user.bio}
@@ -203,18 +218,18 @@ const UserCard: React.FC<UserCardProps> = ({
 
         <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
           <Box>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               Followers
             </Typography>
-            <Typography variant="body2" fontWeight={600}>
+            <Typography variant="body2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               {formatNumber(user.followerCount || 0)}
             </Typography>
           </Box>
           <Box>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               Posts
             </Typography>
-            <Typography variant="body2" fontWeight={600}>
+            <Typography variant="body2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               {formatNumber(user.communityStats?.totalPosts || 0)}
             </Typography>
           </Box>
@@ -230,6 +245,11 @@ const UserCard: React.FC<UserCardProps> = ({
                   label={category}
                   size="small"
                   variant="outlined"
+                  sx={{
+                    bgcolor: darkMode ? '#303134' : '#f1f3f4',
+                    color: '#4285f4',
+                    borderColor: darkMode ? '#5f6368' : '#dadce0',
+                  }}
                 />
               ))}
           </Box>
@@ -247,6 +267,21 @@ const UserCard: React.FC<UserCardProps> = ({
               onFollow(user.username);
             }
           }}
+          sx={{
+            ...((user.isFollowing || isFollowing) ? {
+              borderColor: darkMode ? '#5f6368' : '#dadce0',
+              color: darkMode ? '#e8eaed' : '#202124',
+              '&:hover': {
+                borderColor: '#4285f4',
+                backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+              },
+            } : {
+              backgroundColor: '#4285f4',
+              '&:hover': {
+                backgroundColor: '#3367d6',
+              },
+            }),
+          }}
         >
           {user.isFollowing || isFollowing ? "Following" : "Follow"}
         </Button>
@@ -256,6 +291,14 @@ const UserCard: React.FC<UserCardProps> = ({
             variant="outlined"
             fullWidth
             onClick={() => onViewProfile(user.username)}
+            sx={{
+              borderColor: darkMode ? '#5f6368' : '#dadce0',
+              color: darkMode ? '#e8eaed' : '#202124',
+              '&:hover': {
+                borderColor: '#4285f4',
+                backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+              },
+            }}
           >
             View Profile
           </Button>
@@ -277,14 +320,22 @@ const PostCard: React.FC<PostCardProps> = ({
   showActions = true,
   onViewPost,
 }) => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+  
   return (
-    <Card sx={{ mb: 2, borderRadius: 2 }}>
+    <Card sx={{ 
+      mb: 2, 
+      borderRadius: 2,
+      bgcolor: darkMode ? '#303134' : '#ffffff',
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+    }}>
       <CardContent>
-        <Typography variant="h6" fontWeight={600} gutterBottom>
+        <Typography variant="h6" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
           {post.title}
         </Typography>
         {post.excerpt && (
-          <Typography variant="body2" color="text.secondary" paragraph>
+          <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} paragraph>
             {post.excerpt}
           </Typography>
         )}
@@ -297,17 +348,35 @@ const PostCard: React.FC<PostCardProps> = ({
           }}
         >
           <Box sx={{ display: "flex", gap: 2 }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               👍 {post.likeCount || 0}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               💬 {post.commentCount || 0}
             </Typography>
             {post.isSolved && (
-              <Chip label="Solved" size="small" color="success" />
+              <Chip 
+                label="Solved" 
+                size="small" 
+                sx={{
+                  bgcolor: '#34a853',
+                  color: 'white',
+                  fontWeight: 500,
+                }}
+              />
             )}
           </Box>
-          <Button size="small" onClick={() => onViewPost?.(post._id)}>
+          <Button 
+            size="small" 
+            onClick={() => onViewPost?.(post._id)}
+            sx={{
+              color: '#4285f4',
+              textTransform: 'none',
+              '&:hover': {
+                backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+              },
+            }}
+          >
             View
           </Button>
         </Box>
@@ -322,6 +391,9 @@ export default function UserPublicProfile({
   username,
 }: UserPublicProfileProps) {
   const router = useRouter();
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+  
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
@@ -357,7 +429,6 @@ export default function UserPublicProfile({
           const data = await response.json();
           if (data.success) {
             const currentUserProfile = data.data;
-            // Check if the viewed profile is the same as current user's profile
             const isSameUser =
               currentUserProfile.username === profile.username ||
               currentUserProfile._id === profile._id ||
@@ -376,9 +447,6 @@ export default function UserPublicProfile({
     checkOwnProfile();
   }, [profile]);
 
-  // Safely extract user information
-  // In UserPublicProfile component, update the getUserInfo function:
-
   const getUserInfo = () => {
     if (!profile)
       return {
@@ -391,7 +459,6 @@ export default function UserPublicProfile({
       };
 
     if (typeof profile.userId === "string") {
-      // Try to find user info from followers/following lists
       const userFromList =
         followers.find((f) => f._id === profile.userId) ||
         following.find((f) => f._id === profile.userId);
@@ -448,44 +515,26 @@ export default function UserPublicProfile({
     setFollowDialogOpen(true);
   };
 
-  // components/community/UserPublicProfile.tsx
-  // Update the fetchFollowers and fetchFollowing functions:
-
-  // Fetch followers with proper data
-  // In UserPublicProfile component, add debug logging:
   const fetchFollowers = async () => {
     if (!profile) return;
 
     try {
       setConnectionsLoading(true);
-      console.log("Fetching followers for:", profile.username);
-
       const response = await fetch(
         `/api/community/profile/${profile.username}/connections?type=followers&limit=100`,
         { credentials: "include" },
       );
 
-      console.log("Response status:", response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log("Followers API response:", data);
-
         if (data.success) {
           const users = data.data?.users || [];
-          console.log("Received users:", users.length);
-          console.log("First user data:", users[0]);
-
           setFollowers(users);
 
-          // Update follower count if different
           if (data.data?.profile?.followerCount !== undefined) {
             setFollowerCount(data.data.profile.followerCount);
           }
         }
-      } else {
-        const errorText = await response.text();
-        console.error("API error:", errorText);
       }
     } catch (error) {
       console.error("Failed to fetch followers:", error);
@@ -494,7 +543,6 @@ export default function UserPublicProfile({
     }
   };
 
-  // Fetch following with proper data
   const fetchFollowing = async () => {
     if (!profile) return;
 
@@ -509,9 +557,6 @@ export default function UserPublicProfile({
         const data = await response.json();
         if (data.success) {
           const users = data.data?.users || [];
-          console.log("Following data received:", users);
-
-          // Transform users to match the expected format
           const transformedUsers = users.map((user: any) => ({
             _id: user._id,
             username: user.username,
@@ -546,7 +591,6 @@ export default function UserPublicProfile({
     }
   };
 
-  // Handle follow/unfollow toggle
   const handleFollowToggle = async () => {
     if (!profile || isOwnProfile) return;
 
@@ -565,78 +609,41 @@ export default function UserPublicProfile({
       });
 
       if (!response.ok) {
-        // Try to parse error message from response
         let errorMessage = `HTTP error! status: ${response.status}`;
-
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
         } catch {
-          // If response is not JSON, try to get text
           try {
             const errorText = await response.text();
             if (errorText) errorMessage = `${errorMessage}: ${errorText}`;
           } catch {
-            // Ignore if can't get text
           }
         }
-
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      console.log("Follow/Unfollow response:", data);
-
       if (data.success) {
         setIsFollowing(!isFollowing);
         if (data.data?.followerCount !== undefined) {
           setFollowerCount(data.data.followerCount);
         }
 
-        // Show success message
-        const action = isFollowing ? "unfollowed" : "followed";
-        console.log(`Successfully ${action} ${profile.username}`);
-
-        // Refresh followers list if on followers tab
         if (tabValue === 1) {
           fetchFollowers();
         }
-
-        // Optionally show a toast notification
-        // toast.success(`Successfully ${action} ${profile.username}`);
       } else {
         throw new Error(data.message || "Failed to follow/unfollow");
       }
     } catch (error: any) {
       console.error("Follow toggle error:", error);
-
-      // More user-friendly error messages
-      let userErrorMessage = "Operation failed. Please try again.";
-
-      if (error.message.includes("405")) {
-        userErrorMessage =
-          "Unfollow action is not available. Please refresh the page.";
-      } else if (error.message.includes("401")) {
-        userErrorMessage = "Please login to follow users.";
-      } else if (error.message.includes("404")) {
-        userErrorMessage = "User not found.";
-      } else if (error.message.includes("400")) {
-        userErrorMessage = "Cannot perform this action.";
-      } else {
-        userErrorMessage = error.message || userErrorMessage;
-      }
-
-      // Use alert or your preferred notification system
-      alert(`Error: ${userErrorMessage}`);
-
-      // Optionally revert UI state on error
-      // setIsFollowing(isFollowing); // Keep original state
+      alert(`Error: ${error.message}`);
     } finally {
       setFollowLoading(false);
     }
   };
 
-  // Handle follow user in the list
   const handleFollowUser = async (username: string) => {
     try {
       const response = await fetch(
@@ -650,7 +657,6 @@ export default function UserPublicProfile({
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // Refresh the list
           fetchFollowers();
         }
       }
@@ -659,7 +665,6 @@ export default function UserPublicProfile({
     }
   };
 
-  // Handle unfollow user in the list
   const handleUnfollowUser = async (username: string) => {
     try {
       const response = await fetch(
@@ -673,7 +678,6 @@ export default function UserPublicProfile({
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // Refresh the list
           fetchFollowers();
         }
       }
@@ -682,18 +686,11 @@ export default function UserPublicProfile({
     }
   };
 
-  // Handle send message
   const handleSendMessage = async () => {
     if (!messageContent.trim() || sendingMessage) return;
 
     setSendingMessage(true);
     try {
-      console.log(
-        "Sending message to:",
-        userInfo._id,
-        "Content:",
-        messageContent,
-      );
       alert("Message sent successfully!");
       setMessageContent("");
       setMessageDialogOpen(false);
@@ -726,7 +723,6 @@ export default function UserPublicProfile({
     setTabValue(newValue);
   };
 
-  // Check message permissions
   const canMessage = () => {
     if (!profile.preferences || isOwnProfile) return false;
     if (profile.preferences.allowMessages === "none") return false;
@@ -735,298 +731,368 @@ export default function UserPublicProfile({
     return true;
   };
 
-  // If no profile, show error
   if (!profile) {
     return (
-      <Container maxWidth="lg" sx={{ py: 8 }}>
-        <Alert severity="error" sx={{ mb: 3 }}>
-          User profile not found
-        </Alert>
-        <Button startIcon={<ArrowBackIcon />} onClick={() => router.back()}>
-          Go Back
-        </Button>
-      </Container>
+      <Box sx={{ 
+        backgroundColor: darkMode ? '#202124' : '#ffffff', 
+        minHeight: '100vh',
+        py: 4,
+      }}>
+        <Container maxWidth="lg">
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 3,
+              borderRadius: 2,
+              bgcolor: darkMode ? '#3c1e1e' : '#fdecea',
+            }}
+          >
+            User profile not found
+          </Alert>
+          <Button 
+            startIcon={<ArrowBackIcon />} 
+            onClick={() => router.back()}
+            sx={{
+              color: '#4285f4',
+              '&:hover': {
+                backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+              },
+            }}
+          >
+            Go Back
+          </Button>
+        </Container>
+      </Box>
     );
   }
 
   return (
     <>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        {/* Back Button */}
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => router.back()}
-          sx={{ mb: 2 }}
-        >
-          Back
-        </Button>
+      <Box sx={{ 
+        backgroundColor: darkMode ? '#202124' : '#ffffff', 
+        minHeight: '100vh',
+        py: 4,
+      }}>
+        <Container maxWidth="lg">
+          {/* Breadcrumbs */}
+          <Breadcrumbs sx={{ mb: 3 }}>
+            <MuiLink
+              component={Link}
+              href="/dashboard"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                textDecoration: 'none',
+                color: darkMode ? '#9aa0a6' : '#5f6368',
+                '&:hover': { color: darkMode ? '#8ab4f8' : '#4285f4' },
+              }}
+            >
+              <HomeIcon sx={{ mr: 0.5, fontSize: 16 }} />
+              Dashboard
+            </MuiLink>
+            <MuiLink
+              component={Link}
+              href="/community"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                textDecoration: 'none',
+                color: darkMode ? '#9aa0a6' : '#5f6368',
+                '&:hover': { color: darkMode ? '#8ab4f8' : '#4285f4' },
+              }}
+            >
+              Community
+            </MuiLink>
+            <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+              Profile
+            </Typography>
+          </Breadcrumbs>
 
-        {/* Profile Header */}
-        <Paper
-          sx={{
-            borderRadius: 3,
-            overflow: "hidden",
-            mb: 4,
-            position: "relative",
-          }}
-        >
-          {/* Cover Image */}
-          <Box
-            sx={{
-              height: 200,
-              backgroundColor: (theme) =>
-                alpha(theme.palette.primary.main, 0.1),
-              backgroundImage: profile.coverImage
-                ? `url(${profile.coverImage})`
-                : "none",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              position: "relative",
+          {/* Back Button */}
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => router.back()}
+            sx={{ 
+              mb: 2,
+              color: '#4285f4',
+              '&:hover': {
+                backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+              },
             }}
           >
+            Back
+          </Button>
+
+          {/* Profile Header */}
+          <Paper
+            sx={{
+              borderRadius: 2,
+              overflow: "hidden",
+              mb: 4,
+              position: "relative",
+              bgcolor: darkMode ? '#202124' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}
+          >
+            {/* Cover Image */}
             <Box
               sx={{
-                position: "absolute",
-                bottom: -60,
-                left: 40,
-                display: "flex",
-                alignItems: "flex-end",
-                gap: 3,
+                height: 200,
+                backgroundColor: darkMode ? '#303134' : alpha('#4285f4', 0.1),
+                backgroundImage: profile.coverImage
+                  ? `url(${profile.coverImage})`
+                  : "none",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                position: "relative",
               }}
             >
-              <Badge
-                overlap="circular"
-                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                badgeContent={
-                  profile.verificationBadge && (
-                    <VerifiedIcon
-                      sx={{
-                        color: "#1DA1F2",
-                        fontSize: 28,
-                        bgcolor: "white",
-                        borderRadius: "50%",
-                        p: 0.5,
-                      }}
-                    />
-                  )
-                }
-              >
-                <Avatar
-                  sx={{
-                    width: 120,
-                    height: 120,
-                    fontSize: 48,
-                    border: "4px solid white",
-                    boxShadow: 3,
-                  }}
-                  src={profile.avatar}
-                >
-                  {userInfo.name?.charAt(0).toUpperCase()}
-                </Avatar>
-              </Badge>
-
               <Box
                 sx={{
-                  mb: 2,
-                  color: "white",
-                  textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+                  position: "absolute",
+                  bottom: -60,
+                  left: { xs: 20, md: 40 },
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: 3,
+                  flexDirection: { xs: 'column', sm: 'row' },
                 }}
               >
-                <Typography variant="h4" fontWeight={700} gutterBottom>
-                  {userInfo.name}
-                  {profile.isVerified && (
-                    <VerifiedIcon
-                      sx={{
-                        color: "#1DA1F2",
-                        ml: 1,
-                        verticalAlign: "middle",
-                        fontSize: 28,
-                      }}
-                    />
-                  )}
-                </Typography>
-                <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                  @{profile.username}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
+                <Badge
+                  overlap="circular"
+                  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                  badgeContent={
+                    profile.verificationBadge && (
+                      <VerifiedIcon
+                        sx={{
+                          color: "#4285f4",
+                          fontSize: 28,
+                          bgcolor: darkMode ? '#202124' : '#ffffff',
+                          borderRadius: "50%",
+                          p: 0.5,
+                        }}
+                      />
+                    )
+                  }
+                >
+                  <Avatar
+                    sx={{
+                      width: { xs: 100, sm: 120 },
+                      height: { xs: 100, sm: 120 },
+                      fontSize: 48,
+                      border: "4px solid",
+                      borderColor: darkMode ? '#202124' : '#ffffff',
+                      boxShadow: 3,
+                    }}
+                    src={profile.avatar}
+                  >
+                    {userInfo.name?.charAt(0).toUpperCase()}
+                  </Avatar>
+                </Badge>
 
-          {/* Profile Info */}
-          <Box sx={{ pt: 8, px: 4, pb: 3 }}>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                flexWrap: "wrap",
-                gap: 2,
-              }}
-            >
-              <Box sx={{ flex: 1, minWidth: "300px" }}>
-                {/* Bio */}
-                {profile.bio && (
-                  <Typography variant="body1" paragraph sx={{ maxWidth: 800 }}>
-                    {profile.bio}
-                  </Typography>
-                )}
-
-                {/* Details */}
                 <Box
                   sx={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 3,
-                    mb: 3,
+                    mb: 2,
+                    color: "white",
+                    textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+                    textAlign: { xs: 'center', sm: 'left' },
                   }}
                 >
-                  {profile.location && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <LocationIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        {profile.location}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {userInfo.shopName && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <BusinessIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        {userInfo.shopName}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CalendarIcon fontSize="small" color="action" />
-                    <Typography variant="body2" color="text.secondary">
-                      Joined{" "}
-                      {formatDate(
-                        profile.communityStats?.joinDate || profile._id,
-                      )}
-                    </Typography>
-                  </Box>
-
-                  {profile.website && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <LinkIcon fontSize="small" color="action" />
-                      <Typography
-                        variant="body2"
+                  <Typography variant="h4" fontWeight={700} gutterBottom>
+                    {userInfo.name}
+                    {profile.isVerified && (
+                      <VerifiedIcon
                         sx={{
-                          color: "primary.main",
-                          textDecoration: "underline",
-                          cursor: "pointer",
+                          color: "#4285f4",
+                          ml: 1,
+                          verticalAlign: "middle",
+                          fontSize: 28,
                         }}
-                        onClick={() => window.open(profile.website, "_blank")}
-                      >
-                        Website
+                      />
+                    )}
+                  </Typography>
+                  <Typography variant="h6" sx={{ opacity: 0.9 }}>
+                    @{profile.username}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Profile Info */}
+            <Box sx={{ pt: 8, px: { xs: 2, sm: 4 }, pb: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  flexWrap: "wrap",
+                  gap: 2,
+                }}
+              >
+                <Box sx={{ flex: 1, minWidth: "300px" }}>
+                  {/* Bio */}
+                  {profile.bio && (
+                    <Typography variant="body1" paragraph sx={{ 
+                      maxWidth: 800,
+                      color: darkMode ? '#e8eaed' : '#202124',
+                    }}>
+                      {profile.bio}
+                    </Typography>
+                  )}
+
+                  {/* Details */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 3,
+                      mb: 3,
+                    }}
+                  >
+                    {profile.location && (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <LocationIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                        <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          {profile.location}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {userInfo.shopName && (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <BusinessIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                        <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                          {userInfo.shopName}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <CalendarIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                      <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                        Joined{" "}
+                        {formatDate(
+                          profile.communityStats?.joinDate || profile._id,
+                        )}
                       </Typography>
                     </Box>
-                  )}
-                </Box>
 
-                {/* Social Links */}
-                {profile.socialLinks && (
-                  <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
-                    {profile.socialLinks.twitter && (
-                      <Tooltip title="Twitter">
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            window.open(profile.socialLinks!.twitter, "_blank")
-                          }
-                          sx={{ color: "#1DA1F2" }}
+                    {profile.website && (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <LinkIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "#4285f4",
+                            textDecoration: "underline",
+                            cursor: "pointer",
+                            '&:hover': {
+                              textDecoration: 'none',
+                            },
+                          }}
+                          onClick={() => window.open(profile.website, "_blank")}
                         >
-                          <TwitterIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    {profile.socialLinks.linkedin && (
-                      <Tooltip title="LinkedIn">
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            window.open(profile.socialLinks!.linkedin, "_blank")
-                          }
-                          sx={{ color: "#0077B5" }}
-                        >
-                          <LinkedInIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    {profile.socialLinks.instagram && (
-                      <Tooltip title="Instagram">
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            window.open(
-                              profile.socialLinks!.instagram,
-                              "_blank",
-                            )
-                          }
-                          sx={{ color: "#E4405F" }}
-                        >
-                          <InstagramIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    {profile.socialLinks.facebook && (
-                      <Tooltip title="Facebook">
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            window.open(profile.socialLinks!.facebook, "_blank")
-                          }
-                          sx={{ color: "#1877F2" }}
-                        >
-                          <FacebookIcon />
-                        </IconButton>
-                      </Tooltip>
+                          Website
+                        </Typography>
+                      </Box>
                     )}
                   </Box>
-                )}
 
-                {/* Badges */}
-                {profile.badges && profile.badges.length > 0 && (
-                  <Box sx={{ mb: 3 }}>
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={600}
-                      gutterBottom
-                    >
-                      Badges
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 1,
-                      }}
-                    >
-                      {profile.badges.map((badge, index) => (
-                        <Chip
-                          key={index}
-                          label={badge}
-                          size="small"
-                          color="secondary"
-                          variant="outlined"
-                        />
-                      ))}
+                  {/* Social Links */}
+                  {profile.socialLinks && (
+                    <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
+                      {profile.socialLinks.twitter && (
+                        <Tooltip title="Twitter">
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              window.open(profile.socialLinks!.twitter, "_blank")
+                            }
+                            sx={{ 
+                              color: "#1DA1F2",
+                              bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                              '&:hover': {
+                                bgcolor: darkMode ? '#3c4043' : '#f1f3f4',
+                              },
+                            }}
+                          >
+                            <TwitterIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {profile.socialLinks.linkedin && (
+                        <Tooltip title="LinkedIn">
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              window.open(profile.socialLinks!.linkedin, "_blank")
+                            }
+                            sx={{ 
+                              color: "#0077B5",
+                              bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                              '&:hover': {
+                                bgcolor: darkMode ? '#3c4043' : '#f1f3f4',
+                              },
+                            }}
+                          >
+                            <LinkedInIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {profile.socialLinks.instagram && (
+                        <Tooltip title="Instagram">
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              window.open(
+                                profile.socialLinks!.instagram,
+                                "_blank",
+                              )
+                            }
+                            sx={{ 
+                              color: "#E4405F",
+                              bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                              '&:hover': {
+                                bgcolor: darkMode ? '#3c4043' : '#f1f3f4',
+                              },
+                            }}
+                          >
+                            <InstagramIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {profile.socialLinks.facebook && (
+                        <Tooltip title="Facebook">
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              window.open(profile.socialLinks!.facebook, "_blank")
+                            }
+                            sx={{ 
+                              color: "#1877F2",
+                              bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                              '&:hover': {
+                                bgcolor: darkMode ? '#3c4043' : '#f1f3f4',
+                              },
+                            }}
+                          >
+                            <FacebookIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </Box>
-                  </Box>
-                )}
+                  )}
 
-                {/* Expert Categories */}
-                {profile.expertInCategories &&
-                  profile.expertInCategories.length > 0 && (
+                  {/* Badges */}
+                  {profile.badges && profile.badges.length > 0 && (
                     <Box sx={{ mb: 3 }}>
                       <Typography
                         variant="subtitle2"
                         fontWeight={600}
                         gutterBottom
+                        sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
                       >
-                        Expert In
+                        Badges
                       </Typography>
                       <Box
                         sx={{
@@ -1035,196 +1101,292 @@ export default function UserPublicProfile({
                           gap: 1,
                         }}
                       >
-                        {profile.expertInCategories.map((category, index) => (
+                        {profile.badges.map((badge, index) => (
                           <Chip
                             key={index}
-                            label={category}
+                            label={badge}
                             size="small"
-                            color="primary"
+                            sx={{
+                              bgcolor: darkMode ? '#303134' : '#f1f3f4',
+                              color: darkMode ? '#fbbc04' : '#f57c00',
+                              borderColor: darkMode ? '#5f6368' : '#dadce0',
+                            }}
                             variant="outlined"
                           />
                         ))}
                       </Box>
                     </Box>
                   )}
+
+                  {/* Expert Categories */}
+                  {profile.expertInCategories &&
+                    profile.expertInCategories.length > 0 && (
+                      <Box sx={{ mb: 3 }}>
+                        <Typography
+                          variant="subtitle2"
+                          fontWeight={600}
+                          gutterBottom
+                          sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+                        >
+                          Expert In
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 1,
+                          }}
+                        >
+                          {profile.expertInCategories.map((category, index) => (
+                            <Chip
+                              key={index}
+                              label={category}
+                              size="small"
+                              sx={{
+                                bgcolor: darkMode ? '#303134' : '#f1f3f4',
+                                color: '#4285f4',
+                                borderColor: darkMode ? '#5f6368' : '#dadce0',
+                              }}
+                              variant="outlined"
+                            />
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                </Box>
+
+                {/* Action Buttons */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 1,
+                  }}
+                >
+                  {!isOwnProfile && (
+                    <Button
+                      variant={isFollowing ? "outlined" : "contained"}
+                      onClick={handleFollowToggle}
+                      disabled={followLoading}
+                      startIcon={
+                        followLoading ? <CircularProgress size={20} /> : undefined
+                      }
+                      sx={{
+                        ...(isFollowing ? {
+                          borderColor: darkMode ? '#5f6368' : '#dadce0',
+                          color: darkMode ? '#e8eaed' : '#202124',
+                          '&:hover': {
+                            borderColor: '#4285f4',
+                            backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                          },
+                        } : {
+                          backgroundColor: '#4285f4',
+                          '&:hover': {
+                            backgroundColor: '#3367d6',
+                          },
+                          '&.Mui-disabled': {
+                            backgroundColor: darkMode ? '#303134' : '#f1f3f4',
+                            color: darkMode ? '#5f6368' : '#bdc1c6',
+                          },
+                        }),
+                      }}
+                    >
+                      {followLoading
+                        ? "..."
+                        : isFollowing
+                          ? "Following"
+                          : "Follow"}
+                    </Button>
+                  )}
+
+                  {isOwnProfile && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<EditIcon />}
+                      onClick={() => router.push("/community/profile/edit")}
+                      sx={{
+                        borderColor: darkMode ? '#5f6368' : '#dadce0',
+                        color: darkMode ? '#e8eaed' : '#202124',
+                        '&:hover': {
+                          borderColor: '#4285f4',
+                          backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                        },
+                      }}
+                    >
+                      Edit Profile
+                    </Button>
+                  )}
+
+                  {canMessage() && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<MessageIcon />}
+                      onClick={() => setMessageDialogOpen(true)}
+                      sx={{
+                        borderColor: darkMode ? '#5f6368' : '#dadce0',
+                        color: darkMode ? '#e8eaed' : '#202124',
+                        '&:hover': {
+                          borderColor: '#4285f4',
+                          backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                        },
+                      }}
+                    >
+                      Message
+                    </Button>
+                  )}
+
+                  {!isOwnProfile && userInfo.email && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<EmailIcon />}
+                      onClick={() =>
+                        (window.location.href = `mailto:${userInfo.email}`)
+                      }
+                      sx={{
+                        borderColor: darkMode ? '#5f6368' : '#dadce0',
+                        color: darkMode ? '#e8eaed' : '#202124',
+                        '&:hover': {
+                          borderColor: '#4285f4',
+                          backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                        },
+                      }}
+                    >
+                      Email
+                    </Button>
+                  )}
+                </Box>
               </Box>
 
-              {/* Action Buttons */}
-              <Box
+              {/* Stats Bar */}
+              <Paper
                 sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 1,
+                  p: 3,
+                  borderRadius: 2,
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  border: "1px solid",
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  mt: 3,
                 }}
               >
-                {/* Only show follow button if it's NOT the current user's own profile */}
-                {!isOwnProfile && (
-                  <Button
-                    variant={isFollowing ? "outlined" : "contained"}
-                    onClick={handleFollowToggle}
-                    disabled={followLoading}
-                    startIcon={
-                      followLoading ? <CircularProgress size={20} /> : undefined
-                    }
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 3,
+                  }}
+                >
+                  {/* Followers - Clickable */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      minWidth: "120px",
+                      textAlign: "center",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                      },
+                    }}
+                    onClick={() => handleOpenFollowDialog("followers")}
                   >
-                    {followLoading
-                      ? "..."
-                      : isFollowing
-                        ? "Following"
-                        : "Follow"}
-                  </Button>
-                )}
+                    <Typography
+                      variant="h4"
+                      fontWeight={700}
+                      sx={{
+                        color: "#4285f4",
+                        "&:hover": {
+                          textDecoration: "underline",
+                        },
+                      }}
+                    >
+                      {formatNumber(followerCount)}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Followers
+                    </Typography>
+                  </Box>
 
-                {/* If it's own profile, show edit button */}
-                {isOwnProfile && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<EditIcon />}
-                    onClick={() => router.push("/community/profile/edit")}
+                  {/* Following - Clickable */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      minWidth: "120px",
+                      textAlign: "center",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                      },
+                    }}
+                    onClick={() => handleOpenFollowDialog("following")}
                   >
-                    Edit Profile
-                  </Button>
-                )}
+                    <Typography
+                      variant="h4"
+                      fontWeight={700}
+                      sx={{
+                        color: "#4285f4",
+                        "&:hover": {
+                          textDecoration: "underline",
+                        },
+                      }}
+                    >
+                      {formatNumber(profile.followingCount)}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Following
+                    </Typography>
+                  </Box>
 
-                {/* Message button - only show if not own profile and user allows messages */}
-                {canMessage() && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<MessageIcon />}
-                    onClick={() => setMessageDialogOpen(true)}
-                  >
-                    Message
-                  </Button>
-                )}
+                  {/* Posts */}
+                  <Box sx={{ flex: 1, minWidth: "120px", textAlign: "center" }}>
+                    <Typography variant="h4" fontWeight={700} sx={{ color: "#4285f4" }}>
+                      {formatNumber(profile.communityStats?.totalPosts || 0)}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Posts
+                    </Typography>
+                  </Box>
 
-                {/* Email button - only show if not own profile */}
-                {!isOwnProfile && userInfo.email && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<EmailIcon />}
-                    onClick={() =>
-                      (window.location.href = `mailto:${userInfo.email}`)
-                    }
-                  >
-                    Email
-                  </Button>
-                )}
-              </Box>
+                  {/* Engagement Score */}
+                  <Box sx={{ flex: 1, minWidth: "120px", textAlign: "center" }}>
+                    <Typography variant="h4" fontWeight={700} sx={{ color: "#4285f4" }}>
+                      {formatNumber(profile.communityStats?.engagementScore || 0)}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                      Engagement Score
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
             </Box>
+          </Paper>
 
-            {/* Stats Bar */}
-            <Paper
-              sx={{
-                p: 3,
-                borderRadius: 2,
-                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.02),
-                border: "1px solid",
-                borderColor: "divider",
-                mt: 3,
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 3,
-                }}
-              >
-                {/* Followers - Clickable */}
-                <Box
-                  sx={{
-                    flex: 1,
-                    minWidth: "120px",
-                    textAlign: "center",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                    },
-                  }}
-                  onClick={() => handleOpenFollowDialog("followers")}
-                >
-                  <Typography
-                    variant="h4"
-                    fontWeight={700}
-                    color="primary"
-                    sx={{
-                      "&:hover": {
-                        textDecoration: "underline",
-                      },
-                    }}
-                  >
-                    {formatNumber(followerCount)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Followers
-                  </Typography>
-                </Box>
-
-                {/* Following - Clickable */}
-                <Box
-                  sx={{
-                    flex: 1,
-                    minWidth: "120px",
-                    textAlign: "center",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                    },
-                  }}
-                  onClick={() => handleOpenFollowDialog("following")}
-                >
-                  <Typography
-                    variant="h4"
-                    fontWeight={700}
-                    color="primary"
-                    sx={{
-                      "&:hover": {
-                        textDecoration: "underline",
-                      },
-                    }}
-                  >
-                    {formatNumber(profile.followingCount)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Following
-                  </Typography>
-                </Box>
-
-                {/* Posts */}
-                <Box sx={{ flex: 1, minWidth: "120px", textAlign: "center" }}>
-                  <Typography variant="h4" fontWeight={700} color="primary">
-                    {formatNumber(profile.communityStats?.totalPosts || 0)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Posts
-                  </Typography>
-                </Box>
-
-                {/* Engagement Score */}
-                <Box sx={{ flex: 1, minWidth: "120px", textAlign: "center" }}>
-                  <Typography variant="h4" fontWeight={700} color="primary">
-                    {formatNumber(profile.communityStats?.engagementScore || 0)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Engagement Score
-                  </Typography>
-                </Box>
-              </Box>
-            </Paper>
-          </Box>
-        </Paper>
-
-        {/* Main Content */}
-        <Box sx={{ width: "100%" }}>
-          <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
-            <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          {/* Main Content */}
+          <Paper sx={{ 
+            borderRadius: 2,
+            overflow: "hidden",
+            bgcolor: darkMode ? '#202124' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          }}>
+            <Box sx={{ borderBottom: 1, borderColor: darkMode ? '#3c4043' : '#dadce0' }}>
               <Tabs
                 value={tabValue}
                 onChange={handleTabChange}
                 variant="scrollable"
                 scrollButtons="auto"
+                sx={{
+                  '& .MuiTab-root': {
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                    textTransform: 'none',
+                    minHeight: 56,
+                    '&.Mui-selected': {
+                      color: '#4285f4',
+                    },
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: '#4285f4',
+                  },
+                }}
               >
                 <Tab
                   icon={<PeopleIcon />}
@@ -1253,7 +1415,7 @@ export default function UserPublicProfile({
             <Box sx={{ p: 3 }}>
               {tabValue === 0 && (
                 <Box>
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124', mb: 3 }}>
                     Community Activity Overview
                   </Typography>
                   <Box
@@ -1270,7 +1432,12 @@ export default function UserPublicProfile({
                         gap: 3,
                       }}
                     >
-                      <Card sx={{ flex: 1, minWidth: "300px" }}>
+                      <Card sx={{ 
+                        flex: 1, 
+                        minWidth: "300px",
+                        bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      }}>
                         <CardContent>
                           <Box
                             sx={{
@@ -1280,12 +1447,24 @@ export default function UserPublicProfile({
                               mb: 2,
                             }}
                           >
-                            <ForumIcon color="primary" />
-                            <Typography variant="h6">Post Activity</Typography>
+                            <Box sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              bgcolor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
+                            }}>
+                              <ForumIcon sx={{ fontSize: 20, color: '#4285f4' }} />
+                            </Box>
+                            <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                              Post Activity
+                            </Typography>
                           </Box>
                           <Typography
                             variant="body2"
-                            color="text.secondary"
+                            sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
                             paragraph
                           >
                             {userInfo.name} has created{" "}
@@ -1293,7 +1472,7 @@ export default function UserPublicProfile({
                             made {profile.communityStats?.totalComments || 0}{" "}
                             comments in the community.
                           </Typography>
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                             Last active:{" "}
                             {formatDate(
                               profile.communityStats?.lastActive || profile._id,
@@ -1302,7 +1481,12 @@ export default function UserPublicProfile({
                           </Typography>
                         </CardContent>
                       </Card>
-                      <Card sx={{ flex: 1, minWidth: "300px" }}>
+                      <Card sx={{ 
+                        flex: 1, 
+                        minWidth: "300px",
+                        bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      }}>
                         <CardContent>
                           <Box
                             sx={{
@@ -1312,12 +1496,24 @@ export default function UserPublicProfile({
                               mb: 2,
                             }}
                           >
-                            <ThumbUpIcon color="primary" />
-                            <Typography variant="h6">Engagement</Typography>
+                            <Box sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              bgcolor: alpha('#34a853', darkMode ? 0.2 : 0.1),
+                            }}>
+                              <ThumbUpIcon sx={{ fontSize: 20, color: '#34a853' }} />
+                            </Box>
+                            <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                              Engagement
+                            </Typography>
                           </Box>
                           <Typography
                             variant="body2"
-                            color="text.secondary"
+                            sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
                             paragraph
                           >
                             {userInfo.name} has given{" "}
@@ -1326,7 +1522,7 @@ export default function UserPublicProfile({
                             {profile.communityStats?.totalLikesReceived || 0}{" "}
                             likes.
                           </Typography>
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                             Engagement score:{" "}
                             {profile.communityStats?.engagementScore || 0}
                           </Typography>
@@ -1336,9 +1532,12 @@ export default function UserPublicProfile({
 
                     {/* Subscription Info */}
                     {userInfo.subscription && (
-                      <Card>
+                      <Card sx={{ 
+                        bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      }}>
                         <CardContent>
-                          <Typography variant="h6" gutterBottom>
+                          <Typography variant="h6" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                             Subscription Status
                           </Typography>
                           <Box
@@ -1350,16 +1549,18 @@ export default function UserPublicProfile({
                           >
                             <Chip
                               label={userInfo.subscription.plan.toUpperCase()}
-                              color={
-                                userInfo.subscription.plan === "premium"
-                                  ? "primary"
-                                  : userInfo.subscription.plan === "pro"
-                                    ? "success"
-                                    : "default"
-                              }
+                              sx={{
+                                bgcolor: userInfo.subscription.plan === 'premium' ? '#fbbc04' : 
+                                         userInfo.subscription.plan === 'pro' ? '#34a853' : 
+                                         darkMode ? '#303134' : '#f1f3f4',
+                                color: userInfo.subscription.plan === 'premium' ? '#202124' : 
+                                       userInfo.subscription.plan === 'pro' ? 'white' : 
+                                       darkMode ? '#e8eaed' : '#202124',
+                                borderColor: darkMode ? '#5f6368' : '#dadce0',
+                              }}
                               variant="outlined"
                             />
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                               Status: {userInfo.subscription.status}
                             </Typography>
                           </Box>
@@ -1382,7 +1583,7 @@ export default function UserPublicProfile({
                       gap: 2,
                     }}
                   >
-                    <Typography variant="h6">
+                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                       Followers ({formatNumber(followerCount)})
                     </Typography>
                     <TextField
@@ -1393,11 +1594,22 @@ export default function UserPublicProfile({
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <SearchIcon />
+                            <SearchIcon sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
                           </InputAdornment>
                         ),
+                        sx: { color: darkMode ? '#e8eaed' : '#202124' }
                       }}
-                      sx={{ width: { xs: "100%", sm: "300px" } }}
+                      sx={{ 
+                        width: { xs: "100%", sm: "300px" },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': {
+                            borderColor: darkMode ? '#3c4043' : '#dadce0',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#4285f4',
+                          },
+                        },
+                      }}
                     />
                   </Box>
 
@@ -1405,10 +1617,18 @@ export default function UserPublicProfile({
                     <Box
                       sx={{ display: "flex", justifyContent: "center", py: 4 }}
                     >
-                      <CircularProgress />
+                      <CircularProgress sx={{ color: '#4285f4' }} />
                     </Box>
                   ) : followers.length === 0 ? (
-                    <Alert severity="info">No followers yet.</Alert>
+                    <Alert 
+                      severity="info"
+                      sx={{ 
+                        borderRadius: 2,
+                        bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                      }}
+                    >
+                      No followers yet.
+                    </Alert>
                   ) : (
                     <Box
                       sx={{
@@ -1466,7 +1686,7 @@ export default function UserPublicProfile({
                       gap: 2,
                     }}
                   >
-                    <Typography variant="h6">
+                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                       Following ({formatNumber(profile.followingCount)})
                     </Typography>
                     <TextField
@@ -1477,11 +1697,22 @@ export default function UserPublicProfile({
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <SearchIcon />
+                            <SearchIcon sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
                           </InputAdornment>
                         ),
+                        sx: { color: darkMode ? '#e8eaed' : '#202124' }
                       }}
-                      sx={{ width: { xs: "100%", sm: "300px" } }}
+                      sx={{ 
+                        width: { xs: "100%", sm: "300px" },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': {
+                            borderColor: darkMode ? '#3c4043' : '#dadce0',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#4285f4',
+                          },
+                        },
+                      }}
                     />
                   </Box>
 
@@ -1489,10 +1720,18 @@ export default function UserPublicProfile({
                     <Box
                       sx={{ display: "flex", justifyContent: "center", py: 4 }}
                     >
-                      <CircularProgress />
+                      <CircularProgress sx={{ color: '#4285f4' }} />
                     </Box>
                   ) : following.length === 0 ? (
-                    <Alert severity="info">Not following anyone yet.</Alert>
+                    <Alert 
+                      severity="info"
+                      sx={{ 
+                        borderRadius: 2,
+                        bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                      }}
+                    >
+                      Not following anyone yet.
+                    </Alert>
                   ) : (
                     <Box
                       sx={{
@@ -1551,7 +1790,7 @@ export default function UserPublicProfile({
                       gap: 2,
                     }}
                   >
-                    <Typography variant="h6">
+                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                       Posts (
                       {formatNumber(
                         profile.communityStats?.totalPosts || userPosts.length,
@@ -1564,10 +1803,16 @@ export default function UserPublicProfile({
                     <Box
                       sx={{ display: "flex", justifyContent: "center", py: 4 }}
                     >
-                      <CircularProgress />
+                      <CircularProgress sx={{ color: '#4285f4' }} />
                     </Box>
                   ) : userPosts.length === 0 ? (
-                    <Alert severity="info">
+                    <Alert 
+                      severity="info"
+                      sx={{ 
+                        borderRadius: 2,
+                        bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                      }}
+                    >
                       {userInfo.name} hasn't created any posts yet.
                     </Alert>
                   ) : (
@@ -1606,8 +1851,8 @@ export default function UserPublicProfile({
               )}
             </Box>
           </Paper>
-        </Box>
-      </Container>
+        </Container>
+      </Box>
 
       {/* Message Dialog */}
       <Dialog
@@ -1615,8 +1860,17 @@ export default function UserPublicProfile({
         onClose={() => setMessageDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            bgcolor: darkMode ? '#202124' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          },
+        }}
       >
-        <DialogTitle>Send Message to {userInfo.name}</DialogTitle>
+        <DialogTitle sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+          Send Message to {userInfo.name}
+        </DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
@@ -1626,17 +1880,40 @@ export default function UserPublicProfile({
             onChange={(e) => setMessageContent(e.target.value)}
             placeholder="Type your message here..."
             sx={{ mt: 2 }}
+            InputProps={{
+              sx: { color: darkMode ? '#e8eaed' : '#202124' }
+            }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setMessageDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={() => setMessageDialogOpen(false)}
+            sx={{
+              color: darkMode ? '#e8eaed' : '#202124',
+              '&:hover': {
+                backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+              },
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleSendMessage}
             variant="contained"
             disabled={!messageContent.trim() || sendingMessage}
             startIcon={
-              sendingMessage ? <CircularProgress size={20} /> : undefined
+              sendingMessage ? <CircularProgress size={20} sx={{ color: '#ffffff' }} /> : undefined
             }
+            sx={{
+              backgroundColor: '#4285f4',
+              '&:hover': {
+                backgroundColor: '#3367d6',
+              },
+              '&.Mui-disabled': {
+                backgroundColor: darkMode ? '#303134' : '#f1f3f4',
+                color: darkMode ? '#5f6368' : '#bdc1c6',
+              },
+            }}
           >
             {sendingMessage ? "Sending..." : "Send Message"}
           </Button>

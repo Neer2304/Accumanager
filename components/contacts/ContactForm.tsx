@@ -1,14 +1,13 @@
-// components/contacts/ContactForm.tsx - UPDATED WITH API CALL
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
-  Paper,
+  Card,
+  CardContent,
   Typography,
   TextField,
   Button,
-  Alert,
   CircularProgress,
   useTheme,
   alpha,
@@ -16,9 +15,10 @@ import {
 import {
   Send,
   Person,
-  Email,
-  Phone,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
   Business,
+  Subject as SubjectIcon,
 } from '@mui/icons-material';
 
 interface ContactFormProps {
@@ -44,6 +44,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   error,
 }) => {
   const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -52,57 +53,51 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   };
 
   return (
-    <Paper
-      elevation={0}
+    <Card
       sx={{
-        borderRadius: 4,
+        borderRadius: 3,
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
         overflow: 'hidden',
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.08)',
       }}
     >
       <Box
         sx={{
-          p: { xs: 3, md: 4 },
-          background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-          color: 'white',
+          p: { xs: 2, sm: 3 },
+          background: darkMode 
+            ? `linear-gradient(135deg, ${alpha('#4285f4', 0.8)} 0%, ${alpha('#0d3064', 0.9)} 100%)`
+            : `linear-gradient(135deg, ${alpha('#4285f4', 0.9)} 0%, ${alpha('#0d3064', 0.9)} 100%)`,
+          color: '#ffffff',
         }}
       >
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Send us a Message
-        </Typography>
-        <Typography variant="body1" sx={{ opacity: 0.9 }}>
-          Fill out the form below and we&apos;ll get back to you within 24 hours.
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Box sx={{
+            width: 48,
+            height: 48,
+            borderRadius: 2,
+            backgroundColor: alpha('#ffffff', 0.2),
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backdropFilter: 'blur(10px)',
+          }}>
+            <Send sx={{ fontSize: 24, color: '#ffffff' }} />
+          </Box>
+          <Box>
+            <Typography variant="h5" fontWeight={600} gutterBottom>
+              Send us a Message
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              Fill out the form below and we&apos;ll get back to you within 24 hours.
+            </Typography>
+          </Box>
+        </Box>
       </Box>
       
-      <Box sx={{ p: { xs: 3, md: 4 } }}>
-        {error && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 3,
-              borderRadius: 2,
-              border: `1px solid ${theme.palette.error.light}`,
-            }}
-          >
-            {error}
-          </Alert>
-        )}
-        
+      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
         <form onSubmit={onSubmit}>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, 1fr)',
-              },
-              gap: 3,
-            }}
-          >
-            {/* Name */}
-            <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
               <TextField
                 fullWidth
                 label="Your Name *"
@@ -119,16 +114,14 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
+                    backgroundColor: darkMode ? '#202124' : '#ffffff',
                     '&:hover fieldset': {
-                      borderColor: theme.palette.primary.main,
+                      borderColor: '#4285f4',
                     },
                   },
                 }}
               />
-            </Box>
-            
-            {/* Email */}
-            <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
+              
               <TextField
                 fullWidth
                 label="Your Email *"
@@ -140,19 +133,19 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
-                    <Email sx={{ mr: 1, color: 'action.active', opacity: 0.7 }} />
+                    <EmailIcon sx={{ mr: 1, color: 'action.active', opacity: 0.7 }} />
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
+                    backgroundColor: darkMode ? '#202124' : '#ffffff',
                   },
                 }}
               />
             </Box>
             
-            {/* Phone */}
-            <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
               <TextField
                 fullWidth
                 label="Phone Number"
@@ -162,19 +155,17 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
-                    <Phone sx={{ mr: 1, color: 'action.active', opacity: 0.7 }} />
+                    <PhoneIcon sx={{ mr: 1, color: 'action.active', opacity: 0.7 }} />
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
+                    backgroundColor: darkMode ? '#202124' : '#ffffff',
                   },
                 }}
               />
-            </Box>
-            
-            {/* Company */}
-            <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
+              
               <TextField
                 fullWidth
                 label="Company"
@@ -190,84 +181,84 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
+                    backgroundColor: darkMode ? '#202124' : '#ffffff',
                   },
                 }}
               />
             </Box>
             
-            {/* Subject */}
-            <Box sx={{ gridColumn: 'span 2' }}>
-              <TextField
-                fullWidth
-                label="Subject"
-                name="subject"
-                value={formData.subject}
-                onChange={handleInputChange}
-                variant="outlined"
-                placeholder="What's this regarding?"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
-              />
-            </Box>
-            
-            {/* Message */}
-            <Box sx={{ gridColumn: 'span 2' }}>
-              <TextField
-                fullWidth
-                label="Your Message *"
-                name="message"
-                value={formData.message}
-                onChange={handleInputChange}
-                required
-                multiline
-                rows={5}
-                variant="outlined"
-                placeholder="Tell us how we can help..."
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                  '& .MuiInputBase-multiline': {
-                    padding: '16.5px 14px',
-                  },
-                }}
-              />
-            </Box>
-            
-            {/* Submit Button */}
-            <Box sx={{ gridColumn: 'span 2' }}>
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                fullWidth
-                disabled={loading}
-                startIcon={loading ? <CircularProgress size={20} /> : <Send />}
-                sx={{
-                  py: 1.75,
+            <TextField
+              fullWidth
+              label="Subject"
+              name="subject"
+              value={formData.subject}
+              onChange={handleInputChange}
+              variant="outlined"
+              placeholder="What's this regarding?"
+              InputProps={{
+                startAdornment: (
+                  <SubjectIcon sx={{ mr: 1, color: 'action.active', opacity: 0.7 }} />
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: `0 8px 25px ${alpha(theme.palette.primary.main, 0.3)}`,
-                  },
-                  '&:disabled': {
-                    background: theme.palette.action.disabled,
-                  },
-                }}
-              >
-                {loading ? 'Sending...' : 'Send Message'}
-              </Button>
-            </Box>
+                  backgroundColor: darkMode ? '#202124' : '#ffffff',
+                },
+              }}
+            />
+            
+            <TextField
+              fullWidth
+              label="Your Message *"
+              name="message"
+              value={formData.message}
+              onChange={handleInputChange}
+              required
+              multiline
+              rows={5}
+              variant="outlined"
+              placeholder="Tell us how we can help..."
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  backgroundColor: darkMode ? '#202124' : '#ffffff',
+                },
+                '& .MuiInputBase-multiline': {
+                  padding: '16.5px 14px',
+                },
+              }}
+            />
+            
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} /> : <Send />}
+              sx={{
+                py: 1.75,
+                borderRadius: 2,
+                fontSize: '1rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                backgroundColor: '#4285f4',
+                '&:hover': {
+                  backgroundColor: '#3367d6',
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 4px 12px ${alpha('#4285f4', 0.3)}`,
+                },
+                '&:disabled': {
+                  backgroundColor: darkMode ? '#5f6368' : '#dadce0',
+                },
+              }}
+            >
+              {loading ? 'Sending...' : 'Send Message'}
+            </Button>
           </Box>
         </form>
-      </Box>
-    </Paper>
+      </CardContent>
+    </Card>
   );
 };

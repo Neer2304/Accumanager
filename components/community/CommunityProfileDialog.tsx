@@ -1,4 +1,3 @@
-// components/community/CommunityProfileDialog.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -34,8 +33,9 @@ import {
   Delete as DeleteIcon,
   Link as LinkIcon,
 } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
+import { alpha } from '@mui/material';
 
-// Define the CommunityProfile interface here since it's not exported from CommunityProfilePage
 export interface CommunityProfile {
   _id: string;
   userId: {
@@ -98,6 +98,8 @@ export default function CommunityProfileDialog({
   profile,
   onUpdate,
 }: CommunityProfileDialogProps) {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -193,10 +195,7 @@ export default function CommunityProfileDialog({
   };
 
   const handleImageUpload = async (file: File, type: 'avatar' | 'cover') => {
-    // Implement image upload logic here
-    // This would typically upload to Cloudinary, AWS S3, or similar
     console.log('Uploading image:', file, type);
-    // For demo, just use a placeholder
     if (type === 'avatar') {
       setFormData({ ...formData, avatar: URL.createObjectURL(file) });
     } else {
@@ -212,31 +211,57 @@ export default function CommunityProfileDialog({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
+          borderRadius: 2,
           maxHeight: '90vh',
+          bgcolor: darkMode ? '#202124' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
         },
       }}
     >
-      <DialogTitle sx={{ pb: 1 }}>
+      <DialogTitle sx={{ 
+        pb: 1,
+        borderBottom: 1,
+        borderColor: darkMode ? '#3c4043' : '#dadce0',
+      }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">Edit Profile</Typography>
-          <IconButton onClick={onClose} size="small">
+          <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+            Edit Profile
+          </Typography>
+          <IconButton 
+            onClick={onClose} 
+            size="small"
+            sx={{
+              color: darkMode ? '#9aa0a6' : '#5f6368',
+              '&:hover': {
+                backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+              },
+            }}
+          >
             <CloseIcon />
           </IconButton>
         </Box>
       </DialogTitle>
 
       <form onSubmit={handleSubmit}>
-        <DialogContent dividers sx={{ overflowY: 'auto' }}>
+        <DialogContent dividers sx={{ 
+          overflowY: 'auto',
+          bgcolor: darkMode ? '#202124' : '#ffffff',
+        }}>
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mb: 3,
+                borderRadius: 2,
+                bgcolor: darkMode ? '#3c1e1e' : '#fdecea',
+              }}
+            >
               {error}
             </Alert>
           )}
 
-          {/* Avatar & Cover Image */}
           <Box sx={{ mb: 4 }}>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               Profile Images
             </Typography>
             <Stack direction="row" spacing={3} alignItems="flex-start">
@@ -248,12 +273,20 @@ export default function CommunityProfileDialog({
                     height: 100,
                     fontSize: 40,
                     mb: 1,
+                    border: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                   }}
                 />
                 <Button
                   size="small"
                   startIcon={<UploadIcon />}
                   component="label"
+                  sx={{
+                    color: '#4285f4',
+                    textTransform: 'none',
+                    '&:hover': {
+                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                    },
+                  }}
                 >
                   Upload Avatar
                   <input
@@ -278,21 +311,34 @@ export default function CommunityProfileDialog({
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LinkIcon fontSize="small" />
+                        <LinkIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
                       </InputAdornment>
                     ),
+                    sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                  }}
+                  InputLabelProps={{
+                    sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
                   }}
                   helperText="Enter image URL or upload"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4285f4',
+                      },
+                    },
+                  }}
                 />
               </Box>
             </Stack>
           </Box>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 3, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
 
-          {/* Basic Information */}
           <Box sx={{ mb: 4 }}>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               Basic Information
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -302,7 +348,23 @@ export default function CommunityProfileDialog({
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
                 required
+                InputProps={{
+                  sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                }}
+                InputLabelProps={{
+                  sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
+                }}
                 helperText="This will be your unique identifier in the community"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#4285f4',
+                    },
+                  },
+                }}
               />
               <TextField
                 fullWidth
@@ -311,106 +373,202 @@ export default function CommunityProfileDialog({
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                 multiline
                 rows={3}
+                InputProps={{
+                  sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                }}
+                InputLabelProps={{
+                  sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
+                }}
                 helperText="Tell the community about yourself (max 500 characters)"
                 inputProps={{ maxLength: 500 }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#4285f4',
+                    },
+                  },
+                }}
               />
-              <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, minWidth: '200px' }}>
-                  <TextField
-                    fullWidth
-                    label="Location"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="City, Country"
-                  />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: '200px' }}>
-                  <TextField
-                    fullWidth
-                    label="Website"
-                    value={formData.website}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LinkIcon fontSize="small" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
+                <TextField
+                  fullWidth
+                  label="Location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="City, Country"
+                  InputProps={{
+                    sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                  }}
+                  InputLabelProps={{
+                    sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4285f4',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Website"
+                  value={formData.website}
+                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LinkIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                      </InputAdornment>
+                    ),
+                    sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                  }}
+                  InputLabelProps={{
+                    sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4285f4',
+                      },
+                    },
+                  }}
+                />
               </Box>
             </Box>
           </Box>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 3, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
 
-          {/* Social Links */}
           <Box sx={{ mb: 4 }}>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               Social Links
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, minWidth: '200px' }}>
-                  <TextField
-                    fullWidth
-                    label="Twitter"
-                    value={formData.socialLinks.twitter}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, twitter: e.target.value }
-                    })}
-                    placeholder="https://twitter.com/username"
-                  />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: '200px' }}>
-                  <TextField
-                    fullWidth
-                    label="LinkedIn"
-                    value={formData.socialLinks.linkedin}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, linkedin: e.target.value }
-                    })}
-                    placeholder="https://linkedin.com/in/username"
-                  />
-                </Box>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Twitter"
+                  value={formData.socialLinks.twitter}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    socialLinks: { ...formData.socialLinks, twitter: e.target.value }
+                  })}
+                  placeholder="https://twitter.com/username"
+                  InputProps={{
+                    sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                  }}
+                  InputLabelProps={{
+                    sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4285f4',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="LinkedIn"
+                  value={formData.socialLinks.linkedin}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    socialLinks: { ...formData.socialLinks, linkedin: e.target.value }
+                  })}
+                  placeholder="https://linkedin.com/in/username"
+                  InputProps={{
+                    sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                  }}
+                  InputLabelProps={{
+                    sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4285f4',
+                      },
+                    },
+                  }}
+                />
               </Box>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, minWidth: '200px' }}>
-                  <TextField
-                    fullWidth
-                    label="Instagram"
-                    value={formData.socialLinks.instagram}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, instagram: e.target.value }
-                    })}
-                    placeholder="https://instagram.com/username"
-                  />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: '200px' }}>
-                  <TextField
-                    fullWidth
-                    label="Facebook"
-                    value={formData.socialLinks.facebook}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, facebook: e.target.value }
-                    })}
-                    placeholder="https://facebook.com/username"
-                  />
-                </Box>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Instagram"
+                  value={formData.socialLinks.instagram}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    socialLinks: { ...formData.socialLinks, instagram: e.target.value }
+                  })}
+                  placeholder="https://instagram.com/username"
+                  InputProps={{
+                    sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                  }}
+                  InputLabelProps={{
+                    sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4285f4',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Facebook"
+                  value={formData.socialLinks.facebook}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    socialLinks: { ...formData.socialLinks, facebook: e.target.value }
+                  })}
+                  placeholder="https://facebook.com/username"
+                  InputProps={{
+                    sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                  }}
+                  InputLabelProps={{
+                    sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4285f4',
+                      },
+                    },
+                  }}
+                />
               </Box>
             </Box>
           </Box>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 3, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
 
-          {/* Expert Categories */}
           <Box sx={{ mb: 4 }}>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               Areas of Expertise
             </Typography>
             <Box sx={{ mb: 2 }}>
@@ -421,33 +579,62 @@ export default function CommunityProfileDialog({
                     label={category}
                     onDelete={() => handleRemoveCategory(category)}
                     deleteIcon={<DeleteIcon />}
+                    sx={{
+                      bgcolor: darkMode ? '#303134' : '#f1f3f4',
+                      color: darkMode ? '#8ab4f8' : '#4285f4',
+                      borderColor: darkMode ? '#5f6368' : '#dadce0',
+                      '& .MuiChip-deleteIcon': {
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
+                      },
+                    }}
                   />
                 ))}
               </Stack>
             </Box>
-            <Stack direction="row" spacing={1}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
               <TextField
                 size="small"
                 placeholder="Add expertise area"
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
+                InputProps={{
+                  sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                }}
+                sx={{
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#4285f4',
+                    },
+                  },
+                }}
               />
               <Button
                 variant="outlined"
                 startIcon={<AddIcon />}
                 onClick={handleAddCategory}
+                sx={{
+                  borderColor: darkMode ? '#5f6368' : '#dadce0',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  '&:hover': {
+                    borderColor: '#4285f4',
+                    backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                  },
+                }}
               >
                 Add
               </Button>
             </Stack>
           </Box>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 3, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
 
-          {/* Privacy Settings */}
           <Box sx={{ mb: 4 }}>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               Privacy Settings
             </Typography>
             <Stack spacing={2}>
@@ -462,13 +649,21 @@ export default function CommunityProfileDialog({
                         privateProfile: e.target.checked
                       }
                     })}
+                    sx={{
+                      '& .MuiSwitch-track': {
+                        backgroundColor: darkMode ? '#5f6368' : '#bdc1c6',
+                      },
+                    }}
                   />
                 }
                 label="Private Profile"
+                sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
               />
               
               <FormControl fullWidth size="small">
-                <InputLabel>Who can message you</InputLabel>
+                <InputLabel sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                  Who can message you
+                </InputLabel>
                 <Select
                   value={formData.preferences.allowMessages}
                   label="Who can message you"
@@ -479,6 +674,18 @@ export default function CommunityProfileDialog({
                       allowMessages: e.target.value as 'everyone' | 'followers' | 'none'
                     }
                   })}
+                  sx={{
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#4285f4',
+                    },
+                    '& .MuiSelect-icon': {
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                    },
+                  }}
                 >
                   <MenuItem value="everyone">Everyone</MenuItem>
                   <MenuItem value="followers">Followers Only</MenuItem>
@@ -489,15 +696,39 @@ export default function CommunityProfileDialog({
           </Box>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={onClose} disabled={loading}>
+        <DialogActions sx={{ 
+          px: 3, 
+          py: 2,
+          borderTop: 1,
+          borderColor: darkMode ? '#3c4043' : '#dadce0',
+        }}>
+          <Button 
+            onClick={onClose}
+            sx={{
+              color: darkMode ? '#e8eaed' : '#202124',
+              '&:hover': {
+                backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+              },
+            }}
+            disabled={loading}
+          >
             Cancel
           </Button>
           <Button
             type="submit"
             variant="contained"
             disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : null}
+            startIcon={loading ? <CircularProgress size={20} sx={{ color: '#ffffff' }} /> : null}
+            sx={{
+              backgroundColor: '#4285f4',
+              '&:hover': {
+                backgroundColor: '#3367d6',
+              },
+              '&.Mui-disabled': {
+                backgroundColor: darkMode ? '#303134' : '#f1f3f4',
+                color: darkMode ? '#5f6368' : '#bdc1c6',
+              },
+            }}
           >
             {loading ? 'Saving...' : 'Save Changes'}
           </Button>

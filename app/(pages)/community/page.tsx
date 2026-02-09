@@ -39,17 +39,22 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Tooltip,
+  LinearProgress,
+  Snackbar,
 } from "@mui/material";
 import {
   Home as HomeIcon,
   ArrowBack as BackIcon,
   Add as AddIcon,
   ThumbUp as LikeIcon,
+  ThumbUpOutlined as LikeOutlinedIcon,
   ChatBubbleOutline as CommentIcon,
+  ChatBubble as CommentFilledIcon,
   Visibility as ViewIcon,
   Share as ShareIcon,
-  BookmarkBorder as BookmarkIcon,
-  Bookmark as BookmarkedIcon,
+  BookmarkBorder as BookmarkOutlinedIcon,
+  Bookmark as BookmarkFilledIcon,
   TrendingUp as TrendingIcon,
   NewReleases as NewIcon,
   QuestionAnswer as QAIcon,
@@ -75,15 +80,12 @@ import {
   People as PeopleIcon,
   BarChart as ChartIcon,
   Download,
-  ChatBubbleOutline,
-  PushPin,
-  ThumbUp,
 } from "@mui/icons-material";
 import Link from "next/link";
 import { useCommunity } from "@/hooks/useCommunity";
 import { formatDate } from "@/utils/dateUtils";
 
-// Define interfaces locally since they might be missing in the imported hook
+// Define TypeScript interfaces
 interface UserType {
   _id: string;
   name: string;
@@ -148,16 +150,16 @@ interface CommunityStats {
 
 // Categories configuration
 const CATEGORIES = [
-  { id: "all", name: "All Posts", icon: <ForumIcon />, color: "#1976d2" },
+  { id: "all", name: "All Posts", icon: <ForumIcon />, color: "#4285f4" },
   {
     id: "general",
     name: "General Discussion",
-    icon: <ChatBubbleOutline />,
-    color: "#1976d2",
+    icon: <CommentIcon />,
+    color: "#4285f4",
   },
-  { id: "questions", name: "Q&A", icon: <QAIcon />, color: "#0288d1" },
-  { id: "tips", name: "Tips & Tricks", icon: <TipIcon />, color: "#388e3c" },
-  { id: "bugs", name: "Bug Reports", icon: <BugIcon />, color: "#d32f2f" },
+  { id: "questions", name: "Q&A", icon: <QAIcon />, color: "#34a853" },
+  { id: "tips", name: "Tips & Tricks", icon: <TipIcon />, color: "#fbbc04" },
+  { id: "bugs", name: "Bug Reports", icon: <BugIcon />, color: "#ea4335" },
   {
     id: "features",
     name: "Feature Requests",
@@ -167,8 +169,8 @@ const CATEGORIES = [
   {
     id: "announcements",
     name: "Announcements",
-    icon: <PushPin />,
-    color: "#7b1fa2",
+    icon: <PinIcon />,
+    color: "#9c27b0",
   },
 ];
 
@@ -176,26 +178,132 @@ const CATEGORIES = [
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest", icon: <DateIcon /> },
   { value: "oldest", label: "Oldest", icon: <DateIcon /> },
-  { value: "popular", label: "Most Popular", icon: <ThumbUp /> },
+  { value: "popular", label: "Most Popular", icon: <LikeIcon /> },
   { value: "most_commented", label: "Most Comments", icon: <CommentIcon /> },
   { value: "most_viewed", label: "Most Viewed", icon: <ViewIcon /> },
   { value: "trending", label: "Trending", icon: <TrendingIcon /> },
 ];
 
-// Post Card Component
-function PostCard({
-  post,
-  onLike,
-  onBookmark,
-  onSelect,
-  currentUserId,
+// Reusable Card Component
+const GoogleCard = ({ 
+  children, 
+  elevation = 0, 
+  sx = {}, 
+  hover = true,
+  clickable = false,
+  onClick,
 }: {
+  children: React.ReactNode;
+  elevation?: number;
+  sx?: any;
+  hover?: boolean;
+  clickable?: boolean;
+  onClick?: () => void;
+}) => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === "dark";
+
+  return (
+    <Paper
+      elevation={elevation}
+      sx={{
+        borderRadius: 3,
+        backgroundColor: darkMode ? "#202124" : "#ffffff",
+        border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+        transition: hover ? "all 0.2s ease" : "none",
+        "&:hover": hover
+          ? {
+              boxShadow: darkMode
+                ? "0 8px 24px rgba(0,0,0,0.3)"
+                : "0 8px 24px rgba(0,0,0,0.1)",
+              transform: "translateY(-2px)",
+              borderColor: darkMode ? "#5f6368" : "#bdc1c6",
+            }
+          : {},
+        cursor: clickable ? "pointer" : "default",
+        overflow: "hidden",
+        ...sx,
+      }}
+      onClick={onClick}
+    >
+      {children}
+    </Paper>
+  );
+};
+
+// Reusable Icon Button with active state
+interface ActionIconButtonProps {
+  icon: React.ReactNode;
+  activeIcon: React.ReactNode;
+  active: boolean;
+  count?: number;
+  onClick: (e: React.MouseEvent) => void;
+  loading?: boolean;
+  size?: "small" | "medium" | "large";
+}
+
+const ActionIconButton: React.FC<ActionIconButtonProps> = ({
+  icon,
+  activeIcon,
+  active,
+  count,
+  onClick,
+  loading = false,
+  size = "small",
+}) => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === "dark";
+
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+      <IconButton
+        size={size}
+        onClick={onClick}
+        disabled={loading}
+        sx={{
+          color: active ? "#4285f4" : darkMode ? "#9aa0a6" : "#5f6368",
+          "&:hover": {
+            backgroundColor: alpha("#4285f4", 0.1),
+            color: "#4285f4",
+          },
+          padding: size === "small" ? "4px" : "8px",
+        }}
+      >
+        {loading ? (
+          <CircularProgress size={size === "small" ? 16 : 24} />
+        ) : active ? (
+          activeIcon
+        ) : (
+          icon
+        )}
+      </IconButton>
+      {count !== undefined && (
+        <Typography
+          variant="caption"
+          sx={{
+            color: active ? "#4285f4" : darkMode ? "#9aa0a6" : "#5f6368",
+            fontWeight: active ? 600 : 400,
+            minWidth: "1.5rem",
+            fontSize: "0.75rem",
+          }}
+        >
+          {count}
+        </Typography>
+      )}
+    </Box>
+  );
+};
+
+// Post Card Component with active state icons
+interface PostCardProps {
   post: CommunityPost;
   onLike: (id: string) => void;
   onBookmark: (id: string) => void;
   onSelect: (post: CommunityPost) => void;
   currentUserId?: string;
-}) {
+}
+
+function PostCard({ post, onLike, onBookmark, onSelect, currentUserId }: PostCardProps) {
   const theme = useTheme();
   const category = CATEGORIES.find((c) => c.id === post.category);
 
@@ -205,36 +313,27 @@ function PostCard({
   // Check if current user has liked/bookmarked this post
   const hasLiked = useMemo(() => {
     if (!currentUserId || !post.likes) return false;
-    return post.likes.some((likeId) => likeId === currentUserId);
+    return post.likes.some((likeId: string) => likeId === currentUserId);
   }, [post.likes, currentUserId]);
 
   const hasBookmarked = useMemo(() => {
     if (!currentUserId || !post.bookmarks) return false;
-    return post.bookmarks.some((bookmarkId) => bookmarkId === currentUserId);
+    return post.bookmarks.some((bookmarkId: string) => bookmarkId === currentUserId);
   }, [post.bookmarks, currentUserId]);
 
-  const handleLikeClick = async () => {
+  const handleLikeClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (isLiking) return;
-
     setIsLiking(true);
     try {
-      console.log("=== LIKE CLICK ===");
-      console.log("Post object:", post);
-
-      // Extract the actual ID
       let actualId = "";
-
       if (typeof post._id === "string") {
         actualId = post._id;
       } else if (post._id && post._id.toString) {
         actualId = post._id.toString();
-      } else if (post._id && (post._id as any)._id) {
-        actualId = (post._id as any)._id.toString();
       } else {
         actualId = String(post._id);
       }
-
-      console.log("Actual ID to send:", actualId);
       await onLike(actualId);
     } catch (error) {
       console.error("Like error:", error);
@@ -243,14 +342,11 @@ function PostCard({
     }
   };
 
-  const handleBookmarkClick = async () => {
+  const handleBookmarkClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (isBookmarking) return;
-
     setIsBookmarking(true);
     try {
-      console.log("=== BOOKMARK CLICK ===");
-      console.log("Post ID:", post._id);
-
       let actualId = "";
       if (typeof post._id === "string") {
         actualId = post._id;
@@ -259,8 +355,6 @@ function PostCard({
       } else {
         actualId = String(post._id);
       }
-
-      console.log("Actual ID for bookmark:", actualId);
       await onBookmark(actualId);
     } catch (error) {
       console.error("Bookmark error:", error);
@@ -270,24 +364,17 @@ function PostCard({
   };
 
   const handleViewClick = () => {
-    console.log("=== VIEW CLICK ===");
-    console.log("Opening post:", post._id);
+    onSelect(post);
+  };
+
+  const handleEyeIconClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onSelect(post);
   };
 
   return (
-    <Card
-      sx={{
-        borderRadius: 2,
-        transition: "all 0.2s",
-        borderLeft: `4px solid ${category?.color || theme.palette.primary.main}`,
-        "&:hover": {
-          boxShadow: theme.shadows[4],
-          transform: "translateY(-2px)",
-        },
-      }}
-    >
-      <CardContent sx={{ p: 2.5 }}>
+    <GoogleCard hover clickable onClick={handleViewClick}>
+      <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
         {/* Header */}
         <Box
           sx={{
@@ -295,64 +382,112 @@ function PostCard({
             justifyContent: "space-between",
             alignItems: "flex-start",
             mb: 2,
+            gap: 1,
           }}
         >
-          <Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Chip
               icon={category?.icon}
               label={category?.name || post.category}
               size="small"
               sx={{
                 mb: 1,
-                bgcolor: alpha(
-                  category?.color || theme.palette.primary.main,
-                  0.1,
-                ),
-                color: category?.color || theme.palette.primary.main,
+                bgcolor: alpha(category?.color || "#4285f4", 0.1),
+                color: category?.color || "#4285f4",
+                borderColor: alpha(category?.color || "#4285f4", 0.3),
+                fontSize: "0.75rem",
+                height: "24px",
               }}
             />
             <Typography
               variant="h6"
               component="h3"
               sx={{
-                fontWeight: 600,
+                fontWeight: 500,
                 mb: 1,
                 cursor: "pointer",
-                "&:hover": { color: "primary.main" },
+                color: theme.palette.mode === "dark" ? "#e8eaed" : "#202124",
+                "&:hover": { color: "#4285f4" },
+                fontSize: { xs: "1rem", sm: "1.125rem" },
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
               }}
-              onClick={handleViewClick}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(post);
+              }}
             >
               {post.title}
             </Typography>
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            {post.isPinned && <PinIcon fontSize="small" color="warning" />}
-            {post.isSolved && <CheckIcon fontSize="small" color="success" />}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}>
+            {post.isPinned && (
+              <PinIcon fontSize="small" sx={{ color: "#fbbc04" }} />
+            )}
+            {post.isSolved && (
+              <CheckIcon fontSize="small" sx={{ color: "#34a853" }} />
+            )}
           </Box>
         </Box>
 
         {/* Excerpt */}
         <Typography
           variant="body2"
-          color="text.secondary"
-          sx={{ mb: 2, lineHeight: 1.6 }}
+          sx={{
+            mb: 2,
+            lineHeight: 1.6,
+            color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
+            fontSize: "0.875rem",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+          }}
         >
           {post.excerpt}
         </Typography>
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
-          <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 2 }}>
-            {post.tags.map((tag, index) => (
+          <Box sx={{ 
+            display: "flex", 
+            gap: 0.5, 
+            flexWrap: "wrap", 
+            mb: 2,
+            overflow: "hidden",
+            maxHeight: "32px"
+          }}>
+            {post.tags.slice(0, 3).map((tag, index) => (
               <Chip
                 key={index}
                 label={tag}
                 size="small"
                 variant="outlined"
-                sx={{ fontSize: "0.75rem" }}
+                sx={{
+                  fontSize: "0.7rem",
+                  height: "24px",
+                  borderColor: theme.palette.mode === "dark" ? "#3c4043" : "#dadce0",
+                  color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
+                }}
               />
             ))}
+            {post.tags.length > 3 && (
+              <Chip
+                label={`+${post.tags.length - 3}`}
+                size="small"
+                sx={{
+                  fontSize: "0.7rem",
+                  height: "24px",
+                  bgcolor: alpha("#4285f4", 0.1),
+                  color: "#4285f4",
+                }}
+              />
+            )}
           </Box>
         )}
 
@@ -362,15 +497,38 @@ function PostCard({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            mt: 2,
+            flexWrap: { xs: "wrap", sm: "nowrap" },
+            gap: { xs: 1, sm: 0 },
           }}
         >
           {/* Author info */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Avatar sx={{ width: 32, height: 32, fontSize: 14 }}>
+          <Box sx={{ 
+            display: "flex", 
+            alignItems: "center", 
+            gap: 1,
+            flex: { xs: "1 1 100%", sm: "0 1 auto" },
+            minWidth: 0,
+          }}>
+            <Avatar sx={{ 
+              width: { xs: 28, sm: 32 }, 
+              height: { xs: 28, sm: 32 }, 
+              fontSize: { xs: 12, sm: 14 } 
+            }}>
               {post.author?.name?.charAt(0)?.toUpperCase() || "U"}
             </Avatar>
-            <Box>
-              <Typography variant="caption" fontWeight={500}>
+            <Box sx={{ minWidth: 0, overflow: "hidden" }}>
+              <Typography
+                variant="caption"
+                fontWeight={500}
+                sx={{ 
+                  color: theme.palette.mode === "dark" ? "#e8eaed" : "#202124",
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}
+              >
                 {post.author?.name || "Unknown User"}
               </Typography>
               {post.author?.role !== "user" && post.author?.role && (
@@ -379,92 +537,114 @@ function PostCard({
                   size="small"
                   sx={{
                     height: 18,
-                    fontSize: "0.65rem",
+                    fontSize: "0.6rem",
                     textTransform: "capitalize",
+                    bgcolor: alpha("#4285f4", 0.1),
+                    color: "#4285f4",
                   }}
                 />
               )}
             </Box>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              sx={{ 
+                color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
+                flexShrink: 0,
+                fontSize: "0.7rem"
+              }}
+            >
               {formatDate(post.createdAt)}
             </Typography>
           </Box>
 
-          {/* Stats */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Button
-              size="small"
-              startIcon={
-                isLiking ? (
-                  <CircularProgress size={16} />
-                ) : hasLiked ? (
-                  <LikeIcon sx={{ color: "#ed1d0e" }} />
-                ) : (
-                  <LikeIcon />
-                )
-              }
+          {/* Stats with active state icons */}
+          <Box sx={{ 
+            display: "flex", 
+            alignItems: "center", 
+            gap: { xs: 0.5, sm: 1 },
+            flex: { xs: "1 1 100%", sm: "0 1 auto" },
+            justifyContent: { xs: "space-between", sm: "flex-end" }
+          }}>
+            {/* Like Button - Blue when liked */}
+            <ActionIconButton
+              icon={<LikeOutlinedIcon />}
+              activeIcon={<LikeIcon sx={{ color: "#4285f4" }} />}
+              active={hasLiked}
+              count={post.likeCount || 0}
               onClick={handleLikeClick}
-              disabled={isLiking}
-              sx={{
-                minWidth: "auto",
-                color: hasLiked ? "#f44336" : "text.secondary",
-                "&:hover": {
-                  color: hasLiked ? "#d32f2f" : "primary.main",
-                },
-              }}
-            >
-              {post.likeCount || 0}
-            </Button>
-
-            <Button
+              loading={isLiking}
               size="small"
-              startIcon={
-                isBookmarking ? (
-                  <CircularProgress size={16} />
-                ) : hasBookmarked ? (
-                  <BookmarkedIcon sx={{ color: "#2196f3" }} />
-                ) : (
-                  <BookmarkIcon />
-                )
-              }
+            />
+
+            {/* Bookmark Button - Blue when bookmarked */}
+            <ActionIconButton
+              icon={<BookmarkOutlinedIcon />}
+              activeIcon={<BookmarkFilledIcon sx={{ color: "#4285f4" }} />}
+              active={hasBookmarked}
+              count={post.bookmarkCount || 0}
               onClick={handleBookmarkClick}
-              disabled={isBookmarking}
-              sx={{
-                minWidth: "auto",
-                color: hasBookmarked ? "#2196f3" : "text.secondary",
-                "&:hover": {
-                  color: hasBookmarked ? "#1976d2" : "primary.main",
-                },
-              }}
-            >
-              {post.bookmarkCount || 0}
-            </Button>
-
-            <Button
+              loading={isBookmarking}
               size="small"
-              startIcon={<CommentIcon />}
-              onClick={handleViewClick}
-              sx={{ minWidth: "auto" }}
-            >
-              {post.commentCount || 0}
-            </Button>
+            />
 
-            <Button
-              size="small"
-              startIcon={<ViewIcon />}
-              onClick={handleViewClick}
-              sx={{ minWidth: "auto", color: "text.secondary" }}
-            >
-              {post.views || 0}
-            </Button>
+            {/* Comment Button */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <IconButton
+                size="small"
+                sx={{
+                  color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
+                  padding: "4px",
+                }}
+              >
+                <CommentIcon />
+              </IconButton>
+              <Typography
+                variant="caption"
+                sx={{ 
+                  color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
+                  minWidth: "1.5rem",
+                  fontSize: "0.75rem"
+                }}
+              >
+                {post.commentCount || 0}
+              </Typography>
+            </Box>
+
+            {/* View Button - This should open the dialog */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <IconButton
+                size="small"
+                onClick={handleEyeIconClick}
+                sx={{
+                  color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
+                  padding: "4px",
+                  "&:hover": {
+                    backgroundColor: alpha("#4285f4", 0.1),
+                    color: "#4285f4",
+                  },
+                }}
+              >
+                <ViewIcon />
+              </IconButton>
+              <Typography
+                variant="caption"
+                sx={{ 
+                  color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
+                  minWidth: "1.5rem",
+                  fontSize: "0.75rem"
+                }}
+              >
+                {post.views || 0}
+              </Typography>
+            </Box>
           </Box>
         </Box>
       </CardContent>
-    </Card>
+    </GoogleCard>
   );
 }
 
-// Post Detail Component
+// Post Detail Component - RESTORED
 function PostDetail({
   post,
   onClose,
@@ -483,6 +663,7 @@ function PostDetail({
   currentUserId?: string;
 }) {
   const theme = useTheme();
+  const darkMode = theme.palette.mode === "dark";
   const [commentText, setCommentText] = useState("");
   const [isLiking, setIsLiking] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
@@ -490,12 +671,12 @@ function PostDetail({
   // Check if current user has liked/bookmarked this post
   const hasLiked = useMemo(() => {
     if (!currentUserId || !post.likes) return false;
-    return post.likes.some((likeId) => likeId === currentUserId);
+    return post.likes.some((likeId: string) => likeId === currentUserId);
   }, [post.likes, currentUserId]);
 
   const hasBookmarked = useMemo(() => {
     if (!currentUserId || !post.bookmarks) return false;
-    return post.bookmarks.some((bookmarkId) => bookmarkId === currentUserId);
+    return post.bookmarks.some((bookmarkId: string) => bookmarkId === currentUserId);
   }, [post.bookmarks, currentUserId]);
 
   const handleLikeClick = async () => {
@@ -518,20 +699,31 @@ function PostDetail({
     }
   };
 
+  const handleCommentSubmit = () => {
+    if (!commentText.trim()) return;
+    onComment(post._id, commentText);
+    setCommentText("");
+  };
+
   return (
     <Box>
       {/* Post Content */}
-      <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+      <GoogleCard sx={{ p: { xs: 2, sm: 3 }, mb: 3 }}>
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
             mb: 3,
+            flexDirection: { xs: "column", sm: "row" },
+            gap: { xs: 2, sm: 0 },
           }}
         >
-          <Box>
-            <Typography variant="h5" fontWeight={700} gutterBottom>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h5" fontWeight={600} gutterBottom sx={{ 
+              color: darkMode ? "#e8eaed" : "#202124",
+              fontSize: { xs: "1.25rem", sm: "1.5rem" }
+            }}>
               {post.title}
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
@@ -539,10 +731,16 @@ function PostDetail({
                 {post.author?.name?.charAt(0)?.toUpperCase() || "U"}
               </Avatar>
               <Box>
-                <Typography variant="subtitle1" fontWeight={600}>
+                <Typography variant="subtitle1" fontWeight={600} sx={{ 
+                  color: darkMode ? "#e8eaed" : "#202124",
+                  fontSize: { xs: "0.875rem", sm: "1rem" }
+                }}>
                   {post.author?.name || "Unknown User"}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ 
+                  color: darkMode ? "#9aa0a6" : "#5f6368",
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" }
+                }}>
                   Posted {formatDate(post.createdAt)}
                 </Typography>
               </Box>
@@ -550,37 +748,35 @@ function PostDetail({
           </Box>
 
           <Box sx={{ display: "flex", gap: 1 }}>
-            <IconButton
+            <ActionIconButton
+              icon={<LikeOutlinedIcon />}
+              activeIcon={<LikeIcon sx={{ color: "#4285f4" }} />}
+              active={hasLiked}
+              count={post.likeCount || 0}
               onClick={handleLikeClick}
-              disabled={isLiking}
-              sx={{
-                color: hasLiked ? "#f44336" : "inherit",
-                "&:hover": { color: hasLiked ? "#d32f2f" : "primary.main" },
-              }}
-            >
-              {isLiking ? <CircularProgress size={24} /> : <LikeIcon />}
-            </IconButton>
+              loading={isLiking}
+              size="medium"
+            />
+
+            <ActionIconButton
+              icon={<BookmarkOutlinedIcon />}
+              activeIcon={<BookmarkFilledIcon sx={{ color: "#4285f4" }} />}
+              active={hasBookmarked}
+              count={post.bookmarkCount || 0}
+              onClick={handleBookmarkClick}
+              loading={isBookmarking}
+              size="medium"
+            />
 
             <IconButton
-              onClick={handleBookmarkClick}
-              disabled={isBookmarking}
               sx={{
-                color: hasBookmarked ? "#2196f3" : "inherit",
+                color: darkMode ? "#9aa0a6" : "#5f6368",
                 "&:hover": {
-                  color: hasBookmarked ? "#1976d2" : "primary.main",
+                  backgroundColor: alpha("#4285f4", 0.1),
+                  color: "#4285f4",
                 },
               }}
             >
-              {isBookmarking ? (
-                <CircularProgress size={24} />
-              ) : hasBookmarked ? (
-                <BookmarkedIcon />
-              ) : (
-                <BookmarkIcon />
-              )}
-            </IconButton>
-
-            <IconButton>
               <ShareIcon />
             </IconButton>
           </Box>
@@ -589,7 +785,13 @@ function PostDetail({
         {/* Post Body */}
         <Typography
           variant="body1"
-          sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, mb: 3 }}
+          sx={{ 
+            whiteSpace: "pre-wrap", 
+            lineHeight: 1.8, 
+            mb: 3,
+            color: darkMode ? "#e8eaed" : "#202124",
+            fontSize: { xs: "0.875rem", sm: "1rem" }
+          }}
         >
           {post.content}
         </Typography>
@@ -598,13 +800,26 @@ function PostDetail({
         {post.tags && post.tags.length > 0 && (
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 3 }}>
             {post.tags.map((tag, index) => (
-              <Chip key={index} label={tag} size="small" />
+              <Chip 
+                key={index} 
+                label={tag} 
+                size="small" 
+                sx={{
+                  borderColor: darkMode ? "#3c4043" : "#dadce0",
+                  color: darkMode ? "#e8eaed" : "#202124",
+                }}
+              />
             ))}
           </Box>
         )}
 
         {/* Stats */}
-        <Box sx={{ display: "flex", gap: 3, color: "text.secondary" }}>
+        <Box sx={{ 
+          display: "flex", 
+          gap: 3, 
+          flexWrap: "wrap",
+          color: darkMode ? "#9aa0a6" : "#5f6368",
+        }}>
           <Typography
             variant="caption"
             sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
@@ -615,7 +830,7 @@ function PostDetail({
             variant="caption"
             sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
           >
-            <BookmarkIcon fontSize="small" /> {post.bookmarkCount || 0}{" "}
+            <BookmarkOutlinedIcon fontSize="small" /> {post.bookmarkCount || 0}{" "}
             bookmarks
           </Typography>
           <Typography
@@ -631,21 +846,24 @@ function PostDetail({
             <ViewIcon fontSize="small" /> {post.views || 0} views
           </Typography>
         </Box>
-      </Paper>
+      </GoogleCard>
 
       {/* Comments Section */}
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" gutterBottom sx={{ 
+        color: darkMode ? "#e8eaed" : "#202124",
+        fontSize: { xs: "1rem", sm: "1.25rem" }
+      }}>
         Comments ({post.comments?.length || 0})
       </Typography>
 
       {!post.comments || post.comments.length === 0 ? (
-        <Alert severity="info" sx={{ mb: 3 }}>
+        <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
           No comments yet. Be the first to comment!
         </Alert>
       ) : (
         <Stack spacing={2} sx={{ mb: 3 }}>
           {post.comments.map((comment) => (
-            <Paper key={comment._id} sx={{ p: 2, borderRadius: 2 }}>
+            <GoogleCard key={comment._id} sx={{ p: 2 }}>
               <Box
                 sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
               >
@@ -653,18 +871,37 @@ function PostDetail({
                   <Avatar sx={{ width: 32, height: 32 }}>
                     {comment.userName?.charAt(0)?.toUpperCase() || "U"}
                   </Avatar>
-                  <Typography variant="subtitle2" fontWeight={600}>
+                  <Typography variant="subtitle2" fontWeight={600} sx={{ 
+                    color: darkMode ? "#e8eaed" : "#202124",
+                    fontSize: "0.875rem"
+                  }}>
                     {comment.userName || "Unknown User"}
                   </Typography>
                   {comment.isSolution && (
-                    <Chip label="Solution" size="small" color="success" />
+                    <Chip 
+                      label="Solution" 
+                      size="small" 
+                      sx={{
+                        backgroundColor: "#34a853",
+                        color: "#ffffff",
+                        fontSize: "0.75rem",
+                        height: "20px",
+                      }}
+                    />
                   )}
                 </Box>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ 
+                  color: darkMode ? "#9aa0a6" : "#5f6368",
+                  fontSize: "0.75rem"
+                }}>
                   {formatDate(comment.createdAt)}
                 </Typography>
               </Box>
-              <Typography variant="body2" sx={{ mb: 1 }}>
+              <Typography variant="body2" sx={{ 
+                mb: 1,
+                color: darkMode ? "#e8eaed" : "#202124",
+                fontSize: "0.875rem"
+              }}>
                 {comment.content}
               </Typography>
               <Box sx={{ display: "flex", gap: 1 }}>
@@ -675,12 +912,16 @@ function PostDetail({
                   <Button
                     size="small"
                     onClick={() => onMarkAsSolution(post._id, comment._id)}
+                    sx={{
+                      color: "#4285f4",
+                      fontSize: "0.75rem",
+                    }}
                   >
                     Mark as Solution
                   </Button>
                 )}
               </Box>
-            </Paper>
+            </GoogleCard>
           ))}
         </Stack>
       )}
@@ -693,20 +934,23 @@ function PostDetail({
           value={commentText}
           onChange={(e) => setCommentText(e.target.value)}
           size="small"
+          sx={{
+            "& .MuiInputBase-input": {
+              color: darkMode ? "#e8eaed" : "#202124",
+              fontSize: { xs: "0.875rem", sm: "1rem" }
+            },
+          }}
         />
         <Button
           variant="contained"
-          onClick={() => {
-            console.log("🟡 Comment button clicked");
-            console.log("Post ID:", post._id);
-            console.log("Comment text:", commentText);
-
-            if (commentText.trim()) {
-              onComment(post._id, commentText);
-              setCommentText("");
-            }
-          }}
+          onClick={handleCommentSubmit}
           disabled={!commentText.trim()}
+          sx={{
+            backgroundColor: "#4285f4",
+            "&:hover": { backgroundColor: "#3367d6" },
+            minWidth: "auto",
+            px: 2,
+          }}
         >
           <SendIcon />
         </Button>
@@ -717,7 +961,9 @@ function PostDetail({
 
 export default function CommunityPage() {
   const theme = useTheme();
+  const darkMode = theme.palette.mode === "dark";
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
 
   const {
     posts,
@@ -757,20 +1003,17 @@ export default function CommunityPage() {
     excerpt: "",
   });
 
-  const [commentInput, setCommentInput] = useState("");
   const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Fetch posts and stats on mount
+  // Fetch posts and stats
   useEffect(() => {
     fetchPosts(filters);
     fetchStats();
-    // Get current user ID from localStorage or cookies
+    // Get current user ID
     const token = document.cookie.match(/auth_token=([^;]+)/)?.[1];
     if (token) {
       try {
-        // You need to decode the JWT token to get user ID
-        // This is a simplified version - you should use your actual token decoding logic
         const tokenParts = token.split(".");
         if (tokenParts.length === 3) {
           const payload = JSON.parse(atob(tokenParts[1]));
@@ -784,10 +1027,6 @@ export default function CommunityPage() {
 
   const handleFilterChange = (key: keyof CommunityFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
-  };
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFilterChange("search", e.target.value);
   };
 
   const handleCreatePost = async () => {
@@ -823,31 +1062,11 @@ export default function CommunityPage() {
   };
 
   const handleAddComment = async (postId: string, content: string) => {
-    console.log("🟢 handleAddComment called");
-    console.log("Post ID:", postId);
-    console.log("Comment content:", content);
-
-    if (!content.trim()) {
-      console.log("❌ Empty comment, not posting");
-      return;
-    }
-
+    if (!content.trim()) return;
     try {
-      console.log("📤 Calling addComment API...");
       await addComment(postId, content);
-      console.log("✅ Comment added successfully");
     } catch (error) {
-      console.error("❌ Failed to add comment:", error);
-    }
-  };
-
-  const handleDeletePost = async (postId: string) => {
-    if (!confirm("Are you sure you want to delete this post?")) return;
-
-    try {
-      await deletePost(postId);
-    } catch (error) {
-      console.error("Failed to delete post:", error);
+      console.error("Failed to add comment:", error);
     }
   };
 
@@ -859,71 +1078,36 @@ export default function CommunityPage() {
     }
   };
 
-  const handleDownloadCommunity = () => {
-    try {
-      // Create community content
-      const content = `
-ATTENDANCE PRO COMMUNITY EXPORT
-===============================
-Generated on: ${new Date().toLocaleDateString()}
-Total Posts: ${stats?.totalPosts || 0}
-Total Users: ${stats?.totalUsers || 0}
-
-${posts
-  .map(
-    (post: any, index) => `
-${index + 1}. [${post.category.toUpperCase()}] ${post.title}
-   By: ${post.author?.name || "Unknown"} | ${new Date(post.createdAt).toLocaleDateString()}
-   Likes: ${post.likeCount || 0} | Comments: ${post.commentCount || 0} | Views: ${post.views || 0}
-   
-   ${post.excerpt}
-   
-   Tags: ${post.tags?.join(", ") || "None"}
-   ${"-".repeat(80)}
-`,
-  )
-  .join("\n")}
-
-${stats?.popularCategories
-  ?.map((cat) => `${cat._id}: ${cat.count} posts`)
-  .join("\n")}
-
-For more, visit: https://yourapp.com/community
-      `.trim();
-
-      // Create and trigger download
-      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-
-      link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `community_export_${new Date().toISOString().split("T")[0]}.txt`,
-      );
-      link.style.visibility = "hidden";
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      alert("Community data exported successfully!");
-    } catch (error) {
-      console.error("Error exporting community:", error);
-      alert("Failed to export community data");
-    }
-  };
-
   // Cast posts to CommunityPost type
   const communityPosts = posts as unknown as CommunityPost[];
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
+    <Box sx={{ 
+      backgroundColor: darkMode ? "#202124" : "#ffffff", 
+      minHeight: "100vh",
+      width: "100%",
+      overflowX: "hidden",
+    }}>
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
+      <Box
+        sx={{
+          p: { xs: 1, sm: 2, md: 3 },
+          borderBottom: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+          background: darkMode
+            ? "linear-gradient(135deg, #0d3064 0%, #202124 100%)"
+            : "linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)",
+          width: "100%",
+        }}
+      >
         {/* Breadcrumbs */}
-        <Breadcrumbs sx={{ mb: 2 }}>
+        <Breadcrumbs sx={{ 
+          mb: { xs: 1, sm: 2 }, 
+          fontSize: { xs: "0.7rem", sm: "0.8rem", md: "0.85rem" },
+          overflow: "hidden",
+          "& .MuiBreadcrumbs-ol": {
+            flexWrap: "wrap",
+          }
+        }}>
           <MuiLink
             component={Link}
             href="/dashboard"
@@ -931,14 +1115,20 @@ For more, visit: https://yourapp.com/community
               display: "flex",
               alignItems: "center",
               textDecoration: "none",
-              color: "text.secondary",
-              "&:hover": { color: "primary.main" },
+              color: darkMode ? "#9aa0a6" : "#5f6368",
+              "&:hover": { color: darkMode ? "#8ab4f8" : "#4285f4" },
+              fontSize: { xs: "0.7rem", sm: "0.8rem" },
             }}
           >
-            <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
+            <HomeIcon sx={{ mr: 0.5, fontSize: { xs: "12px", sm: "14px", md: "16px" } }} />
             Dashboard
           </MuiLink>
-          <Typography color="text.primary">Community</Typography>
+          <Typography sx={{ 
+            color: darkMode ? "#e8eaed" : "#202124",
+            fontSize: { xs: "0.7rem", sm: "0.8rem" }
+          }}>
+            Community
+          </Typography>
         </Breadcrumbs>
 
         {/* Main Header */}
@@ -950,113 +1140,133 @@ For more, visit: https://yourapp.com/community
             flexDirection: { xs: "column", sm: "row" },
             gap: 2,
             mb: 3,
+            width: "100%",
           }}
         >
-          <Box>
-            <Typography variant="h4" fontWeight={700} gutterBottom>
+          <Box sx={{ maxWidth: "100%" }}>
+            <Typography
+              variant="h4"
+              fontWeight={500}
+              gutterBottom
+              sx={{ 
+                color: darkMode ? "#e8eaed" : "#202124",
+                fontSize: { xs: "1.5rem", sm: "2rem", md: "2.25rem" },
+                wordBreak: "break-word",
+              }}
+            >
               👥 Community Forum
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography
+              variant="body1"
+              sx={{ 
+                color: darkMode ? "#9aa0a6" : "#5f6368",
+                fontSize: { xs: "0.875rem", sm: "1rem" },
+                wordBreak: "break-word",
+              }}
+            >
               Connect with other users, share knowledge, and get help
             </Typography>
           </Box>
 
           <Stack
-            direction="row"
+            direction={{ xs: "column", sm: "row" }}
             spacing={1}
             alignItems="center"
             sx={{
               width: { xs: "100%", sm: "auto" },
-              justifyContent: { xs: "space-between", sm: "flex-end" },
+              justifyContent: { xs: "stretch", sm: "flex-end" },
+              gap: 1,
             }}
           >
-            {/* Stats Chips */}
-            <Stack direction="row" spacing={1} alignItems="center">
-              {stats && (
-                <>
-                  <Chip
-                    icon={<ForumIcon />}
-                    label={`${stats.totalPosts} Posts`}
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                  />
-                  <Chip
-                    icon={<PeopleIcon />}
-                    label={`${stats.totalUsers} Users`}
-                    size="small"
-                    color="info"
-                    variant="outlined"
-                  />
-                  <Chip
-                    icon={<ChartIcon />}
-                    label={`${stats.activeToday} Active Today`}
-                    size="small"
-                    color="success"
-                    variant="outlined"
-                  />
-                </>
-              )}
+            {/* Stats Chips - Only show on tablet/desktop */}
+            {!isMobile && stats && (
+              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexWrap: "wrap" }}>
+                <Chip
+                  icon={<ForumIcon sx={{ fontSize: "14px" }} />}
+                  label={`${stats.totalPosts}`}
+                  size="small"
+                  sx={{
+                    bgcolor: alpha("#4285f4", darkMode ? 0.2 : 0.1),
+                    color: "#4285f4",
+                    borderColor: alpha("#4285f4", 0.3),
+                    fontSize: "0.7rem",
+                    height: "24px",
+                  }}
+                />
+                <Chip
+                  icon={<PeopleIcon sx={{ fontSize: "14px" }} />}
+                  label={`${stats.totalUsers}`}
+                  size="small"
+                  sx={{
+                    bgcolor: alpha("#34a853", darkMode ? 0.2 : 0.1),
+                    color: "#34a853",
+                    borderColor: alpha("#34a853", 0.3),
+                    fontSize: "0.7rem",
+                    height: "24px",
+                  }}
+                />
+              </Stack>
+            )}
+
+            {/* Action Buttons */}
+            <Stack direction="row" spacing={1} sx={{ width: { xs: "100%", sm: "auto" } }}>
+              <Button
+                variant="outlined"
+                startIcon={<Download />}
+                onClick={() => {}}
+                size={isMobile ? "small" : "medium"}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 500,
+                  borderColor: darkMode ? "#5f6368" : "#dadce0",
+                  color: darkMode ? "#e8eaed" : "#202124",
+                  "&:hover": {
+                    borderColor: darkMode ? "#8ab4f8" : "#4285f4",
+                    backgroundColor: darkMode
+                      ? alpha("#4285f4", 0.1)
+                      : alpha("#4285f4", 0.05),
+                  },
+                  flex: { xs: 1, sm: "auto" },
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                }}
+              >
+                {isMobile ? "Export" : "Export Data"}
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setShowNewPostDialog(true)}
+                size={isMobile ? "small" : "medium"}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 500,
+                  backgroundColor: "#4285f4",
+                  color: "#ffffff",
+                  "&:hover": {
+                    backgroundColor: "#3367d6",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  },
+                  flex: { xs: 1, sm: "auto" },
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                }}
+              >
+                {isMobile ? "New" : "New Post"}
+              </Button>
             </Stack>
-
-            {/* Download Button */}
-            <Button
-              variant="outlined"
-              startIcon={<Download />}
-              onClick={handleDownloadCommunity}
-              size={isMobile ? "small" : "medium"}
-              sx={{
-                borderRadius: 2,
-                borderColor: "primary.main",
-                color: "primary.main",
-                "&:hover": {
-                  borderColor: "primary.dark",
-                },
-              }}
-            >
-              Export
-            </Button>
-
-            {/* New Post Button */}
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setShowNewPostDialog(true)}
-              size={isMobile ? "small" : "medium"}
-              sx={{
-                borderRadius: 2,
-                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                boxShadow: theme.shadows[2],
-                "&:hover": {
-                  background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
-                  boxShadow: theme.shadows[4],
-                },
-              }}
-            >
-              New Post
-            </Button>
           </Stack>
         </Box>
 
         {/* Search & Filter Bar */}
-        <Paper
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            background: "background.paper",
-            backdropFilter: "blur(10px)",
-            border: "1px solid",
-            borderColor: "divider",
-            mb: 3,
-          }}
-        >
+        <GoogleCard sx={{ p: { xs: 1, sm: 2 }, mb: 3 }}>
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
+              flexDirection: { xs: "column", sm: "row" },
               gap: 2,
+              width: "100%",
             }}
           >
             {/* Search */}
@@ -1065,428 +1275,583 @@ For more, visit: https://yourapp.com/community
                 display: "flex",
                 alignItems: "center",
                 flex: 1,
-                minWidth: 300,
+                minWidth: { xs: "100%", sm: "300px" },
+                width: "100%",
               }}
             >
-              <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
+              <SearchIcon sx={{ 
+                mr: 1, 
+                color: darkMode ? "#9aa0a6" : "#5f6368",
+                fontSize: { xs: "18px", sm: "20px" }
+              }} />
               <TextField
                 fullWidth
-                placeholder="Search discussions, questions, or topics..."
+                placeholder="Search discussions..."
                 value={filters.search}
-                onChange={handleSearch}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
                 variant="standard"
                 size="small"
-                InputProps={{ disableUnderline: true }}
-              />
-            </Box>
-
-            {/* Category Filter */}
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={filters.category}
-                onChange={(e) =>
-                  handleFilterChange("category", e.target.value)
-                }
-                label="Category"
-                startAdornment={<CategoryIcon sx={{ mr: 1 }} />}
-              >
-                {CATEGORIES.map((cat) => (
-                  <MenuItem key={cat.id} value={cat.id}>
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                    >
-                      {cat.icon}
-                      {cat.name}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {/* Sort Filter */}
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Sort by</InputLabel>
-              <Select
-                value={filters.sort}
-                onChange={(e) => handleFilterChange("sort", e.target.value)}
-                label="Sort by"
-                startAdornment={<SortIcon sx={{ mr: 1 }} />}
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                    >
-                      {option.icon}
-                      {option.label}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-        </Paper>
-      </Box>
-
-      {/* Error Alert */}
-      {error && (
-        <Alert
-          severity="error"
-          sx={{ mb: 3, borderRadius: 2 }}
-          onClose={() => setError(null)}
-        >
-          {error}
-        </Alert>
-      )}
-
-      {/* Categories Tabs */}
-      <Paper sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
-        <Tabs
-          value={filters.category}
-          onChange={(e, newValue) => handleFilterChange("category", newValue)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            bgcolor: "background.paper",
-            "& .MuiTab-root": {
-              textTransform: "none",
-              fontWeight: 600,
-              fontSize: "0.95rem",
-              minHeight: 60,
-            },
-          }}
-        >
-          {CATEGORIES.map((category) => (
-            <Tab
-              key={category.id}
-              value={category.id}
-              icon={category.icon}
-              iconPosition="start"
-              label={
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  {category.name}
-                  {stats?.popularCategories?.find(
-                    (c) => c._id === category.id,
-                  ) && (
-                    <Chip
-                      label={
-                        stats.popularCategories.find(
-                          (c) => c._id === category.id,
-                        )?.count
-                      }
-                      size="small"
-                      sx={{ height: 20, fontSize: "0.75rem" }}
-                    />
-                  )}
-                </Box>
-              }
-              sx={{
-                color:
-                  filters.category === category.id
-                    ? category.color
-                    : "text.secondary",
-              }}
-            />
-          ))}
-        </Tabs>
-      </Paper>
-
-      {/* Content Grid */}
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: { xs: "column", lg: "row" },
-          gap: 3,
-        }}
-      >
-        {/* Main Posts */}
-        <Box sx={{ flex: 1 }}>
-          {loading ? (
-            <Box sx={{ textAlign: "center", py: 8 }}>
-              <CircularProgress />
-              <Typography color="text.secondary" sx={{ mt: 2 }}>
-                Loading community posts...
-              </Typography>
-            </Box>
-          ) : communityPosts.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 8 }}>
-              <ForumIcon
+                InputProps={{ 
+                  disableUnderline: true,
+                  sx: { fontSize: { xs: "0.875rem", sm: "0.9375rem" } }
+                }}
                 sx={{
-                  fontSize: 60,
-                  color: "text.secondary",
-                  opacity: 0.5,
-                  mb: 2,
+                  "& .MuiInputBase-input": {
+                    color: darkMode ? "#e8eaed" : "#202124",
+                  },
                 }}
               />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No posts found
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 3 }}
-              >
-                {filters.search
-                  ? "Try a different search term"
-                  : "Be the first to start a discussion!"}
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setShowNewPostDialog(true)}
-              >
-                Create First Post
-              </Button>
             </Box>
-          ) : (
-            <>
-              {/* Pinned Posts */}
-              {communityPosts.filter((p) => p.isPinned).length > 0 && (
-                <Box sx={{ mb: 3 }}>
+
+            {/* Filters */}
+            <Box sx={{ 
+              display: "flex", 
+              gap: 1, 
+              width: { xs: "100%", sm: "auto" },
+              flexWrap: { xs: "wrap", sm: "nowrap" }
+            }}>
+              <FormControl size="small" sx={{ 
+                minWidth: { xs: "calc(50% - 4px)", sm: "150px" },
+                flex: { xs: 1, sm: "auto" }
+              }}>
+                <Select
+                  value={filters.category}
+                  onChange={(e) => handleFilterChange("category", e.target.value)}
+                  displayEmpty
+                  sx={{
+                    color: darkMode ? "#e8eaed" : "#202124",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: darkMode ? "#3c4043" : "#dadce0",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: darkMode ? "#5f6368" : "#bdc1c6",
+                    },
+                    fontSize: { xs: "0.8rem", sm: "0.875rem" },
+                    height: "40px",
+                  }}
+                >
+                  <MenuItem value="all">All Categories</MenuItem>
+                  {CATEGORIES.filter(c => c.id !== "all").map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        {cat.icon}
+                        <span style={{ fontSize: "0.875rem" }}>{cat.name}</span>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ 
+                minWidth: { xs: "calc(50% - 4px)", sm: "150px" },
+                flex: { xs: 1, sm: "auto" }
+              }}>
+                <Select
+                  value={filters.sort}
+                  onChange={(e) => handleFilterChange("sort", e.target.value)}
+                  displayEmpty
+                  sx={{
+                    color: darkMode ? "#e8eaed" : "#202124",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: darkMode ? "#3c4043" : "#dadce0",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: darkMode ? "#5f6368" : "#bdc1c6",
+                    },
+                    fontSize: { xs: "0.8rem", sm: "0.875rem" },
+                    height: "40px",
+                  }}
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        {option.icon}
+                        <span style={{ fontSize: "0.875rem" }}>{option.label}</span>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          </Box>
+        </GoogleCard>
+      </Box>
+
+      {/* Main Content */}
+      <Container 
+        maxWidth="xl" 
+        sx={{ 
+          py: { xs: 1, sm: 2, md: 3 }, 
+          px: { xs: 1, sm: 2, md: 3 },
+          width: "100%",
+          maxWidth: "100%!important",
+        }}
+      >
+        {/* Error Alert */}
+        {error && (
+          <Alert
+            severity="error"
+            sx={{ 
+              mb: 3, 
+              borderRadius: 2,
+              fontSize: { xs: "0.875rem", sm: "1rem" }
+            }}
+            onClose={() => setError(null)}
+          >
+            {error}
+          </Alert>
+        )}
+
+        {/* Categories Tabs - Horizontal scroll on mobile */}
+        <Box sx={{ 
+          mb: 3, 
+          overflowX: { xs: "auto", sm: "visible" },
+          "&::-webkit-scrollbar": { display: "none" },
+          WebkitOverflowScrolling: "touch",
+        }}>
+          <Tabs
+            value={filters.category}
+            onChange={(e, newValue) => handleFilterChange("category", newValue)}
+            variant={isMobile ? "scrollable" : "standard"}
+            scrollButtons={isMobile ? "auto" : false}
+            sx={{
+              minWidth: "fit-content",
+              "& .MuiTab-root": {
+                textTransform: "none",
+                fontWeight: 500,
+                fontSize: { xs: "0.8rem", sm: "0.9rem" },
+                minHeight: "48px",
+                minWidth: "auto",
+                px: { xs: 1, sm: 2 },
+              },
+            }}
+          >
+            {CATEGORIES.map((category) => (
+              <Tab
+                key={category.id}
+                value={category.id}
+                icon={!isMobile ? category.icon : undefined}
+                iconPosition="start"
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    {isMobile && category.icon}
+                    <span>{category.name}</span>
+                    {stats?.popularCategories?.find((c) => c._id === category.id) && !isMobile && (
+                      <Chip
+                        label={
+                          stats.popularCategories.find((c) => c._id === category.id)?.count
+                        }
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: "0.7rem",
+                          backgroundColor: alpha(category.color, 0.1),
+                          color: category.color,
+                        }}
+                      />
+                    )}
+                  </Box>
+                }
+                sx={{
+                  color: filters.category === category.id ? category.color : darkMode ? "#9aa0a6" : "#5f6368",
+                }}
+              />
+            ))}
+          </Tabs>
+        </Box>
+
+        {/* Content Grid */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", lg: "row" },
+            gap: 3,
+            width: "100%",
+          }}
+        >
+          {/* Main Posts */}
+          <Box sx={{ 
+            flex: 1,
+            minWidth: 0,
+            width: "100%",
+          }}>
+            {loading ? (
+              <Box sx={{ textAlign: "center", py: 8 }}>
+                <CircularProgress />
+                <Typography
+                  sx={{ mt: 2, color: darkMode ? "#9aa0a6" : "#5f6368" }}
+                >
+                  Loading community posts...
+                </Typography>
+              </Box>
+            ) : communityPosts.length === 0 ? (
+              <GoogleCard sx={{ textAlign: "center", p: { xs: 3, sm: 6, md: 8 } }}>
+                <ForumIcon
+                  sx={{
+                    fontSize: { xs: 48, sm: 60, md: 72 },
+                    color: darkMode ? "#5f6368" : "#9aa0a6",
+                    mb: 2,
+                  }}
+                />
+                <Typography
+                  variant="h6"
+                  sx={{ 
+                    color: darkMode ? "#e8eaed" : "#202124", 
+                    mb: 1,
+                    fontSize: { xs: "1.1rem", sm: "1.25rem" }
+                  }}
+                >
+                  No posts found
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ 
+                    mb: 3, 
+                    color: darkMode ? "#9aa0a6" : "#5f6368",
+                    fontSize: { xs: "0.875rem", sm: "1rem" }
+                  }}
+                >
+                  {filters.search
+                    ? "Try a different search term"
+                    : "Be the first to start a discussion!"}
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setShowNewPostDialog(true)}
+                  sx={{
+                    backgroundColor: "#4285f4",
+                    "&:hover": { backgroundColor: "#3367d6" },
+                    fontSize: { xs: "0.875rem", sm: "1rem" }
+                  }}
+                >
+                  Create First Post
+                </Button>
+              </GoogleCard>
+            ) : (
+              <>
+                {/* Pinned Posts */}
+                {communityPosts.filter((p) => p.isPinned).length > 0 && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        color: darkMode ? "#e8eaed" : "#202124",
+                        mb: 2,
+                        fontSize: { xs: "1rem", sm: "1.25rem" }
+                      }}
+                    >
+                      <PinIcon />
+                      Pinned Posts
+                    </Typography>
+                    <Stack spacing={{ xs: 1.5, sm: 2 }}>
+                      {communityPosts
+                        .filter((p) => p.isPinned)
+                        .map((post) => (
+                          <PostCard
+                            key={post._id}
+                            post={post}
+                            onLike={handleLikePost}
+                            onBookmark={handleBookmarkPost}
+                            onSelect={setSelectedPost}
+                            currentUserId={currentUserId || undefined}
+                          />
+                        ))}
+                    </Stack>
+                  </Box>
+                )}
+
+                {/* All Posts */}
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    mb: 2,
+                    color: darkMode ? "#e8eaed" : "#202124",
+                    fontSize: { xs: "1rem", sm: "1.25rem" }
+                  }}
+                >
+                  <NewIcon />
+                  {filters.sort === "trending" ? "Trending Now" : "Recent Discussions"}
+                </Typography>
+
+                <Stack spacing={{ xs: 1.5, sm: 2 }}>
+                  {communityPosts
+                    .filter((p) => !p.isPinned)
+                    .map((post) => (
+                      <PostCard
+                        key={post._id}
+                        post={post}
+                        onLike={handleLikePost}
+                        onBookmark={handleBookmarkPost}
+                        onSelect={setSelectedPost}
+                        currentUserId={currentUserId || undefined}
+                      />
+                    ))}
+                </Stack>
+
+                {/* Pagination */}
+                {pagination.pages > 1 && (
+                  <Box sx={{ 
+                    display: "flex", 
+                    justifyContent: "center", 
+                    mt: 4,
+                    width: "100%",
+                    overflowX: "auto"
+                  }}>
+                    <Pagination
+                      count={pagination.pages}
+                      page={pagination.page}
+                      onChange={(e, page) => handleFilterChange("page", page)}
+                      color="primary"
+                      size={isMobile ? "small" : "medium"}
+                      showFirstButton={!isMobile}
+                      showLastButton={!isMobile}
+                      sx={{
+                        "& .MuiPaginationItem-root": {
+                          color: darkMode ? "#e8eaed" : "#202124",
+                          borderColor: darkMode ? "#3c4043" : "#dadce0",
+                          fontSize: { xs: "0.75rem", sm: "0.875rem" }
+                        },
+                        "& .MuiPaginationItem-root.Mui-selected": {
+                          backgroundColor: "#4285f4",
+                          color: "#ffffff",
+                          "&:hover": {
+                            backgroundColor: "#3367d6",
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                )}
+              </>
+            )}
+          </Box>
+
+          {/* Sidebar - Hidden on small screens */}
+          {!isTablet && (
+            <Box sx={{ 
+              width: { xs: "100%", lg: "350px" },
+              flexShrink: 0,
+            }}>
+              {/* Community Stats */}
+              <GoogleCard sx={{ mb: 3 }}>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
                   <Typography
                     variant="h6"
                     gutterBottom
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                  >
-                    <PinIcon />
-                    Pinned Posts
-                  </Typography>
-                  <Stack spacing={2}>
-                    {communityPosts
-                      .filter((p) => p.isPinned)
-                      .map((post) => (
-                        <PostCard
-                          key={post._id}
-                          post={post}
-                          onLike={handleLikePost}
-                          onBookmark={handleBookmarkPost}
-                          onSelect={setSelectedPost}
-                          currentUserId={currentUserId || undefined}
-                        />
-                      ))}
-                  </Stack>
-                </Box>
-              )}
-
-              {/* All Posts */}
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-              >
-                <NewIcon />
-                {filters.sort === "trending"
-                  ? "Trending Now"
-                  : "Recent Discussions"}
-              </Typography>
-
-              <Stack spacing={2}>
-                {communityPosts
-                  .filter((p) => !p.isPinned)
-                  .map((post) => (
-                    <PostCard
-                      key={post._id}
-                      post={post}
-                      onLike={handleLikePost}
-                      onBookmark={handleBookmarkPost}
-                      onSelect={setSelectedPost}
-                      currentUserId={currentUserId || undefined}
-                    />
-                  ))}
-              </Stack>
-
-              {/* Pagination */}
-              {pagination.pages > 1 && (
-                <Box
-                  sx={{ display: "flex", justifyContent: "center", mt: 4 }}
-                >
-                  <Pagination
-                    count={pagination.pages}
-                    page={pagination.page}
-                    onChange={(e, page) => handleFilterChange("page", page)}
-                    color="primary"
-                    size={isMobile ? "small" : "medium"}
-                    showFirstButton
-                    showLastButton
-                  />
-                </Box>
-              )}
-            </>
-          )}
-        </Box>
-
-        {/* Sidebar */}
-        <Box sx={{ width: { xs: "100%", lg: 350 } }}>
-          {/* Community Stats */}
-          <Card sx={{ mb: 3, borderRadius: 2 }}>
-            <CardContent>
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <ChartIcon />
-                Community Stats
-              </Typography>
-              {stats ? (
-                <Stack spacing={1.5}>
-                  <Box
-                    sx={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      Total Posts
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {stats.totalPosts}
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      Total Comments
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {stats.totalComments}
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      Total Users
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {stats.totalUsers}
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      Active Today
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {stats.activeToday}
-                    </Typography>
-                  </Box>
-                </Stack>
-              ) : (
-                <CircularProgress size={20} />
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Popular Categories */}
-          <Card sx={{ mb: 3, borderRadius: 2 }}>
-            <CardContent>
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <HotIcon />
-                Popular Categories
-              </Typography>
-              <Stack spacing={1}>
-                {stats?.popularCategories?.map((category) => (
-                  <Box
-                    key={category._id}
                     sx={{
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "space-between",
-                      p: 1.5,
-                      borderRadius: 1,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      "&:hover": {
-                        bgcolor: alpha(theme.palette.primary.main, 0.05),
-                      },
+                      gap: 1,
+                      color: darkMode ? "#e8eaed" : "#202124",
+                      fontSize: { xs: "1rem", sm: "1.125rem" }
                     }}
-                    onClick={() =>
-                      handleFilterChange("category", category._id)
-                    }
                   >
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                    >
-                      {CATEGORIES.find((c) => c.id === category._id)?.icon}
-                      <Typography variant="body2" fontWeight={500}>
-                        {CATEGORIES.find((c) => c.id === category._id)
-                          ?.name || category._id}
-                      </Typography>
-                    </Box>
-                    <Chip label={category.count} size="small" />
-                  </Box>
-                ))}
-              </Stack>
-            </CardContent>
-          </Card>
+                    <ChartIcon />
+                    Community Stats
+                  </Typography>
+                  {stats ? (
+                    <Stack spacing={1.5}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <Typography variant="body2" sx={{ 
+                          color: darkMode ? "#9aa0a6" : "#5f6368",
+                          fontSize: "0.875rem"
+                        }}>
+                          Total Posts
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600} sx={{ 
+                          color: darkMode ? "#e8eaed" : "#202124",
+                          fontSize: "0.875rem"
+                        }}>
+                          {stats.totalPosts}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <Typography variant="body2" sx={{ 
+                          color: darkMode ? "#9aa0a6" : "#5f6368",
+                          fontSize: "0.875rem"
+                        }}>
+                          Total Comments
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600} sx={{ 
+                          color: darkMode ? "#e8eaed" : "#202124",
+                          fontSize: "0.875rem"
+                        }}>
+                          {stats.totalComments}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <Typography variant="body2" sx={{ 
+                          color: darkMode ? "#9aa0a6" : "#5f6368",
+                          fontSize: "0.875rem"
+                        }}>
+                          Total Users
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600} sx={{ 
+                          color: darkMode ? "#e8eaed" : "#202124",
+                          fontSize: "0.875rem"
+                        }}>
+                          {stats.totalUsers}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <Typography variant="body2" sx={{ 
+                          color: darkMode ? "#9aa0a6" : "#5f6368",
+                          fontSize: "0.875rem"
+                        }}>
+                          Active Today
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600} sx={{ 
+                          color: darkMode ? "#e8eaed" : "#202124",
+                          fontSize: "0.875rem"
+                        }}>
+                          {stats.activeToday}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  ) : (
+                    <CircularProgress size={20} />
+                  )}
+                </CardContent>
+              </GoogleCard>
 
-          {/* Community Guidelines */}
-          <Card sx={{ mb: 3, borderRadius: 2 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                📝 Community Guidelines
-              </Typography>
-              <Stack spacing={1}>
-                <Typography
-                  variant="body2"
-                  sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                >
-                  <CheckIcon
-                    fontSize="small"
-                    sx={{ color: "success.main", mt: 0.2 }}
-                  />
-                  Be respectful and professional
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                >
-                  <CheckIcon
-                    fontSize="small"
-                    sx={{ color: "success.main", mt: 0.2 }}
-                  />
-                  No spam or self-promotion
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                >
-                  <CheckIcon
-                    fontSize="small"
-                    sx={{ color: "success.main", mt: 0.2 }}
-                  />
-                  Stay on topic
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                >
-                  <CheckIcon
-                    fontSize="small"
-                    sx={{ color: "success.main", mt: 0.2 }}
-                  />
-                  Help others when you can
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                >
-                  <CheckIcon
-                    fontSize="small"
-                    sx={{ color: "success.main", mt: 0.2 }}
-                  />
-                  Report inappropriate content
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
+              {/* Popular Categories */}
+              <GoogleCard sx={{ mb: 3 }}>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      color: darkMode ? "#e8eaed" : "#202124",
+                      fontSize: { xs: "1rem", sm: "1.125rem" }
+                    }}
+                  >
+                    <HotIcon />
+                    Popular Categories
+                  </Typography>
+                  <Stack spacing={1}>
+                    {stats?.popularCategories?.map((category) => (
+                      <Box
+                        key={category._id}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          p: 1.5,
+                          borderRadius: 1,
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          "&:hover": {
+                            bgcolor: alpha("#4285f4", darkMode ? 0.1 : 0.05),
+                          },
+                        }}
+                        onClick={() => handleFilterChange("category", category._id)}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                          {CATEGORIES.find((c) => c.id === category._id)?.icon}
+                          <Typography variant="body2" fontWeight={500} sx={{ 
+                            color: darkMode ? "#e8eaed" : "#202124",
+                            fontSize: "0.875rem"
+                          }}>
+                            {CATEGORIES.find((c) => c.id === category._id)?.name || category._id}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={category.count}
+                          size="small"
+                          sx={{
+                            backgroundColor: alpha("#4285f4", 0.1),
+                            color: "#4285f4",
+                            fontSize: "0.75rem",
+                            height: "24px",
+                          }}
+                        />
+                      </Box>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </GoogleCard>
+
+              {/* Community Guidelines */}
+              <GoogleCard>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+                  <Typography variant="h6" gutterBottom sx={{ 
+                    color: darkMode ? "#e8eaed" : "#202124",
+                    fontSize: { xs: "1rem", sm: "1.125rem" }
+                  }}>
+                    📝 Community Guidelines
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1,
+                        color: darkMode ? "#9aa0a6" : "#5f6368",
+                        fontSize: "0.875rem"
+                      }}
+                    >
+                      <CheckIcon fontSize="small" sx={{ color: "#34a853", mt: 0.2 }} />
+                      Be respectful and professional
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1,
+                        color: darkMode ? "#9aa0a6" : "#5f6368",
+                        fontSize: "0.875rem"
+                      }}
+                    >
+                      <CheckIcon fontSize="small" sx={{ color: "#34a853", mt: 0.2 }} />
+                      No spam or self-promotion
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1,
+                        color: darkMode ? "#9aa0a6" : "#5f6368",
+                        fontSize: "0.875rem"
+                      }}
+                    >
+                      <CheckIcon fontSize="small" sx={{ color: "#34a853", mt: 0.2 }} />
+                      Stay on topic
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1,
+                        color: darkMode ? "#9aa0a6" : "#5f6368",
+                        fontSize: "0.875rem"
+                      }}
+                    >
+                      <CheckIcon fontSize="small" sx={{ color: "#34a853", mt: 0.2 }} />
+                      Help others when you can
+                    </Typography>
+                  </Stack>
+                </CardContent>
+              </GoogleCard>
+            </Box>
+          )}
         </Box>
-      </Box>
+      </Container>
 
       {/* New Post Dialog */}
       <Dialog
@@ -1494,8 +1859,22 @@ For more, visit: https://yourapp.com/community
         onClose={() => setShowNewPostDialog(false)}
         maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            backgroundColor: darkMode ? "#202124" : "#ffffff",
+            border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+            mx: { xs: 1, sm: 2 },
+            width: { xs: "calc(100% - 16px)", sm: "auto" },
+          },
+        }}
       >
-        <DialogTitle>Create New Post</DialogTitle>
+        <DialogTitle sx={{ 
+          color: darkMode ? "#e8eaed" : "#202124",
+          fontSize: { xs: "1.25rem", sm: "1.5rem" }
+        }}>
+          Create New Post
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
@@ -1507,6 +1886,16 @@ For more, visit: https://yourapp.com/community
               }
               placeholder="Enter a descriptive title for your post"
               required
+              sx={{
+                "& .MuiInputBase-input": {
+                  color: darkMode ? "#e8eaed" : "#202124",
+                  fontSize: { xs: "0.875rem", sm: "1rem" }
+                },
+                "& .MuiInputLabel-root": {
+                  color: darkMode ? "#9aa0a6" : "#5f6368",
+                  fontSize: { xs: "0.875rem", sm: "1rem" }
+                },
+              }}
             />
 
             <TextField
@@ -1520,11 +1909,26 @@ For more, visit: https://yourapp.com/community
               multiline
               rows={6}
               required
+              sx={{
+                "& .MuiInputBase-input": {
+                  color: darkMode ? "#e8eaed" : "#202124",
+                  fontSize: { xs: "0.875rem", sm: "1rem" }
+                },
+                "& .MuiInputLabel-root": {
+                  color: darkMode ? "#9aa0a6" : "#5f6368",
+                  fontSize: { xs: "0.875rem", sm: "1rem" }
+                },
+              }}
             />
 
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
               <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
+                <InputLabel sx={{ 
+                  color: darkMode ? "#9aa0a6" : "#5f6368",
+                  fontSize: { xs: "0.875rem", sm: "1rem" }
+                }}>
+                  Category
+                </InputLabel>
                 <Select
                   value={newPostData.category}
                   onChange={(e) =>
@@ -1534,14 +1938,19 @@ For more, visit: https://yourapp.com/community
                     }))
                   }
                   label="Category"
+                  sx={{
+                    color: darkMode ? "#e8eaed" : "#202124",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: darkMode ? "#3c4043" : "#dadce0",
+                    },
+                    fontSize: { xs: "0.875rem", sm: "1rem" }
+                  }}
                 >
                   {CATEGORIES.filter((c) => c.id !== "all").map((category) => (
                     <MenuItem key={category.id} value={category.id}>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         {category.icon}
-                        {category.name}
+                        <span style={{ fontSize: "0.875rem" }}>{category.name}</span>
                       </Box>
                     </MenuItem>
                   ))}
@@ -1562,23 +1971,46 @@ For more, visit: https://yourapp.com/community
                   }))
                 }
                 placeholder="e.g., attendance, reports, mobile"
+                sx={{
+                  "& .MuiInputBase-input": {
+                    color: darkMode ? "#e8eaed" : "#202124",
+                    fontSize: { xs: "0.875rem", sm: "1rem" }
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: darkMode ? "#9aa0a6" : "#5f6368",
+                    fontSize: { xs: "0.875rem", sm: "1rem" }
+                  },
+                }}
               />
             </Box>
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowNewPostDialog(false)}>Cancel</Button>
+        <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 } }}>
+          <Button
+            onClick={() => setShowNewPostDialog(false)}
+            sx={{
+              color: darkMode ? "#e8eaed" : "#202124",
+              fontSize: { xs: "0.875rem", sm: "1rem" }
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleCreatePost}
             variant="contained"
             disabled={!newPostData.title.trim() || !newPostData.content.trim()}
+            sx={{
+              backgroundColor: "#4285f4",
+              "&:hover": { backgroundColor: "#3367d6" },
+              fontSize: { xs: "0.875rem", sm: "1rem" }
+            }}
           >
             Create Post
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Post Detail Dialog */}
+      {/* Post Detail Dialog - RESTORED */}
       {selectedPost && (
         <Dialog
           open={!!selectedPost}
@@ -1589,28 +2021,43 @@ For more, visit: https://yourapp.com/community
             sx: {
               borderRadius: 3,
               maxHeight: "90vh",
+              backgroundColor: darkMode ? "#202124" : "#ffffff",
+              border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+              mx: { xs: 1, sm: 2 },
+              width: { xs: "calc(100% - 16px)", sm: "auto" },
             },
           }}
         >
-          <DialogTitle>{selectedPost.title}</DialogTitle>
-          <DialogContent dividers>
+          <DialogTitle sx={{ 
+            color: darkMode ? "#e8eaed" : "#202124",
+            fontSize: { xs: "1.25rem", sm: "1.5rem" }
+          }}>
+            {selectedPost.title}
+          </DialogTitle>
+          <DialogContent dividers sx={{ overflowY: "auto" }}>
             <PostDetail
               post={selectedPost}
               onClose={() => setSelectedPost(null)}
               onLike={handleLikePost}
               onBookmark={handleBookmarkPost}
-              onComment={(postId, content) => {
-                console.log("📝 PostDetail onComment called");
-                console.log("Post ID:", postId);
-                console.log("Content:", content);
-                handleAddComment(postId, content);
-              }}
+              onComment={handleAddComment}
               onMarkAsSolution={handleMarkAsSolution}
               currentUserId={currentUserId || undefined}
             />
           </DialogContent>
+          <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 } }}>
+            <Button
+              onClick={() => setSelectedPost(null)}
+              sx={{
+                color: darkMode ? "#e8eaed" : "#202124",
+                fontSize: { xs: "0.875rem", sm: "1rem" }
+              }}
+            >
+              Close
+            </Button>
+          </DialogActions>
         </Dialog>
       )}
-    </Container>
+    </Box>
   );
 }

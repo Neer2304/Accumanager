@@ -1,4 +1,3 @@
-// app/attendance/page.tsx - UPDATED MAIN PAGE
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -30,7 +29,8 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  Chip
+  Chip,
+  Breadcrumbs
 } from "@mui/material";
 import {
   PersonAdd as PersonAddIcon,
@@ -50,9 +50,22 @@ import {
   TrendingUp as TrendingUpIcon,
   AccessTime as AccessTimeIcon,
   Close as CloseIcon,
+  Home as HomeIcon,
+  ArrowBack as BackIcon,
+  Download as DownloadIcon,
+  Analytics as AnalyticsIcon
 } from "@mui/icons-material";
-import { MainLayout } from "@/components/Layout/MainLayout";
 import { useRouter } from "next/navigation";
+import { MainLayout } from "@/components/Layout/MainLayout";
+import Link from "next/link";
+
+// Import Google-themed components from your analytics page
+import { Card } from '@/components/ui/Card';
+import { Button as GoogleButton } from '@/components/ui/Button';
+import { Chip as GoogleChip } from '@/components/ui/Chip';
+import { Alert as GoogleAlert } from '@/components/ui/Alert';
+
+// Import attendance components
 import { EmployeeCard } from "@/components/attendance/EmployeeCard";
 import { CustomSelect } from "@/components/attendance/CustomSelect";
 
@@ -111,6 +124,7 @@ const departments = [
 
 export default function AttendancePage() {
   const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
   
@@ -401,8 +415,14 @@ export default function AttendancePage() {
               error={!!validationErrors.name}
               helperText={validationErrors.name}
               required
-              InputProps={{
-                startAdornment: <PersonIcon sx={{ mr: 1, color: 'action.active' }} />,
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  '&:hover fieldset': {
+                    borderColor: darkMode ? '#5f6368' : '#dadce0',
+                  },
+                },
               }}
             />
             <TextField
@@ -415,8 +435,11 @@ export default function AttendancePage() {
               error={!!validationErrors.phone}
               helperText={validationErrors.phone}
               required
-              InputProps={{
-                startAdornment: <PhoneIcon sx={{ mr: 1, color: 'action.active' }} />,
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                },
               }}
             />
             <TextField
@@ -429,8 +452,11 @@ export default function AttendancePage() {
               }
               error={!!validationErrors.email}
               helperText={validationErrors.email}
-              InputProps={{
-                startAdornment: <EmailIcon sx={{ mr: 1, color: 'action.active' }} />,
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                },
               }}
             />
             <TextField
@@ -443,8 +469,11 @@ export default function AttendancePage() {
               error={!!validationErrors.role}
               helperText={validationErrors.role}
               required
-              InputProps={{
-                startAdornment: <WorkIcon sx={{ mr: 1, color: 'action.active' }} />,
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                },
               }}
             />
             <CustomSelect
@@ -472,13 +501,11 @@ export default function AttendancePage() {
                   }
                   error={!!validationErrors.salary}
                   helperText={validationErrors.salary}
-                  InputProps={{
-                    startAdornment: <MoneyIcon sx={{ mr: 1, color: 'action.active' }} />,
-                    endAdornment: (
-                      <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                        INR
-                      </Typography>
-                    ),
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                    },
                   }}
                 />
               </Box>
@@ -503,8 +530,11 @@ export default function AttendancePage() {
                 setBasicInfo((prev) => ({ ...prev, joiningDate: e.target.value }))
               }
               InputLabelProps={{ shrink: true }}
-              InputProps={{
-                startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} />,
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                },
               }}
             />
             
@@ -513,14 +543,23 @@ export default function AttendancePage() {
               onChange={() => setShowAdvanced(!showAdvanced)}
               sx={{
                 mt: 2,
-                borderRadius: 2,
+                borderRadius: '12px',
                 boxShadow: 'none',
-                border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 '&:before': { display: 'none' },
+                backgroundColor: darkMode ? '#202124' : '#ffffff',
               }}
             >
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AccordionSummary 
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  borderRadius: '12px',
+                  '&:hover': {
+                    backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+                  },
+                }}
+              >
+                <Typography fontWeight="500" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <SecurityIcon color="action" />
                   Advanced Details (Optional)
                 </Typography>
@@ -534,18 +573,31 @@ export default function AttendancePage() {
                     rows={2}
                     value={advancedInfo.address}
                     onChange={(e) => setAdvancedInfo(prev => ({ ...prev, address: e.target.value }))}
-                    InputProps={{
-                      startAdornment: <LocationIcon sx={{ mr: 1, color: 'action.active', alignSelf: 'flex-start', mt: 1.5 }} />,
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      },
                     }}
                   />
                   
-                  <Divider>Emergency Contact</Divider>
+                  <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Emergency Contact
+                    </Typography>
+                  </Divider>
                   
                   <TextField
                     fullWidth
                     label="Contact Name"
                     value={advancedInfo.emergencyContactName}
                     onChange={(e) => setAdvancedInfo(prev => ({ ...prev, emergencyContactName: e.target.value }))}
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      },
+                    }}
                   />
                   
                   <Box sx={{ 
@@ -559,6 +611,12 @@ export default function AttendancePage() {
                         label="Contact Phone"
                         value={advancedInfo.emergencyContactPhone}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, emergencyContactPhone: e.target.value }))}
+                        variant="outlined"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                          },
+                        }}
                       />
                     </Box>
                     <Box sx={{ flex: 1 }}>
@@ -567,19 +625,32 @@ export default function AttendancePage() {
                         label="Relation"
                         value={advancedInfo.emergencyContactRelation}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, emergencyContactRelation: e.target.value }))}
+                        variant="outlined"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                          },
+                        }}
                       />
                     </Box>
                   </Box>
                   
-                  <Divider>Bank Details</Divider>
+                  <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Bank Details
+                    </Typography>
+                  </Divider>
                   
                   <TextField
                     fullWidth
                     label="Account Number"
                     value={advancedInfo.bankAccountNumber}
                     onChange={(e) => setAdvancedInfo(prev => ({ ...prev, bankAccountNumber: e.target.value }))}
-                    InputProps={{
-                      startAdornment: <BankIcon sx={{ mr: 1, color: 'action.active' }} />,
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      },
                     }}
                   />
                   
@@ -594,6 +665,12 @@ export default function AttendancePage() {
                         label="Bank Name"
                         value={advancedInfo.bankName}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, bankName: e.target.value }))}
+                        variant="outlined"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                          },
+                        }}
                       />
                     </Box>
                     <Box sx={{ flex: 1 }}>
@@ -602,6 +679,12 @@ export default function AttendancePage() {
                         label="IFSC Code"
                         value={advancedInfo.ifscCode}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, ifscCode: e.target.value.toUpperCase() }))}
+                        variant="outlined"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                          },
+                        }}
                       />
                     </Box>
                   </Box>
@@ -611,9 +694,19 @@ export default function AttendancePage() {
                     label="Account Holder Name"
                     value={advancedInfo.accountHolder}
                     onChange={(e) => setAdvancedInfo(prev => ({ ...prev, accountHolder: e.target.value }))}
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      },
+                    }}
                   />
                   
-                  <Divider>Documents</Divider>
+                  <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Documents
+                    </Typography>
+                  </Divider>
                   
                   <Box sx={{ 
                     display: 'flex', 
@@ -626,6 +719,12 @@ export default function AttendancePage() {
                         label="Aadhaar Number"
                         value={advancedInfo.aadhaar}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, aadhaar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
+                        variant="outlined"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                          },
+                        }}
                       />
                     </Box>
                     <Box sx={{ flex: 1 }}>
@@ -634,6 +733,12 @@ export default function AttendancePage() {
                         label="PAN Number"
                         value={advancedInfo.pan}
                         onChange={(e) => setAdvancedInfo(prev => ({ ...prev, pan: e.target.value.toUpperCase() }))}
+                        variant="outlined"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                          },
+                        }}
                       />
                     </Box>
                   </Box>
@@ -643,6 +748,12 @@ export default function AttendancePage() {
                     label="License Number"
                     value={advancedInfo.license}
                     onChange={(e) => setAdvancedInfo(prev => ({ ...prev, license: e.target.value }))}
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                      },
+                    }}
                   />
                 </Box>
               </AccordionDetails>
@@ -670,7 +781,7 @@ export default function AttendancePage() {
         }}>
           <CircularProgress size={60} thickness={4} />
           <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h5" fontWeight="bold" gutterBottom>
+            <Typography variant="h5" fontWeight="500" gutterBottom>
               Loading Employee Database
             </Typography>
             <Typography variant="body1" color="text.secondary">
@@ -684,251 +795,343 @@ export default function AttendancePage() {
 
   return (
     <MainLayout title="Employee Attendance">
-      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, margin: "0 auto" }}>
+      <Box sx={{ 
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+        color: darkMode ? '#e8eaed' : '#202124',
+        minHeight: '100vh',
+      }}>
         {/* Header */}
-        <Paper
-          sx={{
-            p: { xs: 3, sm: 4 },
-            mb: 4,
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.9)} 0%, ${alpha(theme.palette.primary.dark, 0.9)} 100%)`,
-            color: theme.palette.primary.contrastText,
-            borderRadius: 3,
-            boxShadow: theme.shadows[4],
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 3,
-            flexDirection: { xs: 'column', sm: 'row' },
-            textAlign: { xs: 'center', sm: 'left' }
+        <Box sx={{ 
+          p: { xs: 2, sm: 3 },
+          borderBottom: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+          background: darkMode 
+            ? 'linear-gradient(135deg, #0d3064 0%, #202124 100%)'
+            : 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)',
+        }}>
+          <Breadcrumbs sx={{ 
+            mb: { xs: 1, sm: 2 }, 
+            fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.85rem' } 
           }}>
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: { xs: 70, sm: 80 },
-              height: { xs: 70, sm: 80 },
-              borderRadius: '50%',
-              bgcolor: alpha(theme.palette.common.white, 0.2),
-              backdropFilter: 'blur(10px)',
-              border: `2px solid ${alpha(theme.palette.common.white, 0.3)}`,
-              flexShrink: 0,
-            }}>
-              <GroupsIcon sx={{ fontSize: { xs: 36, sm: 40 }, color: theme.palette.common.white }} />
-            </Box>
-            
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="h2"
-                component="h1"
-                fontWeight="bold"
-                gutterBottom
-                sx={{ 
-                  fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' },
-                  color: theme.palette.common.white,
-                }}
-              >
-                Employee Management
-              </Typography>
-              <Typography variant="h5" sx={{ opacity: 0.9, color: theme.palette.common.white, mb: 1 }}>
-                {new Date().toLocaleString("default", { month: "long", year: "numeric" })} • 
-                {employees.length} Employee{employees.length !== 1 ? 's' : ''}
-              </Typography>
-              
-              <Box sx={{ 
+            <Link 
+              href="/dashboard" 
+              style={{ 
                 display: 'flex', 
-                gap: 2, 
-                flexWrap: 'wrap', 
-                justifyContent: { xs: 'center', sm: 'flex-start' } 
-              }}>
-                <Chip
-                  icon={<CheckCircleIcon />}
-                  label={`${employees.reduce((sum, emp) => sum + emp.days.filter(d => d.status === 'Present').length, 0)} Present Today`}
-                  sx={{ 
-                    bgcolor: alpha(theme.palette.common.white, 0.2), 
-                    color: theme.palette.common.white,
-                    border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
-                  }}
-                />
-                <Chip
-                  icon={<AccessTimeIcon />}
-                  label={`${employees.reduce((sum, emp) => sum + (emp.days.reduce((hrs, day) => hrs + (day.workHours || 0), 0)), 0).toFixed(1)} Total Hours`}
-                  sx={{ 
-                    bgcolor: alpha(theme.palette.common.white, 0.2), 
-                    color: theme.palette.common.white,
-                    border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
-                  }}
-                />
-              </Box>
-            </Box>
-          </Box>
-        </Paper>
-
-        {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 3, 
-              borderRadius: 2,
-            }} 
-            onClose={() => setError(null)}
-            action={
-              error.includes('upgrade') && (
-                <Button 
-                  color="inherit" 
-                  size="small"
-                  onClick={() => router.push('/pricing')}
-                >
-                  Upgrade Now
-                </Button>
-              )
-            }
-          >
-            {error}
-          </Alert>
-        )}
-
-        {/* Header Controls */}
-        <Paper
-          sx={{
-            p: 3,
-            mb: 4,
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-            boxShadow: theme.shadows[2],
-            border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-          }}
-        >
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            gap: 2,
-            flexDirection: { xs: 'column', sm: 'row' }
-          }}>
-            <Box>
-              <Typography variant="h4" fontWeight="bold" gutterBottom>
-                Employee Directory
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Manage your team's attendance, payroll, and performance
-              </Typography>
-            </Box>
-            
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button
-                variant="contained"
-                startIcon={<PersonAddIcon />}
-                onClick={() => setAddDialogOpen(true)}
-                size={isMobile ? "medium" : "large"}
-                sx={{
-                  borderRadius: 2,
-                  fontWeight: 'bold',
-                  boxShadow: theme.shadows[2],
-                  '&:hover': {
-                    boxShadow: theme.shadows[4],
-                    transform: 'translateY(-2px)',
-                  },
-                }}
-              >
-                Add Employee
-              </Button>
-              
-              <Button
-                variant="outlined"
-                onClick={() => router.push('/attendance/reports')}
-                size={isMobile ? "medium" : "large"}
-                sx={{
-                  borderRadius: 2,
-                  fontWeight: 'bold',
-                }}
-              >
-                View Reports
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
-
-        {/* Employees Grid - Using responsive flexbox layout */}
-        {employees.length > 0 ? (
-          <Box sx={{ 
-            display: 'grid',
-            gridTemplateColumns: { 
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              lg: 'repeat(3, 1fr)',
-              xl: 'repeat(4, 1fr)'
-            },
-            gap: 3
-          }}>
-            {employees.map((employee) => (
-              <EmployeeCard
-                key={employee._id}
-                employee={employee}
-                toggleStatus={toggleStatus}
-                submitting={submitting}
-              />
-            ))}
-          </Box>
-        ) : (
-          !loading && (
-            <Paper
-              elevation={0}
-              sx={{
-                borderRadius: 3,
-                textAlign: 'center',
-                p: 6,
-                bgcolor: alpha(theme.palette.action.hover, 0.3),
-                border: `2px dashed ${alpha(theme.palette.divider, 0.5)}`,
+                alignItems: 'center', 
+                textDecoration: 'none', 
+                color: darkMode ? '#9aa0a6' : '#5f6368', 
+                fontWeight: 300,
               }}
             >
-              <Box sx={{ 
-                width: 120, 
-                height: 120, 
-                borderRadius: '50%',
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: theme.palette.primary.main,
-                fontSize: 48,
-                mb: 3,
+              <HomeIcon sx={{ mr: 0.5, fontSize: { xs: '14px', sm: '16px', md: '18px' } }} />
+              Dashboard
+            </Link>
+            <Typography color={darkMode ? '#e8eaed' : '#202124'} fontWeight={400}>
+              Attendance
+            </Typography>
+          </Breadcrumbs>
+
+          <Box sx={{ 
+            textAlign: 'center', 
+            mb: { xs: 2, sm: 3, md: 4 },
+            px: { xs: 1, sm: 2, md: 3 },
+          }}>
+            <Typography 
+              variant="h4" 
+              fontWeight={500} 
+              gutterBottom
+              sx={{ 
+                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+                color: darkMode ? '#e8eaed' : '#202124',
+              }}
+            >
+              Employee Attendance
+            </Typography>
+            
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: darkMode ? '#9aa0a6' : '#5f6368', 
+                fontWeight: 300,
+                fontSize: { xs: '0.85rem', sm: '1rem', md: '1.125rem' },
+                lineHeight: 1.5,
+                maxWidth: 600,
                 mx: 'auto',
-                border: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-              }}>
-                <GroupsIcon fontSize="inherit" />
-              </Box>
-              <Typography variant="h4" fontWeight="bold" gutterBottom>
-                No employees yet
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
-                Start building your team by adding employees to track attendance, manage payroll, and monitor performance metrics.
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<PersonAddIcon />}
-                onClick={() => setAddDialogOpen(true)}
-                size="large"
-                sx={{
-                  borderRadius: 2,
-                  px: 4,
-                  py: 1.5,
-                  fontWeight: 'bold',
-                  fontSize: '1.1rem',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: theme.shadows[4],
+              }}
+            >
+              Manage your team's attendance, payroll, and performance metrics
+            </Typography>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: 2,
+            flexWrap: 'wrap',
+            mt: 3,
+          }}>
+            <GoogleChip
+              label="Team Management"
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.08),
+                borderColor: alpha('#4285f4', 0.3),
+                color: darkMode ? '#8ab4f8' : '#4285f4',
+              }}
+            />
+            <GoogleChip
+              label={`${employees.length} Employees`}
+              variant="outlined"
+              sx={{
+                backgroundColor: darkMode ? alpha('#34a853', 0.1) : alpha('#34a853', 0.08),
+                borderColor: alpha('#34a853', 0.3),
+                color: darkMode ? '#81c995' : '#34a853',
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Main Content */}
+        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+          {error && (
+            <GoogleAlert
+              severity="error"
+              title="Error"
+              message={error}
+              action={
+                error.includes('upgrade') && (
+                  <GoogleButton 
+                    color="inherit" 
+                    size="small"
+                    onClick={() => router.push('/pricing')}
+                  >
+                    Upgrade Now
+                  </GoogleButton>
+                )
+              }
+              sx={{ mb: 3 }}
+            />
+          )}
+
+          {/* Stats Cards */}
+          <Box sx={{ 
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: { xs: 1.5, sm: 2, md: 3 },
+            mb: { xs: 2, sm: 3, md: 4 },
+          }}>
+            {[
+              { 
+                title: 'Total Employees', 
+                value: employees.length, 
+                icon: '👥', 
+                color: '#4285f4',
+                description: 'Active team members' 
+              },
+              { 
+                title: 'Present Today', 
+                value: employees.reduce((sum, emp) => sum + emp.days.filter(d => d.status === 'Present').length, 0), 
+                icon: '✅', 
+                color: '#34a853',
+                description: 'Marked present today' 
+              },
+              { 
+                title: 'Total Work Hours', 
+                value: employees.reduce((sum, emp) => sum + (emp.days.reduce((hrs, day) => hrs + (day.workHours || 0), 0)), 0).toFixed(1), 
+                icon: '⏰', 
+                color: '#fbbc04',
+                description: 'This month' 
+              },
+              { 
+                title: 'Average Attendance', 
+                value: employees.length > 0 ? Math.round(employees.reduce((sum, emp) => {
+                  const presentDays = emp.days.filter(d => d.status === 'Present').length;
+                  const totalDays = emp.days.length || 1;
+                  return sum + (presentDays / totalDays * 100);
+                }, 0) / employees.length) : 0, 
+                icon: '📊', 
+                color: '#ea4335',
+                description: 'Team average' 
+              },
+            ].map((stat, index) => (
+              <Card 
+                key={`stat-${index}`}
+                hover
+                sx={{ 
+                  flex: '1 1 calc(25% - 18px)', 
+                  minWidth: { xs: 'calc(50% - 12px)', sm: 'calc(25% - 18px)' },
+                  p: { xs: 1.5, sm: 2, md: 3 }, 
+                  borderRadius: '16px', 
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${alpha(stat.color, 0.2)}`,
+                  background: darkMode 
+                    ? `linear-gradient(135deg, ${alpha(stat.color, 0.1)} 0%, ${alpha(stat.color, 0.05)} 100%)`
+                    : `linear-gradient(135deg, ${alpha(stat.color, 0.08)} 0%, ${alpha(stat.color, 0.03)} 100%)`,
+                  transition: 'all 0.3s ease',
+                  '&:hover': { 
+                    transform: 'translateY(-2px)', 
+                    boxShadow: `0 8px 24px ${alpha(stat.color, 0.15)}`,
                   },
                 }}
               >
-                Add Your First Employee
-              </Button>
-            </Paper>
-          )
-        )}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box>
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          color: darkMode ? '#9aa0a6' : '#5f6368', 
+                          fontWeight: 400,
+                          fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                          display: 'block',
+                        }}
+                      >
+                        {stat.title}
+                      </Typography>
+                      <Typography 
+                        variant="h4"
+                        sx={{ 
+                          color: stat.color, 
+                          fontWeight: 600,
+                          fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                        }}
+                      >
+                        {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
+                        {stat.title === 'Average Attendance' && '%'}
+                        {stat.title === 'Total Work Hours' && 'h'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ 
+                      p: { xs: 0.75, sm: 1 }, 
+                      borderRadius: '10px', 
+                      backgroundColor: alpha(stat.color, 0.1),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                    }}>
+                      {stat.icon}
+                    </Box>
+                  </Box>
+                  
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontSize: { xs: '0.6rem', sm: '0.65rem', md: '0.7rem' },
+                      display: 'block',
+                    }}
+                  >
+                    {stat.description}
+                  </Typography>
+                </Box>
+              </Card>
+            ))}
+          </Box>
+
+          {/* Header Controls */}
+          <Card
+            title="Employee Directory"
+            subtitle="Manage your team's attendance, payroll, and performance"
+            action={
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <GoogleButton
+                  variant="outlined"
+                  onClick={() => router.push('/attendance/reports')}
+                  startIcon={<AnalyticsIcon />}
+                  sx={{
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
+                  View Reports
+                </GoogleButton>
+                <GoogleButton
+                  variant="contained"
+                  onClick={() => setAddDialogOpen(true)}
+                  startIcon={<PersonAddIcon />}
+                  sx={{ 
+                    backgroundColor: '#34a853',
+                    '&:hover': { backgroundColor: '#2d9248' }
+                  }}
+                >
+                  Add Employee
+                </GoogleButton>
+              </Box>
+            }
+            hover
+            sx={{ 
+              mb: { xs: 2, sm: 3, md: 4 },
+              backgroundColor: darkMode ? '#202124' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}
+          />
+
+          {/* Employees Grid */}
+          {employees.length > 0 ? (
+            <Box sx={{ 
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 3
+            }}>
+              {employees.map((employee) => (
+                <Box key={employee._id} sx={{ 
+                  flex: '1 1 calc(25% - 18px)',
+                  minWidth: { xs: '100%', sm: 'calc(50% - 12px)', lg: 'calc(33.333% - 16px)', xl: 'calc(25% - 18px)' }
+                }}>
+                  <EmployeeCard
+                    employee={employee}
+                    toggleStatus={toggleStatus}
+                    submitting={submitting}
+                    darkMode={darkMode}
+                  />
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            !loading && (
+              <Card sx={{ 
+                textAlign: 'center', 
+                py: 8,
+                px: 3,
+                backgroundColor: darkMode ? '#303134' : '#ffffff',
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              }}>
+                <GroupsIcon sx={{ fontSize: 60, color: darkMode ? '#9aa0a6' : '#5f6368', mb: 2 }} />
+                <Typography 
+                  variant="h6" 
+                  gutterBottom
+                  sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+                >
+                  No Employees Yet
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    mb: 3,
+                    maxWidth: 500,
+                    mx: 'auto',
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                  }}
+                >
+                  Start building your team by adding employees to track attendance, manage payroll, and monitor performance metrics.
+                </Typography>
+                <GoogleButton
+                  variant="contained"
+                  startIcon={<PersonAddIcon />}
+                  onClick={() => setAddDialogOpen(true)}
+                  sx={{ 
+                    backgroundColor: '#34a853',
+                    '&:hover': { backgroundColor: '#2d9248' }
+                  }}
+                >
+                  Add Your First Employee
+                </GoogleButton>
+              </Card>
+            )
+          )}
+        </Box>
       </Box>
 
       {/* Add Employee Dialog */}
@@ -939,20 +1142,22 @@ export default function AttendancePage() {
         fullWidth
         PaperProps={{ 
           sx: { 
-            borderRadius: 3,
+            borderRadius: '16px',
             maxHeight: '90vh',
+            backgroundColor: darkMode ? '#202124' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
           }
         }}
       >
         <DialogTitle sx={{ 
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-          bgcolor: alpha(theme.palette.primary.main, 0.05),
+          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          backgroundColor: darkMode ? '#303134' : '#f8f9fa',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}>
           <Box>
-            <Typography variant="h4" fontWeight="bold" gutterBottom>
+            <Typography variant="h4" fontWeight={500} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               Add New Employee
             </Typography>
             <Stepper 
@@ -961,7 +1166,7 @@ export default function AttendancePage() {
             >
               {steps.map((label) => (
                 <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
+                  <StepLabel sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>{label}</StepLabel>
                 </Step>
               ))}
             </Stepper>
@@ -970,6 +1175,7 @@ export default function AttendancePage() {
             onClick={() => !submitting && setAddDialogOpen(false)}
             disabled={submitting}
             size="small"
+            sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
           >
             <CloseIcon />
           </IconButton>
@@ -982,9 +1188,9 @@ export default function AttendancePage() {
         <DialogActions sx={{ 
           p: 3, 
           gap: 2,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+          borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
         }}>
-          <Button
+          <GoogleButton
             onClick={() => {
               setAddDialogOpen(false);
               setBasicInfo({
@@ -1015,17 +1221,19 @@ export default function AttendancePage() {
             }}
             disabled={submitting}
             variant="outlined"
-            sx={{ borderRadius: 2 }}
+            sx={{ borderRadius: '8px' }}
           >
             Cancel
-          </Button>
-          <Button
+          </GoogleButton>
+          <GoogleButton
             onClick={addEmployee}
             disabled={submitting}
             variant="contained"
             sx={{ 
-              borderRadius: 2,
+              borderRadius: '8px',
               minWidth: 120,
+              backgroundColor: '#34a853',
+              '&:hover': { backgroundColor: '#2d9248' }
             }}
           >
             {submitting ? (
@@ -1033,7 +1241,7 @@ export default function AttendancePage() {
             ) : (
               "Add Employee"
             )}
-          </Button>
+          </GoogleButton>
         </DialogActions>
       </Dialog>
     </MainLayout>

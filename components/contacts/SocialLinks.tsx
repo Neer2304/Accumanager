@@ -1,10 +1,10 @@
-// components/contacts/SocialLinks.tsx
 "use client";
 
 import React from 'react';
 import {
   Box,
-  Paper,
+  Card,
+  CardContent,
   Typography,
   IconButton,
   useTheme,
@@ -21,19 +21,19 @@ const socialLinks = [
   { 
     icon: <Twitter />, 
     label: 'Twitter', 
-    // link: 'https://twitter.com/accumanage',
+    link: 'https://twitter.com/',
     color: '#1DA1F2',
   },
   { 
     icon: <LinkedIn />, 
     label: 'LinkedIn', 
-    // link: 'https://linkedin.com/company/accumanage',
+    link: 'https://linkedin.com/',
     color: '#0077B5',
   },
   { 
     icon: <Facebook />, 
     label: 'Facebook', 
-    // link: 'https://facebook.com/accumanage',
+    link: 'https://facebook.com/',
     color: '#4267B2',
   },
   { 
@@ -46,49 +46,52 @@ const socialLinks = [
 
 export const SocialLinks: React.FC = () => {
   const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   
   return (
-    <Paper
+    <Card
       sx={{
-        p: 3,
         borderRadius: 3,
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
       }}
     >
-      <Typography variant="h6" fontWeight={700} gutterBottom>
-        Connect With Us
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Follow us for updates, tips, and community discussions
-      </Typography>
-      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        {socialLinks.map((social, index) => (
-          <IconButton
-            key={index}
-            component="a"
-            href={social.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{
-              width: 56,
-              height: 56,
-              borderRadius: 2,
-              border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-              transition: 'all 0.3s',
-              color: social.color,
-              bgcolor: alpha(social.color, 0.08),
-              '&:hover': {
-                bgcolor: alpha(social.color, 0.15),
-                transform: 'translateY(-4px)',
-                borderColor: alpha(social.color, 0.3),
-              },
-            }}
-            aria-label={social.label}
-          >
-            {social.icon}
-          </IconButton>
-        ))}
-      </Box>
-    </Paper>
+      <CardContent sx={{ p: 2.5 }}>
+        <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+          Connect With Us
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 3, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+          Follow us for updates, tips, and community discussions
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          {socialLinks.map((social, index) => (
+            <IconButton
+              key={index}
+              component="a"
+              href={social.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: 2,
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                transition: 'all 0.3s',
+                color: social.color,
+                backgroundColor: darkMode ? alpha(social.color, 0.1) : alpha(social.color, 0.08),
+                '&:hover': {
+                  backgroundColor: darkMode ? alpha(social.color, 0.2) : alpha(social.color, 0.15),
+                  transform: 'translateY(-2px)',
+                  borderColor: alpha(social.color, 0.5),
+                },
+              }}
+              aria-label={social.label}
+            >
+              {social.icon}
+            </IconButton>
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
   );
 };

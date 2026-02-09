@@ -1,17 +1,13 @@
-// components/attendance/EmployeeCard.tsx - FIXED VERSION
-import React from 'react';
+"use client";
+
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
-  CardActions,
   Avatar,
   Badge,
-  Chip,
-  Button,
-  LinearProgress,
   IconButton,
+  LinearProgress,
   useTheme,
   alpha,
   Paper
@@ -27,7 +23,12 @@ import {
   Visibility as VisibilityIcon
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
-import { DepartmentChip } from './DepartmentChip';
+
+// Import Google-themed components
+import { Card } from '@/components/ui/Card';
+import { Chip } from '@/components/ui/Chip';
+import { Button } from '@/components/ui/Button';
+
 import { AttendanceDay } from './AttendanceDay';
 
 interface Day {
@@ -60,17 +61,19 @@ interface EmployeeCardProps {
   employee: Employee;
   toggleStatus: (employeeId: string, date: string, status: string) => void;
   submitting: boolean;
+  darkMode: boolean;
 }
 
 export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   employee,
   toggleStatus,
-  submitting
+  submitting,
+  darkMode
 }) => {
   const theme = useTheme();
   const router = useRouter();
   
-  // Get current month days for display - FIXED VERSION
+  // Get current month days for display
   const getCurrentMonthDays = () => {
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -125,13 +128,6 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
           });
         }
       }
-    }
-    
-    // Log if duplicates were found (for debugging)
-    const uniqueDays = new Set(days.map(d => d.date));
-    if (uniqueDays.size !== days.length) {
-      console.warn(`Found duplicate dates for ${employee.name}:`, 
-        days.filter((day, index) => days.findIndex(d => d.date === day.date) !== index));
     }
     
     return days;
@@ -205,29 +201,28 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   };
 
   return (
-    <Card 
+    <Card
+      hover
       sx={{
-        borderRadius: 3,
-        boxShadow: theme.shadows[3],
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-        '&:hover': {
-          boxShadow: theme.shadows[6],
-          transform: 'translateY(-4px)',
-          borderColor: alpha(theme.palette.primary.main, 0.3),
-        },
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+        borderRadius: '16px',
+        overflow: 'hidden',
       }}
     >
-      <CardContent sx={{ p: 3, flex: 1 }}>
-        {/* Header with Avatar and Actions */}
+      {/* Header with Avatar and Actions */}
+      <Box sx={{ 
+        p: 3,
+        borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      }}>
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          mb: 3,
+          mb: 2,
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Badge
@@ -239,8 +234,8 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
                     width: 14,
                     height: 14,
                     borderRadius: '50%',
-                    bgcolor: employee.isActive ? theme.palette.success.main : theme.palette.error.main,
-                    border: `2px solid ${theme.palette.background.paper}`,
+                    bgcolor: employee.isActive ? '#34a853' : '#ea4335',
+                    border: `2px solid ${darkMode ? '#202124' : '#ffffff'}`,
                     boxShadow: theme.shadows[1],
                   }}
                 />
@@ -248,13 +243,12 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
             >
               <Avatar
                 sx={{
-                  width: 64,
-                  height: 64,
-                  bgcolor: theme.palette.primary.main,
-                  color: theme.palette.primary.contrastText,
-                  fontSize: 26,
+                  width: 60,
+                  height: 60,
+                  bgcolor: '#4285f4',
+                  color: '#ffffff',
+                  fontSize: 24,
                   fontWeight: 'bold',
-                  boxShadow: theme.shadows[2],
                 }}
               >
                 {employee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -262,7 +256,15 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
             </Badge>
             
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ wordBreak: 'break-word' }}>
+              <Typography 
+                variant="h6" 
+                fontWeight={500} 
+                gutterBottom 
+                sx={{ 
+                  wordBreak: 'break-word',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                }}
+              >
                 {employee.name}
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -271,14 +273,21 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
                   label={employee.role}
                   size="small"
                   sx={{
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    color: theme.palette.primary.main,
-                    fontWeight: 600,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.08),
+                    borderColor: alpha('#4285f4', 0.3),
+                    color: darkMode ? '#8ab4f8' : '#4285f4',
                   }}
                 />
                 {employee.department && (
-                  <DepartmentChip department={employee.department} />
+                  <Chip
+                    label={employee.department}
+                    size="small"
+                    sx={{
+                      backgroundColor: darkMode ? alpha('#5f6368', 0.1) : alpha('#5f6368', 0.08),
+                      borderColor: alpha('#5f6368', 0.3),
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                    }}
+                  />
                 )}
               </Box>
             </Box>
@@ -288,10 +297,10 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
             onClick={handleViewDetails}
             size="small"
             sx={{
-              color: theme.palette.primary.main,
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: darkMode ? '#8ab4f8' : '#4285f4',
+              backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.08),
               '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.2),
+                backgroundColor: darkMode ? alpha('#4285f4', 0.2) : alpha('#4285f4', 0.16),
               },
             }}
           >
@@ -304,203 +313,204 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
           display: 'flex', 
           flexDirection: 'column',
           gap: 1.5, 
-          mb: 3 
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PhoneIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
+            <PhoneIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               {employee.phone}
             </Typography>
           </Box>
           
           {employee.email && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <EmailIcon fontSize="small" color="action" />
-              <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-all' }}>
+              <EmailIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+              <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', wordBreak: 'break-all' }}>
                 {employee.email}
               </Typography>
             </Box>
           )}
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <MoneyIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
+            <MoneyIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               {getSalaryDisplay()}
             </Typography>
           </Box>
           
           {employee.joiningDate && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CalendarIcon fontSize="small" color="action" />
-              <Typography variant="body2" color="text.secondary">
+              <CalendarIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+              <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                 Joined: {new Date(employee.joiningDate).toLocaleDateString()}
               </Typography>
             </Box>
           )}
         </Box>
+      </Box>
 
-        {/* Detailed Stats */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            mb: 3,
-            bgcolor: alpha(theme.palette.primary.main, 0.03),
-            borderRadius: 2,
-            border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+      {/* Performance Metrics */}
+      <Box sx={{ p: 3 }}>
+        <Typography 
+          variant="subtitle2" 
+          fontWeight={500} 
+          gutterBottom 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: darkMode ? '#e8eaed' : '#202124',
           }}
         >
-          <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrendingUpIcon fontSize="small" />
-            Performance Metrics
-          </Typography>
-          
-          {/* Stats Grid */}
-          <Box sx={{ 
-            display: 'flex', 
-            flexWrap: 'wrap',
-            gap: 2,
-            mb: 2 
-          }}>
-            <Box sx={{ flex: '1 1 calc(50% - 8px)', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight="bold" color="primary">
-                {getAttendancePercentage()}%
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Attendance
-              </Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 calc(50% - 8px)', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight="bold" color="success.main">
-                {getTotalWorkHours()}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Work Hours
-              </Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 calc(50% - 8px)', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight="bold" color="warning.main">
-                {getTotalOvertime()}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Overtime
-              </Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 calc(50% - 8px)', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight="bold" color="info.main">
-                {employee.leaveBalance}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Leave Days
-              </Typography>
-            </Box>
+          <TrendingUpIcon fontSize="small" />
+          Performance Metrics
+        </Typography>
+        
+        {/* Stats Grid */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexWrap: 'wrap',
+          gap: 2,
+          mb: 2 
+        }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', textAlign: 'center' }}>
+            <Typography variant="h4" fontWeight={600} color="#4285f4">
+              {getAttendancePercentage()}%
+            </Typography>
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+              Attendance
+            </Typography>
           </Box>
-          
-          <LinearProgress
-            variant="determinate"
-            value={getAttendancePercentage()}
-            sx={{
-              height: 8,
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', textAlign: 'center' }}>
+            <Typography variant="h4" fontWeight={600} color="#34a853">
+              {getTotalWorkHours()}
+            </Typography>
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+              Work Hours
+            </Typography>
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', textAlign: 'center' }}>
+            <Typography variant="h4" fontWeight={600} color="#fbbc04">
+              {getTotalOvertime()}
+            </Typography>
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+              Overtime
+            </Typography>
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', textAlign: 'center' }}>
+            <Typography variant="h4" fontWeight={600} color="#8ab4f8">
+              {employee.leaveBalance}
+            </Typography>
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+              Leave Days
+            </Typography>
+          </Box>
+        </Box>
+        
+        <LinearProgress
+          variant="determinate"
+          value={getAttendancePercentage()}
+          sx={{
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: darkMode ? '#3c4043' : alpha('#5f6368', 0.1),
+            '& .MuiLinearProgress-bar': {
+              backgroundColor: getAttendancePercentage() > 80 ? '#34a853' : 
+                              getAttendancePercentage() > 60 ? '#fbbc04' : 
+                              '#ea4335',
               borderRadius: 3,
-              bgcolor: alpha(theme.palette.grey[500], 0.1),
-              '& .MuiLinearProgress-bar': {
-                bgcolor: getAttendancePercentage() > 80 ? theme.palette.success.main : 
-                         getAttendancePercentage() > 60 ? theme.palette.warning.main : 
-                         theme.palette.error.main,
-                borderRadius: 3,
-              },
-            }}
-          />
-          
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              {getPresentCount()} Present
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {getAbsentCount()} Absent
-            </Typography>
-          </Box>
-        </Paper>
-
-        {/* Monthly Attendance Grid */}
-        <Box>
-          <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TodayIcon fontSize="small" />
-            {getCurrentMonthName()}
+            },
+          }}
+        />
+        
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+            {getPresentCount()} Present
           </Typography>
-          <Box sx={{ 
+          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+            {getAbsentCount()} Absent
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Monthly Attendance Grid */}
+      <Box sx={{ p: 3, pt: 0 }}>
+        <Typography 
+          variant="subtitle2" 
+          fontWeight={500} 
+          gutterBottom 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: darkMode ? '#e8eaed' : '#202124',
+          }}
+        >
+          <TodayIcon fontSize="small" />
+          {getCurrentMonthName()}
+        </Typography>
+        <Paper
+          elevation={0}
+          sx={{ 
             display: 'flex', 
             flexWrap: 'wrap', 
             gap: 1,
             p: 2,
-            bgcolor: alpha(theme.palette.action.hover, 0.3),
-            borderRadius: 2,
-            border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+            backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+            borderRadius: '12px',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
             minHeight: 120,
             justifyContent: currentMonthDays.length === 0 ? 'center' : 'flex-start',
             alignItems: currentMonthDays.length === 0 ? 'center' : 'flex-start',
-          }}>
-            {currentMonthDays.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center', width: '100%' }}>
-                No attendance records yet
-              </Typography>
-            ) : (
-              currentMonthDays.map((day, index) => {
-                const dayDate = new Date(day.date);
-                const isToday = dayDate.toDateString() === new Date().toDateString();
-                const isFuture = dayDate > new Date();
-                const isSelectable = !isFuture;
-                
-                // Create a unique key that includes employee ID and date
-                const uniqueKey = `${employee._id}-${day.date}-${index}`;
-                
-                return (
-                  <AttendanceDay
-                    key={uniqueKey}
-                    date={dayDate}
-                    status={day.status}
-                    workHours={day.workHours}
-                    overtime={day.overtime}
-                    checkIn={day.checkIn}
-                    checkOut={day.checkOut}
-                    notes={day.notes}
-                    isSelectable={isSelectable}
-                    isToday={isToday}
-                    onClick={() => handleDayClick(day.date, day.status)}
-                    submitting={submitting}
-                  />
-                );
-              })
-            )}
-          </Box>
-          
-          {currentMonthDays.length > 0 && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.success.main }} />
-                <Typography variant="caption" color="text.secondary">Present</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.error.main }} />
-                <Typography variant="caption" color="text.secondary">Absent</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.warning.main, border: `1px solid ${theme.palette.divider}` }} />
-                <Typography variant="caption" color="text.secondary">Overtime</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.secondary.main }} />
-                <Typography variant="caption" color="text.secondary">Weekend</Typography>
-              </Box>
-            </Box>
+          }}
+        >
+          {currentMonthDays.length === 0 ? (
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                py: 2, 
+                textAlign: 'center', 
+                width: '100%',
+                color: darkMode ? '#9aa0a6' : '#5f6368',
+              }}
+            >
+              No attendance records yet
+            </Typography>
+          ) : (
+            currentMonthDays.map((day, index) => {
+              const dayDate = new Date(day.date);
+              const isToday = dayDate.toDateString() === new Date().toDateString();
+              const isFuture = dayDate > new Date();
+              const isSelectable = !isFuture;
+              
+              // Create a unique key that includes employee ID and date
+              const uniqueKey = `${employee._id}-${day.date}-${index}`;
+              
+              return (
+                <AttendanceDay
+                  key={uniqueKey}
+                  date={dayDate}
+                  status={day.status}
+                  workHours={day.workHours}
+                  overtime={day.overtime}
+                  checkIn={day.checkIn}
+                  checkOut={day.checkOut}
+                  notes={day.notes}
+                  isSelectable={isSelectable}
+                  isToday={isToday}
+                  onClick={() => handleDayClick(day.date, day.status)}
+                  submitting={submitting}
+                  darkMode={darkMode}
+                />
+              );
+            })
           )}
-        </Box>
-      </CardContent>
-      
-      <CardActions sx={{ 
+        </Paper>
+      </Box>
+
+      {/* View Details Button */}
+      <Box sx={{ 
         p: 2, 
-        pt: 0,
-        borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+        borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
       }}>
         <Button
           fullWidth
@@ -509,18 +519,18 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
           size="small"
           startIcon={<VisibilityIcon />}
           sx={{
-            borderRadius: 2,
-            fontWeight: 600,
+            borderRadius: '8px',
+            borderColor: darkMode ? '#3c4043' : '#dadce0',
+            color: darkMode ? '#e8eaed' : '#202124',
             '&:hover': {
-              transform: 'translateY(-1px)',
-              boxShadow: theme.shadows[2],
+              borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+              backgroundColor: darkMode ? '#303134' : '#f8f9fa',
             },
-            transition: 'all 0.2s',
           }}
         >
           View Full Details
         </Button>
-      </CardActions>
+      </Box>
     </Card>
   );
 };

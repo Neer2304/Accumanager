@@ -1,4 +1,3 @@
-// components/contacts/ContactCard.tsx
 "use client";
 
 import React from 'react';
@@ -12,17 +11,30 @@ import {
   alpha,
 } from '@mui/material';
 import { SxProps } from '@mui/system';
+import {
+  Phone,
+  Email,
+  WhatsApp,
+  Message,
+} from '@mui/icons-material';
 
 interface ContactCardProps {
-  icon: React.ReactNode;
+  icon: string;
   title: string;
   details: string;
   description: string;
   action: string;
-  actionIcon: React.ReactNode;
+  actionIcon: string;
   link: string;
   sx?: SxProps;
 }
+
+const iconMap: { [key: string]: React.ReactElement } = {
+  Phone: <Phone />,
+  Email: <Email />,
+  WhatsApp: <WhatsApp />,
+  Message: <Message />,
+};
 
 export const ContactCard: React.FC<ContactCardProps> = ({
   icon,
@@ -35,54 +47,58 @@ export const ContactCard: React.FC<ContactCardProps> = ({
   sx,
 }) => {
   const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   
   return (
     <Card
       sx={{
         borderRadius: 3,
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         height: '100%',
         '&:hover': {
-          transform: 'translateY(-8px)',
-          boxShadow: `0 20px 40px ${alpha(theme.palette.primary.main, 0.15)}`,
-          borderColor: alpha(theme.palette.primary.main, 0.3),
+          transform: 'translateY(-4px)',
+          boxShadow: darkMode 
+            ? '0 8px 24px rgba(0,0,0,0.3)'
+            : '0 8px 24px rgba(0,0,0,0.1)',
+          borderColor: darkMode ? '#4285f4' : '#4285f4',
         },
         ...sx,
       }}
     >
-      <CardContent sx={{ p: 3, height: '100%' }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2.5, mb: 3 }}>
+      <CardContent sx={{ p: 2.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2.5 }}>
           <Box
             sx={{
               p: 1.5,
               borderRadius: 2,
-              bgcolor: alpha(theme.palette.primary.main, 0.08),
+              backgroundColor: darkMode ? alpha('#4285f4', 0.2) : alpha('#4285f4', 0.1),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            {React.cloneElement(icon as React.ReactElement, {
-            //   sx: { fontSize: 28, color: theme.palette.primary.main },
+            {React.cloneElement(iconMap[icon], {
+              // sx: { fontSize: 20, color: '#4285f4' },
             })}
           </Box>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" fontWeight={700} gutterBottom>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
               {title}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               {description}
             </Typography>
           </Box>
         </Box>
         <Typography
-          variant="body1"
+          variant="h6"
           fontWeight={600}
           gutterBottom
           sx={{
-            color: theme.palette.text.primary,
-            fontSize: '1.125rem',
+            color: darkMode ? '#e8eaed' : '#202124',
+            fontSize: '1.25rem',
           }}
         >
           {details}
@@ -94,14 +110,18 @@ export const ContactCard: React.FC<ContactCardProps> = ({
           rel="noopener noreferrer"
           size="medium"
           variant="outlined"
-          startIcon={actionIcon}
+          startIcon={iconMap[actionIcon]}
           sx={{
             mt: 1,
             borderRadius: 2,
             borderWidth: '1.5px',
             fontWeight: 600,
+            borderColor: darkMode ? '#3c4043' : '#dadce0',
+            color: darkMode ? '#e8eaed' : '#202124',
             '&:hover': {
               borderWidth: '1.5px',
+              borderColor: '#4285f4',
+              backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.05),
             },
           }}
         >

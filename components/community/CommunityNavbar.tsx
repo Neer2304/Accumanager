@@ -48,6 +48,11 @@ import {
   PersonRemove as PersonRemoveIcon,
   Comment as CommentIcon,
   People as PeopleIcon2,
+  Explore,
+  AccountCircle,
+  Groups,
+  ChatBubbleOutline,
+  BookmarkBorder,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -94,6 +99,7 @@ export default function CommunityNavbar() {
   const pathname = usePathname();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const darkMode = theme.palette.mode === 'dark';
   
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -335,22 +341,40 @@ export default function CommunityNavbar() {
     }
   };
 
+  // Google-style navigation items
   const navItems = [
     { label: 'Home', href: '/community', icon: <HomeIcon /> },
-    { label: 'Explore Users', href: '/community/explore', icon: <PeopleIcon2 /> },
+    { label: 'Explore', href: '/community/explore', icon: <Explore /> },
     { label: 'Discussions', href: '/community/discussions', icon: <ForumIcon /> },
-    { label: 'Bookmarks', href: '/community/bookmarks', icon: <BookmarkIcon /> },
+    { label: 'Members', href: '/community/members', icon: <Groups /> },
+    { label: 'Bookmarks', href: '/community/bookmarks', icon: <BookmarkBorder /> },
   ];
 
-  // Responsive drawer content
+  // Responsive drawer content with Google theme
   const drawer = (
-    <Box sx={{ width: 280, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Drawer Header */}
-      <Box sx={{ p: 3, bgcolor: 'primary.main', color: 'white' }}>
+    <Box sx={{ 
+      width: 280, 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      backgroundColor: darkMode ? '#202124' : '#ffffff',
+      color: darkMode ? '#e8eaed' : '#202124',
+    }}>
+      {/* Drawer Header - Google style */}
+      <Box sx={{ 
+        p: 3, 
+        bgcolor: darkMode ? '#303134' : '#f8f9fa',
+        borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
           <Avatar
             src={user?.avatar}
-            sx={{ width: 48, height: 48, border: '2px solid white' }}
+            sx={{ 
+              width: 48, 
+              height: 48, 
+              border: `2px solid ${darkMode ? '#5f6368' : '#ffffff'}`,
+              bgcolor: darkMode ? '#5f6368' : '#4285f4',
+            }}
           >
             {user?.name?.charAt(0) || 'U'}
           </Avatar>
@@ -358,13 +382,13 @@ export default function CommunityNavbar() {
             <Typography variant="subtitle1" fontWeight={600}>
               {user?.name || 'User'}
             </Typography>
-            <Typography variant="caption">
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               {user?.email || 'member@community.com'}
             </Typography>
           </Box>
         </Box>
         
-        {/* Mobile Search */}
+        {/* Mobile Search - Google style */}
         <Paper
           component="form"
           onSubmit={handleSearchSubmit}
@@ -372,10 +396,20 @@ export default function CommunityNavbar() {
             p: '2px 4px',
             display: 'flex',
             alignItems: 'center',
-            bgcolor: 'rgba(255,255,255,0.15)',
+            bgcolor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#5f6368' : '#dadce0'}`,
             borderRadius: 2,
+            '&:hover': {
+              borderColor: darkMode ? '#8ab4f8' : '#4285f4',
+              boxShadow: darkMode 
+                ? '0 1px 3px rgba(138, 180, 248, 0.2)' 
+                : '0 1px 3px rgba(66, 133, 244, 0.2)',
+            },
           }}
         >
+          <IconButton sx={{ p: '10px', color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+            <SearchIcon />
+          </IconButton>
           <InputBase
             placeholder="Search users..."
             value={searchQuery}
@@ -386,104 +420,151 @@ export default function CommunityNavbar() {
             sx={{
               ml: 1,
               flex: 1,
-              color: 'white',
+              color: darkMode ? '#e8eaed' : '#202124',
               '&::placeholder': {
-                color: 'rgba(255,255,255,0.7)',
+                color: darkMode ? '#9aa0a6' : '#5f6368',
               },
             }}
           />
-          <IconButton type="submit" sx={{ p: '10px', color: 'white' }}>
-            <SearchIcon />
-          </IconButton>
         </Paper>
       </Box>
 
-      {/* Navigation Items */}
+      {/* Navigation Items - Google style */}
       <List sx={{ flex: 1, p: 2 }}>
-        {navItems.map((item) => (
-          <ListItemButton
-            key={item.label}
-            component={Link}
-            href={item.href}
-            onClick={() => setMobileOpen(false)}
-            sx={{
-              mb: 1,
-              borderRadius: 2,
-              color: pathname === item.href ? 'primary.main' : 'text.primary',
-              bgcolor: pathname === item.href ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.12),
-              },
-            }}
-          >
-            <ListItemIcon sx={{ 
-              color: pathname === item.href ? 'primary.main' : 'inherit',
-              minWidth: 40,
-            }}>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText 
-              primary={item.label}
-              primaryTypographyProps={{
-                fontWeight: pathname === item.href ? 600 : 400,
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <ListItemButton
+              key={item.label}
+              component={Link}
+              href={item.href}
+              onClick={() => setMobileOpen(false)}
+              sx={{
+                mb: 1,
+                borderRadius: 2,
+                color: isActive 
+                  ? '#4285f4' 
+                  : darkMode ? '#e8eaed' : '#202124',
+                bgcolor: isActive 
+                  ? alpha('#4285f4', darkMode ? 0.2 : 0.1)
+                  : 'transparent',
+                '&:hover': {
+                  bgcolor: alpha('#4285f4', darkMode ? 0.15 : 0.08),
+                },
               }}
-            />
-          </ListItemButton>
-        ))}
+            >
+              <ListItemIcon sx={{ 
+                color: isActive ? '#4285f4' : darkMode ? '#9aa0a6' : '#5f6368',
+                minWidth: 40,
+              }}>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText 
+                primary={item.label}
+                primaryTypographyProps={{
+                  fontWeight: isActive ? 600 : 400,
+                  fontSize: '0.875rem',
+                }}
+              />
+            </ListItemButton>
+          );
+        })}
       </List>
 
-      {/* Drawer Footer */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-        <ListItemButton onClick={() => {
-          if (user?._id) {
-            router.push(`/community/profile/${user._id}`);
-          } else {
-            router.push('/settings');
-          }
-          setMobileOpen(false);
-        }}>
-          <ListItemIcon>
-            <PersonIcon />
+      {/* Drawer Footer - Google style */}
+      <Box sx={{ 
+        p: 2, 
+        borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        bgcolor: darkMode ? '#202124' : '#ffffff',
+      }}>
+        <ListItemButton 
+          onClick={() => {
+            if (user?._id) {
+              router.push(`/community/profile/${user._id}`);
+            } else {
+              router.push('/settings');
+            }
+            setMobileOpen(false);
+          }}
+          sx={{
+            borderRadius: 2,
+            mb: 1,
+            '&:hover': {
+              bgcolor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+            },
+          }}
+        >
+          <ListItemIcon sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+            <AccountCircle />
           </ListItemIcon>
-          <ListItemText primary={user?._id ? "My Profile" : "Profile"} />
+          <ListItemText 
+            primary="My Profile" 
+            primaryTypographyProps={{ fontSize: '0.875rem' }}
+          />
         </ListItemButton>
         
-        <ListItemButton onClick={() => {
-          router.push('/settings');
-          setMobileOpen(false);
-        }}>
-          <ListItemIcon>
+        <ListItemButton 
+          onClick={() => {
+            router.push('/settings');
+            setMobileOpen(false);
+          }}
+          sx={{
+            borderRadius: 2,
+            mb: 1,
+            '&:hover': {
+              bgcolor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+            },
+          }}
+        >
+          <ListItemIcon sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
             <SettingsIcon />
           </ListItemIcon>
-          <ListItemText primary="Settings" />
+          <ListItemText 
+            primary="Settings" 
+            primaryTypographyProps={{ fontSize: '0.875rem' }}
+          />
         </ListItemButton>
         
-        <ListItemButton onClick={handleLogout} sx={{ color: 'error.main' }}>
-          <ListItemIcon sx={{ color: 'inherit' }}>
+        <ListItemButton 
+          onClick={handleLogout} 
+          sx={{ 
+            borderRadius: 2,
+            color: '#ea4335',
+            '&:hover': {
+              bgcolor: alpha('#ea4335', darkMode ? 0.1 : 0.05),
+            },
+          }}
+        >
+          <ListItemIcon sx={{ color: '#ea4335' }}>
             <LogoutIcon />
           </ListItemIcon>
-          <ListItemText primary="Logout" />
+          <ListItemText 
+            primary="Logout" 
+            primaryTypographyProps={{ fontSize: '0.875rem' }}
+          />
         </ListItemButton>
       </Box>
     </Box>
   );
 
-  // Mobile Search Bar (when search is open)
+  // Mobile Search Bar (when search is open) - Google style
   const mobileSearchBar = (
     <Box sx={{ 
       display: 'flex', 
       alignItems: 'center', 
       gap: 1, 
       p: 1,
-      bgcolor: 'background.paper',
-      borderBottom: 1,
-      borderColor: 'divider',
+      bgcolor: darkMode ? '#202124' : '#ffffff',
+      borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
     }}>
-      <IconButton onClick={() => {
-        setSearchOpen(false);
-        setSearchQuery('');
-        setSearchResults([]);
-      }}>
+      <IconButton 
+        onClick={() => {
+          setSearchOpen(false);
+          setSearchQuery('');
+          setSearchResults([]);
+        }}
+        sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+      >
         <CloseIcon />
       </IconButton>
       <Paper
@@ -495,6 +576,11 @@ export default function CommunityNavbar() {
           alignItems: 'center',
           flex: 1,
           borderRadius: 2,
+          bgcolor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#5f6368' : '#dadce0'}`,
+          '&:hover': {
+            borderColor: darkMode ? '#8ab4f8' : '#4285f4',
+          },
         }}
       >
         <InputBase
@@ -505,9 +591,22 @@ export default function CommunityNavbar() {
             setSearchQuery(e.target.value);
             handleSearchChange(e.target.value);
           }}
-          sx={{ ml: 1, flex: 1 }}
+          sx={{ 
+            ml: 1, 
+            flex: 1,
+            color: darkMode ? '#e8eaed' : '#202124',
+            '&::placeholder': {
+              color: darkMode ? '#9aa0a6' : '#5f6368',
+            },
+          }}
         />
-        <IconButton type="submit" sx={{ p: '10px' }}>
+        <IconButton 
+          type="submit" 
+          sx={{ 
+            p: '10px',
+            color: darkMode ? '#9aa0a6' : '#5f6368',
+          }}
+        >
           <SearchIcon />
         </IconButton>
       </Paper>
@@ -521,9 +620,8 @@ export default function CommunityNavbar() {
         color="default" 
         elevation={0}
         sx={{
-          borderBottom: 1,
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
+          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          bgcolor: darkMode ? '#202124' : '#ffffff',
         }}
       >
         {searchOpen && isMobile ? (
@@ -541,12 +639,13 @@ export default function CommunityNavbar() {
               sx={{ 
                 mr: { xs: 1, sm: 2 },
                 display: { md: 'none' },
+                color: darkMode ? '#e8eaed' : '#202124',
               }}
             >
               <MenuIcon />
             </IconButton>
 
-            {/* Logo */}
+            {/* Logo - Google style */}
             <Typography
               variant="h6"
               component={Link}
@@ -554,11 +653,11 @@ export default function CommunityNavbar() {
               sx={{
                 flexGrow: { xs: 1, md: 0 },
                 textDecoration: 'none',
-                color: 'primary.main',
+                color: '#4285f4',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
-                fontWeight: 700,
+                fontWeight: 500,
                 fontSize: { xs: '1.1rem', sm: '1.25rem' },
               }}
             >
@@ -566,39 +665,48 @@ export default function CommunityNavbar() {
               Community
             </Typography>
 
-            {/* Desktop Navigation */}
+            {/* Desktop Navigation - Google style */}
             <Box sx={{ 
               display: { xs: 'none', md: 'flex' }, 
               gap: 1, 
               mx: 3,
               flex: 1,
             }}>
-              {navItems.map((item) => (
-                <Button
-                  key={item.label}
-                  component={Link}
-                  href={item.href}
-                  startIcon={item.icon}
-                  sx={{
-                    color: pathname === item.href ? 'primary.main' : 'text.secondary',
-                    '&:hover': {
-                      color: 'primary.main',
-                      bgcolor: alpha(theme.palette.primary.main, 0.08),
-                    },
-                    minWidth: 'auto',
-                    px: 2,
-                    py: 1,
-                    borderRadius: 2,
-                    fontWeight: pathname === item.href ? 600 : 400,
-                    fontSize: '0.875rem',
-                  }}
-                >
-                  {item.label}
-                </Button>
-              ))}
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Button
+                    key={item.label}
+                    component={Link}
+                    href={item.href}
+                    startIcon={item.icon}
+                    sx={{
+                      color: isActive 
+                        ? '#4285f4' 
+                        : darkMode ? '#e8eaed' : '#202124',
+                      bgcolor: isActive 
+                        ? alpha('#4285f4', darkMode ? 0.2 : 0.1)
+                        : 'transparent',
+                      '&:hover': {
+                        bgcolor: alpha('#4285f4', darkMode ? 0.15 : 0.08),
+                      },
+                      minWidth: 'auto',
+                      px: 2,
+                      py: 1,
+                      borderRadius: 2,
+                      fontWeight: isActive ? 600 : 400,
+                      fontSize: '0.875rem',
+                      textTransform: 'none',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {item.label}
+                  </Button>
+                );
+              })}
             </Box>
 
-            {/* Desktop Search */}
+            {/* Desktop Search - Google style */}
             <Box sx={{ 
               display: { xs: 'none', md: 'flex' }, 
               flex: 1,
@@ -614,24 +722,48 @@ export default function CommunityNavbar() {
                   alignItems: 'center',
                   width: '100%',
                   borderRadius: 3,
-                  bgcolor: alpha('#000', 0.03),
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  border: `1px solid ${darkMode ? '#5f6368' : '#dadce0'}`,
                   position: 'relative',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: darkMode ? '#8ab4f8' : '#4285f4',
+                    boxShadow: darkMode 
+                      ? '0 1px 3px rgba(138, 180, 248, 0.2)' 
+                      : '0 1px 3px rgba(66, 133, 244, 0.2)',
+                  },
+                  '&:focus-within': {
+                    borderColor: darkMode ? '#8ab4f8' : '#4285f4',
+                    boxShadow: darkMode 
+                      ? '0 1px 6px rgba(138, 180, 248, 0.3)' 
+                      : '0 1px 6px rgba(66, 133, 244, 0.3)',
+                  },
                 }}
               >
-                <IconButton sx={{ p: '10px' }} onClick={(e) => {
-                  handleSearchOpen(e);
-                  document.querySelector('input')?.focus();
-                }}>
+                <IconButton 
+                  sx={{ 
+                    p: '10px',
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                  }}
+                >
                   <SearchIcon />
                 </IconButton>
                 <InputBase
-                  placeholder="Search users by name or business..."
+                  placeholder="Search users..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     handleSearchChange(e.target.value);
                   }}
-                  sx={{ ml: 1, flex: 1, fontSize: '0.875rem' }}
+                  sx={{ 
+                    ml: 1, 
+                    flex: 1, 
+                    fontSize: '0.875rem',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    '&::placeholder': {
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                    },
+                  }}
                 />
                 {searchQuery && (
                   <IconButton
@@ -640,7 +772,10 @@ export default function CommunityNavbar() {
                       setSearchQuery('');
                       setSearchResults([]);
                     }}
-                    sx={{ mr: 0.5 }}
+                    sx={{ 
+                      mr: 0.5,
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                    }}
                   >
                     <CloseIcon fontSize="small" />
                   </IconButton>
@@ -656,13 +791,16 @@ export default function CommunityNavbar() {
             }}>
               {/* Mobile Search Button */}
               <IconButton
-                sx={{ display: { md: 'none' } }}
+                sx={{ 
+                  display: { md: 'none' },
+                  color: darkMode ? '#e8eaed' : '#202124',
+                }}
                 onClick={() => setSearchOpen(true)}
               >
                 <SearchIcon />
               </IconButton>
 
-              {/* Create Post Button */}
+              {/* Create Post Button - Google style */}
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -673,9 +811,16 @@ export default function CommunityNavbar() {
                   px: { sm: 2, md: 3 },
                   py: 1,
                   textTransform: 'none',
-                  fontWeight: 600,
+                  fontWeight: 500,
                   fontSize: '0.875rem',
                   minWidth: 'auto',
+                  backgroundColor: '#4285f4',
+                  color: '#ffffff',
+                  '&:hover': {
+                    backgroundColor: '#3367d6',
+                    boxShadow: '0 4px 12px rgba(66, 133, 244, 0.2)',
+                  },
+                  transition: 'all 0.2s ease',
                 }}
               >
                 <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
@@ -690,10 +835,10 @@ export default function CommunityNavbar() {
               <IconButton
                 sx={{ 
                   display: { xs: 'flex', sm: 'none' },
-                  bgcolor: 'primary.main',
-                  color: 'white',
+                  bgcolor: '#4285f4',
+                  color: '#ffffff',
                   '&:hover': {
-                    bgcolor: 'primary.dark',
+                    bgcolor: '#3367d6',
                   },
                 }}
                 onClick={() => router.push('/community/create')}
@@ -706,6 +851,10 @@ export default function CommunityNavbar() {
                 onClick={handleNotificationsOpen}
                 sx={{ 
                   position: 'relative',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  '&:hover': {
+                    bgcolor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                  },
                   '& .MuiBadge-badge': {
                     fontSize: '0.6rem',
                     minWidth: 16,
@@ -725,6 +874,9 @@ export default function CommunityNavbar() {
                 sx={{ 
                   p: 0.5,
                   ml: { xs: 0, sm: 0.5 },
+                  '&:hover': {
+                    opacity: 0.9,
+                  },
                 }}
               >
                 <Avatar 
@@ -733,8 +885,11 @@ export default function CommunityNavbar() {
                     width: { xs: 32, sm: 36 },
                     height: { xs: 32, sm: 36 },
                     border: '2px solid',
-                    borderColor: 'background.paper',
-                    boxShadow: 1,
+                    borderColor: darkMode ? '#3c4043' : '#ffffff',
+                    bgcolor: darkMode ? '#5f6368' : '#4285f4',
+                    boxShadow: darkMode 
+                      ? '0 2px 4px rgba(0,0,0,0.3)' 
+                      : '0 2px 4px rgba(0,0,0,0.1)',
                   }}
                 >
                   {user?.name?.charAt(0) || 'U'}
@@ -742,7 +897,7 @@ export default function CommunityNavbar() {
               </IconButton>
             </Box>
 
-            {/* Profile Menu */}
+            {/* Profile Menu - Google style */}
             <Menu
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
@@ -752,39 +907,67 @@ export default function CommunityNavbar() {
                   mt: 1.5,
                   minWidth: 200,
                   borderRadius: 2,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  bgcolor: darkMode ? '#202124' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  boxShadow: darkMode 
+                    ? '0 4px 20px rgba(0,0,0,0.3)' 
+                    : '0 4px 20px rgba(0,0,0,0.1)',
                 }
               }}
             >
-              <MenuItem onClick={() => {
-                if (user?._id) {
-                  router.push(`/community/profile/${user._id}`);
-                } else {
-                  router.push('/community/profile');
-                }
-                handleMenuClose();
-              }}>
-                <PersonIcon sx={{ mr: 2, fontSize: 20 }} /> 
+              <MenuItem 
+                onClick={() => {
+                  if (user?._id) {
+                    router.push(`/community/profile/${user._id}`);
+                  } else {
+                    router.push('/settings');
+                  }
+                  handleMenuClose();
+                }}
+                sx={{
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  '&:hover': {
+                    bgcolor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                  },
+                }}
+              >
+                <PersonIcon sx={{ mr: 2, fontSize: 20, color: darkMode ? '#9aa0a6' : '#5f6368' }} /> 
                 <Typography variant="body2">My Profile</Typography>
               </MenuItem>
-              <MenuItem onClick={() => {
-                router.push('/settings');
-                handleMenuClose();
-              }}>
-                <SettingsIcon sx={{ mr: 2, fontSize: 20 }} /> 
+              <MenuItem 
+                onClick={() => {
+                  router.push('/settings');
+                  handleMenuClose();
+                }}
+                sx={{
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  '&:hover': {
+                    bgcolor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                  },
+                }}
+              >
+                <SettingsIcon sx={{ mr: 2, fontSize: 20, color: darkMode ? '#9aa0a6' : '#5f6368' }} /> 
                 <Typography variant="body2">Settings</Typography>
               </MenuItem>
-              <Divider />
-              <MenuItem onClick={() => {
-                handleLogout();
-                handleMenuClose();
-              }} sx={{ color: 'error.main' }}>
+              <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
+              <MenuItem 
+                onClick={() => {
+                  handleLogout();
+                  handleMenuClose();
+                }} 
+                sx={{ 
+                  color: '#ea4335',
+                  '&:hover': {
+                    bgcolor: alpha('#ea4335', darkMode ? 0.1 : 0.05),
+                  },
+                }}
+              >
                 <LogoutIcon sx={{ mr: 2, fontSize: 20 }} /> 
                 <Typography variant="body2">Logout</Typography>
               </MenuItem>
             </Menu>
 
-            {/* Search Results Menu */}
+            {/* Search Results Menu - Google style */}
             <Menu
               anchorEl={searchAnchorEl}
               open={Boolean(searchAnchorEl)}
@@ -795,17 +978,25 @@ export default function CommunityNavbar() {
                   width: 320,
                   maxWidth: '90vw',
                   borderRadius: 2,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  bgcolor: darkMode ? '#202124' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  boxShadow: darkMode 
+                    ? '0 4px 20px rgba(0,0,0,0.3)' 
+                    : '0 4px 20px rgba(0,0,0,0.1)',
                   maxHeight: 400,
                 }
               }}
             >
-              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="subtitle1" fontWeight={600}>
+              <Box sx={{ 
+                p: 2, 
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                bgcolor: darkMode ? '#303134' : '#f8f9fa',
+              }}>
+                <Typography variant="subtitle1" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                   Search Users
                 </Typography>
                 {searchQuery && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                     Results for "{searchQuery}"
                   </Typography>
                 )}
@@ -814,24 +1005,24 @@ export default function CommunityNavbar() {
               <Box sx={{ maxHeight: 300, overflow: 'auto', p: 1 }}>
                 {searchLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                    <CircularProgress size={24} />
+                    <CircularProgress size={24} sx={{ color: '#4285f4' }} />
                   </Box>
                 ) : searchError ? (
                   <Box sx={{ p: 2, textAlign: 'center' }}>
                     <Alert severity="error" sx={{ mb: 1 }}>
                       {searchError}
                     </Alert>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                       Please try again
                     </Typography>
                   </Box>
                 ) : searchResults.length === 0 && searchQuery ? (
                   <Box sx={{ p: 3, textAlign: 'center' }}>
-                    <PeopleIcon2 sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                    <Typography variant="body2" color="text.secondary">
+                    <PeopleIcon2 sx={{ fontSize: 48, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 1 }} />
+                    <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                       No users found
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                       Try different keywords
                     </Typography>
                   </Box>
@@ -844,15 +1035,20 @@ export default function CommunityNavbar() {
                         py: 1.5,
                         borderRadius: 1,
                         mb: 0.5,
+                        color: darkMode ? '#e8eaed' : '#202124',
                         '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          bgcolor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
                         },
                       }}
                     >
                       <ListItemAvatar>
                         <Avatar 
                           src={user.avatar}
-                          sx={{ width: 40, height: 40 }}
+                          sx={{ 
+                            width: 40, 
+                            height: 40,
+                            bgcolor: darkMode ? '#5f6368' : '#4285f4',
+                          }}
                         >
                           {user.name?.charAt(0) || user.username?.charAt(0) || 'U'}
                         </Avatar>
@@ -867,24 +1063,29 @@ export default function CommunityNavbar() {
                               label="Verified"
                               size="small"
                               color="success"
-                              sx={{ height: 18, fontSize: '0.6rem' }}
+                              sx={{ 
+                                height: 18, 
+                                fontSize: '0.6rem',
+                                bgcolor: '#34a853',
+                                color: '#ffffff',
+                              }}
                             />
                           )}
                         </Box>
-                        <Typography variant="caption" color="text.secondary" display="block">
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} display="block">
                           @{user.username}
                         </Typography>
                         {user.bio && (
-                          <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} display="block" noWrap>
                             {user.bio.substring(0, 40)}...
                           </Typography>
                         )}
                         <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                             {user.followerCount || 0} followers
                           </Typography>
                           {user.location && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                               • {user.location}
                             </Typography>
                           )}
@@ -896,13 +1097,23 @@ export default function CommunityNavbar() {
               </Box>
               
               {searchResults.length > 0 && (
-                <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider' }}>
+                <Box sx={{ 
+                  p: 1, 
+                  borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                }}>
                   <Button 
                     fullWidth
                     size="small" 
                     onClick={() => {
                       router.push(`/community/explore?search=${encodeURIComponent(searchQuery)}`);
                       handleSearchClose();
+                    }}
+                    sx={{
+                      color: '#4285f4',
+                      '&:hover': {
+                        bgcolor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                      },
                     }}
                   >
                     View All Results ({searchResults.length})
@@ -911,7 +1122,7 @@ export default function CommunityNavbar() {
               )}
             </Menu>
 
-            {/* Community Notifications Menu */}
+            {/* Community Notifications Menu - Google style */}
             <Menu
               anchorEl={notificationAnchorEl}
               open={Boolean(notificationAnchorEl)}
@@ -922,13 +1133,21 @@ export default function CommunityNavbar() {
                   width: 380,
                   maxWidth: '90vw',
                   borderRadius: 2,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  bgcolor: darkMode ? '#202124' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  boxShadow: darkMode 
+                    ? '0 4px 20px rgba(0,0,0,0.3)' 
+                    : '0 4px 20px rgba(0,0,0,0.1)',
                 }
               }}
             >
-              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  Community Notifications
+              <Box sx={{ 
+                p: 2, 
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                bgcolor: darkMode ? '#303134' : '#f8f9fa',
+              }}>
+                <Typography variant="subtitle1" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                  Notifications
                   {notificationCount > 0 && (
                     <Badge 
                       badgeContent={notificationCount} 
@@ -942,11 +1161,11 @@ export default function CommunityNavbar() {
               <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
                 {notifications.length === 0 ? (
                   <Box sx={{ p: 3, textAlign: 'center' }}>
-                    <NotificationsIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                    <Typography variant="body2" color="text.secondary">
+                    <NotificationsIcon sx={{ fontSize: 48, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }} />
+                    <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                       No notifications yet
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                       Your community activity will appear here
                     </Typography>
                   </Box>
@@ -959,12 +1178,11 @@ export default function CommunityNavbar() {
                         sx={{ 
                           py: 2,
                           px: 2,
-                          borderBottom: 1,
-                          borderColor: 'divider',
-                          bgcolor: notification.isRead ? 'inherit' : alpha(theme.palette.primary.main, 0.04),
+                          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                          bgcolor: notification.isRead ? 'inherit' : alpha('#4285f4', darkMode ? 0.1 : 0.04),
                           '&:last-child': { borderBottom: 0 },
                           '&:hover': {
-                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            bgcolor: alpha('#4285f4', darkMode ? 0.15 : 0.08),
                           },
                         }}
                       >
@@ -976,24 +1194,19 @@ export default function CommunityNavbar() {
                             width: 32,
                             height: 32,
                             borderRadius: '50%',
-                            bgcolor: alpha(
-                              theme.palette[notification.type === 'success' || notification.type === 'like' ? 'success' : 
-                                           notification.type === 'warning' ? 'warning' : 
-                                           notification.type === 'error' ? 'error' : 'info'].main, 
-                              0.1
-                            ),
+                            bgcolor: alpha('#4285f4', 0.1),
                           }}>
                             {getNotificationIcon(notification.type)}
                           </Box>
                           <Box sx={{ flex: 1 }}>
-                            <Typography variant="body2" fontWeight={600}>
+                            <Typography variant="body2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                               {notification.title}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mt: 0.5 }}>
                               {notification.message}
                             </Typography>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                                 {formatNotificationDate(notification.createdAt)}
                               </Typography>
                               {!notification.isRead && (
@@ -1001,7 +1214,7 @@ export default function CommunityNavbar() {
                                   width: 8,
                                   height: 8,
                                   borderRadius: '50%',
-                                  bgcolor: 'primary.main',
+                                  bgcolor: '#4285f4',
                                 }} />
                               )}
                             </Box>
@@ -1009,13 +1222,19 @@ export default function CommunityNavbar() {
                         </Box>
                       </MenuItem>
                     ))}
-                    <Divider />
+                    <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
                     <MenuItem sx={{ justifyContent: 'center', py: 1.5 }}>
                       <Button 
                         size="small" 
                         onClick={() => {
                           router.push('/community/notifications');
                           handleNotificationsClose();
+                        }}
+                        sx={{
+                          color: '#4285f4',
+                          '&:hover': {
+                            bgcolor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                          },
                         }}
                       >
                         View All Notifications

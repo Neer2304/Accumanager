@@ -1,4 +1,3 @@
-// components/community/UserProfileDialog.tsx - UPDATED VERSION
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -17,6 +16,8 @@ import {
   CircularProgress,
   Badge,
   Tooltip,
+  alpha,
+  Stack,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -35,8 +36,10 @@ import {
   LinkedIn as LinkedInIcon,
   Instagram as InstagramIcon,
   Facebook as FacebookIcon,
+  Message as MessageIcon,
 } from "@mui/icons-material";
 import { formatDate } from "@/utils/dateUtils";
+import { useTheme } from "@mui/material/styles";
 
 interface UserProfile {
   _id: string;
@@ -96,6 +99,9 @@ export default function UserProfileDialog({
   loading = false,
   user,
 }: UserProfileDialogProps) {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+  
   const [followLoading, setFollowLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(user?.isFollowing || false);
   const [followerCount, setFollowerCount] = useState(user?.followerCount || 0);
@@ -151,7 +157,13 @@ export default function UserProfileDialog({
             <IconButton
               size="small"
               onClick={() => window.open(link.url, '_blank')}
-              sx={{ color: 'text.secondary' }}
+              sx={{ 
+                color: darkMode ? '#9aa0a6' : '#5f6368',
+                bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                '&:hover': {
+                  bgcolor: darkMode ? '#3c4043' : '#f1f3f4',
+                },
+              }}
             >
               {link.icon}
             </IconButton>
@@ -169,26 +181,46 @@ export default function UserProfileDialog({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
+          borderRadius: 2,
           maxHeight: '90vh',
           m: { xs: 1, sm: 2 },
           width: { xs: 'calc(100% - 16px)', sm: 'auto' },
+          bgcolor: darkMode ? '#202124' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
         },
       }}
     >
-      <DialogTitle sx={{ pb: 1 }}>
+      <DialogTitle sx={{ 
+        pb: 1,
+        borderBottom: 1,
+        borderColor: darkMode ? '#3c4043' : '#dadce0',
+      }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6">User Profile</Typography>
-          <IconButton onClick={onClose} size="small">
+          <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+            User Profile
+          </Typography>
+          <IconButton 
+            onClick={onClose} 
+            size="small"
+            sx={{
+              color: darkMode ? '#9aa0a6' : '#5f6368',
+              '&:hover': {
+                backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+              },
+            }}
+          >
             <CloseIcon />
           </IconButton>
         </Box>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: { xs: 2, sm: 3 } }}>
+      <DialogContent dividers sx={{ 
+        p: { xs: 2, sm: 3 },
+        bgcolor: darkMode ? '#202124' : '#ffffff',
+      }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <CircularProgress />
+            <CircularProgress sx={{ color: '#4285f4' }} />
           </Box>
         ) : user ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -205,7 +237,12 @@ export default function UserProfileDialog({
                   anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                   badgeContent={
                     user.verificationBadge && (
-                      <VerifiedIcon sx={{ color: '#1DA1F2', fontSize: 20 }} />
+                      <VerifiedIcon sx={{ 
+                        color: '#4285f4', 
+                        fontSize: 20,
+                        bgcolor: darkMode ? '#202124' : '#ffffff',
+                        borderRadius: '50%',
+                      }} />
                     )
                   }
                 >
@@ -214,7 +251,8 @@ export default function UserProfileDialog({
                       width: { xs: 80, sm: 100 },
                       height: { xs: 80, sm: 100 },
                       fontSize: { xs: 32, sm: 40 },
-                      border: '3px solid white',
+                      border: '3px solid',
+                      borderColor: darkMode ? '#202124' : '#ffffff',
                       boxShadow: 2,
                     }}
                     src={user.avatar}
@@ -232,7 +270,7 @@ export default function UserProfileDialog({
                   gap: 1, 
                   mb: 1 
                 }}>
-                  <Typography variant="h5" fontWeight={600}>
+                  <Typography variant="h5" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                     {user.userId.name}
                   </Typography>
                   <Box sx={{ 
@@ -245,13 +283,22 @@ export default function UserProfileDialog({
                       <Chip
                         label="Verified"
                         size="small"
-                        color="primary"
+                        sx={{
+                          bgcolor: darkMode ? '#303134' : '#f1f3f4',
+                          color: '#4285f4',
+                          borderColor: darkMode ? '#5f6368' : '#dadce0',
+                        }}
                         variant="outlined"
                       />
                     )}
                     <Chip
                       label={`@${user.username}`}
                       size="small"
+                      sx={{
+                        bgcolor: darkMode ? '#303134' : '#f1f3f4',
+                        color: darkMode ? '#e8eaed' : '#202124',
+                        borderColor: darkMode ? '#5f6368' : '#dadce0',
+                      }}
                       variant="outlined"
                     />
                   </Box>
@@ -265,8 +312,8 @@ export default function UserProfileDialog({
                     mb: 1,
                     justifyContent: { xs: 'center', sm: 'flex-start' } 
                   }}>
-                    <BusinessIcon fontSize="small" color="action" />
-                    <Typography variant="body2" color="text.secondary">
+                    <BusinessIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                    <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                       {user.userId.shopName}
                     </Typography>
                   </Box>
@@ -275,7 +322,11 @@ export default function UserProfileDialog({
                 {user.bio && (
                   <Typography 
                     variant="body2" 
-                    sx={{ mb: 2, textAlign: { xs: 'center', sm: 'left' } }}
+                    sx={{ 
+                      mb: 2, 
+                      textAlign: { xs: 'center', sm: 'left' },
+                      color: darkMode ? '#e8eaed' : '#202124',
+                    }}
                   >
                     {user.bio}
                   </Typography>
@@ -289,20 +340,26 @@ export default function UserProfileDialog({
                   justifyContent: { xs: 'center', sm: 'flex-start' } 
                 }}>
                   <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6">{followerCount}</Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                      {followerCount}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                       Followers
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6">{user.followingCount}</Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                      {user.followingCount}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                       Following
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6">{user.communityStats?.totalPosts || 0}</Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                      {user.communityStats?.totalPosts || 0}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                       Posts
                     </Typography>
                   </Box>
@@ -320,7 +377,22 @@ export default function UserProfileDialog({
                     size="small"
                     onClick={handleFollowToggle}
                     disabled={followLoading}
-                    sx={{ minWidth: 100 }}
+                    sx={{ 
+                      minWidth: 100,
+                      ...(isFollowing ? {
+                        borderColor: darkMode ? '#5f6368' : '#dadce0',
+                        color: darkMode ? '#e8eaed' : '#202124',
+                        '&:hover': {
+                          borderColor: '#4285f4',
+                          backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                        },
+                      } : {
+                        backgroundColor: '#4285f4',
+                        '&:hover': {
+                          backgroundColor: '#3367d6',
+                        },
+                      }),
+                    }}
                   >
                     {followLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
                   </Button>
@@ -328,6 +400,14 @@ export default function UserProfileDialog({
                     variant="outlined"
                     size="small"
                     startIcon={<EmailIcon />}
+                    sx={{
+                      borderColor: darkMode ? '#5f6368' : '#dadce0',
+                      color: darkMode ? '#e8eaed' : '#202124',
+                      '&:hover': {
+                        borderColor: '#4285f4',
+                        backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
+                      },
+                    }}
                   >
                     Message
                   </Button>
@@ -347,15 +427,19 @@ export default function UserProfileDialog({
                   p: 2, 
                   borderRadius: 2,
                   flex: 1,
-                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' }
+                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' },
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                    <LocationIcon fontSize="small" color="action" />
-                    <Typography variant="subtitle2" fontWeight={600}>
+                    <LocationIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                    <Typography variant="subtitle2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                       Location
                     </Typography>
                   </Box>
-                  <Typography variant="body2">{user.location}</Typography>
+                  <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                    {user.location}
+                  </Typography>
                 </Paper>
               )}
               
@@ -364,21 +448,26 @@ export default function UserProfileDialog({
                   p: 2, 
                   borderRadius: 2,
                   flex: 1,
-                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' }
+                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' },
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                    <LinkIcon fontSize="small" color="action" />
-                    <Typography variant="subtitle2" fontWeight={600}>
+                    <LinkIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                    <Typography variant="subtitle2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                       Website
                     </Typography>
                   </Box>
                   <Typography 
                     variant="body2" 
                     sx={{ 
-                      color: 'primary.main',
+                      color: '#4285f4',
                       textDecoration: 'underline',
                       cursor: 'pointer',
-                      wordBreak: 'break-word'
+                      wordBreak: 'break-word',
+                      '&:hover': {
+                        textDecoration: 'none',
+                      },
                     }}
                     onClick={() => window.open(user.website, '_blank')}
                   >
@@ -392,18 +481,26 @@ export default function UserProfileDialog({
                   p: 2, 
                   borderRadius: 2,
                   flex: 1,
-                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' }
+                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' },
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 }}>
-                  <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                  <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                     Subscription
                   </Typography>
                   <Chip
                     label={user.userId.subscription.plan}
                     size="small"
-                    color={
-                      user.userId.subscription.plan === 'premium' ? 'primary' : 
-                      user.userId.subscription.plan === 'pro' ? 'success' : 'default'
-                    }
+                    sx={{
+                      bgcolor: user.userId.subscription.plan === 'premium' ? '#fbbc04' : 
+                               user.userId.subscription.plan === 'pro' ? '#34a853' : 
+                               darkMode ? '#303134' : '#f1f3f4',
+                      color: user.userId.subscription.plan === 'premium' ? '#202124' : 
+                             user.userId.subscription.plan === 'pro' ? 'white' : 
+                             darkMode ? '#e8eaed' : '#202124',
+                      borderColor: darkMode ? '#5f6368' : '#dadce0',
+                    }}
+                    variant="outlined"
                   />
                 </Paper>
               )}
@@ -412,12 +509,14 @@ export default function UserProfileDialog({
                 p: 2, 
                 borderRadius: 2,
                 flex: 1,
-                minWidth: { xs: '100%', sm: 'calc(50% - 8px)' }
+                minWidth: { xs: '100%', sm: 'calc(50% - 8px)' },
+                bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
               }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                   Member Since
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                   {formatDate(user.communityStats?.joinDate || user.userId._id.toString())}
                 </Typography>
               </Paper>
@@ -426,11 +525,14 @@ export default function UserProfileDialog({
             {/* Social Links */}
             {renderSocialLinks()}
 
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ 
+              my: 2, 
+              borderColor: darkMode ? '#3c4043' : '#dadce0',
+            }} />
 
             {/* Community Stats */}
             <Box>
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                 Community Activity
               </Typography>
               <Box sx={{ 
@@ -444,11 +546,26 @@ export default function UserProfileDialog({
                   borderRadius: 2, 
                   textAlign: 'center',
                   flex: '1 1 calc(50% - 8px)',
-                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' }
+                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' },
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 }}>
-                  <ForumIcon sx={{ color: 'primary.main', mb: 0.5 }} />
-                  <Typography variant="h6">{user.communityStats?.totalPosts || 0}</Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    bgcolor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
+                    margin: '0 auto 8px',
+                  }}>
+                    <ForumIcon sx={{ fontSize: 16, color: '#4285f4' }} />
+                  </Box>
+                  <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                    {user.communityStats?.totalPosts || 0}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                     Posts
                   </Typography>
                 </Paper>
@@ -458,11 +575,26 @@ export default function UserProfileDialog({
                   borderRadius: 2, 
                   textAlign: 'center',
                   flex: '1 1 calc(50% - 8px)',
-                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' }
+                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' },
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 }}>
-                  <ForumIcon sx={{ color: 'success.main', mb: 0.5 }} />
-                  <Typography variant="h6">{user.communityStats?.totalComments || 0}</Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    bgcolor: alpha('#34a853', darkMode ? 0.2 : 0.1),
+                    margin: '0 auto 8px',
+                  }}>
+                    <ForumIcon sx={{ fontSize: 16, color: '#34a853' }} />
+                  </Box>
+                  <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                    {user.communityStats?.totalComments || 0}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                     Comments
                   </Typography>
                 </Paper>
@@ -472,11 +604,26 @@ export default function UserProfileDialog({
                   borderRadius: 2, 
                   textAlign: 'center',
                   flex: '1 1 calc(50% - 8px)',
-                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' }
+                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' },
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 }}>
-                  <LikeIcon sx={{ color: '#f44336', mb: 0.5 }} />
-                  <Typography variant="h6">{user.communityStats?.totalLikesGiven || 0}</Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    bgcolor: alpha('#ea4335', darkMode ? 0.2 : 0.1),
+                    margin: '0 auto 8px',
+                  }}>
+                    <LikeIcon sx={{ fontSize: 16, color: '#ea4335' }} />
+                  </Box>
+                  <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                    {user.communityStats?.totalLikesGiven || 0}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                     Likes Given
                   </Typography>
                 </Paper>
@@ -486,11 +633,26 @@ export default function UserProfileDialog({
                   borderRadius: 2, 
                   textAlign: 'center',
                   flex: '1 1 calc(50% - 8px)',
-                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' }
+                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' },
+                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 }}>
-                  <BookmarkIcon sx={{ color: '#2196f3', mb: 0.5 }} />
-                  <Typography variant="h6">{user.communityStats?.totalBookmarks || 0}</Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    bgcolor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
+                    margin: '0 auto 8px',
+                  }}>
+                    <BookmarkIcon sx={{ fontSize: 16, color: '#4285f4' }} />
+                  </Box>
+                  <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                    {user.communityStats?.totalBookmarks || 0}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                     Bookmarks
                   </Typography>
                 </Paper>
@@ -500,7 +662,7 @@ export default function UserProfileDialog({
             {/* Expert Categories */}
             {user.expertInCategories && user.expertInCategories.length > 0 && (
               <Box sx={{ mt: 3 }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                   Expert In
                 </Typography>
                 <Box sx={{ 
@@ -515,7 +677,11 @@ export default function UserProfileDialog({
                       label={category}
                       size="small"
                       variant="outlined"
-                      color="primary"
+                      sx={{
+                        bgcolor: darkMode ? '#303134' : '#f1f3f4',
+                        color: '#4285f4',
+                        borderColor: darkMode ? '#5f6368' : '#dadce0',
+                      }}
                     />
                   ))}
                 </Box>
@@ -525,7 +691,7 @@ export default function UserProfileDialog({
             {/* Badges */}
             {user.badges && user.badges.length > 0 && (
               <Box sx={{ mt: 3 }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                   Badges
                 </Typography>
                 <Box sx={{ 
@@ -539,7 +705,11 @@ export default function UserProfileDialog({
                       <Chip
                         label={badge}
                         size="small"
-                        color="secondary"
+                        sx={{
+                          bgcolor: darkMode ? '#303134' : '#f1f3f4',
+                          color: darkMode ? '#fbbc04' : '#f57c00',
+                          borderColor: darkMode ? '#5f6368' : '#dadce0',
+                        }}
                         variant="outlined"
                       />
                     </Tooltip>
@@ -550,11 +720,16 @@ export default function UserProfileDialog({
           </Box>
         ) : (
           <Box sx={{ textAlign: "center", py: 4 }}>
-            <PersonIcon sx={{ fontSize: 60, color: "text.secondary", opacity: 0.5, mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
+            <PersonIcon sx={{ 
+              fontSize: 60, 
+              color: darkMode ? '#9aa0a6' : '#5f6368', 
+              opacity: 0.5, 
+              mb: 2 
+            }} />
+            <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }} gutterBottom>
               User not found
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               The user profile could not be loaded.
             </Typography>
           </Box>

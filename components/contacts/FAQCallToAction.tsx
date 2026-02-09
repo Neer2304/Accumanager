@@ -1,9 +1,10 @@
-// components/contacts/FAQCallToAction.tsx
 "use client";
 
 import React from 'react';
 import {
   Box,
+  Card,
+  CardContent,
   Typography,
   Button,
   useTheme,
@@ -14,18 +15,18 @@ import Link from 'next/link';
 
 export const FAQCallToAction: React.FC = () => {
   const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   
   return (
-    <Box
+    <Card
       sx={{
-        mt: { xs: 6, md: 8 },
-        p: { xs: 4, md: 6 },
-        borderRadius: 4,
-        background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.main} 100%)`,
-        color: 'white',
-        textAlign: 'center',
-        position: 'relative',
+        borderRadius: 3,
         overflow: 'hidden',
+        background: darkMode
+          ? `linear-gradient(135deg, ${alpha('#4285f4', 0.8)} 0%, ${alpha('#0d3064', 0.9)} 100%)`
+          : `linear-gradient(135deg, ${alpha('#4285f4', 0.9)} 0%, ${alpha('#0d3064', 0.9)} 100%)`,
+        color: '#ffffff',
+        position: 'relative',
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -37,19 +38,28 @@ export const FAQCallToAction: React.FC = () => {
         },
       }}
     >
-      <Box sx={{ position: 'relative', zIndex: 1 }}>
-        <QuestionAnswer
-          sx={{
-            fontSize: { xs: 48, md: 64 },
-            mb: 3,
-            opacity: 0.9,
-          }}
-        />
+      <CardContent sx={{ p: { xs: 3, md: 4 }, position: 'relative', zIndex: 1, textAlign: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: 2,
+              backgroundColor: alpha('#ffffff', 0.2),
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <QuestionAnswer sx={{ fontSize: 32, color: '#ffffff' }} />
+          </Box>
+        </Box>
+        
         <Typography
-          variant="h3"
+          variant="h4"
           sx={{
-            fontSize: { xs: '2rem', md: '2.5rem' },
-            fontWeight: 800,
+            fontWeight: 600,
             mb: 2,
           }}
         >
@@ -62,7 +72,6 @@ export const FAQCallToAction: React.FC = () => {
             mb: 4,
             maxWidth: 600,
             mx: 'auto',
-            fontSize: '1.125rem',
             lineHeight: 1.7,
           }}
         >
@@ -79,20 +88,20 @@ export const FAQCallToAction: React.FC = () => {
             py: 1.5,
             borderRadius: 3,
             fontSize: '1rem',
-            fontWeight: 700,
+            fontWeight: 600,
             textTransform: 'none',
-            bgcolor: 'white',
-            color: theme.palette.primary.main,
+            backgroundColor: '#ffffff',
+            color: '#4285f4',
             '&:hover': {
-              bgcolor: 'grey.50',
-              transform: 'translateY(-3px)',
-              boxShadow: `0 10px 30px ${alpha('#000', 0.2)}`,
+              backgroundColor: '#f8f9fa',
+              transform: 'translateY(-2px)',
+              boxShadow: `0 8px 24px ${alpha('#000', 0.2)}`,
             },
           }}
         >
           Visit FAQ Section
         </Button>
-      </Box>
-    </Box>
+      </CardContent>
+    </Card>
   );
 };
