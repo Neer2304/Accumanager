@@ -1,5 +1,4 @@
-// models/Setting.js - UPDATED FOR INDIA
-import mongoose from 'mongoose'
+import mongoose from 'mongoose';
 
 const settingSchema = new mongoose.Schema({
   userId: {
@@ -9,9 +8,9 @@ const settingSchema = new mongoose.Schema({
     unique: true
   },
   
-  // Business Information
+  // Business Information (Unified - replaces Business model)
   business: {
-    name: {
+    businessName: {
       type: String,
       required: true,
       trim: true,
@@ -20,6 +19,7 @@ const settingSchema = new mongoose.Schema({
     email: {
       type: String,
       trim: true,
+      lowercase: true,
       default: ''
     },
     phone: {
@@ -32,33 +32,47 @@ const settingSchema = new mongoose.Schema({
       trim: true,
       default: ''
     },
+    city: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    state: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    pincode: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    country: {
+      type: String,
+      default: 'India',
+      trim: true
+    },
     gstNumber: {
       type: String,
       trim: true,
+      uppercase: true,
       default: ''
     },
     panNumber: {
       type: String,
       trim: true,
+      uppercase: true,
       default: ''
     },
-    // For India only
-    state: {
+    logo: {
+      type: String,
+      default: ''
+    },
+    website: {
       type: String,
       default: '',
       trim: true
     },
-    city: {
-      type: String,
-      default: '',
-      trim: true
-    },
-    pincode: {
-      type: String,
-      default: '',
-      trim: true
-    },
-    // Indian business specific
     businessType: {
       type: String,
       enum: ['proprietorship', 'partnership', 'llp', 'pvt-ltd', 'public-ltd', 'individual', 'other'],
@@ -71,17 +85,17 @@ const settingSchema = new mongoose.Schema({
     }
   },
   
-  // Billing & Invoicing (India specific)
+  // Billing & Invoicing
   billing: {
     currency: {
       type: String,
       default: 'INR',
-      enum: ['INR'] // Only INR for now
+      enum: ['INR']
     },
     timezone: {
       type: String,
       default: 'Asia/Kolkata',
-      enum: ['Asia/Kolkata'] // Only IST for now
+      enum: ['Asia/Kolkata']
     },
     taxRate: {
       type: Number,
@@ -102,7 +116,6 @@ const settingSchema = new mongoose.Schema({
       type: Number,
       default: 30
     },
-    // GST details
     gstType: {
       type: String,
       enum: ['cgst_sgst', 'igst', 'utgst'],
@@ -112,7 +125,6 @@ const settingSchema = new mongoose.Schema({
       type: String,
       default: ''
     },
-    // Payment terms
     paymentTerms: {
       type: String,
       enum: ['immediate', '7days', '15days', '30days', 'custom'],
@@ -124,38 +136,18 @@ const settingSchema = new mongoose.Schema({
     }
   },
   
-  // Theme Settings
+  // Theme Settings (Simplified)
   theme: {
     mode: {
       type: String,
       enum: ['light', 'dark', 'auto'],
       default: 'light'
     },
-    primaryColor: {
+    language: {
       type: String,
-      default: '#2563eb' // Blue
+      enum: ['en', 'hi'],
+      default: 'en'
     },
-    secondaryColor: {
-      type: String,
-      default: '#8b5cf6' // Purple
-    },
-    // Layout preferences
-    sidebarWidth: {
-      type: Number,
-      default: 280,
-      min: 200,
-      max: 400
-    },
-    compactMode: {
-      type: Boolean,
-      default: false
-    },
-    fontSize: {
-      type: String,
-      enum: ['small', 'medium', 'large'],
-      default: 'medium'
-    },
-    // Indian date format
     dateFormat: {
       type: String,
       enum: ['dd/mm/yyyy', 'dd-mm-yyyy', 'dd.mm.yyyy'],
@@ -165,10 +157,25 @@ const settingSchema = new mongoose.Schema({
       type: String,
       enum: ['12hour', '24hour'],
       default: '12hour'
+    },
+    compactMode: {
+      type: Boolean,
+      default: false
+    },
+    sidebarWidth: {
+      type: Number,
+      default: 280,
+      min: 200,
+      max: 400
+    },
+    fontSize: {
+      type: String,
+      enum: ['small', 'medium', 'large'],
+      default: 'medium'
     }
   },
   
-  // Notifications (India specific)
+  // Notifications
   notifications: {
     email: {
       type: Boolean,
@@ -182,7 +189,6 @@ const settingSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
-    // Types of notifications
     salesAlerts: {
       type: Boolean,
       default: true
@@ -207,14 +213,13 @@ const settingSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     },
-    // Daily summary
     dailySummary: {
       type: Boolean,
       default: true
     },
     summaryTime: {
       type: String,
-      default: '18:00' // 6 PM IST
+      default: '18:00'
     }
   },
   
@@ -237,10 +242,13 @@ const settingSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     },
-    // Indian mobile verification
     mobileVerification: {
       type: Boolean,
       default: false
+    },
+    ipWhitelist: {
+      type: [String],
+      default: []
     }
   },
   
@@ -257,7 +265,7 @@ const settingSchema = new mongoose.Schema({
     },
     backupTime: {
       type: String,
-      default: '02:00' // 2 AM IST
+      default: '02:00'
     },
     retainBackupDays: {
       type: Number,
@@ -267,7 +275,7 @@ const settingSchema = new mongoose.Schema({
     }
   },
   
-  // Indian Business Compliance
+  // Compliance Settings
   compliance: {
     enableGstInvoices: {
       type: Boolean,
@@ -281,7 +289,6 @@ const settingSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
-    // TDS & TCS
     tdsApplicable: {
       type: Boolean,
       default: false
@@ -334,7 +341,6 @@ const settingSchema = new mongoose.Schema({
         default: ''
       }
     },
-    // SMS Gateway
     smsGateway: {
       provider: {
         type: String,
@@ -353,9 +359,9 @@ const settingSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
-})
+});
 
-// Compound index for faster queries
-settingSchema.index({ userId: 1 }, { unique: true })
+// Indexes
+settingSchema.index({ userId: 1 }, { unique: true });
 
-export default mongoose.models.Setting || mongoose.model('Setting', settingSchema)
+export default mongoose.models.Setting || mongoose.model('Setting', settingSchema);
