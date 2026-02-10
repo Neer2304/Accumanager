@@ -6,8 +6,6 @@ import {
   DialogActions,
   Box,
   TextField,
-  Button,
-  Chip,
   Typography,
   FormControl,
   InputLabel,
@@ -20,6 +18,7 @@ import {
   useTheme,
   useMediaQuery,
   CircularProgress,
+  alpha,
 } from '@mui/material';
 import {
   Receipt as ReceiptIcon,
@@ -31,6 +30,8 @@ import { Expense } from '@/types/expense';
 import { expenseCategories, paymentMethods } from '@/data/expenseData';
 import { getCategoryIcon } from './icons/CategoryIcons';
 import { getPaymentMethodIcon } from './icons/PaymentMethodIcons';
+import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
 
 interface AddExpenseDialogProps {
   open: boolean;
@@ -47,6 +48,7 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const darkMode = theme.palette.mode === 'dark';
   
   const [formData, setFormData] = useState<Expense>({
     title: '',
@@ -153,18 +155,31 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
       PaperProps={{
         sx: {
           borderRadius: isMobile ? 0 : 3,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        },
+          backgroundColor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        }
       }}
     >
-      <DialogTitle sx={{ color: 'white' }}>
+      <DialogTitle sx={{ 
+        fontSize: isMobile ? '1.25rem' : '1.5rem',
+        fontWeight: 600,
+        color: darkMode ? '#e8eaed' : '#202124',
+        backgroundColor: darkMode ? '#202124' : '#ffffff',
+        borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        px: { xs: 2, sm: 3 },
+        py: { xs: 1.5, sm: 2 },
+      }}>
         <Box display="flex" alignItems="center" gap={1}>
-          <ReceiptIcon />
+          <ReceiptIcon sx={{ color: '#4285f4' }} />
           {editingExpense ? 'Edit Expense' : 'Add New Expense'}
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ bgcolor: 'background.paper', py: 3 }}>
+      <DialogContent sx={{ 
+        bgcolor: darkMode ? '#303134' : '#ffffff', 
+        py: 3,
+        px: { xs: 2, sm: 3 },
+      }}>
         <form onSubmit={handleSubmit}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Basic Information */}
@@ -178,10 +193,16 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
               required
               placeholder="Lunch, Uber ride, Groceries..."
               variant="outlined"
+              size={isMobile ? "small" : "medium"}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  bgcolor: 'background.paper',
+                  backgroundColor: darkMode ? '#202124' : '#ffffff',
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                },
+                '& .MuiInputLabel-root': {
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
                 },
               }}
             />
@@ -205,22 +226,26 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                   }))
                 }
                 required
-                InputProps={{
-                  startAdornment: (
-                    <MoneyIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  ),
-                }}
-                variant="outlined"
+                size={isMobile ? "small" : "medium"}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    bgcolor: 'background.paper',
+                    backgroundColor: darkMode ? '#202124' : '#ffffff',
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
                   },
                 }}
               />
 
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                }}>
+                  Category
+                </InputLabel>
                 <Select
                   value={formData.category}
                   label="Category"
@@ -232,7 +257,15 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                   }
                   sx={{
                     borderRadius: 2,
-                    bgcolor: 'background.paper',
+                    backgroundColor: darkMode ? '#202124' : '#ffffff',
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                    },
                   }}
                 >
                   {expenseCategories.map((category) => (
@@ -264,16 +297,26 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                 }
                 InputLabelProps={{ shrink: true }}
                 variant="outlined"
+                size={isMobile ? "small" : "medium"}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    bgcolor: 'background.paper',
+                    backgroundColor: darkMode ? '#202124' : '#ffffff',
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
                   },
                 }}
               />
 
-              <FormControl fullWidth>
-                <InputLabel>Payment Method</InputLabel>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                }}>
+                  Payment Method
+                </InputLabel>
                 <Select
                   value={formData.paymentMethod}
                   label="Payment Method"
@@ -285,7 +328,15 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                   }
                   sx={{
                     borderRadius: 2,
-                    bgcolor: 'background.paper',
+                    backgroundColor: darkMode ? '#202124' : '#ffffff',
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                    },
                   }}
                 >
                   {paymentMethods.map((method) => {
@@ -308,17 +359,20 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
               variant="outlined"
               sx={{
                 borderRadius: 2,
-                borderColor: formData.isRecurring ? 'primary.main' : 'divider',
+                borderColor: formData.isRecurring ? '#4285f4' : darkMode ? '#3c4043' : '#dadce0',
                 transition: 'all 0.3s',
+                backgroundColor: darkMode ? '#202124' : '#ffffff',
               }}
             >
               <CardContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <Box display="flex" alignItems="center" gap={1}>
                     <CalendarIcon
-                      color={formData.isRecurring ? 'primary' : 'action'}
+                      sx={{ color: formData.isRecurring ? '#4285f4' : darkMode ? '#9aa0a6' : '#5f6368' }}
                     />
-                    <Typography variant="h6">Recurring Expense</Typography>
+                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                      Recurring Expense
+                    </Typography>
                   </Box>
 
                   <FormControlLabel
@@ -334,15 +388,28 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                               : undefined,
                           }))
                         }
-                        color="primary"
+                        sx={{
+                          color: '#4285f4',
+                          '&.Mui-checked': {
+                            color: '#4285f4',
+                          },
+                        }}
                       />
                     }
-                    label="This is a recurring expense"
+                    label={
+                      <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                        This is a recurring expense
+                      </Typography>
+                    }
                   />
 
                   {formData.isRecurring && (
-                    <FormControl fullWidth>
-                      <InputLabel>Recurrence Pattern</InputLabel>
+                    <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                      <InputLabel sx={{ 
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
+                      }}>
+                        Recurrence Pattern
+                      </InputLabel>
                       <Select
                         value={formData.recurrence || 'monthly'}
                         label="Recurrence Pattern"
@@ -354,7 +421,15 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                         }
                         sx={{
                           borderRadius: 2,
-                          bgcolor: 'background.paper',
+                          backgroundColor: darkMode ? '#202124' : '#ffffff',
+                          borderColor: darkMode ? '#3c4043' : '#dadce0',
+                          color: darkMode ? '#e8eaed' : '#202124',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: darkMode ? '#3c4043' : '#dadce0',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                          },
                         }}
                       >
                         <MenuItem value="daily">Daily</MenuItem>
@@ -374,18 +449,21 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
               sx={{
                 borderRadius: 2,
                 borderColor: formData.isBusinessExpense
-                  ? 'primary.main'
-                  : 'divider',
+                  ? '#4285f4'
+                  : darkMode ? '#3c4043' : '#dadce0',
                 transition: 'all 0.3s',
+                backgroundColor: darkMode ? '#202124' : '#ffffff',
               }}
             >
               <CardContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <Box display="flex" alignItems="center" gap={1}>
                     <BusinessIcon
-                      color={formData.isBusinessExpense ? 'primary' : 'action'}
+                      sx={{ color: formData.isBusinessExpense ? '#4285f4' : darkMode ? '#9aa0a6' : '#5f6368' }}
                     />
-                    <Typography variant="h6">Business Expense Details</Typography>
+                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                      Business Expense Details
+                    </Typography>
                   </Box>
 
                   <FormControlLabel
@@ -398,10 +476,19 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                             isBusinessExpense: e.target.checked,
                           }))
                         }
-                        color="primary"
+                        sx={{
+                          color: '#4285f4',
+                          '&.Mui-checked': {
+                            color: '#4285f4',
+                          },
+                        }}
                       />
                     }
-                    label="This is a business expense"
+                    label={
+                      <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                        This is a business expense
+                      </Typography>
+                    }
                   />
 
                   {formData.isBusinessExpense && (
@@ -424,23 +511,21 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                             gstAmount: parseFloat(e.target.value) || 0,
                           }))
                         }
-                        InputProps={{
-                          startAdornment: (
-                            <MoneyIcon
-                              sx={{ mr: 1, color: 'text.secondary' }}
-                            />
-                          ),
-                        }}
-                        variant="outlined"
+                        size={isMobile ? "small" : "medium"}
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
-                            bgcolor: 'background.paper',
+                            backgroundColor: darkMode ? '#202124' : '#ffffff',
+                            borderColor: darkMode ? '#3c4043' : '#dadce0',
+                            color: darkMode ? '#e8eaed' : '#202124',
+                          },
+                          '& .MuiInputLabel-root': {
+                            color: darkMode ? '#9aa0a6' : '#5f6368',
                           },
                         }}
                       />
 
-                      <Typography variant="subtitle2" gutterBottom>
+                      <Typography variant="subtitle2" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                         Vendor Information
                       </Typography>
 
@@ -454,11 +539,16 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                             vendor: { ...prev.vendor!, name: e.target.value },
                           }))
                         }
-                        variant="outlined"
+                        size={isMobile ? "small" : "medium"}
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
-                            bgcolor: 'background.paper',
+                            backgroundColor: darkMode ? '#202124' : '#ffffff',
+                            borderColor: darkMode ? '#3c4043' : '#dadce0',
+                            color: darkMode ? '#e8eaed' : '#202124',
+                          },
+                          '& .MuiInputLabel-root': {
+                            color: darkMode ? '#9aa0a6' : '#5f6368',
                           },
                         }}
                       />
@@ -474,11 +564,16 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                           }))
                         }
                         placeholder="07AABCU9603R1ZM"
-                        variant="outlined"
+                        size={isMobile ? "small" : "medium"}
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
-                            bgcolor: 'background.paper',
+                            backgroundColor: darkMode ? '#202124' : '#ffffff',
+                            borderColor: darkMode ? '#3c4043' : '#dadce0',
+                            color: darkMode ? '#e8eaed' : '#202124',
+                          },
+                          '& .MuiInputLabel-root': {
+                            color: darkMode ? '#9aa0a6' : '#5f6368',
                           },
                         }}
                       />
@@ -503,17 +598,23 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
               }
               placeholder="Additional details about this expense..."
               variant="outlined"
+              size={isMobile ? "small" : "medium"}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  bgcolor: 'background.paper',
+                  backgroundColor: darkMode ? '#202124' : '#ffffff',
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                },
+                '& .MuiInputLabel-root': {
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
                 },
               }}
             />
 
             {/* Tags */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Typography variant="subtitle2" gutterBottom>
+              <Typography variant="subtitle2" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                 Tags
               </Typography>
               <Box
@@ -529,6 +630,12 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                     flex: 1,
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
+                      backgroundColor: darkMode ? '#202124' : '#ffffff',
+                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      color: darkMode ? '#e8eaed' : '#202124',
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
                     },
                   }}
                 />
@@ -536,7 +643,15 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                   onClick={addTag}
                   variant="outlined"
                   size="small"
-                  sx={{ borderRadius: 2 }}
+                  sx={{ 
+                    borderRadius: 2,
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    '&:hover': {
+                      borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                      backgroundColor: darkMode ? '#3c4043' : '#f8f9fa',
+                    }
+                  }}
                 >
                   Add
                 </Button>
@@ -548,7 +663,12 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
                     label={tag}
                     size="small"
                     onDelete={() => removeTag(tag)}
-                    sx={{ borderRadius: 1 }}
+                    sx={{ 
+                      borderRadius: 1,
+                      backgroundColor: darkMode ? '#3c4043' : '#f8f9fa',
+                      borderColor: darkMode ? '#5f6368' : '#dadce0',
+                      color: darkMode ? '#e8eaed' : '#202124',
+                    }}
                   />
                 ))}
               </Box>
@@ -559,7 +679,16 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
             <Button
               onClick={onClose}
               disabled={loading}
-              sx={{ borderRadius: 2 }}
+              variant="outlined"
+              size={isMobile ? "small" : "medium"}
+              sx={{
+                borderColor: darkMode ? '#3c4043' : '#dadce0',
+                color: darkMode ? '#e8eaed' : '#202124',
+                '&:hover': {
+                  borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                  backgroundColor: darkMode ? '#3c4043' : '#f8f9fa',
+                }
+              }}
             >
               Cancel
             </Button>
@@ -567,16 +696,16 @@ const AddExpenseDialog: React.FC<AddExpenseDialogProps> = ({
               type="submit"
               variant="contained"
               disabled={loading || !formData.title || !formData.amount}
-              startIcon={
+              iconLeft={
                 loading ? <CircularProgress size={16} /> : <ReceiptIcon />
               }
+              size={isMobile ? "small" : "medium"}
               sx={{
                 borderRadius: 2,
                 px: 4,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                backgroundColor: '#4285f4',
                 '&:hover': {
-                  background:
-                    'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                  backgroundColor: '#3367d6',
                 },
               }}
             >

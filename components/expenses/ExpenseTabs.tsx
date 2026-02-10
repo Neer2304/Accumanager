@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Tabs,
-  Tab,
   Table,
   TableBody,
   TableCell,
@@ -12,9 +10,6 @@ import {
   TablePagination,
   CircularProgress,
   Typography,
-  Chip,
-  IconButton,
-  Tooltip,
   Avatar,
   List,
   ListItem,
@@ -22,10 +17,11 @@ import {
   ListItemIcon,
   Card,
   CardContent,
-  Button,
+  alpha,
+  useTheme,
+  LinearProgress,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Category as CategoryIcon,
@@ -37,6 +33,8 @@ import { Expense, ExpenseStats } from '@/types/expense';
 import { expenseCategories, paymentMethods } from '@/data/expenseData';
 import { getCategoryIcon } from './icons/CategoryIcons';
 import { getPaymentMethodIcon } from './icons/PaymentMethodIcons';
+import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
 
 interface ExpenseTabsProps {
   activeTab: number;
@@ -59,6 +57,8 @@ const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
   onDeleteExpense,
   isMobile,
 }) => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -84,125 +84,159 @@ const ExpenseTabs: React.FC<ExpenseTabsProps> = ({
   // Calculate totals for categories
   const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
-  // Replace the CategoryCard component's prop type definition
-const CategoryCard = ({ category, totalAmount }: { 
-  category: { value: string; label: string; color: string; icon?: string };
-  totalAmount: number;
-}) => {
-  const categoryExpenses = expenses.filter(e => e.category === category.value);
-  const total = categoryExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const percentage = totalAmount > 0 ? (total / totalAmount) * 100 : 0;
+  const CategoryCard = ({ category, totalAmount }: { 
+    category: { value: string; label: string; color: string; icon?: string };
+    totalAmount: number;
+  }) => {
+    const categoryExpenses = expenses.filter(e => e.category === category.value);
+    const total = categoryExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const percentage = totalAmount > 0 ? (total / totalAmount) * 100 : 0;
 
-  return (
-    <Card sx={{ borderRadius: 3, height: '100%', overflow: 'hidden' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <Avatar
-            sx={{
-              bgcolor: category.color,
-              width: 48,
-              height: 48,
-              fontSize: 24,
-            }}
-          >
-            {getCategoryIcon(category.value)}
-          </Avatar>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" fontWeight="bold">
-              {category.label}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {categoryExpenses.length} {categoryExpenses.length === 1 ? 'expense' : 'expenses'}
-            </Typography>
-          </Box>
-        </Box>
-        <Typography variant="h5" fontWeight="bold" color="primary">
-          ₹{total.toLocaleString()}
-        </Typography>
-        {expenses.length > 0 && (
-          <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              {percentage.toFixed(1)}% of total
-            </Typography>
-            <Box
+    return (
+      <Card sx={{ 
+        borderRadius: 3, 
+        height: '100%', 
+        overflow: 'hidden',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Avatar
               sx={{
-                width: '100%',
-                height: 4,
-                bgcolor: 'grey.200',
-                borderRadius: 2,
-                mt: 0.5,
-                overflow: 'hidden',
+                backgroundColor: category.color,
+                width: 48,
+                height: 48,
+                fontSize: 24,
+                color: 'white',
               }}
             >
-              <Box
-                sx={{
-                  width: `${percentage}%`,
-                  height: '100%',
-                  bgcolor: category.color,
-                  transition: 'width 0.3s',
-                }}
-              />
+              {getCategoryIcon(category.value)}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <Typography 
+                variant="h6" 
+                fontWeight="bold"
+                sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+              >
+                {category.label}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
+              >
+                {categoryExpenses.length} {categoryExpenses.length === 1 ? 'expense' : 'expenses'}
+              </Typography>
             </Box>
           </Box>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+          <Typography 
+            variant="h5" 
+            fontWeight="bold" 
+            sx={{ color: '#4285f4' }}
+          >
+            ₹{total.toLocaleString()}
+          </Typography>
+          {expenses.length > 0 && (
+            <Box sx={{ mt: 1 }}>
+              <Typography 
+                variant="body2" 
+                sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
+              >
+                {percentage.toFixed(1)}% of total
+              </Typography>
+              <Box
+                sx={{
+                  width: '100%',
+                  height: 4,
+                  backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
+                  borderRadius: 2,
+                  mt: 0.5,
+                  overflow: 'hidden',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: `${percentage}%`,
+                    height: '100%',
+                    backgroundColor: category.color,
+                    transition: 'width 0.3s',
+                  }}
+                />
+              </Box>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <>
       {/* Tabs */}
-      <Box
-        sx={{
-          bgcolor: 'background.paper',
-          borderBottom: 1,
-          borderColor: 'divider',
-          px: 3,
-        }}
-      >
-        <Tabs
-          value={activeTab}
-          onChange={(_, newValue) => onTabChange(newValue)}
-          variant={isMobile ? 'fullWidth' : 'standard'}
-          sx={{
-            '& .MuiTab-root': {
-              fontSize: '1rem',
-              fontWeight: 600,
-              py: 2,
-              minHeight: 64,
-              color: 'text.secondary',
-              '&.Mui-selected': {
-                color: '#667eea',
-              },
-            },
-            '& .MuiTabs-indicator': {
-              backgroundColor: '#667eea',
-              height: 3,
-              borderRadius: '3px 3px 0 0',
-            },
-          }}
-        >
-          <Tab
-            label={isMobile ? 'Expenses' : 'All Expenses'}
-            icon={isMobile ? <ReceiptIcon /> : undefined}
-            iconPosition="start"
-          />
-          <Tab
-            label="Statistics"
-            icon={isMobile ? <CategoryIcon /> : undefined}
-            iconPosition="start"
-          />
-          <Tab
-            label="Categories"
-            icon={isMobile ? <CreditCardIcon /> : undefined}
-            iconPosition="start"
-          />
-        </Tabs>
+      <Box sx={{ p: { xs: 1, sm: 2 }, borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexWrap: 'wrap',
+          gap: 1,
+        }}>
+          <Button
+            variant={activeTab === 0 ? "contained" : "outlined"}
+            onClick={() => onTabChange(0)}
+            size="small"
+            sx={{
+              minWidth: 'auto',
+              px: 2,
+              backgroundColor: activeTab === 0 ? '#4285f4' : 'transparent',
+              borderColor: activeTab === 0 ? '#4285f4' : darkMode ? '#3c4043' : '#dadce0',
+              color: activeTab === 0 ? 'white' : darkMode ? '#e8eaed' : '#202124',
+              '&:hover': {
+                backgroundColor: activeTab === 0 ? '#3367d6' : darkMode ? '#3c4043' : '#f8f9fa',
+              }
+            }}
+          >
+            {isMobile ? 'Expenses' : 'All Expenses'}
+          </Button>
+          
+          <Button
+            variant={activeTab === 1 ? "contained" : "outlined"}
+            onClick={() => onTabChange(1)}
+            size="small"
+            sx={{
+              minWidth: 'auto',
+              px: 2,
+              backgroundColor: activeTab === 1 ? '#4285f4' : 'transparent',
+              borderColor: activeTab === 1 ? '#4285f4' : darkMode ? '#3c4043' : '#dadce0',
+              color: activeTab === 1 ? 'white' : darkMode ? '#e8eaed' : '#202124',
+              '&:hover': {
+                backgroundColor: activeTab === 1 ? '#3367d6' : darkMode ? '#3c4043' : '#f8f9fa',
+              }
+            }}
+          >
+            Statistics
+          </Button>
+          
+          <Button
+            variant={activeTab === 2 ? "contained" : "outlined"}
+            onClick={() => onTabChange(2)}
+            size="small"
+            sx={{
+              minWidth: 'auto',
+              px: 2,
+              backgroundColor: activeTab === 2 ? '#4285f4' : 'transparent',
+              borderColor: activeTab === 2 ? '#4285f4' : darkMode ? '#3c4043' : '#dadce0',
+              color: activeTab === 2 ? 'white' : darkMode ? '#e8eaed' : '#202124',
+              '&:hover': {
+                backgroundColor: activeTab === 2 ? '#3367d6' : darkMode ? '#3c4043' : '#f8f9fa',
+              }
+            }}
+          >
+            Categories
+          </Button>
+        </Box>
       </Box>
 
       {/* Tab Content */}
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
         {/* All Expenses Tab */}
         {activeTab === 0 && (
           <>
@@ -210,20 +244,22 @@ const CategoryCard = ({ category, totalAmount }: {
             <TableContainer
               sx={{
                 borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'divider',
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 overflow: 'hidden',
+                backgroundColor: darkMode ? '#202124' : '#ffffff',
               }}
             >
               <Table>
                 <TableHead>
                   <TableRow
                     sx={{
-                      bgcolor: 'grey.50',
+                      backgroundColor: darkMode ? '#303134' : '#f8f9fa',
                       '& th': {
                         fontWeight: 600,
-                        color: 'text.primary',
-                        borderBottomColor: 'divider',
+                        color: darkMode ? '#e8eaed' : '#202124',
+                        borderBottomColor: darkMode ? '#3c4043' : '#dadce0',
+                        py: 2,
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
                       },
                     }}
                   >
@@ -248,8 +284,8 @@ const CategoryCard = ({ category, totalAmount }: {
                             gap: 2,
                           }}
                         >
-                          <CircularProgress />
-                          <Typography variant="body2" color="text.secondary">
+                          <CircularProgress sx={{ color: '#4285f4' }} />
+                          <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                             Loading expenses...
                           </Typography>
                         </Box>
@@ -260,18 +296,18 @@ const CategoryCard = ({ category, totalAmount }: {
                       <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                         <Box sx={{ textAlign: 'center', py: 2 }}>
                           <ReceiptIcon
-                            sx={{ fontSize: 60, color: 'grey.300', mb: 2 }}
+                            sx={{ fontSize: 60, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2, opacity: 0.5 }}
                           />
                           <Typography
                             variant="h6"
-                            color="text.secondary"
+                            sx={{ color: darkMode ? '#e8eaed' : '#202124', mb: 1 }}
                             gutterBottom
                           >
                             No expenses found
                           </Typography>
                           <Typography
                             variant="body2"
-                            color="text.secondary"
+                            sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
                             gutterBottom
                           >
                             Add your first expense to get started
@@ -289,7 +325,11 @@ const CategoryCard = ({ category, totalAmount }: {
                           sx={{
                             '&:last-child td, &:last-child th': { border: 0 },
                             transition: 'background-color 0.2s',
-                            '&:hover': { bgcolor: 'action.hover' },
+                            '&:hover': { 
+                              backgroundColor: darkMode 
+                                ? alpha('#4285f4', 0.05)
+                                : alpha('#4285f4', 0.02),
+                            },
                           }}
                         >
                           <TableCell>
@@ -311,7 +351,10 @@ const CategoryCard = ({ category, totalAmount }: {
                                   component="span"
                                   variant="body2"
                                   fontWeight="bold"
-                                  sx={{ display: 'inline' }}
+                                  sx={{ 
+                                    display: 'inline',
+                                    color: darkMode ? '#e8eaed' : '#202124',
+                                  }}
                                 >
                                   {expense.title}
                                 </Typography>
@@ -319,13 +362,13 @@ const CategoryCard = ({ category, totalAmount }: {
                               {expense.description && (
                                 <Typography
                                   variant="caption"
-                                  color="text.secondary"
                                   sx={{
                                     display: 'block',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
                                     maxWidth: 200,
+                                    color: darkMode ? '#9aa0a6' : '#5f6368',
                                   }}
                                 >
                                   {expense.description}
@@ -349,9 +392,9 @@ const CategoryCard = ({ category, totalAmount }: {
                               variant="outlined"
                               sx={{
                                 borderRadius: 1,
-                                borderColor: getCategoryInfo(expense.category)
-                                  .color,
+                                borderColor: getCategoryInfo(expense.category).color,
                                 color: getCategoryInfo(expense.category).color,
+                                backgroundColor: alpha(getCategoryInfo(expense.category).color, darkMode ? 0.2 : 0.1),
                               }}
                             />
                           </TableCell>
@@ -366,7 +409,7 @@ const CategoryCard = ({ category, totalAmount }: {
                               <Typography
                                 variant="body2"
                                 fontWeight="bold"
-                                sx={{ color: 'error.main' }}
+                                sx={{ color: '#ea4335' }}
                               >
                                 -₹{expense.amount.toLocaleString()}
                               </Typography>
@@ -374,7 +417,7 @@ const CategoryCard = ({ category, totalAmount }: {
                                 expense.gstAmount > 0 && (
                                   <Typography
                                     variant="caption"
-                                    color="text.secondary"
+                                    sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
                                   >
                                     +₹{expense.gstAmount} GST
                                   </Typography>
@@ -390,10 +433,10 @@ const CategoryCard = ({ category, totalAmount }: {
                                   gap: 1,
                                 }}
                               >
-                                <Box sx={{ color: 'primary.main' }}>
+                                <Box sx={{ color: '#4285f4' }}>
                                   <PaymentIcon method={expense.paymentMethod} />
                                 </Box>
-                                <Typography variant="body2">
+                                <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                                   {getPaymentMethodInfo(expense.paymentMethod).label}
                                 </Typography>
                               </Box>
@@ -410,9 +453,9 @@ const CategoryCard = ({ category, totalAmount }: {
                               >
                                 <CalendarIcon
                                   fontSize="small"
-                                  sx={{ color: 'text.secondary' }}
+                                  sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
                                 />
-                                <Typography variant="body2">
+                                <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                                   {new Date(expense.date).toLocaleDateString(
                                     'en-US',
                                     {
@@ -432,15 +475,19 @@ const CategoryCard = ({ category, totalAmount }: {
                                   ? 'Business'
                                   : 'Personal'
                               }
-                              color={
-                                expense.isBusinessExpense
-                                  ? 'primary'
-                                  : 'default'
-                              }
                               size="small"
                               sx={{
                                 borderRadius: 1,
                                 fontWeight: 500,
+                                backgroundColor: expense.isBusinessExpense
+                                  ? alpha('#34a853', darkMode ? 0.2 : 0.1)
+                                  : alpha('#4285f4', darkMode ? 0.2 : 0.1),
+                                color: expense.isBusinessExpense
+                                  ? '#34a853'
+                                  : '#4285f4',
+                                border: `1px solid ${expense.isBusinessExpense
+                                  ? alpha('#34a853', 0.3)
+                                  : alpha('#4285f4', 0.3)}`,
                               }}
                             />
                           </TableCell>
@@ -452,38 +499,42 @@ const CategoryCard = ({ category, totalAmount }: {
                                 justifyContent: 'center',
                               }}
                             >
-                              <Tooltip title="Edit">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => onEditExpense(expense)}
-                                  sx={{
-                                    borderRadius: 1,
-                                    bgcolor: 'primary.50',
-                                    color: 'primary.main',
-                                    '&:hover': { bgcolor: 'primary.100' },
-                                  }}
-                                >
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Delete">
-                                <IconButton
-                                  size="small"
-                                  onClick={() =>
-                                    onDeleteExpense(
-                                      expense._id || expense.id!,
-                                    )
+                              <Button
+                                variant="text"
+                                size="small"
+                                onClick={() => onEditExpense(expense)}
+                                iconLeft={<EditIcon />}
+                                sx={{
+                                  minWidth: 'auto',
+                                  p: 0.5,
+                                  color: '#4285f4',
+                                  '&:hover': {
+                                    backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
                                   }
-                                  sx={{
-                                    borderRadius: 1,
-                                    bgcolor: 'error.50',
-                                    color: 'error.main',
-                                    '&:hover': { bgcolor: 'error.100' },
-                                  }}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
+                                }}
+                              >
+                                {isMobile ? '' : 'Edit'}
+                              </Button>
+                              <Button
+                                variant="text"
+                                size="small"
+                                onClick={() =>
+                                  onDeleteExpense(
+                                    expense._id || expense.id!,
+                                  )
+                                }
+                                iconLeft={<DeleteIcon />}
+                                sx={{
+                                  minWidth: 'auto',
+                                  p: 0.5,
+                                  color: '#ea4335',
+                                  '&:hover': {
+                                    backgroundColor: alpha('#ea4335', darkMode ? 0.1 : 0.05),
+                                  }
+                                }}
+                              >
+                                {isMobile ? '' : 'Delete'}
+                              </Button>
                             </Box>
                           </TableCell>
                         </TableRow>
@@ -505,9 +556,15 @@ const CategoryCard = ({ category, totalAmount }: {
                 setPage(0);
               }}
               sx={{
-                borderTop: 1,
-                borderColor: 'divider',
+                borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 mt: 2,
+                color: darkMode ? '#e8eaed' : '#202124',
+                '& .MuiTablePagination-select, & .MuiTablePagination-selectIcon': {
+                  color: darkMode ? '#e8eaed' : '#202124',
+                },
+                '& .MuiSvgIcon-root': {
+                  color: darkMode ? '#e8eaed' : '#202124',
+                },
               }}
             />
           </>
@@ -525,7 +582,12 @@ const CategoryCard = ({ category, totalAmount }: {
                 }}
               >
                 {/* Category Breakdown */}
-                <Card sx={{ flex: 1, borderRadius: 3 }}>
+                <Card sx={{ 
+                  flex: 1, 
+                  borderRadius: 3,
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
                   <CardContent>
                     <Typography
                       variant="h6"
@@ -535,10 +597,10 @@ const CategoryCard = ({ category, totalAmount }: {
                         alignItems: 'center',
                         gap: 1,
                         mb: 3,
-                        color: 'text.primary',
+                        color: darkMode ? '#e8eaed' : '#202124',
                       }}
                     >
-                      <CategoryIcon color="primary" />
+                      <CategoryIcon sx={{ color: '#4285f4' }} />
                       Spending by Category
                     </Typography>
                     <List sx={{ p: 0 }}>
@@ -549,15 +611,22 @@ const CategoryCard = ({ category, totalAmount }: {
                             py: 2,
                             borderRadius: 2,
                             mb: 1,
-                            '&:hover': { bgcolor: 'action.hover' },
+                            backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                            '&:hover': { 
+                              backgroundColor: darkMode 
+                                ? alpha('#4285f4', 0.05)
+                                : alpha('#4285f4', 0.02),
+                            },
                           }}
                         >
                           <ListItemIcon>
                             <Avatar
                               sx={{
-                                bgcolor: getCategoryInfo(category._id).color,
+                                backgroundColor: getCategoryInfo(category._id).color,
                                 width: 40,
                                 height: 40,
+                                color: 'white',
                               }}
                             >
                               {getCategoryIcon(category._id)}
@@ -565,16 +634,20 @@ const CategoryCard = ({ category, totalAmount }: {
                           </ListItemIcon>
                           <ListItemText
                             primary={
-                              <Typography variant="body1" fontWeight="medium">
+                              <Typography variant="body1" fontWeight="medium" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                                 {getCategoryInfo(category._id).label}
                               </Typography>
                             }
-                            secondary={`₹${category.totalAmount.toLocaleString()} • ${category.count} expenses`}
+                            secondary={
+                              <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                                ₹{category.totalAmount.toLocaleString()} • {category.count} expenses
+                              </Typography>
+                            }
                           />
                           <Typography
                             variant="body2"
                             fontWeight="bold"
-                            color="primary.main"
+                            sx={{ color: '#4285f4' }}
                           >
                             {(
                               (category.totalAmount /
@@ -593,7 +666,12 @@ const CategoryCard = ({ category, totalAmount }: {
                 </Card>
 
                 {/* Payment Method Distribution */}
-                <Card sx={{ flex: 1, borderRadius: 3 }}>
+                <Card sx={{ 
+                  flex: 1, 
+                  borderRadius: 3,
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
                   <CardContent>
                     <Typography
                       variant="h6"
@@ -603,10 +681,10 @@ const CategoryCard = ({ category, totalAmount }: {
                         alignItems: 'center',
                         gap: 1,
                         mb: 3,
-                        color: 'text.primary',
+                        color: darkMode ? '#e8eaed' : '#202124',
                       }}
                     >
-                      <CreditCardIcon color="primary" />
+                      <CreditCardIcon sx={{ color: '#4285f4' }} />
                       Payment Methods
                     </Typography>
                     <List sx={{ p: 0 }}>
@@ -617,14 +695,20 @@ const CategoryCard = ({ category, totalAmount }: {
                             py: 2,
                             borderRadius: 2,
                             mb: 1,
-                            '&:hover': { bgcolor: 'action.hover' },
+                            backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                            '&:hover': { 
+                              backgroundColor: darkMode 
+                                ? alpha('#4285f4', 0.05)
+                                : alpha('#4285f4', 0.02),
+                            },
                           }}
                         >
                           <ListItemIcon>
                             <Avatar
                               sx={{
-                                bgcolor: 'primary.50',
-                                color: 'primary.main',
+                                backgroundColor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
+                                color: '#4285f4',
                                 width: 40,
                                 height: 40,
                               }}
@@ -634,11 +718,15 @@ const CategoryCard = ({ category, totalAmount }: {
                           </ListItemIcon>
                           <ListItemText
                             primary={
-                              <Typography variant="body1" fontWeight="medium">
+                              <Typography variant="body1" fontWeight="medium" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                                 {getPaymentMethodInfo(method._id).label}
                               </Typography>
                             }
-                            secondary={`₹${method.totalAmount.toLocaleString()} • ${method.count} transactions`}
+                            secondary={
+                              <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                                ₹{method.totalAmount.toLocaleString()} • {method.count} transactions
+                              </Typography>
+                            }
                           />
                         </ListItem>
                       ))}
@@ -648,11 +736,13 @@ const CategoryCard = ({ category, totalAmount }: {
               </Box>
             ) : (
               <Box sx={{ textAlign: 'center', py: 8 }}>
-                <CircularProgress />
+                <CircularProgress sx={{ color: '#4285f4' }} />
                 <Typography
                   variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 2 }}
+                  sx={{ 
+                    mt: 2,
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                  }}
                 >
                   Loading statistics...
                 </Typography>
@@ -666,14 +756,22 @@ const CategoryCard = ({ category, totalAmount }: {
           <Box sx={{ p: 3 }}>
             <Box
               sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, 1fr)',
-                  md: 'repeat(3, 1fr)',
-                  lg: 'repeat(4, 1fr)',
-                },
+                display: 'flex',
+                flexWrap: 'wrap',
                 gap: 3,
+                '& > *': {
+                  flex: '1 1 calc(100% - 12px)',
+                  minWidth: 0,
+                  '@media (min-width: 600px)': {
+                    flex: '1 1 calc(50% - 16px)'
+                  },
+                  '@media (min-width: 900px)': {
+                    flex: '1 1 calc(33.333% - 18px)'
+                  },
+                  '@media (min-width: 1200px)': {
+                    flex: '1 1 calc(25% - 18px)'
+                  }
+                }
               }}
             >
               {expenseCategories.map((category) => (

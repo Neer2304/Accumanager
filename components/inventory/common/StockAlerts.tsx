@@ -1,5 +1,6 @@
+// StockAlerts.tsx
 import React from 'react';
-import { Alert, Box, Typography, Button } from '@mui/material';
+import { Alert, Box, Typography, Button, alpha } from '@mui/material';
 import { InventoryIcons } from '@/assets/icons/InventoryIcons';
 import { INVENTORY_CONTENT } from '../InventoryContent';
 
@@ -25,8 +26,11 @@ export const StockAlerts = ({
         sx={{ 
           mb: 2, 
           borderRadius: 2,
+          backgroundColor: alpha('#fbbc04', 0.08),
+          border: `1px solid ${alpha('#fbbc04', 0.3)}`,
+          color: '#fbbc04',
         }}
-        icon={<InventoryIcons.Warning />}
+        icon={<InventoryIcons.Warning sx={{ color: '#fbbc04' }} />}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box>
@@ -41,6 +45,7 @@ export const StockAlerts = ({
             variant="text"
             size="small"
             onClick={onViewLowStock}
+            sx={{ color: '#fbbc04' }}
           >
             {INVENTORY_CONTENT.buttons.viewDetails}
           </Button>
@@ -55,8 +60,11 @@ export const StockAlerts = ({
         severity="error" 
         sx={{ 
           borderRadius: 2,
+          backgroundColor: alpha('#ea4335', 0.08),
+          border: `1px solid ${alpha('#ea4335', 0.3)}`,
+          color: '#ea4335',
         }}
-        icon={<InventoryIcons.Error />}
+        icon={<InventoryIcons.Error sx={{ color: '#ea4335' }} />}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box>
@@ -71,6 +79,7 @@ export const StockAlerts = ({
             variant="text"
             size="small"
             onClick={onViewOutOfStock}
+            sx={{ color: '#ea4335' }}
           >
             {INVENTORY_CONTENT.buttons.viewDetails}
           </Button>
@@ -85,8 +94,11 @@ export const StockAlerts = ({
         severity="success" 
         sx={{ 
           borderRadius: 2,
+          backgroundColor: alpha('#34a853', 0.08),
+          border: `1px solid ${alpha('#34a853', 0.3)}`,
+          color: '#34a853',
         }}
-        icon={<InventoryIcons.CheckCircle />}
+        icon={<InventoryIcons.CheckCircle sx={{ color: '#34a853' }} />}
       >
         <Typography variant="subtitle2" fontWeight="bold">
           {INVENTORY_CONTENT.alerts.allOptimalTitle}

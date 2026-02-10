@@ -7,30 +7,26 @@ import {
   Paper,
   useTheme,
   useMediaQuery,
-  Container,
-  Button,
-  Chip,
-  Stack,
+  alpha,
   Breadcrumbs,
   Link as MuiLink,
   Skeleton,
   Card,
   CardContent,
-  Grid,
 } from "@mui/material";
 import {
   Home as HomeIcon,
   ArrowBack as BackIcon,
   Download,
+  TrendingUp,
 } from "@mui/icons-material";
 import Link from "next/link";
 import { MainLayout } from "@/components/Layout/MainLayout";
-import { Icons } from "@/components/common/icons/index";
-import { Heading2, BodyText, MutedText, SectionTitle } from "@/components/common/Text";
-import ExpenseHeader from "@/components/expenses/ExpenseHeader";
 import ExpenseStats from "@/components/expenses/ExpenseStats";
 import ExpenseTabs from "@/components/expenses/ExpenseTabs";
 import AddExpenseDialog from "@/components/expenses/AddExpenseDialog";
+import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/ui/Chip";
 
 // Types
 interface Expense {
@@ -80,99 +76,255 @@ interface ExpenseStatsType {
 }
 
 // Skeleton Component for Expenses Page
-const ExpensesSkeleton = () => (
-  <>
-    {/* Header Skeleton */}
-    <Box sx={{ mb: 4 }}>
-      <Skeleton variant="text" width={120} height={40} sx={{ mb: 2 }} />
-      
-      <Box sx={{ mb: 2 }}>
-        <Skeleton variant="text" width={200} height={25} />
+const ExpensesSkeleton = () => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === "dark";
+
+  return (
+    <>
+      {/* Header Skeleton */}
+      <Box sx={{ mb: 4 }}>
+        <Skeleton
+          variant="text"
+          width={120}
+          height={40}
+          sx={{
+            mb: 2,
+            bgcolor: darkMode ? "#3c4043" : "#f1f3f4",
+          }}
+        />
+
+        <Box sx={{ mb: 2 }}>
+          <Skeleton
+            variant="text"
+            width={200}
+            height={25}
+            sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+          />
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          <Box>
+            <Skeleton
+              variant="text"
+              width={300}
+              height={50}
+              sx={{
+                mb: 1,
+                bgcolor: darkMode ? "#3c4043" : "#f1f3f4",
+              }}
+            />
+            <Skeleton
+              variant="text"
+              width={250}
+              height={25}
+              sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+            />
+          </Box>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Skeleton
+              variant="rectangular"
+              width={150}
+              height={40}
+              sx={{
+                borderRadius: 1,
+                bgcolor: darkMode ? "#3c4043" : "#f1f3f4",
+              }}
+            />
+            <Skeleton
+              variant="rectangular"
+              width={120}
+              height={40}
+              sx={{
+                borderRadius: 1,
+                bgcolor: darkMode ? "#3c4043" : "#f1f3f4",
+              }}
+            />
+          </Box>
+        </Box>
       </Box>
 
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: { xs: 'flex-start', sm: 'center' },
-        flexDirection: { xs: 'column', sm: 'row' },
-        gap: 2,
-        mb: 3
-      }}>
-        <Box>
-          <Skeleton variant="text" width={300} height={50} sx={{ mb: 1 }} />
-          <Skeleton variant="text" width={250} height={25} />
+      {/* Action Bar Skeleton */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          mb: 3,
+          borderRadius: 2,
+          backgroundColor: darkMode ? "#303134" : "#ffffff",
+          border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Skeleton
+              variant="text"
+              width={100}
+              height={30}
+              sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+            />
+            <Skeleton
+              variant="text"
+              width={100}
+              height={30}
+              sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+            />
+            <Skeleton
+              variant="text"
+              width={100}
+              height={30}
+              sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+            />
+          </Box>
+          <Skeleton
+            variant="rectangular"
+            width={120}
+            height={40}
+            sx={{
+              borderRadius: 1,
+              bgcolor: darkMode ? "#3c4043" : "#f1f3f4",
+            }}
+          />
         </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Skeleton variant="rectangular" width={150} height={40} sx={{ borderRadius: 1 }} />
-          <Skeleton variant="rectangular" width={120} height={40} sx={{ borderRadius: 1 }} />
-        </Box>
-      </Box>
-    </Box>
+      </Paper>
 
-    {/* Action Bar Skeleton */}
-    <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Skeleton variant="text" width={100} height={30} />
-          <Skeleton variant="text" width={100} height={30} />
-          <Skeleton variant="text" width={100} height={30} />
-        </Box>
-        <Skeleton variant="rectangular" width={120} height={40} sx={{ borderRadius: 1 }} />
-      </Box>
-    </Paper>
-
-    {/* Stats Cards Skeleton */}
-    <Box sx={{ 
-      display: 'grid',
-      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-      gap: 2,
-      mb: 4
-    }}>
-      {[1, 2, 3, 4].map((item) => (
-        <Card key={item} sx={{ p: 2 }}>
-          <CardContent sx={{ p: '16px !important' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Skeleton variant="circular" width={48} height={48} />
-              <Box sx={{ flex: 1 }}>
-                <Skeleton variant="text" width="60%" height={25} />
-                <Skeleton variant="text" width="80%" height={35} />
+      {/* Stats Cards Skeleton */}
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: { xs: 1.5, sm: 2, md: 3 },
+          mb: 4,
+          "& > *": {
+            flex: "1 1 calc(50% - 12px)",
+            minWidth: 0,
+            "@media (min-width: 600px)": {
+              flex: "1 1 calc(50% - 16px)",
+            },
+            "@media (min-width: 900px)": {
+              flex: "1 1 calc(25% - 18px)",
+            },
+          },
+        }}
+      >
+        {[1, 2, 3, 4].map((item) => (
+          <Card
+            key={item}
+            sx={{
+              p: 2,
+              backgroundColor: darkMode ? "#303134" : "#ffffff",
+              border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+              borderRadius: 3,
+            }}
+          >
+            <CardContent sx={{ p: "16px !important" }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+              >
+                <Skeleton
+                  variant="circular"
+                  width={48}
+                  height={48}
+                  sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+                />
+                <Box sx={{ flex: 1 }}>
+                  <Skeleton
+                    variant="text"
+                    width="60%"
+                    height={25}
+                    sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+                  />
+                  <Skeleton
+                    variant="text"
+                    width="80%"
+                    height={35}
+                    sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+                  />
+                </Box>
               </Box>
-            </Box>
-            <Skeleton variant="text" width="70%" height={20} />
-          </CardContent>
-        </Card>
-      ))}
-    </Box>
+              <Skeleton
+                variant="text"
+                width="70%"
+                height={20}
+                sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+              />
+            </CardContent>
+          </Card>
+        ))}
+      </Box>
 
-    {/* Main Content Skeleton */}
-    <Paper sx={{ 
-      width: "100%", 
-      borderRadius: 3, 
-      overflow: "hidden",
-      mb: 3 
-    }}>
-      {/* Tabs Skeleton */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', p: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          {[1, 2, 3].map((item) => (
-            <Skeleton key={item} variant="rectangular" width={100} height={40} sx={{ borderRadius: 1 }} />
-          ))}
+      {/* Main Content Skeleton */}
+      <Paper
+        elevation={0}
+        sx={{
+          width: "100%",
+          borderRadius: 3,
+          backgroundColor: darkMode ? "#303134" : "#ffffff",
+          border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+          mb: 3,
+        }}
+      >
+        {/* Tabs Skeleton */}
+        <Box
+          sx={{
+            borderBottom: 1,
+            borderColor: darkMode ? "#3c4043" : "#dadce0",
+            p: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", gap: 2 }}>
+            {[1, 2, 3].map((item) => (
+              <Skeleton
+                key={item}
+                variant="rectangular"
+                width={100}
+                height={40}
+                sx={{
+                  borderRadius: 1,
+                  bgcolor: darkMode ? "#3c4043" : "#f1f3f4",
+                }}
+              />
+            ))}
+          </Box>
         </Box>
-      </Box>
 
-      {/* Table Skeleton */}
-      <Box sx={{ p: 3 }}>
-        <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
-      </Box>
-    </Paper>
-  </>
-);
+        {/* Table Skeleton */}
+        <Box sx={{ p: 3 }}>
+          <Skeleton
+            variant="rectangular"
+            height={400}
+            sx={{
+              borderRadius: 2,
+              bgcolor: darkMode ? "#3c4043" : "#f1f3f4",
+            }}
+          />
+        </Box>
+      </Paper>
+    </>
+  );
+};
 
 // Main Expenses Page Component
 export default function ExpensesPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  
+  const darkMode = theme.palette.mode === "dark";
+
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(true);
@@ -187,7 +339,7 @@ export default function ExpensesPage() {
       setLoading(true);
       console.log("Fetching expenses...");
 
-      const response = await fetch('/api/expenses', {
+      const response = await fetch("/api/expenses", {
         credentials: "include",
         cache: "no-cache",
       });
@@ -213,13 +365,13 @@ export default function ExpensesPage() {
   const fetchStats = async () => {
     try {
       console.log("Fetching stats...");
-      const response = await fetch('/api/expenses/stats', {
+      const response = await fetch("/api/expenses/stats", {
         credentials: "include",
         cache: "no-cache",
       });
-      
+
       if (response.ok) {
-        const data = await response.json() as ExpenseStatsType;
+        const data = (await response.json()) as ExpenseStatsType;
         console.log("Stats loaded:", data);
         setStats(data);
       } else {
@@ -242,77 +394,94 @@ export default function ExpensesPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Save expense
   const handleSaveExpense = async (expenseData: Expense) => {
-    console.log('Saving expense data:', expenseData);
-    
-    // Prepare the expense object
-    const expenseToSave: any = {
-      title: expenseData.title.trim(),
-      amount: parseFloat(expenseData.amount.toString()),
-      currency: expenseData.currency || 'INR',
-      category: expenseData.category,
-      paymentMethod: expenseData.paymentMethod || 'cash',
-      date: new Date(expenseData.date).toISOString(),
-      description: expenseData.description?.trim() || '',
-      isBusinessExpense: Boolean(expenseData.isBusinessExpense),
-      gstAmount: parseFloat(expenseData.gstAmount?.toString() || '0'),
-      tags: Array.isArray(expenseData.tags) ? expenseData.tags : [],
-      isRecurring: Boolean(expenseData.isRecurring),
-      recurrence: expenseData.isRecurring
-        ? expenseData.recurrence || 'monthly'
-        : null,
-      status: expenseData.status || 'pending',
-    };
-
-    // Add vendor data if it's a business expense
-    if (expenseToSave.isBusinessExpense && expenseData.vendor) {
-      expenseToSave.vendor = {
-        name: expenseData.vendor.name?.trim() || '',
-        gstin: expenseData.vendor.gstin?.trim() || '',
-        contact: expenseData.vendor.contact?.trim() || '',
-      };
-    }
+    console.log("Saving expense data:", expenseData);
 
     try {
-      const url = editingExpense && editingExpense._id
-        ? `/api/expenses/${editingExpense._id}`
-        : '/api/expenses';
+      // Prepare the expense object
+      const expenseToSave: any = {
+        title: expenseData.title.trim(),
+        amount: parseFloat(expenseData.amount.toString()),
+        currency: expenseData.currency || "INR",
+        category: expenseData.category,
+        paymentMethod: expenseData.paymentMethod || "cash",
+        date: new Date(expenseData.date).toISOString(),
+        description: expenseData.description?.trim() || "",
+        isBusinessExpense: Boolean(expenseData.isBusinessExpense),
+        gstAmount: parseFloat(expenseData.gstAmount?.toString() || "0"),
+        tags: Array.isArray(expenseData.tags) ? expenseData.tags : [],
+        isRecurring: Boolean(expenseData.isRecurring),
+        recurrence: expenseData.isRecurring
+          ? expenseData.recurrence || "monthly"
+          : null,
+        status: expenseData.status || "pending",
+      };
 
-      const method = editingExpense && editingExpense._id ? 'PUT' : 'POST';
+      // Add vendor data if it's a business expense
+      if (expenseToSave.isBusinessExpense && expenseData.vendor) {
+        expenseToSave.vendor = {
+          name: expenseData.vendor.name?.trim() || "",
+          gstin: expenseData.vendor.gstin?.trim() || "",
+          contact: expenseData.vendor.contact?.trim() || "",
+        };
+      }
+
+      const url =
+        editingExpense && editingExpense._id
+          ? `/api/expenses/${editingExpense._id}`
+          : "/api/expenses";
+
+      const method = editingExpense && editingExpense._id ? "PUT" : "POST";
 
       console.log(`Making ${method} request to:`, url);
+      console.log("Request data:", expenseToSave);
 
       const response = await fetch(url, {
         method,
-        credentials: 'include',
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify(expenseToSave),
       });
 
       const responseData = await response.json();
-      console.log('Server response:', responseData);
+      console.log("Server response:", responseData);
 
       if (response.ok) {
-        console.log('Expense saved successfully');
+        console.log("Expense saved successfully");
         await fetchExpenses();
         await fetchStats();
         alert(
           editingExpense
-            ? 'Expense updated successfully!'
-            : 'Expense added successfully!',
+            ? "Expense updated successfully!"
+            : "Expense added successfully!",
         );
         return;
       } else {
-        console.error('Server returned error:', responseData);
-        throw new Error(responseData.error || 'Failed to save expense');
+        console.error("Server returned error:", responseData);
+
+        // Handle different error types
+        if (response.status === 404) {
+          throw new Error(
+            "Expense not found. It may have been deleted or you may not have permission to edit it.",
+          );
+        } else if (response.status === 401) {
+          throw new Error("Please login again to continue.");
+        } else if (responseData.error) {
+          throw new Error(responseData.error);
+        } else if (responseData.details) {
+          throw new Error(
+            `Validation failed: ${responseData.details.join(", ")}`,
+          );
+        } else {
+          throw new Error("Failed to save expense. Please try again.");
+        }
       }
     } catch (error: any) {
-      console.error('Save failed:', error.message);
-      alert('Failed to save expense. Please try again.');
+      console.error("Save failed:", error.message);
+      alert(error.message || "Failed to save expense. Please try again.");
     }
   };
 
@@ -323,31 +492,66 @@ export default function ExpensesPage() {
     console.log("Deleting expense:", expenseId);
 
     try {
-      console.log("Deleting expense from server");
+      console.log("Making DELETE request to:", `/api/expenses/${expenseId}`);
+
       const response = await fetch(`/api/expenses/${expenseId}`, {
         method: "DELETE",
         credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       });
 
+      console.log("Response status:", response.status);
+      console.log(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries()),
+      );
+
+      let responseData;
+      const textResponse = await response.text();
+      console.log("Raw response text:", textResponse);
+
+      try {
+        responseData = textResponse ? JSON.parse(textResponse) : {};
+      } catch (parseError) {
+        console.error("Failed to parse JSON response:", parseError);
+        responseData = { error: "Invalid server response" };
+      }
+
+      console.log("Parsed response data:", responseData);
+
       if (response.ok) {
-        console.log("Expense deleted from server");
+        console.log("Expense deleted successfully");
         await fetchExpenses();
         await fetchStats();
         alert("Expense deleted successfully!");
       } else {
-        const errorData = await response.json();
-        console.error("Server deletion failed:", errorData);
-        alert('Failed to delete expense. Please try again.');
+        console.error("Server deletion failed. Status:", response.status);
+        console.error("Response data:", responseData);
+
+        if (response.status === 404) {
+          alert("Expense not found. It may have already been deleted.");
+          // Refresh the list to sync with server
+          await fetchExpenses();
+        } else if (response.status === 401) {
+          alert("Please login again to continue.");
+        } else if (responseData?.error) {
+          alert(`Failed to delete: ${responseData.error}`);
+        } else {
+          alert(`Failed to delete expense. Server returned ${response.status}`);
+        }
       }
-    } catch (error) {
-      console.error("Error deleting expense:", error);
-      alert('Network error. Please try again.');
+    } catch (error: any) {
+      console.error("Network error deleting expense:", error);
+      alert("Network error. Please check your connection and try again.");
     }
   };
 
   // Edit expense
   const handleEditExpense = (expense: Expense) => {
-    console.log('Editing expense:', expense);
+    console.log("Editing expense:", expense);
     setEditingExpense(expense);
     setDialogOpen(true);
   };
@@ -367,29 +571,30 @@ export default function ExpensesPage() {
     try {
       // Create CSV content
       const headers = [
-        'Title',
-        'Amount',
-        'Currency',
-        'Category',
-        'Payment Method',
-        'Date',
-        'Description',
-        'Business Expense',
-        'GST Amount',
-        'Vendor Name',
-        'Vendor GSTIN',
-        'Vendor Contact',
-        'Tags',
-        'Recurring',
-        'Recurrence',
-        'Status'
+        "Title",
+        "Amount",
+        "Currency",
+        "Category",
+        "Payment Method",
+        "Date",
+        "Description",
+        "Business Expense",
+        "GST Amount",
+        "Vendor Name",
+        "Vendor GSTIN",
+        "Vendor Contact",
+        "Tags",
+        "Recurring",
+        "Recurrence",
+        "Status",
       ];
 
       const csvContent = [
-        headers.join(','),
-        ...expenses.map(expense => {
-          const escape = (text: any) => `"${String(text || '').replace(/"/g, '""')}"`;
-          
+        headers.join(","),
+        ...expenses.map((expense) => {
+          const escape = (text: any) =>
+            `"${String(text || "").replace(/"/g, '""')}"`;
+
           return [
             escape(expense.title),
             expense.amount,
@@ -398,37 +603,40 @@ export default function ExpensesPage() {
             escape(expense.paymentMethod),
             new Date(expense.date).toLocaleDateString(),
             escape(expense.description),
-            expense.isBusinessExpense ? 'Yes' : 'No',
+            expense.isBusinessExpense ? "Yes" : "No",
             expense.gstAmount || 0,
             escape(expense.vendor?.name),
             escape(expense.vendor?.gstin),
             escape(expense.vendor?.contact),
-            escape(expense.tags?.join(', ')),
-            expense.isRecurring ? 'Yes' : 'No',
-            expense.recurrence || 'None',
-            escape(expense.status)
-          ].join(',');
-        })
-      ].join('\n');
+            escape(expense.tags?.join(", ")),
+            expense.isRecurring ? "Yes" : "No",
+            expense.recurrence || "None",
+            escape(expense.status),
+          ].join(",");
+        }),
+      ].join("\n");
 
       // Create and trigger download
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
-      
-      link.setAttribute('href', url);
-      link.setAttribute('download', `expenses_export_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      
+
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `expenses_export_${new Date().toISOString().split("T")[0]}.csv`,
+      );
+      link.style.visibility = "hidden";
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       alert(`${expenses.length} expenses exported successfully`);
     } catch (error) {
-      console.error('Error exporting expenses:', error);
-      alert('Failed to export expenses');
+      console.error("Error exporting expenses:", error);
+      alert("Failed to export expenses");
     }
   };
 
@@ -449,280 +657,463 @@ export default function ExpensesPage() {
     .reduce((sum, e) => sum + e.amount, 0);
 
   // Calculate category counts
-  const businessCount = expenses.filter(e => e.isBusinessExpense).length;
-  const personalCount = expenses.filter(e => !e.isBusinessExpense).length;
+  const businessCount = expenses.filter((e) => e.isBusinessExpense).length;
+  const personalCount = expenses.filter((e) => !e.isBusinessExpense).length;
 
   return (
     <MainLayout title="Expense Management">
-      <Container maxWidth="xl" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
-        {/* Loading State */}
-        {pageLoading ? (
-          <ExpensesSkeleton />
-        ) : (
-          <>
-            {/* Header - Same style as Events page */}
-            <Box sx={{ mb: 4 }}>
-              <Button
-                startIcon={<BackIcon />}
-                onClick={handleBack}
-                sx={{ mb: 2 }}
-                size="small"
-                variant="outlined"
-              >
-                Back to Dashboard
-              </Button>
+      <Box
+        sx={{
+          backgroundColor: darkMode ? "#202124" : "#ffffff",
+          color: darkMode ? "#e8eaed" : "#202124",
+          minHeight: "100vh",
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            p: { xs: 1.5, sm: 2, md: 3 },
+            borderBottom: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+            background: darkMode
+              ? "linear-gradient(135deg, #0d3064 0%, #202124 100%)"
+              : "linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)",
+          }}
+        >
+          <Breadcrumbs
+            sx={{
+              mb: { xs: 1, sm: 2 },
+              fontSize: { xs: "0.7rem", sm: "0.8rem", md: "0.85rem" },
+            }}
+          >
+            <Link
+              href="/dashboard"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                textDecoration: "none",
+                color: darkMode ? "#9aa0a6" : "#5f6368",
+                fontWeight: 300,
+              }}
+            >
+              <HomeIcon
+                sx={{
+                  mr: 0.5,
+                  fontSize: { xs: "14px", sm: "16px", md: "18px" },
+                }}
+              />
+              Dashboard
+            </Link>
+            <Typography
+              color={darkMode ? "#e8eaed" : "#202124"}
+              fontWeight={400}
+            >
+              Expenses
+            </Typography>
+          </Breadcrumbs>
 
-              <Breadcrumbs sx={{ mb: 2 }}>
-                <MuiLink
-                  component={Link}
-                  href="/dashboard"
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    textDecoration: 'none',
-                    color: 'text.secondary',
-                    '&:hover': { color: 'primary.main' }
-                  }}
-                >
-                  <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
-                  Dashboard
-                </MuiLink>
-                <Typography color="text.primary">Expenses</Typography>
-              </Breadcrumbs>
-
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: { xs: 'flex-start', sm: 'center' },
-                flexDirection: { xs: 'column', sm: 'row' },
+          <Box
+            sx={{
+              mb: { xs: 2, sm: 3, md: 4 },
+              px: { xs: 1, sm: 2, md: 3 },
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: { xs: "flex-start", sm: "center" },
+                flexDirection: { xs: "column", sm: "row" },
                 gap: 2,
-                mb: 3
-              }}>
-                <Box>
-                  <Heading2 gutterBottom>
-                    💰 Expense Management
-                  </Heading2>
-                  <MutedText>
-                    Track and manage all your business and personal expenses in one place
-                  </MutedText>
-                </Box>
-
-                <Stack 
-                  direction="row" 
-                  spacing={1}
-                  alignItems="center"
-                  sx={{ 
-                    width: { xs: '100%', sm: 'auto' },
-                    justifyContent: { xs: 'space-between', sm: 'flex-end' }
+                mb: 3,
+              }}
+            >
+              <Box>
+                <Typography
+                  variant={isMobile ? "h5" : "h4"}
+                  fontWeight={500}
+                  gutterBottom
+                  sx={{
+                    fontSize: { xs: "1.5rem", sm: "2rem", md: "2.5rem" },
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.2,
+                    color: darkMode ? "#e8eaed" : "#202124",
                   }}
                 >
-                  {/* Status Chips */}
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Chip 
-                      label={`₹${totalAmount.toLocaleString('en-IN')}`}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
-                    <Chip 
-                      label={`${expenses.length} Expenses`}
-                      size="small"
-                      color="default"
-                      variant="outlined"
-                    />
-                    {businessCount > 0 && (
-                      <Chip 
-                        label={`${businessCount} Business`}
-                        size="small"
-                        color="success"
-                        variant="outlined"
-                      />
-                    )}
-                    {personalCount > 0 && (
-                      <Chip 
-                        label={`${personalCount} Personal`}
-                        size="small"
-                        color="info"
-                        variant="outlined"
-                      />
-                    )}
-                  </Stack>
+                  💰 Expense Management
+                </Typography>
 
-                  {/* Download Button */}
-                  <Button
-                    variant="outlined"
-                    startIcon={<Download />}
-                    onClick={handleDownloadExpenses}
-                    size={isMobile ? 'small' : 'medium'}
-                    disabled={expenses.length === 0}
-                    sx={{
-                      borderRadius: 2,
-                      borderColor: 'primary.main',
-                      color: 'primary.main',
-                      '&:hover': {
-                        borderColor: 'primary.dark',
-                      },
-                      '&.Mui-disabled': {
-                        borderColor: 'action.disabled',
-                        color: 'action.disabled',
-                      }
-                    }}
-                  >
-                    {isMobile ? 'Export' : 'Export Expenses'}
-                  </Button>
-                </Stack>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: darkMode ? "#9aa0a6" : "#5f6368",
+                    fontWeight: 300,
+                    fontSize: { xs: "0.85rem", sm: "1rem", md: "1.125rem" },
+                    lineHeight: 1.5,
+                    maxWidth: 600,
+                  }}
+                >
+                  Track and manage all your business and personal expenses in
+                  one place
+                </Typography>
               </Box>
 
-              {/* Action Bar */}
-              <Paper
+              <Box
                 sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  background: 'background.paper',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  mb: 3,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 2,
+                  mt: { xs: 1, sm: 0 },
+                  alignItems: "center",
                 }}
               >
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  <Chip
+                    label={`₹${totalAmount.toLocaleString("en-IN")}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      backgroundColor: darkMode
+                        ? alpha("#4285f4", 0.1)
+                        : alpha("#4285f4", 0.08),
+                      borderColor: alpha("#4285f4", 0.3),
+                      color: darkMode ? "#8ab4f8" : "#4285f4",
+                    }}
+                  />
+                  <Chip
+                    label={`${expenses.length} Expenses`}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      backgroundColor: darkMode
+                        ? alpha("#5f6368", 0.1)
+                        : alpha("#5f6368", 0.08),
+                      borderColor: alpha("#5f6368", 0.3),
+                      color: darkMode ? "#9aa0a6" : "#5f6368",
+                    }}
+                  />
+                  {businessCount > 0 && (
+                    <Chip
+                      label={`${businessCount} Business`}
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        backgroundColor: darkMode
+                          ? alpha("#34a853", 0.1)
+                          : alpha("#34a853", 0.08),
+                        borderColor: alpha("#34a853", 0.3),
+                        color: darkMode ? "#81c995" : "#34a853",
+                      }}
+                    />
+                  )}
+                  {personalCount > 0 && (
+                    <Chip
+                      label={`${personalCount} Personal`}
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        backgroundColor: darkMode
+                          ? alpha("#4285f4", 0.1)
+                          : alpha("#4285f4", 0.08),
+                        borderColor: alpha("#4285f4", 0.3),
+                        color: darkMode ? "#8ab4f8" : "#4285f4",
+                      }}
+                    />
+                  )}
+                </Box>
+
+                <Button
+                  variant="outlined"
+                  onClick={handleDownloadExpenses}
+                  iconLeft={<Download />}
+                  size="medium"
+                  disabled={expenses.length === 0}
+                  sx={{
+                    borderColor: darkMode ? "#3c4043" : "#dadce0",
+                    color: darkMode ? "#e8eaed" : "#202124",
+                    "&:hover": {
+                      borderColor: darkMode ? "#5f6368" : "#bdc1c6",
+                      backgroundColor: darkMode ? "#3c4043" : "#f8f9fa",
+                    },
+                    "&.Mui-disabled": {
+                      borderColor: darkMode ? "#3c4043" : "#dadce0",
+                      color: darkMode ? "#5f6368" : "#9aa0a6",
+                    },
+                  }}
+                >
+                  {isMobile ? "Export" : "Export Expenses"}
+                </Button>
+              </Box>
+            </Box>
+
+            {/* Action Bar */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                backgroundColor: darkMode ? "#303134" : "#ffffff",
+                border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+                mb: 3,
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 2,
+                }}
+              >
+                {/* Left side - Totals */}
                 <Box
                   sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
                     gap: 2,
                   }}
                 >
-                  {/* Left side - Totals */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <BodyText>
-                      Total: <strong style={{ color: theme.palette.primary.main }}>₹{totalAmount.toLocaleString('en-IN')}</strong>
-                    </BodyText>
-                    <BodyText>
-                      Business: <strong style={{ color: theme.palette.success.main }}>₹{businessTotal.toLocaleString('en-IN')}</strong>
-                    </BodyText>
-                    <BodyText>
-                      Personal: <strong style={{ color: theme.palette.info.main }}>₹{personalTotal.toLocaleString('en-IN')}</strong>
-                    </BodyText>
-                  </Box>
-
-                  {/* Right side - Add Expense Button */}
-                  <Button
-                    variant="contained"
-                    onClick={() => setDialogOpen(true)}
-                    size="small"
+                  <Typography
+                    variant="body2"
                     sx={{
-                      borderRadius: 2,
-                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                      boxShadow: theme.shadows[2],
-                      '&:hover': {
-                        background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
-                        boxShadow: theme.shadows[4],
-                      }
+                      color: darkMode ? "#e8eaed" : "#202124",
+                      fontSize: { xs: "0.875rem", sm: "0.9375rem" },
                     }}
                   >
-                    + Add Expense
-                  </Button>
+                    Total:{" "}
+                    <strong style={{ color: "#4285f4" }}>
+                      ₹{totalAmount.toLocaleString("en-IN")}
+                    </strong>
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: darkMode ? "#e8eaed" : "#202124",
+                      fontSize: { xs: "0.875rem", sm: "0.9375rem" },
+                    }}
+                  >
+                    Business:{" "}
+                    <strong style={{ color: "#34a853" }}>
+                      ₹{businessTotal.toLocaleString("en-IN")}
+                    </strong>
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: darkMode ? "#e8eaed" : "#202124",
+                      fontSize: { xs: "0.875rem", sm: "0.9375rem" },
+                    }}
+                  >
+                    Personal:{" "}
+                    <strong style={{ color: "#4285f4" }}>
+                      ₹{personalTotal.toLocaleString("en-IN")}
+                    </strong>
+                  </Typography>
                 </Box>
-              </Paper>
-            </Box>
 
-            {/* Statistics Cards - Show skeleton if loading */}
-            {loading ? (
-              <Box sx={{ 
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-                gap: 2,
-                mb: 4
-              }}>
-                {[1, 2, 3, 4].map((item) => (
-                  <Card key={item} sx={{ p: 2 }}>
-                    <CardContent sx={{ p: '16px !important' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Skeleton variant="circular" width={48} height={48} />
-                        <Box sx={{ flex: 1 }}>
-                          <Skeleton variant="text" width="60%" height={25} />
-                          <Skeleton variant="text" width="80%" height={35} />
-                        </Box>
-                      </Box>
-                      <Skeleton variant="text" width="70%" height={20} />
-                    </CardContent>
-                  </Card>
-                ))}
+                {/* Right side - Add Expense Button */}
+                <Button
+                  variant="contained"
+                  onClick={() => setDialogOpen(true)}
+                  size="medium"
+                  sx={{
+                    borderRadius: 2,
+                    backgroundColor: "#4285f4",
+                    "&:hover": {
+                      backgroundColor: "#3367d6",
+                    },
+                  }}
+                >
+                  + Add Expense
+                </Button>
               </Box>
-            ) : (
-              <ExpenseStats
-                totalAmount={totalAmount}
-                businessTotal={businessTotal}
-                personalTotal={personalTotal}
-                totalRecords={expenses.length}
-              />
-            )}
+            </Paper>
+          </Box>
+        </Box>
 
-            {/* Main Content */}
-            <Paper
+        {/* Main Content */}
+        <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+          {/* Loading State */}
+          {pageLoading ? (
+            <ExpensesSkeleton />
+          ) : (
+            <>
+              {/* Statistics Cards - Show skeleton if loading */}
+              {loading ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: { xs: 1.5, sm: 2, md: 3 },
+                    mb: 4,
+                    "& > *": {
+                      flex: "1 1 calc(50% - 12px)",
+                      minWidth: 0,
+                      "@media (min-width: 600px)": {
+                        flex: "1 1 calc(50% - 16px)",
+                      },
+                      "@media (min-width: 900px)": {
+                        flex: "1 1 calc(25% - 18px)",
+                      },
+                    },
+                  }}
+                >
+                  {[1, 2, 3, 4].map((item) => (
+                    <Card
+                      key={item}
+                      sx={{
+                        p: 2,
+                        backgroundColor: darkMode ? "#303134" : "#ffffff",
+                        border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+                        borderRadius: 3,
+                      }}
+                    >
+                      <CardContent sx={{ p: "16px !important" }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                            mb: 2,
+                          }}
+                        >
+                          <Skeleton
+                            variant="circular"
+                            width={48}
+                            height={48}
+                            sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+                          />
+                          <Box sx={{ flex: 1 }}>
+                            <Skeleton
+                              variant="text"
+                              width="60%"
+                              height={25}
+                              sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+                            />
+                            <Skeleton
+                              variant="text"
+                              width="80%"
+                              height={35}
+                              sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+                            />
+                          </Box>
+                        </Box>
+                        <Skeleton
+                          variant="text"
+                          width="70%"
+                          height={20}
+                          sx={{ bgcolor: darkMode ? "#3c4043" : "#f1f3f4" }}
+                        />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+              ) : (
+                <ExpenseStats
+                  totalAmount={totalAmount}
+                  businessTotal={businessTotal}
+                  personalTotal={personalTotal}
+                  totalRecords={expenses.length}
+                />
+              )}
+
+              {/* Main Content */}
+              <Paper
+                elevation={0}
+                sx={{
+                  width: "100%",
+                  borderRadius: 3,
+                  backgroundColor: darkMode ? "#303134" : "#ffffff",
+                  border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+                }}
+              >
+                <ExpenseTabs
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  expenses={expenses}
+                  stats={stats}
+                  loading={loading}
+                  onEditExpense={handleEditExpense}
+                  onDeleteExpense={handleDeleteExpense}
+                  isMobile={isMobile}
+                />
+              </Paper>
+
+              {/* Add/Edit Expense Dialog */}
+              <AddExpenseDialog
+                open={dialogOpen}
+                onClose={handleCloseDialog}
+                onSave={handleSaveExpense}
+                editingExpense={editingExpense}
+              />
+            </>
+          )}
+
+          {/* Empty State */}
+          {!pageLoading && !loading && expenses.length === 0 && (
+            <Card
+              elevation={0}
               sx={{
-                width: "100%",
+                textAlign: "center",
+                py: 8,
+                px: 3,
+                mt: 4,
+                backgroundColor: darkMode ? "#303134" : "#ffffff",
+                border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
                 borderRadius: 3,
-                overflow: "hidden",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08)",
-                border: "1px solid rgba(0, 0, 0, 0.08)",
               }}
             >
-              <ExpenseTabs
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                expenses={expenses}
-                stats={stats}
-                loading={loading}
-                onEditExpense={handleEditExpense}
-                onDeleteExpense={handleDeleteExpense}
-                isMobile={isMobile}
-              />
-            </Paper>
-
-            {/* Add/Edit Expense Dialog */}
-            <AddExpenseDialog
-              open={dialogOpen}
-              onClose={handleCloseDialog}
-              onSave={handleSaveExpense}
-              editingExpense={editingExpense}
-            />
-          </>
-        )}
-
-        {/* Empty State */}
-        {!pageLoading && !loading && expenses.length === 0 && (
-          <Card sx={{ 
-            textAlign: 'center', 
-            py: 8,
-            px: 3,
-            mt: 4
-          }}>
-            <Box sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }}>
-              💰
-            </Box>
-            <Heading2 gutterBottom>
-              No Expenses Found
-            </Heading2>
-            <MutedText sx={{ 
-              mb: 3,
-              maxWidth: 500,
-              mx: 'auto'
-            }}>
-              Start tracking your expenses to get insights into your spending habits
-            </MutedText>
-            <Button
-              variant="contained"
-              onClick={() => setDialogOpen(true)}
-              size="medium"
-            >
-              Add Your First Expense
-            </Button>
-          </Card>
-        )}
-      </Container>
+              <Box
+                sx={{
+                  fontSize: 60,
+                  mb: 2,
+                  color: darkMode ? "#5f6368" : "#9aa0a6",
+                }}
+              >
+                💰
+              </Box>
+              <Typography
+                variant="h5"
+                fontWeight="bold"
+                gutterBottom
+                sx={{
+                  color: darkMode ? "#e8eaed" : "#202124",
+                  fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                }}
+              >
+                No Expenses Found
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  mb: 3,
+                  maxWidth: 500,
+                  mx: "auto",
+                  color: darkMode ? "#9aa0a6" : "#5f6368",
+                  fontSize: { xs: "0.875rem", sm: "1rem" },
+                }}
+              >
+                Start tracking your expenses to get insights into your spending
+                habits
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={() => setDialogOpen(true)}
+                size="medium"
+                sx={{
+                  backgroundColor: "#4285f4",
+                  "&:hover": {
+                    backgroundColor: "#3367d6",
+                  },
+                }}
+              >
+                Add Your First Expense
+              </Button>
+            </Card>
+          )}
+        </Box>
+      </Box>
     </MainLayout>
   );
 }
