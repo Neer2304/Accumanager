@@ -1,3 +1,4 @@
+// components/dashboard/RecentActivity.tsx
 "use client";
 
 import React, { useEffect, useState } from 'react'
@@ -12,7 +13,8 @@ import {
   Avatar,
   Chip,
   Alert,
-  Button
+  Button,
+  alpha,
 } from '@mui/material'
 import { 
   LocalActivityOutlined as ActivityIcon,
@@ -21,7 +23,10 @@ import {
   Warning,
   Inventory2,
   Upgrade,
-  ErrorOutline
+  ErrorOutline,
+  Refresh,
+  TrendingUp,
+  AccountBalance,
 } from '@mui/icons-material'
 
 interface Activity {
@@ -40,11 +45,15 @@ interface Activity {
 
 const RecentActivity: React.FC = () => {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
+  
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [subscriptionExpired, setSubscriptionExpired] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     fetchRecentActivity()
@@ -52,7 +61,7 @@ const RecentActivity: React.FC = () => {
 
   const fetchRecentActivity = async () => {
     try {
-      setLoading(true)
+      setRefreshing(true)
       setError(null)
       setSubscriptionExpired(false)
       
@@ -67,7 +76,6 @@ const RecentActivity: React.FC = () => {
         setError(data.error || 'Subscription required to view recent activity')
         setSubscriptionExpired(true)
         setActivities([])
-        setLoading(false)
         return
       }
       
@@ -190,6 +198,7 @@ const RecentActivity: React.FC = () => {
       setActivities(getSampleActivities())
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -267,28 +276,32 @@ const RecentActivity: React.FC = () => {
 
   const getActivityColor = (type: string) => {
     switch (type) {
-      case 'billing': return theme.palette.success.main
-      case 'customer': return theme.palette.primary.main
-      case 'low_stock': return theme.palette.warning.main
-      case 'payment': return theme.palette.info.main
-      default: return theme.palette.grey[600]
+      case 'billing': return '#34a853'
+      case 'customer': return '#4285f4'
+      case 'low_stock': return '#fbbc04'
+      case 'payment': return '#8ab4f8'
+      default: return '#5f6368'
     }
-  }
-
-  const getAmountColor = (type: string) => {
-    return type === 'billing' ? theme.palette.success.main : theme.palette.text.primary
   }
 
   if (loading) {
     return (
-      <Card sx={{ height: '100%' }}>
+      <Card sx={{ 
+        height: '100%',
+        borderRadius: 3,
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      }}>
         <CardContent sx={{ 
           display: 'flex', 
           justifyContent: 'center', 
           alignItems: 'center',
           minHeight: 200 
         }}>
-          <CircularProgress size={24} />
+          <CircularProgress 
+            size={24} 
+            sx={{ color: darkMode ? '#8ab4f8' : '#4285f4' }}
+          />
         </CardContent>
       </Card>
     )
@@ -299,32 +312,75 @@ const RecentActivity: React.FC = () => {
       height: '100%', 
       display: 'flex', 
       flexDirection: 'column',
-      borderRadius: 2,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      borderRadius: 3,
+      backgroundColor: darkMode ? '#303134' : '#ffffff',
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      transition: 'all 0.3s ease',
+      '&:hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: darkMode 
+          ? `0 8px 24px ${alpha('#4285f4', 0.3)}`
+          : `0 8px 24px ${alpha('#4285f4', 0.2)}`,
+        borderColor: '#4285f4'
+      }
     }}>
       <CardContent sx={{ 
         flex: 1, 
         display: 'flex', 
         flexDirection: 'column', 
-        p: isMobile ? 1.5 : 2.5 
+        p: { xs: 1.5, sm: 2 } 
       }}>
         {/* Header */}
-        <Box display="flex" alignItems="center" gap={1.5} mb={2.5}>
-          <ActivityIcon color="primary" sx={{ fontSize: 24 }} />
-          <Typography variant="h6" sx={{ 
-            fontWeight: 700, 
-            fontSize: isMobile ? '1.1rem' : '1.25rem',
-            color: theme.palette.text.primary
-          }}>
-            Recent Activity
-          </Typography>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          mb: 3 
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar
+              sx={{
+                width: { xs: 36, sm: 44 },
+                height: { xs: 36, sm: 44 },
+                backgroundColor: darkMode ? alpha('#4285f4', 0.2) : alpha('#4285f4', 0.1),
+                color: '#4285f4'
+              }}
+            >
+              <ActivityIcon fontSize={isMobile ? "small" : "medium"} />
+            </Avatar>
+            <Box>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 600,
+                  fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                  color: darkMode ? '#e8eaed' : '#202124'
+                }}
+              >
+                Recent Activity
+              </Typography>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
+              >
+                Latest updates and notifications
+              </Typography>
+            </Box>
+          </Box>
+          
           {!subscriptionExpired && activities.length > 0 && (
             <Chip 
               label={`${activities.length} new`}
               size="small"
-              color="primary"
-              variant="outlined"
-              sx={{ ml: 'auto' }}
+              sx={{
+                backgroundColor: darkMode ? alpha('#34a853', 0.2) : alpha('#34a853', 0.1),
+                color: darkMode ? '#81c995' : '#34a853',
+                fontWeight: 600,
+                fontSize: { xs: '0.7rem', sm: '0.75rem' }
+              }}
             />
           )}
         </Box>
@@ -333,7 +389,13 @@ const RecentActivity: React.FC = () => {
         {subscriptionExpired && (
           <Alert 
             severity="warning" 
-            sx={{ mb: 3 }}
+            sx={{ 
+              mb: 3,
+              borderRadius: 2,
+              backgroundColor: darkMode ? alpha('#fbbc04', 0.1) : alpha('#fbbc04', 0.05),
+              border: `1px solid ${darkMode ? alpha('#fbbc04', 0.3) : alpha('#fbbc04', 0.2)}`,
+              color: darkMode ? '#fdd663' : '#fbbc04',
+            }}
             icon={<ErrorOutline />}
             action={
               <Button 
@@ -341,7 +403,13 @@ const RecentActivity: React.FC = () => {
                 size="small"
                 startIcon={<Upgrade />}
                 onClick={() => window.location.href = '/pricing'}
-                sx={{ fontWeight: 600 }}
+                sx={{ 
+                  fontWeight: 600,
+                  color: darkMode ? '#fdd663' : '#fbbc04',
+                  '&:hover': {
+                    backgroundColor: darkMode ? alpha('#fbbc04', 0.2) : alpha('#fbbc04', 0.1),
+                  }
+                }}
               >
                 Upgrade
               </Button>
@@ -366,11 +434,11 @@ const RecentActivity: React.FC = () => {
               width: '6px',
             },
             '&::-webkit-scrollbar-track': {
-              background: theme.palette.grey[100],
+              background: darkMode ? '#202124' : '#f8f9fa',
               borderRadius: '10px',
             },
             '&::-webkit-scrollbar-thumb': {
-              background: theme.palette.grey[400],
+              background: darkMode ? '#5f6368' : '#dadce0',
               borderRadius: '10px',
             }
           }}>
@@ -384,23 +452,26 @@ const RecentActivity: React.FC = () => {
                     gap: 2,
                     py: 2,
                     px: 1,
-                    borderBottom: index < activities.length - 1 
-                      ? `1px solid ${theme.palette.divider}` 
-                      : 'none',
-                    transition: 'all 0.2s',
+                    borderRadius: 2,
+                    backgroundColor: index % 2 === 0 
+                      ? (darkMode ? alpha('#ffffff', 0.02) : alpha('#000000', 0.02))
+                      : 'transparent',
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      backgroundColor: theme.palette.action.hover,
-                      borderRadius: 1,
-                      transform: 'translateX(2px)'
-                    }
+                      backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.05),
+                      transform: 'translateX(4px)',
+                    },
+                    mb: index < activities.length - 1 ? 1 : 0
                   }}
                 >
                   {/* Icon */}
                   <Avatar
                     sx={{
-                      width: 36,
-                      height: 36,
-                      bgcolor: getActivityColor(activity.type) + '20',
+                      width: { xs: 36, sm: 40 },
+                      height: { xs: 36, sm: 40 },
+                      backgroundColor: darkMode 
+                        ? alpha(getActivityColor(activity.type), 0.2) 
+                        : alpha(getActivityColor(activity.type), 0.1),
                       color: getActivityColor(activity.type),
                       fontSize: '1rem'
                     }}
@@ -415,76 +486,99 @@ const RecentActivity: React.FC = () => {
                       alignItems: 'center', 
                       justifyContent: 'space-between',
                       flexWrap: 'wrap',
-                      gap: 1
+                      gap: 1,
+                      mb: 0.5
                     }}>
-                      <Typography variant="subtitle2" fontWeight={600} sx={{ 
-                        fontSize: isMobile ? '0.85rem' : '0.95rem',
-                        lineHeight: 1.3 
-                      }}>
+                      <Typography 
+                        variant="subtitle2" 
+                        fontWeight={600} 
+                        sx={{ 
+                          fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                          color: darkMode ? '#e8eaed' : '#202124',
+                          lineHeight: 1.3 
+                        }}
+                      >
                         {activity.message}
                       </Typography>
                       
                       {activity.amount && (
-                        <Typography variant="caption" fontWeight={700} sx={{
-                          color: getAmountColor(activity.type),
-                          fontSize: '0.8rem',
-                          backgroundColor: activity.type === 'billing' 
-                            ? theme.palette.success.light + '40' 
-                            : 'transparent',
-                          px: 1,
-                          py: 0.5,
-                          borderRadius: 1
-                        }}>
+                        <Typography 
+                          variant="caption" 
+                          fontWeight={700} 
+                          sx={{
+                            fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                            color: '#34a853',
+                            backgroundColor: darkMode 
+                              ? alpha('#34a853', 0.2) 
+                              : alpha('#34a853', 0.1),
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: 1
+                          }}
+                        >
                           ₹{activity.amount.toLocaleString('en-IN')}
                         </Typography>
                       )}
                     </Box>
 
-                    <Typography variant="body2" color="text.secondary" sx={{ 
-                      mt: 0.5,
-                      fontSize: isMobile ? '0.8rem' : '0.875rem',
-                      lineHeight: 1.4 
-                    }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
+                        lineHeight: 1.4,
+                        mb: 1
+                      }}
+                    >
                       {activity.details}
                     </Typography>
 
-                    {activity.customerName && (
-                      <Typography variant="caption" sx={{
-                        display: 'inline-block',
-                        mt: 0.5,
-                        color: theme.palette.primary.main,
-                        backgroundColor: theme.palette.primary.light + '20',
-                        px: 1,
-                        py: 0.25,
-                        borderRadius: 0.5,
-                        fontWeight: 500
-                      }}>
-                        {activity.customerName}
-                      </Typography>
-                    )}
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                      {activity.customerName && (
+                        <Chip
+                          label={activity.customerName}
+                          size="small"
+                          sx={{
+                            backgroundColor: darkMode 
+                              ? alpha('#4285f4', 0.2) 
+                              : alpha('#4285f4', 0.1),
+                            color: darkMode ? '#8ab4f8' : '#4285f4',
+                            fontWeight: 500,
+                            fontSize: '0.7rem',
+                            height: 22
+                          }}
+                        />
+                      )}
 
-                    {activity.productName && (
-                      <Typography variant="caption" sx={{
-                        display: 'inline-block',
-                        mt: 0.5,
-                        ml: activity.customerName ? 0.5 : 0,
-                        color: theme.palette.warning.main,
-                        backgroundColor: theme.palette.warning.light + '20',
-                        px: 1,
-                        py: 0.25,
-                        borderRadius: 0.5,
-                        fontWeight: 500
-                      }}>
-                        {activity.productName}
-                      </Typography>
-                    )}
+                      {activity.productName && (
+                        <Chip
+                          label={activity.productName}
+                          size="small"
+                          sx={{
+                            backgroundColor: darkMode 
+                              ? alpha('#fbbc04', 0.2) 
+                              : alpha('#fbbc04', 0.1),
+                            color: darkMode ? '#fdd663' : '#fbbc04',
+                            fontWeight: 500,
+                            fontSize: '0.7rem',
+                            height: 22
+                          }}
+                        />
+                      )}
+                    </Box>
 
-                    <Typography variant="caption" display="block" sx={{ 
-                      mt: 1,
-                      color: theme.palette.grey[600],
-                      fontWeight: 500,
-                      fontSize: '0.75rem'
-                    }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        fontSize: '0.75rem',
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
+                        fontWeight: 500,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5
+                      }}
+                    >
+                      <AccountBalance fontSize="inherit" />
                       {activity.time}
                     </Typography>
                   </Box>
@@ -498,13 +592,24 @@ const RecentActivity: React.FC = () => {
               }}>
                 <Inventory2 sx={{ 
                   fontSize: 48, 
-                  color: theme.palette.grey[400],
+                  color: darkMode ? '#5f6368' : '#9aa0a6',
                   mb: 2 
                 }} />
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    mb: 1,
+                    color: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
+                >
                   No recent activity
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: darkMode ? '#5f6368' : '#9aa0a6'
+                  }}
+                >
                   Recent billing, customers, and stock updates will appear here
                 </Typography>
               </Box>
@@ -524,21 +629,40 @@ const RecentActivity: React.FC = () => {
           }}>
             <Upgrade sx={{ 
               fontSize: 48, 
-              color: theme.palette.warning.main,
+              color: '#fbbc04',
               mb: 2 
             }} />
-            <Typography variant="body1" fontWeight={600} sx={{ mb: 1 }}>
+            <Typography 
+              variant="body1" 
+              fontWeight={600} 
+              sx={{ 
+                mb: 1,
+                color: darkMode ? '#e8eaed' : '#202124'
+              }}
+            >
               Subscription Required
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 300 }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                mb: 3, 
+                maxWidth: 300,
+                color: darkMode ? '#9aa0a6' : '#5f6368'
+              }}
+            >
               Upgrade your plan to view recent activity and access all features
             </Typography>
             <Button 
               variant="contained" 
-              color="primary"
               startIcon={<Upgrade />}
               onClick={() => window.location.href = '/pricing'}
-              sx={{ borderRadius: 2 }}
+              sx={{ 
+                borderRadius: 2,
+                backgroundColor: '#4285f4',
+                '&:hover': {
+                  backgroundColor: '#3367d6',
+                }
+              }}
             >
               Upgrade Now
             </Button>
@@ -550,27 +674,39 @@ const RecentActivity: React.FC = () => {
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
-            mt: 2.5, 
+            alignItems: 'center',
+            mt: 3, 
             pt: 2, 
-            borderTop: `1px solid ${theme.palette.divider}`,
-            alignItems: 'center'
+            borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            flexWrap: 'wrap',
+            gap: 1
           }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                color: darkMode ? '#9aa0a6' : '#5f6368',
+                fontWeight: 500
+              }}
+            >
               Showing {Math.min(activities.length, 8)} activities
             </Typography>
             
-            <Typography 
-              variant="caption" 
-              color="primary.main" 
-              fontWeight={600}
-              sx={{ 
-                cursor: 'pointer',
-                '&:hover': { textDecoration: 'underline' }
-              }}
+            <Button
+              size="small"
+              startIcon={refreshing ? <CircularProgress size={14} /> : <Refresh />}
               onClick={fetchRecentActivity}
+              disabled={refreshing}
+              sx={{
+                fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                color: darkMode ? '#8ab4f8' : '#4285f4',
+                '&:hover': {
+                  backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.05),
+                }
+              }}
             >
-              Refresh
-            </Typography>
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
           </Box>
         )}
       </CardContent>

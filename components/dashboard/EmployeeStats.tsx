@@ -15,7 +15,8 @@ import {
   Button,
   useTheme,
   useMediaQuery,
-  IconButton
+  IconButton,
+  Tooltip
 } from '@mui/material'
 import { 
   People as PeopleIcon, 
@@ -39,8 +40,8 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
   presentEmployees: propPresentEmployees
 }) => {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
   
   const [stats, setStats] = useState({
     total: 0,
@@ -54,7 +55,6 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
-  // Function to get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
     const now = new Date()
     const year = now.getFullYear()
@@ -63,7 +63,6 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
     return `${year}-${month}-${day}`
   }
 
-  // Direct API call to get today's attendance
   const fetchTodayAttendance = async () => {
     try {
       setLoading(true)
@@ -86,7 +85,6 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
       const data = await response.json()
       console.log('📊 Today\'s attendance data:', data)
       
-      // Use the data from API
       setStats({
         total: data.totalEmployees || 0,
         present: data.presentToday || 0,
@@ -99,7 +97,6 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
     } catch (err: any) {
       console.error('Error fetching today\'s attendance:', err)
       setError(err.message || 'Failed to load attendance data')
-      // Fallback to props if API fails
       setStats({
         total: propTotalEmployees || 0,
         present: propPresentEmployees || 0,
@@ -114,7 +111,6 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
     }
   }
 
-  // If today's endpoint doesn't exist, fallback to full attendance API
   const fetchFromFullAPI = async () => {
     try {
       setLoading(true)
@@ -140,7 +136,6 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
       const today = getTodayDate()
       console.log('📅 Today is:', today)
 
-      // Calculate stats from full data
       const activeEmployees = employees.filter((emp: any) => emp.isActive !== false)
       const total = activeEmployees.length
       
@@ -152,20 +147,17 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
         if (emp.days && Array.isArray(emp.days)) {
           const todayAttendance = emp.days.find((day: any) => day.date === today)
           if (todayAttendance) {
-            // Check status (handling both 'Present' and 'present')
             const status = todayAttendance.status
             const isPresent = status === 'Present' || status === 'present'
             
             if (isPresent) {
               present++
-              // Check if remote
               if (emp.role?.toLowerCase().includes('remote') || 
                   emp.department?.toLowerCase().includes('remote') ||
                   todayAttendance.notes?.toLowerCase().includes('remote')) {
                 remote++
               }
             } else if (status === 'Absent' || status === 'absent') {
-              // Check if on leave
               if (todayAttendance.notes?.toLowerCase().includes('leave') ||
                   todayAttendance.lateReason?.toLowerCase().includes('leave')) {
                 onLeave++
@@ -191,7 +183,6 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
     } catch (err: any) {
       console.error('Error fetching employees:', err)
       setError(err.message || 'Failed to load employees')
-      // Fallback to props
       setStats({
         total: propTotalEmployees || 0,
         present: propPresentEmployees || 0,
@@ -212,15 +203,14 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
   }
 
   useEffect(() => {
-    // Try today's endpoint first, fallback to full API
     fetchFromFullAPI()
   }, [])
 
   const getAttendanceStatus = (rate: number) => {
-    if (rate >= 90) return { color: 'success', label: 'Excellent' }
-    if (rate >= 80) return { color: 'info', label: 'Good' }
-    if (rate >= 70) return { color: 'warning', label: 'Average' }
-    return { color: 'error', label: 'Poor' }
+    if (rate >= 90) return { color: '#34a853', label: 'Excellent' }
+    if (rate >= 80) return { color: '#4285f4', label: 'Good' }
+    if (rate >= 70) return { color: '#fbbc04', label: 'Average' }
+    return { color: '#ea4335', label: 'Poor' }
   }
 
   const status = getAttendanceStatus(stats.attendanceRate)
@@ -230,8 +220,9 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
       <Card sx={{ 
         width: '100%', 
         height: '100%',
-        borderRadius: { xs: 1, sm: 2 },
-        boxShadow: theme.shadows[1],
+        borderRadius: 3,
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
         minHeight: isMobile ? 320 : 400
       }}>
         <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
@@ -240,17 +231,19 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
               variant="text" 
               width={isMobile ? 120 : 150} 
               height={isMobile ? 24 : 30} 
+              sx={{ bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }}
             />
             <Skeleton 
               variant="circular" 
               width={isMobile ? 32 : 40} 
               height={isMobile ? 32 : 40} 
+              sx={{ bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }}
             />
           </Box>
           <Skeleton 
             variant="rectangular" 
             height={isMobile ? 100 : 120} 
-            sx={{ mb: 2, borderRadius: 1 }} 
+            sx={{ mb: 2, borderRadius: 1, bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }} 
           />
           <Box 
             display="grid" 
@@ -262,7 +255,7 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 key={item} 
                 variant="rectangular" 
                 height={isMobile ? 60 : 70} 
-                sx={{ borderRadius: 1 }} 
+                sx={{ borderRadius: 1, bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }} 
               />
             ))}
           </Box>
@@ -275,12 +268,19 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
     <Card sx={{ 
       width: '100%', 
       height: '100%',
-      borderRadius: { xs: 1, sm: 2 },
-      boxShadow: theme.shadows[1],
-      border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+      borderRadius: 3,
+      backgroundColor: darkMode ? '#303134' : '#ffffff',
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
       display: 'flex',
       flexDirection: 'column',
-      minHeight: isMobile ? 320 : 400
+      minHeight: isMobile ? 320 : 400,
+      transition: 'all 0.3s ease',
+      '&:hover': {
+        borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+        boxShadow: darkMode 
+          ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+          : '0 4px 12px rgba(0, 0, 0, 0.08)'
+      }
     }}>
       <CardContent sx={{ 
         flex: 1, 
@@ -291,18 +291,29 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
       }}>
         {/* Header */}
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-          <Typography 
-            variant={isMobile ? "subtitle1" : "h6"} 
-            component="div" 
-            fontWeight={600}
-            sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}
-          >
-            Employee Attendance
-          </Typography>
+          <Box display="flex" alignItems="center" gap={1}>
+            <TrendingUp 
+              sx={{ 
+                fontSize: { xs: 20, sm: 24 },
+                color: '#4285f4'
+              }}
+            />
+            <Typography 
+              variant="h6" 
+              component="div" 
+              fontWeight={600}
+              sx={{ 
+                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+                color: darkMode ? '#e8eaed' : '#202124'
+              }}
+            >
+              Employee Attendance
+            </Typography>
+          </Box>
           <Box display="flex" alignItems="center" gap={0.5}>
             <Avatar sx={{ 
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              color: theme.palette.primary.main,
+              bgcolor: darkMode ? alpha('#4285f4', 0.2) : alpha('#4285f4', 0.1),
+              color: '#4285f4',
               width: { xs: 32, sm: 36 },
               height: { xs: 32, sm: 36 }
             }}>
@@ -312,25 +323,33 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 <PeopleIcon fontSize={isMobile ? "small" : "medium"} />
               )}
             </Avatar>
-            <IconButton 
-              size="small" 
-              onClick={handleRefresh}
-              disabled={refreshing}
-              sx={{ 
-                minWidth: 'auto', 
-                p: 0.5,
-                color: theme.palette.text.secondary
-              }}
-            >
-              <Refresh fontSize={isMobile ? "small" : "medium"} />
-            </IconButton>
+            <Tooltip title="Refresh">
+              <IconButton 
+                size="small" 
+                onClick={handleRefresh}
+                disabled={refreshing}
+                sx={{ 
+                  minWidth: 'auto', 
+                  p: 0.5,
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
+              >
+                <Refresh fontSize={isMobile ? "small" : "medium"} />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
         
         {error ? (
           <Alert 
             severity="warning" 
-            sx={{ mb: 2 }}
+            sx={{ 
+              mb: 2,
+              borderRadius: 1,
+              backgroundColor: darkMode ? alpha('#ea4335', 0.1) : alpha('#ea4335', 0.05),
+              border: `1px solid ${darkMode ? alpha('#ea4335', 0.3) : alpha('#ea4335', 0.2)}`,
+              color: darkMode ? '#f28b82' : '#ea4335',
+            }}
             action={
               <Button 
                 color="inherit" 
@@ -350,17 +369,19 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
               <Typography 
                 variant={isMobile ? "h3" : "h2"} 
                 fontWeight="bold" 
-                color="primary.main"
-                sx={{ fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}
+                sx={{ 
+                  color: '#4285f4',
+                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
+                }}
               >
                 {stats.present}
                 <Typography 
                   component="span" 
                   variant={isMobile ? "body1" : "h5"} 
-                  color="text.secondary" 
                   sx={{ 
                     ml: 0.5,
-                    fontSize: { xs: '1rem', sm: '1.25rem' }
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                    color: darkMode ? '#9aa0a6' : '#5f6368'
                   }}
                 >
                   /{stats.total}
@@ -368,8 +389,10 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
               </Typography>
               <Typography 
                 variant={isMobile ? "caption" : "body2"} 
-                color="text.secondary"
-                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                sx={{ 
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
               >
                 Present Today
               </Typography>
@@ -380,8 +403,10 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                 <Typography 
                   variant={isMobile ? "caption" : "body2"} 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    color: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
                 >
                   Attendance Rate
                 </Typography>
@@ -389,16 +414,18 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                   <Typography 
                     variant={isMobile ? "caption" : "body2"} 
                     fontWeight="bold" 
-                    color={`${status.color}.main`}
-                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                    sx={{ 
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                      color: status.color
+                    }}
                   >
                     {stats.attendanceRate.toFixed(1)}%
                   </Typography>
                   <Typography 
                     variant="caption" 
                     sx={{ 
-                      color: `${status.color}.main`,
-                      // bgcolor: alpha(theme.palette[status.color].main, 0.1),
+                      color: status.color,
+                      backgroundColor: darkMode ? alpha(status.color, 0.2) : alpha(status.color, 0.1),
                       px: 0.5,
                       py: 0.25,
                       borderRadius: 0.5,
@@ -412,13 +439,13 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
               <LinearProgress 
                 variant="determinate" 
                 value={stats.attendanceRate}
-                color={status.color as any}
                 sx={{ 
                   height: { xs: 6, sm: 8 }, 
                   borderRadius: 4,
-                  bgcolor: alpha(theme.palette.grey[500], 0.1),
+                  bgcolor: darkMode ? '#3c4043' : '#f1f3f4',
                   '& .MuiLinearProgress-bar': {
-                    borderRadius: 4
+                    borderRadius: 4,
+                    backgroundColor: status.color
                   }
                 }}
               />
@@ -435,8 +462,8 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 sx={{ 
                   p: { xs: 1, sm: 1.5 },
                   borderRadius: { xs: 1, sm: 1.5 },
-                  bgcolor: alpha(theme.palette.success.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                  bgcolor: darkMode ? alpha('#34a853', 0.15) : alpha('#34a853', 0.08),
+                  border: `1px solid ${darkMode ? alpha('#34a853', 0.3) : alpha('#34a853', 0.2)}`,
                   textAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
@@ -446,22 +473,26 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 }}
               >
                 <CheckCircle sx={{ 
-                  color: 'success.main', 
+                  color: '#34a853', 
                   fontSize: { xs: 20, sm: 24 }, 
                   mb: 0.5 
                 }} />
                 <Typography 
                   variant={isMobile ? "body1" : "h6"} 
                   fontWeight={700} 
-                  color="success.main"
-                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    color: '#34a853'
+                  }}
                 >
                   {stats.present}
                 </Typography>
                 <Typography 
                   variant="caption" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                    color: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
                 >
                   Present
                 </Typography>
@@ -471,8 +502,8 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 sx={{ 
                   p: { xs: 1, sm: 1.5 },
                   borderRadius: { xs: 1, sm: 1.5 },
-                  bgcolor: alpha(theme.palette.error.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
+                  bgcolor: darkMode ? alpha('#ea4335', 0.15) : alpha('#ea4335', 0.08),
+                  border: `1px solid ${darkMode ? alpha('#ea4335', 0.3) : alpha('#ea4335', 0.2)}`,
                   textAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
@@ -482,22 +513,26 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 }}
               >
                 <Cancel sx={{ 
-                  color: 'error.main', 
+                  color: '#ea4335', 
                   fontSize: { xs: 20, sm: 24 }, 
                   mb: 0.5 
                 }} />
                 <Typography 
                   variant={isMobile ? "body1" : "h6"} 
                   fontWeight={700} 
-                  color="error.main"
-                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    color: '#ea4335'
+                  }}
                 >
                   {stats.absent}
                 </Typography>
                 <Typography 
                   variant="caption" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                    color: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
                 >
                   Absent
                 </Typography>
@@ -507,8 +542,8 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 sx={{ 
                   p: { xs: 1, sm: 1.5 },
                   borderRadius: { xs: 1, sm: 1.5 },
-                  bgcolor: alpha(theme.palette.warning.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
+                  bgcolor: darkMode ? alpha('#fbbc04', 0.15) : alpha('#fbbc04', 0.08),
+                  border: `1px solid ${darkMode ? alpha('#fbbc04', 0.3) : alpha('#fbbc04', 0.2)}`,
                   textAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
@@ -518,22 +553,26 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 }}
               >
                 <Home sx={{ 
-                  color: 'warning.main', 
+                  color: '#fbbc04', 
                   fontSize: { xs: 20, sm: 24 }, 
                   mb: 0.5 
                 }} />
                 <Typography 
                   variant={isMobile ? "body1" : "h6"} 
                   fontWeight={700} 
-                  color="warning.main"
-                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    color: '#fbbc04'
+                  }}
                 >
                   {stats.remote}
                 </Typography>
                 <Typography 
                   variant="caption" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                    color: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
                 >
                   Remote
                 </Typography>
@@ -543,8 +582,8 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 sx={{ 
                   p: { xs: 1, sm: 1.5 },
                   borderRadius: { xs: 1, sm: 1.5 },
-                  bgcolor: alpha(theme.palette.info.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                  bgcolor: darkMode ? alpha('#4285f4', 0.15) : alpha('#4285f4', 0.08),
+                  border: `1px solid ${darkMode ? alpha('#4285f4', 0.3) : alpha('#4285f4', 0.2)}`,
                   textAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
@@ -554,22 +593,26 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 }}
               >
                 <WorkOff sx={{ 
-                  color: 'info.main', 
+                  color: '#4285f4', 
                   fontSize: { xs: 20, sm: 24 }, 
                   mb: 0.5 
                 }} />
                 <Typography 
                   variant={isMobile ? "body1" : "h6"} 
                   fontWeight={700} 
-                  color="info.main"
-                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    color: '#4285f4'
+                  }}
                 >
                   {stats.onLeave}
                 </Typography>
                 <Typography 
                   variant="caption" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                    color: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
                 >
                   On Leave
                 </Typography>
@@ -581,11 +624,11 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
               <Box sx={{ 
                 mt: 1, 
                 p: 0.5, 
-                bgcolor: alpha(theme.palette.info.main, 0.05),
+                bgcolor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.05),
                 borderRadius: 0.5,
-                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                border: `1px solid ${darkMode ? alpha('#4285f4', 0.3) : alpha('#4285f4', 0.2)}`,
                 fontSize: '0.6rem',
-                color: theme.palette.text.secondary
+                color: darkMode ? '#9aa0a6' : '#5f6368'
               }}>
                 Debug: {stats.total} total, {stats.present} present ({getTodayDate()})
               </Box>
@@ -603,10 +646,10 @@ const EmployeeStats: React.FC<EmployeeStatsProps> = ({
                 mt: 'auto',
                 py: isMobile ? 0.75 : 1,
                 borderRadius: { xs: 1, sm: 2 },
-                bgcolor: theme.palette.primary.main,
+                backgroundColor: '#4285f4',
                 fontSize: { xs: '0.8rem', sm: '0.875rem' },
                 '&:hover': {
-                  bgcolor: theme.palette.primary.dark
+                  backgroundColor: '#3367d6'
                 }
               }}
             >

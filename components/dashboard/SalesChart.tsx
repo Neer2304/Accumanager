@@ -1,4 +1,3 @@
-// components/dashboard/SalesChart.tsx
 import React, { useState, useEffect, useRef } from 'react'
 import {
   Card,
@@ -21,7 +20,10 @@ import {
   ToggleButtonGroup,
   Paper,
   Fade,
-  Button
+  Button,
+  Tab,
+  Tabs,
+  LinearProgress
 } from '@mui/material'
 import {
   LineChart,
@@ -47,19 +49,15 @@ import BarChartIcon from '@mui/icons-material/BarChart'
 import ShowChartIcon from '@mui/icons-material/ShowChart'
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
 import PieChartIcon from '@mui/icons-material/PieChart'
-import RadarIcon from '@mui/icons-material/Radar'
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
 import DownloadIcon from '@mui/icons-material/Download'
 import FilterAltIcon from '@mui/icons-material/FilterAlt'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import CalendarViewWeekIcon from '@mui/icons-material/CalendarViewWeek'
-import Tab from '@mui/material/Tab'
-import Tabs from '@mui/material/Tabs'
-import { SalesChartData as SalesChartDataType } from '@/types' // Import the type from your types file
+import { SalesChartData as SalesChartDataType } from '@/types'
 
-// Remove the local interface and use the imported one
 interface SalesChartProps {
-  data: SalesChartDataType[] // Use the imported type
+  data: SalesChartDataType[]
   timeRange: 'week' | 'month' | 'quarter' | 'year'
   onTimeRangeChange: (range: 'week' | 'month' | 'quarter' | 'year') => void
 }
@@ -70,6 +68,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
   onTimeRangeChange 
 }) => {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
@@ -100,7 +99,6 @@ const SalesChart: React.FC<SalesChartProps> = ({
         const salesData = await response.json()
         
         if (salesData && Array.isArray(salesData)) {
-          // Data is already set by parent, just validate
           console.log('Sales data received:', salesData.length, 'records')
         } else {
           setError('Invalid data format received')
@@ -142,7 +140,6 @@ const SalesChart: React.FC<SalesChartProps> = ({
     document.body.removeChild(link)
   }
 
-  // Calculate optimal X-axis ticks
   const getXTickInterval = () => {
     const dataLength = data.length
     if (isMobile) {
@@ -172,7 +169,6 @@ const SalesChart: React.FC<SalesChartProps> = ({
         return date.toLocaleDateString('en-US', { weekday: 'short' })
       } else if (timeRange === 'month') {
         const day = date.getDate()
-        // Show every 5th day or last day
         if (day % 5 === 0 || isLastItem || day === 1) {
           return isMobile ? day.toString() : `${date.getDate()}`
         }
@@ -182,7 +178,6 @@ const SalesChart: React.FC<SalesChartProps> = ({
         return isMobile ? month.charAt(0) : month
       } else {
         const month = date.toLocaleDateString('en-US', { month: 'short' })
-        // Only show first letter for mobile, full for desktop
         return isMobile ? month.charAt(0) : month
       }
     } catch {
@@ -205,16 +200,18 @@ const SalesChart: React.FC<SalesChartProps> = ({
           elevation={3}
           sx={{
             p: { xs: 1, sm: 1.5, md: 2 },
-            backgroundColor: alpha(theme.palette.background.paper, 0.95),
+            backgroundColor: darkMode ? alpha('#303134', 0.95) : alpha('#ffffff', 0.95),
             backdropFilter: 'blur(10px)',
-            border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-            minWidth: { xs: 160, sm: 200 }
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            minWidth: { xs: 160, sm: 200 },
+            color: darkMode ? '#e8eaed' : '#202124',
           }}
         >
           <Typography 
             variant={isMobile ? "caption" : "subtitle2"} 
             fontWeight={600} 
             gutterBottom
+            color={darkMode ? '#e8eaed' : '#202124'}
           >
             {formattedDate}
           </Typography>
@@ -236,7 +233,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 />
                 <Typography 
                   variant={isMobile ? "caption" : "body2"} 
-                  color="text.secondary"
+                  color={darkMode ? '#9aa0a6' : '#5f6368'}
                 >
                   {entry.name}:
                 </Typography>
@@ -245,6 +242,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 variant={isMobile ? "caption" : "body2"} 
                 fontWeight={600}
                 sx={{ ml: 1 }}
+                color={darkMode ? '#e8eaed' : '#202124'}
               >
                 {entry.name === 'Revenue' || entry.name === 'Avg Order Value' 
                   ? `₹${entry.value?.toLocaleString() || '0'}`
@@ -258,13 +256,12 @@ const SalesChart: React.FC<SalesChartProps> = ({
     return null
   }
 
-  // Calculate statistics - handle missing properties
+  // Calculate statistics
   const totalRevenue = data.reduce((sum, item) => sum + (item.revenue || 0), 0)
   const totalOrders = data.reduce((sum, item) => sum + (item.orders || 0), 0)
   const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0
-  const totalItems = data.reduce((sum, item) => sum + ((item as any).totalItems || 0), 0) // Use type assertion for totalItems
+  const totalItems = data.reduce((sum, item) => sum + ((item as any).totalItems || 0), 0)
 
-  // Calculate growth percentage
   const calculateGrowth = () => {
     if (data.length < 2) return 0
     const firstHalf = data.slice(0, Math.floor(data.length / 2))
@@ -276,7 +273,6 @@ const SalesChart: React.FC<SalesChartProps> = ({
 
   const growth = calculateGrowth()
 
-  // Weekly breakdown data for pie chart
   const weeklyBreakdown = data.length > 0 ? [
     { name: 'Mon', value: Math.round(totalRevenue * 0.15) },
     { name: 'Tue', value: Math.round(totalRevenue * 0.18) },
@@ -288,16 +284,15 @@ const SalesChart: React.FC<SalesChartProps> = ({
   ] : []
 
   const COLORS = [
-    theme.palette.primary.main,
-    theme.palette.secondary.main,
-    theme.palette.success.main,
-    theme.palette.warning.main,
-    theme.palette.info.main,
-    theme.palette.error.main,
-    theme.palette.grey[500],
+    '#4285f4',
+    '#34a853',
+    '#fbbc04',
+    '#ea4335',
+    '#8ab4f8',
+    '#81c995',
+    '#fdd663',
   ]
 
-  // Render mini stats cards without Grid
   const renderMiniCharts = () => (
     <Box sx={{ 
       display: 'flex', 
@@ -318,14 +313,16 @@ const SalesChart: React.FC<SalesChartProps> = ({
         borderRadius: 2,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
       }}>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
           Daily Avg
         </Typography>
         <Typography 
           variant={isMobile ? "body1" : "h6"} 
-          color="primary.main" 
+          color="#4285f4" 
           fontWeight={700}
           sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
         >
@@ -338,14 +335,16 @@ const SalesChart: React.FC<SalesChartProps> = ({
         borderRadius: 2,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
       }}>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
           Peak Day
         </Typography>
         <Typography 
           variant={isMobile ? "body1" : "h6"} 
-          color="secondary.main" 
+          color="#ea4335" 
           fontWeight={700}
           sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
         >
@@ -358,14 +357,16 @@ const SalesChart: React.FC<SalesChartProps> = ({
         borderRadius: 2,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
       }}>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
           Items/Day
         </Typography>
         <Typography 
           variant={isMobile ? "body1" : "h6"} 
-          color="success.main" 
+          color="#34a853" 
           fontWeight={700}
           sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
         >
@@ -378,14 +379,16 @@ const SalesChart: React.FC<SalesChartProps> = ({
         borderRadius: 2,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
       }}>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
           Conversion
         </Typography>
         <Typography 
           variant={isMobile ? "body1" : "h6"} 
-          color="info.main" 
+          color="#fbbc04" 
           fontWeight={700}
           sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
         >
@@ -395,12 +398,11 @@ const SalesChart: React.FC<SalesChartProps> = ({
     </Box>
   )
 
-  // Render different chart based on active tab
   const renderActiveChart = () => {
     const chartHeight = isMobile ? 250 : isTablet ? 300 : 350
     
     switch (activeTab) {
-      case 0: // Overview
+      case 0:
         return (
           <ResponsiveContainer width="100%" height={chartHeight}>
             <ComposedChart
@@ -414,22 +416,28 @@ const SalesChart: React.FC<SalesChartProps> = ({
             >
               <CartesianGrid 
                 strokeDasharray="3 3" 
-                stroke={alpha(theme.palette.divider, 0.3)} 
+                stroke={darkMode ? alpha('#3c4043', 0.5) : alpha('#dadce0', 0.5)} 
                 vertical={false} 
               />
               <XAxis 
                 dataKey="date" 
                 tickFormatter={formatXAxis}
-                tick={{ fontSize: isMobile ? 9 : 11 }}
-                axisLine={false}
-                tickLine={false}
+                tick={{ 
+                  fontSize: isMobile ? 9 : 11,
+                  fill: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
+                axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                 interval={getXTickInterval()}
                 height={isMobile ? 30 : 40}
               />
               <YAxis 
-                tick={{ fontSize: isMobile ? 9 : 11 }}
-                axisLine={false}
-                tickLine={false}
+                tick={{ 
+                  fontSize: isMobile ? 9 : 11,
+                  fill: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
+                axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                 width={isMobile ? 40 : 60}
                 tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
               />
@@ -438,15 +446,16 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 wrapperStyle={{ 
                   fontSize: isMobile ? 10 : 12, 
                   paddingTop: 5,
-                  display: isMobile ? 'none' : 'block'
+                  display: isMobile ? 'none' : 'block',
+                  color: darkMode ? '#e8eaed' : '#202124'
                 }} 
               />
               <Area
                 type="monotone"
                 dataKey="revenue"
                 name="Revenue"
-                stroke={theme.palette.primary.main}
-                fill={alpha(theme.palette.primary.main, 0.1)}
+                stroke="#4285f4"
+                fill={alpha('#4285f4', 0.1)}
                 strokeWidth={isMobile ? 1.5 : 2}
                 activeDot={{ r: isMobile ? 3 : 5 }}
               />
@@ -454,7 +463,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 type="monotone"
                 dataKey="orders"
                 name="Orders"
-                stroke={theme.palette.secondary.main}
+                stroke="#34a853"
                 strokeWidth={isMobile ? 1.5 : 2}
                 strokeDasharray="5 5"
                 dot={false}
@@ -463,7 +472,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
           </ResponsiveContainer>
         )
         
-      case 1: // Revenue
+      case 1:
         return (
           <ResponsiveContainer width="100%" height={chartHeight}>
             {chartType === 'bar' ? (
@@ -478,22 +487,28 @@ const SalesChart: React.FC<SalesChartProps> = ({
               >
                 <CartesianGrid 
                   strokeDasharray="3 3" 
-                  stroke={alpha(theme.palette.divider, 0.3)} 
+                  stroke={darkMode ? alpha('#3c4043', 0.5) : alpha('#dadce0', 0.5)} 
                   vertical={false} 
                 />
                 <XAxis 
                   dataKey="date" 
                   tickFormatter={formatXAxis}
-                  tick={{ fontSize: isMobile ? 9 : 11 }}
-                  axisLine={false}
-                  tickLine={false}
+                  tick={{ 
+                    fontSize: isMobile ? 9 : 11,
+                    fill: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
+                  axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                  tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                   interval={getXTickInterval()}
                   height={isMobile ? 30 : 40}
                 />
                 <YAxis 
-                  tick={{ fontSize: isMobile ? 9 : 11 }}
-                  axisLine={false}
-                  tickLine={false}
+                  tick={{ 
+                    fontSize: isMobile ? 9 : 11,
+                    fill: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
+                  axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                  tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                   width={isMobile ? 40 : 60}
                   tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
                 />
@@ -501,7 +516,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 <Bar 
                   dataKey="revenue" 
                   name="Revenue"
-                  fill={theme.palette.primary.main}
+                  fill="#4285f4"
                   radius={[4, 4, 0, 0]}
                   barSize={isMobile ? 15 : 30}
                 />
@@ -518,22 +533,28 @@ const SalesChart: React.FC<SalesChartProps> = ({
               >
                 <CartesianGrid 
                   strokeDasharray="3 3" 
-                  stroke={alpha(theme.palette.divider, 0.3)} 
+                  stroke={darkMode ? alpha('#3c4043', 0.5) : alpha('#dadce0', 0.5)} 
                   vertical={false} 
                 />
                 <XAxis 
                   dataKey="date" 
                   tickFormatter={formatXAxis}
-                  tick={{ fontSize: isMobile ? 9 : 11 }}
-                  axisLine={false}
-                  tickLine={false}
+                  tick={{ 
+                    fontSize: isMobile ? 9 : 11,
+                    fill: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
+                  axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                  tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                   interval={getXTickInterval()}
                   height={isMobile ? 30 : 40}
                 />
                 <YAxis 
-                  tick={{ fontSize: isMobile ? 9 : 11 }}
-                  axisLine={false}
-                  tickLine={false}
+                  tick={{ 
+                    fontSize: isMobile ? 9 : 11,
+                    fill: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
+                  axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                  tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                   width={isMobile ? 40 : 60}
                   tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
                 />
@@ -542,7 +563,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
                   type="monotone"
                   dataKey="revenue"
                   name="Revenue"
-                  stroke={theme.palette.primary.main}
+                  stroke="#4285f4"
                   strokeWidth={isMobile ? 1.5 : 2}
                   dot={isMobile ? false : { r: 3 }}
                   activeDot={{ r: isMobile ? 3 : 5 }}
@@ -552,7 +573,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
           </ResponsiveContainer>
         )
         
-      case 2: // Orders
+      case 2:
         return (
           <ResponsiveContainer width="100%" height={chartHeight}>
             {chartType === 'bar' ? (
@@ -567,29 +588,35 @@ const SalesChart: React.FC<SalesChartProps> = ({
               >
                 <CartesianGrid 
                   strokeDasharray="3 3" 
-                  stroke={alpha(theme.palette.divider, 0.3)} 
+                  stroke={darkMode ? alpha('#3c4043', 0.5) : alpha('#dadce0', 0.5)} 
                   vertical={false} 
                 />
                 <XAxis 
                   dataKey="date" 
                   tickFormatter={formatXAxis}
-                  tick={{ fontSize: isMobile ? 9 : 11 }}
-                  axisLine={false}
-                  tickLine={false}
+                  tick={{ 
+                    fontSize: isMobile ? 9 : 11,
+                    fill: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
+                  axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                  tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                   interval={getXTickInterval()}
                   height={isMobile ? 30 : 40}
                 />
                 <YAxis 
-                  tick={{ fontSize: isMobile ? 9 : 11 }}
-                  axisLine={false}
-                  tickLine={false}
+                  tick={{ 
+                    fontSize: isMobile ? 9 : 11,
+                    fill: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
+                  axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                  tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                   width={isMobile ? 40 : 60}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
                   dataKey="orders" 
                   name="Orders"
-                  fill={theme.palette.secondary.main}
+                  fill="#34a853"
                   radius={[4, 4, 0, 0]}
                   barSize={isMobile ? 15 : 30}
                 />
@@ -606,28 +633,34 @@ const SalesChart: React.FC<SalesChartProps> = ({
               >
                 <defs>
                   <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={theme.palette.secondary.main} stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor={theme.palette.secondary.main} stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#34a853" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#34a853" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid 
                   strokeDasharray="3 3" 
-                  stroke={alpha(theme.palette.divider, 0.3)} 
+                  stroke={darkMode ? alpha('#3c4043', 0.5) : alpha('#dadce0', 0.5)} 
                   vertical={false} 
                 />
                 <XAxis 
                   dataKey="date" 
                   tickFormatter={formatXAxis}
-                  tick={{ fontSize: isMobile ? 9 : 11 }}
-                  axisLine={false}
-                  tickLine={false}
+                  tick={{ 
+                    fontSize: isMobile ? 9 : 11,
+                    fill: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
+                  axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                  tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                   interval={getXTickInterval()}
                   height={isMobile ? 30 : 40}
                 />
                 <YAxis 
-                  tick={{ fontSize: isMobile ? 9 : 11 }}
-                  axisLine={false}
-                  tickLine={false}
+                  tick={{ 
+                    fontSize: isMobile ? 9 : 11,
+                    fill: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
+                  axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                  tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                   width={isMobile ? 40 : 60}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -635,7 +668,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
                   type="monotone"
                   dataKey="orders"
                   name="Orders"
-                  stroke={theme.palette.secondary.main}
+                  stroke="#34a853"
                   fill="url(#ordersGradient)"
                   strokeWidth={isMobile ? 1.5 : 2}
                   activeDot={{ r: isMobile ? 3 : 5 }}
@@ -645,7 +678,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
           </ResponsiveContainer>
         )
         
-      case 3: // Comparison
+      case 3:
         return (
           <ResponsiveContainer width="100%" height={chartHeight}>
             <ComposedChart
@@ -659,31 +692,40 @@ const SalesChart: React.FC<SalesChartProps> = ({
             >
               <CartesianGrid 
                 strokeDasharray="3 3" 
-                stroke={alpha(theme.palette.divider, 0.3)} 
+                stroke={darkMode ? alpha('#3c4043', 0.5) : alpha('#dadce0', 0.5)} 
                 vertical={false} 
               />
               <XAxis 
                 dataKey="date" 
                 tickFormatter={formatXAxis}
-                tick={{ fontSize: isMobile ? 9 : 11 }}
-                axisLine={false}
-                tickLine={false}
+                tick={{ 
+                  fontSize: isMobile ? 9 : 11,
+                  fill: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
+                axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                 interval={getXTickInterval()}
                 height={isMobile ? 30 : 40}
               />
               <YAxis 
                 yAxisId="left"
-                tick={{ fontSize: isMobile ? 9 : 11 }}
-                axisLine={false}
-                tickLine={false}
+                tick={{ 
+                  fontSize: isMobile ? 9 : 11,
+                  fill: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
+                axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                 width={isMobile ? 40 : 60}
               />
               <YAxis 
                 yAxisId="right" 
                 orientation="right"
-                tick={{ fontSize: isMobile ? 9 : 11 }}
-                axisLine={false}
-                tickLine={false}
+                tick={{ 
+                  fontSize: isMobile ? 9 : 11,
+                  fill: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
+                axisLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
+                tickLine={{ stroke: darkMode ? '#3c4043' : '#dadce0' }}
                 width={isMobile ? 40 : 60}
                 tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
               />
@@ -692,7 +734,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 yAxisId="left"
                 dataKey="orders"
                 name="Orders"
-                fill={alpha(theme.palette.secondary.main, 0.3)}
+                fill={alpha('#34a853', 0.3)}
                 radius={[4, 4, 0, 0]}
                 barSize={isMobile ? 15 : 30}
               />
@@ -701,7 +743,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 type="monotone"
                 dataKey="revenue"
                 name="Revenue"
-                stroke={theme.palette.primary.main}
+                stroke="#4285f4"
                 strokeWidth={isMobile ? 1.5 : 2}
                 dot={isMobile ? false : { r: 3 }}
                 activeDot={{ r: isMobile ? 3 : 5 }}
@@ -710,7 +752,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
           </ResponsiveContainer>
         )
         
-      case 4: // Breakdown
+      case 4:
         return (
           <Box sx={{ 
             display: 'flex', 
@@ -731,7 +773,6 @@ const SalesChart: React.FC<SalesChartProps> = ({
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    // label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                     outerRadius={isMobile ? 70 : isTablet ? 80 : 100}
                     fill="#8884d8"
                     dataKey="value"
@@ -744,7 +785,8 @@ const SalesChart: React.FC<SalesChartProps> = ({
                   <Legend 
                     wrapperStyle={{ 
                       fontSize: isMobile ? 10 : 12,
-                      paddingTop: 10
+                      paddingTop: 10,
+                      color: darkMode ? '#e8eaed' : '#202124'
                     }} 
                   />
                 </PieChart>
@@ -764,7 +806,8 @@ const SalesChart: React.FC<SalesChartProps> = ({
                     mb: 1,
                     p: 1,
                     borderRadius: 1,
-                    bgcolor: alpha(COLORS[index % COLORS.length], 0.1)
+                    backgroundColor: darkMode ? alpha(COLORS[index % COLORS.length], 0.1) : alpha(COLORS[index % COLORS.length], 0.05),
+                    border: `1px solid ${darkMode ? alpha(COLORS[index % COLORS.length], 0.3) : alpha(COLORS[index % COLORS.length], 0.2)}`,
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -773,12 +816,21 @@ const SalesChart: React.FC<SalesChartProps> = ({
                         width: 12, 
                         height: 12, 
                         borderRadius: '50%',
-                        bgcolor: COLORS[index % COLORS.length]
+                        backgroundColor: COLORS[index % COLORS.length]
                       }} 
                     />
-                    <Typography variant="body2">{item.name}</Typography>
+                    <Typography 
+                      variant="body2" 
+                      color={darkMode ? '#e8eaed' : '#202124'}
+                    >
+                      {item.name}
+                    </Typography>
                   </Box>
-                  <Typography variant="body2" fontWeight={600}>
+                  <Typography 
+                    variant="body2" 
+                    fontWeight={600}
+                    color={darkMode ? '#e8eaed' : '#202124'}
+                  >
                     ₹{item.value.toLocaleString()}
                   </Typography>
                 </Box>
@@ -798,16 +850,18 @@ const SalesChart: React.FC<SalesChartProps> = ({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: { xs: 1, sm: 2 },
-        overflow: 'hidden'
+        borderRadius: 3,
+        overflow: 'hidden',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
       }}
     >
       <CardContent sx={{ 
         flex: 1, 
         display: 'flex', 
         flexDirection: 'column',
-        p: { xs: 1, sm: 1.5, md: 2 },
-        gap: { xs: 1, sm: 1.5, md: 2 }
+        p: { xs: 1.5, sm: 2 },
+        gap: { xs: 1.5, sm: 2 }
       }}>
         {/* Header */}
         <Box sx={{ 
@@ -821,14 +875,19 @@ const SalesChart: React.FC<SalesChartProps> = ({
             <Typography 
               variant={isMobile ? "subtitle1" : "h6"} 
               fontWeight={600}
-              sx={{ fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' } }}
+              sx={{ 
+                fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' },
+                color: darkMode ? '#e8eaed' : '#202124'
+              }}
             >
               Sales Analytics Dashboard
             </Typography>
             <Typography 
               variant="caption" 
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.875rem' } }}
+              sx={{ 
+                fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.875rem' },
+                color: darkMode ? '#9aa0a6' : '#5f6368'
+              }}
             >
               {timeRange === 'week' ? 'Last 7 days' : 
                timeRange === 'month' ? 'Last 30 days' : 
@@ -852,7 +911,8 @@ const SalesChart: React.FC<SalesChartProps> = ({
               title="Refresh data"
               sx={{ 
                 width: { xs: 32, sm: 36 },
-                height: { xs: 32, sm: 36 }
+                height: { xs: 32, sm: 36 },
+                color: darkMode ? '#9aa0a6' : '#5f6368'
               }}
             >
               <RefreshIcon fontSize={isMobile ? "small" : "medium"} />
@@ -864,7 +924,8 @@ const SalesChart: React.FC<SalesChartProps> = ({
               title="Export data"
               sx={{ 
                 width: { xs: 32, sm: 36 },
-                height: { xs: 32, sm: 36 }
+                height: { xs: 32, sm: 36 },
+                color: darkMode ? '#9aa0a6' : '#5f6368'
               }}
             >
               <DownloadIcon fontSize={isMobile ? "small" : "medium"} />
@@ -873,7 +934,19 @@ const SalesChart: React.FC<SalesChartProps> = ({
               size="small" 
               sx={{ 
                 minWidth: { xs: 90, sm: 100, md: 120 },
-                '& .MuiInputLabel-root': { fontSize: { xs: '0.8rem', sm: '0.875rem' } }
+                '& .MuiInputLabel-root': { 
+                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                },
+                '& .MuiOutlinedInput-root': {
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  '& fieldset': {
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: darkMode ? '#4285f4' : '#4285f4',
+                  },
+                }
               }}
             >
               <InputLabel>Period</InputLabel>
@@ -883,10 +956,42 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 onChange={(e) => onTimeRangeChange(e.target.value as any)}
                 size="small"
               >
-                <MenuItem value="week" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Weekly</MenuItem>
-                <MenuItem value="month" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Monthly</MenuItem>
-                <MenuItem value="quarter" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Quarterly</MenuItem>
-                <MenuItem value="year" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Yearly</MenuItem>
+                <MenuItem 
+                  value="week" 
+                  sx={{ 
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    color: darkMode ? '#e8eaed' : '#202124'
+                  }}
+                >
+                  Weekly
+                </MenuItem>
+                <MenuItem 
+                  value="month" 
+                  sx={{ 
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    color: darkMode ? '#e8eaed' : '#202124'
+                  }}
+                >
+                  Monthly
+                </MenuItem>
+                <MenuItem 
+                  value="quarter" 
+                  sx={{ 
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    color: darkMode ? '#e8eaed' : '#202124'
+                  }}
+                >
+                  Quarterly
+                </MenuItem>
+                <MenuItem 
+                  value="year" 
+                  sx={{ 
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    color: darkMode ? '#e8eaed' : '#202124'
+                  }}
+                >
+                  Yearly
+                </MenuItem>
               </Select>
             </FormControl>
           </Stack>
@@ -903,24 +1008,26 @@ const SalesChart: React.FC<SalesChartProps> = ({
               elevation={0}
               sx={{ 
                 p: { xs: 1, sm: 1.5 },
-                borderRadius: { xs: 1, sm: 1.5 },
-                bgcolor: alpha(theme.palette.primary.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                borderRadius: 2,
+                backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.05),
+                border: `1px solid ${darkMode ? alpha('#4285f4', 0.3) : alpha('#4285f4', 0.2)}`,
                 flex: '1 1 calc(33.333% - 8px)',
                 minWidth: 0
               }}
             >
               <Typography 
                 variant="caption" 
-                color="text.secondary"
-                sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+                sx={{ 
+                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
               >
                 Total Revenue
               </Typography>
               <Typography 
                 variant={isMobile ? "body1" : "h6"} 
                 fontWeight={700} 
-                color="primary.main"
+                color="#4285f4"
                 sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
               >
                 ₹{totalRevenue.toLocaleString()}
@@ -928,7 +1035,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
               {growth !== 0 && (
                 <Typography 
                   variant="caption" 
-                  color={growth > 0 ? 'success.main' : 'error.main'}
+                  color={growth > 0 ? '#34a853' : '#ea4335'}
                   sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                 >
                   {growth > 0 ? '↗' : '↘'} {Math.abs(growth).toFixed(1)}%
@@ -940,32 +1047,36 @@ const SalesChart: React.FC<SalesChartProps> = ({
               elevation={0}
               sx={{ 
                 p: { xs: 1, sm: 1.5 },
-                borderRadius: { xs: 1, sm: 1.5 },
-                bgcolor: alpha(theme.palette.secondary.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+                borderRadius: 2,
+                backgroundColor: darkMode ? alpha('#34a853', 0.1) : alpha('#34a853', 0.05),
+                border: `1px solid ${darkMode ? alpha('#34a853', 0.3) : alpha('#34a853', 0.2)}`,
                 flex: '1 1 calc(33.333% - 8px)',
                 minWidth: 0
               }}
             >
               <Typography 
                 variant="caption" 
-                color="text.secondary"
-                sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+                sx={{ 
+                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
               >
                 Total Orders
               </Typography>
               <Typography 
                 variant={isMobile ? "body1" : "h6"} 
                 fontWeight={700} 
-                color="secondary.main"
+                color="#34a853"
                 sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
               >
                 {totalOrders.toLocaleString()}
               </Typography>
               <Typography 
                 variant="caption" 
-                color="text.secondary"
-                sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+                sx={{ 
+                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
               >
                 {totalItems.toLocaleString()} items
               </Typography>
@@ -975,24 +1086,26 @@ const SalesChart: React.FC<SalesChartProps> = ({
               elevation={0}
               sx={{ 
                 p: { xs: 1, sm: 1.5 },
-                borderRadius: { xs: 1, sm: 1.5 },
-                bgcolor: alpha(theme.palette.success.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+                borderRadius: 2,
+                backgroundColor: darkMode ? alpha('#fbbc04', 0.1) : alpha('#fbbc04', 0.05),
+                border: `1px solid ${darkMode ? alpha('#fbbc04', 0.3) : alpha('#fbbc04', 0.2)}`,
                 flex: '1 1 calc(33.333% - 8px)',
                 minWidth: 0
               }}
             >
               <Typography 
                 variant="caption" 
-                color="text.secondary"
-                sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+                sx={{ 
+                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
               >
                 Avg. Order Value
               </Typography>
               <Typography 
                 variant={isMobile ? "body1" : "h6"} 
                 fontWeight={700} 
-                color="success.main"
+                color="#fbbc04"
                 sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' } }}
               >
                 ₹{avgOrderValue.toLocaleString()}
@@ -1001,10 +1114,15 @@ const SalesChart: React.FC<SalesChartProps> = ({
           </Box>
         )}
 
+        {/* Loading Progress */}
+        {loading && (
+          <LinearProgress sx={{ my: 1 }} />
+        )}
+
         {/* Chart View Tabs */}
         <Box sx={{ 
           borderBottom: 1, 
-          borderColor: 'divider',
+          borderColor: darkMode ? '#3c4043' : '#dadce0',
           overflowX: 'auto',
           '& .MuiTabs-scroller': { overflowX: 'auto !important' }
         }}>
@@ -1020,7 +1138,14 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 minHeight: { xs: 40, sm: 48 },
                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 minWidth: { xs: 70, sm: 90 },
-                padding: { xs: '6px 8px', sm: '12px 16px' }
+                padding: { xs: '6px 8px', sm: '12px 16px' },
+                color: darkMode ? '#9aa0a6' : '#5f6368',
+                '&.Mui-selected': {
+                  color: darkMode ? '#8ab4f8' : '#4285f4',
+                }
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: darkMode ? '#8ab4f8' : '#4285f4',
               }
             }}
           >
@@ -1065,7 +1190,17 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 height: { xs: 28, sm: 32 },
                 '& .MuiToggleButton-root': {
                   padding: { xs: '4px 8px', sm: '6px 12px' },
-                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  '&.Mui-selected': {
+                    backgroundColor: darkMode ? alpha('#4285f4', 0.2) : alpha('#4285f4', 0.1),
+                    color: darkMode ? '#8ab4f8' : '#4285f4',
+                    borderColor: darkMode ? '#4285f4' : '#4285f4',
+                  },
+                  '&:hover': {
+                    backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.05),
+                  }
                 }
               }}
             >
@@ -1090,7 +1225,13 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 variant={includeDrafts ? "outlined" : "filled"}
                 sx={{ 
                   height: { xs: 28, sm: 32 },
-                  fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  backgroundColor: darkMode ? 
+                    (includeDrafts ? '#3c4043' : alpha('#4285f4', 0.2)) : 
+                    undefined,
+                  color: darkMode ? 
+                    (includeDrafts ? '#9aa0a6' : '#8ab4f8') : 
+                    undefined,
                 }}
               />
             </Stack>
@@ -1105,13 +1246,16 @@ const SalesChart: React.FC<SalesChartProps> = ({
               alignItems: 'center',
               '& .MuiAlert-message': { flex: 1 },
               py: { xs: 0.5, sm: 1 },
-              fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              backgroundColor: darkMode ? alpha('#ea4335', 0.1) : alpha('#ea4335', 0.05),
+              border: `1px solid ${darkMode ? alpha('#ea4335', 0.3) : alpha('#ea4335', 0.2)}`,
+              color: darkMode ? '#f28b82' : '#ea4335',
             }}
             action={
               <IconButton 
                 size="small" 
                 onClick={handleRefresh}
-                sx={{ height: 24, width: 24 }}
+                sx={{ height: 24, width: 24, color: 'inherit' }}
               >
                 <RefreshIcon fontSize="small" />
               </IconButton>
@@ -1132,12 +1276,18 @@ const SalesChart: React.FC<SalesChartProps> = ({
             <Skeleton 
               variant="rounded" 
               height={isMobile ? 250 : isTablet ? 300 : 350} 
-              sx={{ borderRadius: 1 }}
+              sx={{ 
+                borderRadius: 1,
+                backgroundColor: darkMode ? alpha('#3c4043', 0.5) : alpha('#dadce0', 0.5)
+              }}
             />
             <Skeleton 
               variant="rounded" 
               height={isMobile ? 80 : 100} 
-              sx={{ borderRadius: 1 }}
+              sx={{ 
+                borderRadius: 1,
+                backgroundColor: darkMode ? alpha('#3c4043', 0.5) : alpha('#dadce0', 0.5)
+              }}
             />
           </Box>
         ) : error ? (
@@ -1152,7 +1302,10 @@ const SalesChart: React.FC<SalesChartProps> = ({
               severity="error" 
               sx={{ 
                 width: '100%',
-                maxWidth: 400
+                maxWidth: 400,
+                backgroundColor: darkMode ? alpha('#ea4335', 0.1) : alpha('#ea4335', 0.05),
+                border: `1px solid ${darkMode ? alpha('#ea4335', 0.3) : alpha('#ea4335', 0.2)}`,
+                color: darkMode ? '#f28b82' : '#ea4335',
               }}
             >
               {error}
@@ -1170,12 +1323,12 @@ const SalesChart: React.FC<SalesChartProps> = ({
             <Box>
               <BarChartIcon sx={{ 
                 fontSize: { xs: 36, sm: 48, md: 56 }, 
-                color: 'text.disabled', 
+                color: darkMode ? '#5f6368' : '#9aa0a6', 
                 mb: 2, 
                 opacity: 0.5 
               }} />
               <Typography 
-                color="text.secondary" 
+                color={darkMode ? '#9aa0a6' : '#5f6368'}
                 gutterBottom
                 sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
               >
@@ -1183,7 +1336,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
               </Typography>
               <Typography 
                 variant="body2" 
-                color="text.disabled"
+                color={darkMode ? '#5f6368' : '#9aa0a6'}
                 sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
               >
                 {includeDrafts 
@@ -1195,7 +1348,15 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 variant="outlined" 
                 size="small" 
                 onClick={handleRefresh}
-                sx={{ mt: 2 }}
+                sx={{ 
+                  mt: 2,
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  '&:hover': {
+                    borderColor: darkMode ? '#4285f4' : '#4285f4',
+                    backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.05),
+                  }
+                }}
               >
                 Retry
               </Button>
@@ -1229,19 +1390,23 @@ const SalesChart: React.FC<SalesChartProps> = ({
                 gap: 0.5,
                 pt: { xs: 1, sm: 1.5 },
                 mt: { xs: 1, sm: 2 },
-                borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`
+                borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`
               }}>
                 <Typography 
                   variant="caption" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.6rem', sm: '0.7rem', md: '0.75rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.6rem', sm: '0.7rem', md: '0.75rem' },
+                    color: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
                 >
                   Showing {data.length} {timeRange === 'week' ? 'days' : timeRange === 'month' ? 'days' : timeRange === 'quarter' ? 'days' : 'months'}
                 </Typography>
                 <Typography 
                   variant="caption" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.6rem', sm: '0.7rem', md: '0.75rem' } }}
+                  sx={{ 
+                    fontSize: { xs: '0.6rem', sm: '0.7rem', md: '0.75rem' },
+                    color: darkMode ? '#9aa0a6' : '#5f6368'
+                  }}
                 >
                   Updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Typography>

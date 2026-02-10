@@ -1,4 +1,3 @@
-// components/dashboard/QuickActions.tsx - WITH PROPER HORIZONTAL SCROLL
 import React from 'react'
 import {
   Card,
@@ -8,7 +7,8 @@ import {
   useTheme,
   useMediaQuery,
   alpha,
-  Paper
+  Paper,
+  LinearProgress
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -23,12 +23,14 @@ import {
   LocalShipping as DeliveryIcon,
   ArrowForward as ArrowIcon,
   People,
-  InventoryOutlined
+  InventoryOutlined,
+  TrendingUp
 } from '@mui/icons-material'
 import Link from 'next/link'
 
 const QuickActions: React.FC = () => {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   const actions = [
@@ -36,33 +38,33 @@ const QuickActions: React.FC = () => {
       label: 'Create Invoice',
       icon: <InvoiceIcon fontSize={isMobile ? "small" : "medium"} />,
       href: '/billing/new',
-      color: theme.palette.primary.main,
+      color: '#4285f4',
       description: 'New bill',
-      bgColor: alpha(theme.palette.primary.main, 0.1)
+      bgColor: darkMode ? alpha('#4285f4', 0.15) : alpha('#4285f4', 0.08)
     },
     {
       label: 'Add Product',
       icon: <ProductIcon fontSize={isMobile ? "small" : "medium"} />,
       href: '/products/new',
-      color: theme.palette.success.main,
+      color: '#34a853',
       description: 'New item',
-      bgColor: alpha(theme.palette.success.main, 0.1)
+      bgColor: darkMode ? alpha('#34a853', 0.15) : alpha('#34a853', 0.08)
     },
     {
       label: 'View Reports',
       icon: <AnalyticsIcon fontSize={isMobile ? "small" : "medium"} />,
       href: '/reports',
-      color: theme.palette.info.main,
+      color: '#ea4335',
       description: 'Analytics',
-      bgColor: alpha(theme.palette.info.main, 0.1)
+      bgColor: darkMode ? alpha('#ea4335', 0.15) : alpha('#ea4335', 0.08)
     },
     {
       label: 'Employees',
       icon: <EmployeeIcon fontSize={isMobile ? "small" : "medium"} />,
       href: '/employees',
-      color: theme.palette.secondary.main,
+      color: '#fbbc04',
       description: 'Team',
-      bgColor: alpha(theme.palette.secondary.main, 0.1)
+      bgColor: darkMode ? alpha('#fbbc04', 0.15) : alpha('#fbbc04', 0.08)
     }
   ]
 
@@ -71,37 +73,37 @@ const QuickActions: React.FC = () => {
       label: 'Payments',
       icon: <PaymentIcon fontSize="small" />,
       href: '/payments',
-      color: theme.palette.warning.main
+      color: '#4285f4'
     },
     {
       label: 'Categories',
       icon: <CategoryIcon fontSize="small" />,
       href: '/products/categories',
-      color: theme.palette.error.main
+      color: '#ea4335'
     },
     {
       label: 'Settings',
       icon: <SettingsIcon fontSize="small" />,
       href: '/settings',
-      color: theme.palette.grey[600]
+      color: darkMode ? '#9aa0a6' : '#5f6368'
     },
     {
       label: 'Delivery',
       icon: <DeliveryIcon fontSize="small" />,
       href: '/delivery',
-      color: theme.palette.augmentColor.name?.[500] || theme.palette.secondary.dark
+      color: '#34a853'
     },
     {
       label: 'Customers',
       icon: <People fontSize="small" />,
       href: '/customers',
-      color: theme.palette.divider?.[500] || theme.palette.info.dark
+      color: '#4285f4'
     },
     {
       label: 'Inventory',
       icon: <InventoryOutlined fontSize="small" />,
       href: '/inventory',
-      color: theme.palette.divider?.[500] || theme.palette.warning.dark
+      color: '#fbbc04'
     }
   ]
 
@@ -111,11 +113,15 @@ const QuickActions: React.FC = () => {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: 2,
-        overflow: 'hidden',
+        borderRadius: 3,
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
         transition: 'all 0.3s ease',
         '&:hover': {
-          boxShadow: theme.shadows[4]
+          borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+          boxShadow: darkMode 
+            ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+            : '0 4px 12px rgba(0, 0, 0, 0.08)'
         }
       }}
     >
@@ -123,44 +129,56 @@ const QuickActions: React.FC = () => {
         flex: 1, 
         display: 'flex', 
         flexDirection: 'column',
-        p: isMobile ? 1.5 : 2,
-        gap: 1.5
+        p: { xs: 1.5, sm: 2 },
+        gap: 2,
+        '&:last-child': { pb: { xs: 1.5, sm: 2 } }
       }}>
         {/* Header */}
         <Box sx={{ 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
-          mb: 0.5
         }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              fontWeight: 700,
-              fontSize: isMobile ? '1.1rem' : '1.25rem'
-            }}
-          >
-            Quick Actions
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TrendingUp 
+              sx={{ 
+                fontSize: { xs: 20, sm: 24 },
+                color: '#4285f4'
+              }}
+            />
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 600,
+                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+                color: darkMode ? '#e8eaed' : '#202124'
+              }}
+            >
+              Quick Actions
+            </Typography>
+          </Box>
           <Typography 
             variant="caption" 
-            color="primary.main"
             sx={{ 
               fontWeight: 600,
-              backgroundColor: alpha(theme.palette.primary.main, 0.1),
+              backgroundColor: darkMode ? alpha('#4285f4', 0.2) : alpha('#4285f4', 0.1),
+              color: darkMode ? '#8ab4f8' : '#4285f4',
               px: 1,
               py: 0.5,
-              borderRadius: 1
+              borderRadius: 1,
+              fontSize: { xs: '0.7rem', sm: '0.75rem' }
             }}
           >
-            {actions.length} main
+            {actions.length} actions
           </Typography>
         </Box>
 
         <Typography 
           variant="body2" 
-          color="text.secondary"
-          sx={{ mb: 1.5 }}
+          sx={{ 
+            fontSize: { xs: '0.8rem', sm: '0.875rem' },
+            color: darkMode ? '#9aa0a6' : '#5f6368'
+          }}
         >
           Quick access to frequently used features
         </Typography>
@@ -182,9 +200,9 @@ const QuickActions: React.FC = () => {
               component={Link}
               href={action.href}
               sx={{
-                p: isMobile ? 1.5 : 2,
+                p: { xs: 1.5, sm: 2 },
                 borderRadius: 2,
-                border: `1px solid ${alpha(action.color, 0.2)}`,
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 backgroundColor: action.bgColor,
                 display: 'flex',
                 flexDirection: 'column',
@@ -196,18 +214,22 @@ const QuickActions: React.FC = () => {
                 minHeight: 100,
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  boxShadow: `0 6px 20px ${alpha(action.color, 0.2)}`,
                   borderColor: action.color,
-                  backgroundColor: alpha(action.color, 0.15)
+                  backgroundColor: darkMode 
+                    ? alpha(action.color, 0.25) 
+                    : alpha(action.color, 0.15),
+                  boxShadow: `0 6px 20px ${alpha(action.color, 0.2)}`,
                 }
               }}
             >
               <Box
                 sx={{
-                  width: isMobile ? 36 : 44,
-                  height: isMobile ? 36 : 44,
+                  width: { xs: 36, sm: 44 },
+                  height: { xs: 36, sm: 44 },
                   borderRadius: '12px',
-                  backgroundColor: alpha(action.color, 0.15),
+                  backgroundColor: darkMode 
+                    ? alpha(action.color, 0.2) 
+                    : alpha(action.color, 0.1),
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -221,21 +243,21 @@ const QuickActions: React.FC = () => {
               <Typography 
                 variant="body2" 
                 fontWeight={700}
-                color="text.primary"
                 sx={{ 
                   textAlign: 'center', 
                   mb: 0.5,
-                  fontSize: isMobile ? '0.8rem' : '0.9rem'
+                  fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                  color: darkMode ? '#e8eaed' : '#202124'
                 }}
               >
                 {action.label}
               </Typography>
               <Typography 
                 variant="caption" 
-                color="text.secondary"
                 sx={{ 
                   textAlign: 'center',
-                  fontSize: isMobile ? '0.7rem' : '0.75rem'
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
                 }}
               >
                 {action.description}
@@ -244,8 +266,8 @@ const QuickActions: React.FC = () => {
           ))}
         </Box>
 
-        {/* More Actions Section - ALWAYS SCROLLABLE */}
-        <Box sx={{ mt: 2 }}>
+        {/* More Actions Section */}
+        <Box sx={{ mt: 1 }}>
           <Box sx={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -254,26 +276,28 @@ const QuickActions: React.FC = () => {
           }}>
             <Typography 
               variant="caption" 
-              color="text.secondary"
               fontWeight={600}
+              sx={{ 
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                color: darkMode ? '#9aa0a6' : '#5f6368'
+              }}
             >
               More Actions
             </Typography>
             <Typography 
               variant="caption" 
-              color="primary.main"
               sx={{ 
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                color: '#4285f4',
+                textDecoration: 'none',
+                fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                '&:hover': { textDecoration: 'underline' }
               }}
               component={Link}
               href="/dashboard/all-actions"
-              // sx={{ 
-              //   textDecoration: 'none',
-              //   '&:hover': { textDecoration: 'underline' }
-              // }}
             >
               View all <ArrowIcon sx={{ fontSize: 12 }} />
             </Typography>
@@ -292,7 +316,7 @@ const QuickActions: React.FC = () => {
               top: 0,
               bottom: 0,
               width: 40,
-              background: `linear-gradient(90deg, transparent 0%, ${theme.palette.background.paper} 100%)`,
+              background: `linear-gradient(90deg, transparent 0%, ${darkMode ? '#303134' : '#ffffff'} 100%)`,
               zIndex: 1,
               pointerEvents: 'none'
             }} />
@@ -305,24 +329,22 @@ const QuickActions: React.FC = () => {
               scrollBehavior: 'smooth',
               py: 1,
               px: 0.5,
-              // Hide scrollbar but keep functionality
               '&::-webkit-scrollbar': {
                 height: 6,
               },
               '&::-webkit-scrollbar-track': {
-                backgroundColor: alpha(theme.palette.divider, 0.1),
+                backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
                 borderRadius: 3,
               },
               '&::-webkit-scrollbar-thumb': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.3),
+                backgroundColor: darkMode ? '#5f6368' : '#bdc1c6',
                 borderRadius: 3,
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.5),
+                  backgroundColor: darkMode ? '#80868b' : '#9aa0a6',
                 }
               },
-              // Firefox scrollbar
               scrollbarWidth: 'thin',
-              scrollbarColor: `${alpha(theme.palette.primary.main, 0.3)} ${alpha(theme.palette.divider, 0.1)}`,
+              scrollbarColor: `${darkMode ? '#5f6368' : '#bdc1c6'} ${darkMode ? '#3c4043' : '#f1f3f4'}`,
             }}>
               {secondaryActions.map((action, index) => (
                 <Paper
@@ -333,8 +355,8 @@ const QuickActions: React.FC = () => {
                   sx={{
                     p: 1.5,
                     borderRadius: 1.5,
-                    border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
-                    backgroundColor: alpha(theme.palette.background.paper, 0.7),
+                    border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                    backgroundColor: darkMode ? '#3c4043' : '#f8f9fa',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
@@ -344,10 +366,9 @@ const QuickActions: React.FC = () => {
                     flexShrink: 0,
                     minWidth: 140,
                     '&:hover': {
-                      backgroundColor: alpha(action.color, 0.1),
-                      borderColor: alpha(action.color, 0.3),
+                      backgroundColor: darkMode ? '#5f6368' : '#e8eaed',
+                      borderColor: darkMode ? '#80868b' : '#bdc1c6',
                       transform: 'translateY(-2px)',
-                      boxShadow: theme.shadows[2]
                     }
                   }}
                 >
@@ -356,7 +377,9 @@ const QuickActions: React.FC = () => {
                       width: 36,
                       height: 36,
                       borderRadius: '10px',
-                      backgroundColor: alpha(action.color, 0.1),
+                      backgroundColor: darkMode 
+                        ? alpha(action.color, 0.2) 
+                        : alpha(action.color, 0.1),
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -374,22 +397,22 @@ const QuickActions: React.FC = () => {
                     <Typography 
                       variant="body2" 
                       fontWeight={600}
-                      color="text.primary"
                       sx={{ 
-                        fontSize: '0.8rem',
+                        fontSize: { xs: '0.8rem', sm: '0.85rem' },
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis'
+                        textOverflow: 'ellipsis',
+                        color: darkMode ? '#e8eaed' : '#202124'
                       }}
                     >
                       {action.label}
                     </Typography>
                     <Typography 
                       variant="caption" 
-                      color="text.secondary"
                       sx={{ 
-                        fontSize: '0.7rem',
-                        display: 'block'
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        display: 'block',
+                        color: darkMode ? '#9aa0a6' : '#5f6368'
                       }}
                     >
                       Click to open
@@ -404,13 +427,13 @@ const QuickActions: React.FC = () => {
           {isMobile && (
             <Typography 
               variant="caption" 
-              color="text.disabled"
               sx={{ 
                 mt: 0.5, 
                 display: 'flex', 
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '0.6rem'
+                fontSize: '0.6rem',
+                color: darkMode ? '#80868b' : '#9aa0a6'
               }}
             >
               ← Scroll for more actions →
@@ -426,25 +449,27 @@ const QuickActions: React.FC = () => {
             alignItems: 'center',
             mt: 2,
             pt: 1.5,
-            borderTop: `1px solid ${alpha(theme.palette.divider, 0.3)}`
+            borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`
           }}
         >
           <Typography 
             variant="caption" 
-            color="text.secondary"
-            sx={{ fontSize: '0.7rem' }}
+            sx={{ 
+              fontSize: { xs: '0.7rem', sm: '0.75rem' },
+              color: darkMode ? '#9aa0a6' : '#5f6368'
+            }}
           >
             Last used: Today
           </Typography>
           <Typography 
             variant="caption" 
-            color="primary.main"
             component={Link}
             href="/dashboard/all-actions"
             sx={{ 
               textDecoration: 'none',
               fontWeight: 600,
-              fontSize: '0.7rem',
+              fontSize: { xs: '0.7rem', sm: '0.75rem' },
+              color: '#4285f4',
               '&:hover': { textDecoration: 'underline' }
             }}
           >

@@ -1,4 +1,3 @@
-// components/dashboard/ProjectProgress.tsx - UPDATED
 import React, { useState, useEffect } from 'react'
 import {
   Card,
@@ -12,7 +11,10 @@ import {
   alpha,
   Skeleton,
   CircularProgress,
-  Alert
+  Alert,
+  IconButton,
+  Tooltip,
+  useTheme
 } from '@mui/material'
 import { 
   Assignment as ProjectIcon, 
@@ -26,7 +28,7 @@ import {
   Dashboard
 } from '@mui/icons-material'
 import Link from 'next/link'
-import { useAuth } from '@/hooks/useAuth' // Import auth hook
+import { useAuth } from '@/hooks/useAuth'
 
 interface Project {
   _id: string
@@ -46,20 +48,20 @@ interface ProjectProgressProps {
 }
 
 const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => {
+  const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
-  const { user, isLoading: authLoading } = useAuth() // Get auth state
+  const { user, isLoading: authLoading } = useAuth()
 
   const fetchProjects = async () => {
-    // Don't fetch if auth is still loading
     if (authLoading) {
       console.log('⏳ Auth still loading, waiting...')
       return
     }
 
-    // Don't fetch if no user is logged in
     if (!user) {
       console.log('👤 No user logged in, skipping project fetch')
       setProjects([])
@@ -71,8 +73,6 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
     try {
       setLoading(true)
       setError(null)
-      
-      // console.log('🔍 Fetching projects for user:', user.id || user._id)
       
       const response = await fetch('/api/projects', {
         credentials: 'include',
@@ -107,37 +107,23 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
       const data = await response.json()
       console.log('📦 API response data:', data)
       
-      // Check different possible response structures
       let projectsArray = []
       
       if (Array.isArray(data)) {
-        // If response is directly an array
         projectsArray = data
       } else if (data.projects && Array.isArray(data.projects)) {
-        // If response has projects property
         projectsArray = data.projects
       } else if (data.data && Array.isArray(data.data)) {
-        // If response has data property
         projectsArray = data.data
       } else if (data.success && Array.isArray(data.data)) {
-        // If response has success and data
         projectsArray = data.data
       }
       
       console.log('📊 Extracted projects:', projectsArray)
-      console.log('🔢 Projects count:', projectsArray.length)
-      
       setProjects(projectsArray)
       
     } catch (err: any) {
       console.error('❌ Error fetching projects:', err)
-      console.error('❌ Error details:', {
-        name: err.name,
-        message: err.message,
-        stack: err.stack
-      })
-      
-      // Check if it's a network error
       if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
         setError('Network error. Please check your connection.')
       } else {
@@ -157,22 +143,20 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
   }
 
   useEffect(() => {
-    // Fetch projects when auth is ready
     if (!authLoading) {
       fetchProjects()
     }
-  }, [authLoading, user]) // Add dependencies
+  }, [authLoading, user])
 
-  // Rest of your component remains the same...
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'completed': return 'success'
-      case 'active': return 'info'
-      case 'planning': return 'primary'
-      case 'paused': return 'warning'
-      case 'delayed': return 'error'
-      case 'cancelled': return 'error'
-      default: return 'default'
+      case 'completed': return '#34a853'
+      case 'active': return '#4285f4'
+      case 'planning': return '#fbbc04'
+      case 'paused': return '#fbbc04'
+      case 'delayed': return '#ea4335'
+      case 'cancelled': return '#ea4335'
+      default: return darkMode ? '#5f6368' : '#9aa0a6'
     }
   }
 
@@ -188,7 +172,6 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
     }
   }
 
-  // Calculate actual active projects
   const actualActiveProjects = projects.filter(p => 
     p.status === 'active' || p.status === 'planning'
   ).length
@@ -205,7 +188,6 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
     return Math.round(total / activeProjectsList.length)
   }
 
-  // Format date helper
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString)
@@ -215,34 +197,72 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
     }
   }
 
-  // Show loading during auth check
   if (authLoading) {
     return (
-      <Card sx={{ width: '100%', height: '100%', borderRadius: 2, boxShadow: 2 }}>
+      <Card sx={{ 
+        width: '100%', 
+        height: '100%', 
+        borderRadius: 3,
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      }}>
         <CardContent>
           <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
-            <CircularProgress />
+            <CircularProgress sx={{ color: '#4285f4' }} />
           </Box>
         </CardContent>
       </Card>
     )
   }
 
-  // Rest of your component...
   if (loading && !refreshing) {
     return (
-      <Card sx={{ width: '100%', height: '100%', borderRadius: 2, boxShadow: 2 }}>
+      <Card sx={{ 
+        width: '100%', 
+        height: '100%', 
+        borderRadius: 3,
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      }}>
         <CardContent>
           <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-            <Skeleton variant="text" width={120} height={30} />
-            <Skeleton variant="circular" width={40} height={40} />
+            <Skeleton 
+              variant="text" 
+              width={120} 
+              height={30} 
+              sx={{ bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }}
+            />
+            <Skeleton 
+              variant="circular" 
+              width={40} 
+              height={40} 
+              sx={{ bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }}
+            />
           </Box>
           <Box textAlign="center" mb={2}>
-            <Skeleton variant="text" width={60} height={50} sx={{ mx: 'auto' }} />
-            <Skeleton variant="text" width={100} height={24} sx={{ mx: 'auto' }} />
+            <Skeleton 
+              variant="text" 
+              width={60} 
+              height={50} 
+              sx={{ mx: 'auto', bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }} 
+            />
+            <Skeleton 
+              variant="text" 
+              width={100} 
+              height={24} 
+              sx={{ mx: 'auto', bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }}
+            />
           </Box>
-          <Skeleton variant="rectangular" height={80} sx={{ mb: 1, borderRadius: 1 }} />
-          <Skeleton variant="rectangular" height={32} sx={{ borderRadius: 1 }} />
+          <Skeleton 
+            variant="rectangular" 
+            height={80} 
+            sx={{ mb: 1, borderRadius: 1, bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }} 
+          />
+          <Skeleton 
+            variant="rectangular" 
+            height={32} 
+            sx={{ borderRadius: 1, bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }}
+          />
         </CardContent>
       </Card>
     )
@@ -252,22 +272,42 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
     <Card sx={{ 
       width: '100%', 
       height: '100%', 
-      borderRadius: 2, 
-      boxShadow: 3,
+      borderRadius: 3,
+      backgroundColor: darkMode ? '#303134' : '#ffffff',
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      transition: 'all 0.3s ease',
       '&:hover': {
-        boxShadow: 6,
-        transition: 'box-shadow 0.3s ease-in-out'
+        borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+        boxShadow: darkMode 
+          ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+          : '0 4px 12px rgba(0, 0, 0, 0.08)'
       }
     }}>
-      <CardContent>
+      <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-          <Typography variant="h6" component="div" fontWeight={600}>
-            Active Projects
-          </Typography>
+          <Box display="flex" alignItems="center" gap={1}>
+            <TrendingUp 
+              sx={{ 
+                fontSize: { xs: 20, sm: 24 },
+                color: '#4285f4'
+              }}
+            />
+            <Typography 
+              variant="h6" 
+              component="div" 
+              fontWeight={600}
+              sx={{ 
+                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+                color: darkMode ? '#e8eaed' : '#202124'
+              }}
+            >
+              Active Projects
+            </Typography>
+          </Box>
           <Box display="flex" alignItems="center" gap={1}>
             <Avatar sx={{ 
-              bgcolor: 'primary.main',
-              color: 'white',
+              bgcolor: darkMode ? alpha('#4285f4', 0.2) : alpha('#4285f4', 0.1),
+              color: '#4285f4',
               width: 36,
               height: 36
             }}>
@@ -277,24 +317,20 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
                 <Dashboard fontSize="small" />
               )}
             </Avatar>
-            <Button 
-              onClick={handleRefresh}
-              disabled={refreshing}
-              size="small"
-              sx={{ 
-                minWidth: 'auto',
-                padding: '4px',
-                borderRadius: '50%'
-              }}
-            >
-              <Refresh 
-                fontSize="small" 
+            <Tooltip title="Refresh">
+              <IconButton 
+                onClick={handleRefresh}
+                disabled={refreshing}
+                size="small"
                 sx={{ 
-                  fontSize: '18px',
-                  color: refreshing ? 'text.disabled' : 'text.secondary'
-                }} 
-              />
-            </Button>
+                  minWidth: 'auto',
+                  padding: '4px',
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
+              >
+                <Refresh fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
         
@@ -303,7 +339,10 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
             severity={error.includes('login') ? 'info' : 'warning'}
             sx={{ 
               mb: 2,
-              borderRadius: 1
+              borderRadius: 1,
+              backgroundColor: darkMode ? alpha('#ea4335', 0.1) : alpha('#ea4335', 0.05),
+              border: `1px solid ${darkMode ? alpha('#ea4335', 0.3) : alpha('#ea4335', 0.2)}`,
+              color: darkMode ? '#f28b82' : '#ea4335',
             }}
             action={
               error.includes('login') ? (
@@ -330,13 +369,32 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
         ) : (
           <>
             <Box textAlign="center" mb={3}>
-              <Typography variant="h2" fontWeight="bold" color="primary.main">
+              <Typography 
+                variant="h2" 
+                fontWeight="bold" 
+                sx={{ 
+                  color: '#4285f4',
+                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
+                }}
+              >
                 {displayActiveProjects}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
+              >
                 Active Projects
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  color: darkMode ? '#80868b' : '#9aa0a6'
+                }}
+              >
                 ({projects.length} total projects)
               </Typography>
             </Box>
@@ -346,14 +404,25 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
                 sx={{ 
                   textAlign: 'center', 
                   py: 4,
-                  color: 'text.secondary'
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
                 }}
               >
                 <ProjectIcon sx={{ fontSize: 48, mb: 2, opacity: 0.3 }} />
-                <Typography variant="body2" gutterBottom>
+                <Typography 
+                  variant="body2" 
+                  gutterBottom
+                  sx={{ 
+                    fontSize: { xs: '0.875rem', sm: '0.9375rem' }
+                  }}
+                >
                   {projects.length === 0 ? 'No projects found' : 'No active projects'}
                 </Typography>
-                <Typography variant="caption">
+                <Typography 
+                  variant="caption"
+                  sx={{ 
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                  }}
+                >
                   {projects.length === 0 ? 'Create your first project' : 'All projects are completed or paused'}
                 </Typography>
               </Box>
@@ -361,10 +430,23 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
               <>
                 <Box mb={3}>
                   <Box display="flex" justifyContent="space-between" mb={0.5}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                        color: darkMode ? '#9aa0a6' : '#5f6368'
+                      }}
+                    >
                       Average Progress
                     </Typography>
-                    <Typography variant="body2" fontWeight={600} color="primary.main">
+                    <Typography 
+                      variant="body2" 
+                      fontWeight={600} 
+                      sx={{ 
+                        fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                        color: '#4285f4'
+                      }}
+                    >
                       {calculateAverageProgress()}%
                     </Typography>
                   </Box>
@@ -374,9 +456,11 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
                     sx={{ 
                       height: 10,
                       borderRadius: 5,
-                      bgcolor: alpha('#2196F3', 0.1)
+                      bgcolor: darkMode ? '#3c4043' : '#f1f3f4',
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: '#4285f4'
+                      }
                     }}
-                    color="primary"
                   />
                 </Box>
 
@@ -387,22 +471,37 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
                       sx={{ 
                         p: 2,
                         borderRadius: 2,
-                        bgcolor: alpha('#2196F3', 0.03),
+                        bgcolor: darkMode ? '#3c4043' : '#f8f9fa',
                         border: '1px solid',
-                        borderColor: alpha('#2196F3', 0.1),
+                        borderColor: darkMode ? '#5f6368' : '#dadce0',
                         '&:hover': {
-                          bgcolor: alpha('#2196F3', 0.05),
-                          borderColor: alpha('#2196F3', 0.2),
+                          bgcolor: darkMode ? '#5f6368' : '#e8eaed',
+                          borderColor: darkMode ? '#80868b' : '#bdc1c6',
                         }
                       }}
                     >
                       <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
                         <Box flex={1} mr={1}>
-                          <Typography variant="subtitle2" fontWeight={600} noWrap>
+                          <Typography 
+                            variant="subtitle2" 
+                            fontWeight={600} 
+                            noWrap
+                            sx={{ 
+                              fontSize: { xs: '0.85rem', sm: '0.9rem' },
+                              color: darkMode ? '#e8eaed' : '#202124'
+                            }}
+                          >
                             {project.name}
                           </Typography>
                           {project.clientName && (
-                            <Typography variant="caption" color="text.secondary" noWrap>
+                            <Typography 
+                              variant="caption" 
+                              noWrap
+                              sx={{ 
+                                fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                                color: darkMode ? '#9aa0a6' : '#5f6368'
+                              }}
+                            >
                               Client: {project.clientName}
                             </Typography>
                           )}
@@ -411,16 +510,33 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
                           icon={getStatusIcon(project.status)}
                           label={project.status.charAt(0).toUpperCase() + project.status.slice(1)}
                           size="small"
-                          color={getStatusColor(project.status) as any}
-                          sx={{ height: 24, fontSize: '0.7rem' }}
+                          sx={{ 
+                            height: 24, 
+                            fontSize: '0.7rem',
+                            backgroundColor: alpha(getStatusColor(project.status), darkMode ? 0.2 : 0.1),
+                            color: getStatusColor(project.status),
+                            border: `1px solid ${alpha(getStatusColor(project.status), 0.3)}`
+                          }}
                         />
                       </Box>
                       
                       <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                            color: darkMode ? '#9aa0a6' : '#5f6368'
+                          }}
+                        >
                           {project.progress}% complete
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                            color: darkMode ? '#9aa0a6' : '#5f6368'
+                          }}
+                        >
                           Due: {formatDate(project.deadline)}
                         </Typography>
                       </Box>
@@ -431,9 +547,12 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
                         sx={{ 
                           height: 6,
                           borderRadius: 3,
-                          mt: 0.5
+                          mt: 0.5,
+                          bgcolor: darkMode ? '#5f6368' : '#f1f3f4',
+                          '& .MuiLinearProgress-bar': {
+                            backgroundColor: getStatusColor(project.status)
+                          }
                         }}
-                        color={getStatusColor(project.status) as any}
                       />
                     </Box>
                   ))}
@@ -453,9 +572,10 @@ const ProjectProgress: React.FC<ProjectProgressProps> = ({ activeProjects }) => 
                 borderRadius: 2,
                 textTransform: 'none',
                 fontWeight: 600,
-                boxShadow: 2,
+                backgroundColor: '#4285f4',
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
                 '&:hover': {
-                  boxShadow: 4
+                  backgroundColor: '#3367d6'
                 }
               }}
             >

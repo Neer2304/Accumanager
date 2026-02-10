@@ -8,14 +8,16 @@ import {
   Button,
   List,
   ListItem,
-  ListItemText,
   ListItemIcon,
   Chip,
   IconButton,
   alpha,
   Skeleton,
   CircularProgress,
-  Alert
+  Alert,
+  Tooltip,
+  useTheme,
+  useMediaQuery
 } from '@mui/material'
 import { 
   Event as EventIcon, 
@@ -24,7 +26,8 @@ import {
   ArrowForward,
   AccessTime,
   LocationOn,
-  Refresh
+  Refresh,
+  TrendingUp
 } from '@mui/icons-material'
 import Link from 'next/link'
 
@@ -47,6 +50,9 @@ interface EventCalendarProps {
 }
 
 const EventCalendar: React.FC<EventCalendarProps> = ({ upcomingEvents }) => {
+  const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -94,22 +100,22 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ upcomingEvents }) => {
 
   const getEventColor = (type: string) => {
     switch(type?.toLowerCase()) {
-      case 'meeting': return 'info'
-      case 'conference': return 'primary'
-      case 'workshop': return 'success'
-      case 'training': return 'warning'
-      case 'social': return 'secondary'
-      default: return 'default'
+      case 'meeting': return '#4285f4'
+      case 'conference': return '#ea4335'
+      case 'workshop': return '#34a853'
+      case 'training': return '#fbbc04'
+      case 'social': return '#8e44ad'
+      default: return darkMode ? '#5f6368' : '#9aa0a6'
     }
   }
 
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'planned': return 'info'
-      case 'in-progress': return 'warning'
-      case 'completed': return 'success'
-      case 'cancelled': return 'error'
-      default: return 'default'
+      case 'planned': return '#4285f4'
+      case 'in-progress': return '#fbbc04'
+      case 'completed': return '#34a853'
+      case 'cancelled': return '#ea4335'
+      default: return darkMode ? '#5f6368' : '#9aa0a6'
     }
   }
 
@@ -131,7 +137,6 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ upcomingEvents }) => {
     })
   }
 
-  // Calculate actual upcoming events count
   const actualUpcomingEvents = events.filter(event => {
     const eventDate = new Date(event.startDate)
     const today = new Date()
@@ -150,19 +155,49 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ upcomingEvents }) => {
 
   if (loading && !refreshing) {
     return (
-      <Card sx={{ width: '100%', height: '100%' }}>
+      <Card sx={{ 
+        width: '100%', 
+        height: '100%', 
+        borderRadius: 3,
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      }}>
         <CardContent>
           <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-            <Skeleton variant="text" width={120} height={30} />
-            <Skeleton variant="circular" width={40} height={40} />
+            <Skeleton 
+              variant="text" 
+              width={120} 
+              height={30} 
+              sx={{ bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }}
+            />
+            <Skeleton 
+              variant="circular" 
+              width={40} 
+              height={40} 
+              sx={{ bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }}
+            />
           </Box>
           <Box textAlign="center" mb={2}>
-            <Skeleton variant="text" width={60} height={50} sx={{ mx: 'auto' }} />
-            <Skeleton variant="text" width={100} height={24} sx={{ mx: 'auto' }} />
+            <Skeleton 
+              variant="text" 
+              width={60} 
+              height={50} 
+              sx={{ mx: 'auto', bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }} 
+            />
+            <Skeleton 
+              variant="text" 
+              width={100} 
+              height={24} 
+              sx={{ mx: 'auto', bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }}
+            />
           </Box>
           {[1, 2].map((item) => (
             <Box key={item} mb={1}>
-              <Skeleton variant="rectangular" height={60} />
+              <Skeleton 
+                variant="rectangular" 
+                height={60} 
+                sx={{ bgcolor: darkMode ? '#3c4043' : '#f1f3f4' }}
+              />
             </Box>
           ))}
         </CardContent>
@@ -171,16 +206,45 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ upcomingEvents }) => {
   }
 
   return (
-    <Card sx={{ width: '100%', height: '100%' }}>
-      <CardContent>
+    <Card sx={{ 
+      width: '100%', 
+      height: '100%', 
+      borderRadius: 3,
+      backgroundColor: darkMode ? '#303134' : '#ffffff',
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      transition: 'all 0.3s ease',
+      '&:hover': {
+        borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+        boxShadow: darkMode 
+          ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+          : '0 4px 12px rgba(0, 0, 0, 0.08)'
+      }
+    }}>
+      <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-          <Typography variant="h6" component="div" fontWeight={600}>
-            Upcoming Events
-          </Typography>
+          <Box display="flex" alignItems="center" gap={1}>
+            <TrendingUp 
+              sx={{ 
+                fontSize: { xs: 20, sm: 24 },
+                color: '#4285f4'
+              }}
+            />
+            <Typography 
+              variant="h6" 
+              component="div" 
+              fontWeight={600}
+              sx={{ 
+                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+                color: darkMode ? '#e8eaed' : '#202124'
+              }}
+            >
+              Upcoming Events
+            </Typography>
+          </Box>
           <Box display="flex" alignItems="center" gap={0.5}>
             <Avatar sx={{ 
-              bgcolor: 'info.main',
-              color: 'white',
+              bgcolor: darkMode ? alpha('#4285f4', 0.2) : alpha('#4285f4', 0.1),
+              color: '#4285f4',
               width: 36,
               height: 36
             }}>
@@ -190,35 +254,62 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ upcomingEvents }) => {
                 <EventIcon fontSize="small" />
               )}
             </Avatar>
-            <IconButton 
-              size="small" 
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <Refresh fontSize="small" />
-            </IconButton>
+            <Tooltip title="Refresh">
+              <IconButton 
+                size="small" 
+                onClick={handleRefresh}
+                disabled={refreshing}
+                sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
+              >
+                <Refresh fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
         
         {error ? (
-          <Alert severity="warning" sx={{ mb: 2 }}>
+          <Alert 
+            severity="warning" 
+            sx={{ 
+              mb: 2,
+              borderRadius: 1,
+              backgroundColor: darkMode ? alpha('#ea4335', 0.1) : alpha('#ea4335', 0.05),
+              border: `1px solid ${darkMode ? alpha('#ea4335', 0.3) : alpha('#ea4335', 0.2)}`,
+              color: darkMode ? '#f28b82' : '#ea4335',
+            }}
+            action={
+              <Button 
+                color="inherit" 
+                size="small"
+                onClick={() => window.location.href = '/pricing'}
+                sx={{ ml: 1 }}
+              >
+                Upgrade
+              </Button>
+            }
+          >
             {error}
-            <Button 
-              color="inherit" 
-              size="small"
-              onClick={() => window.location.href = '/pricing'}
-              sx={{ ml: 1 }}
-            >
-              Upgrade
-            </Button>
           </Alert>
         ) : (
           <>
             <Box textAlign="center" mb={2}>
-              <Typography variant="h3" fontWeight="bold" color="info.main">
+              <Typography 
+                variant="h3" 
+                fontWeight="bold" 
+                sx={{ 
+                  color: '#4285f4',
+                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
+                }}
+              >
                 {displayUpcomingEvents}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
+                }}
+              >
                 This Month
               </Typography>
             </Box>
@@ -228,7 +319,7 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ upcomingEvents }) => {
                 sx={{ 
                   textAlign: 'center', 
                   py: 2,
-                  color: 'text.secondary'
+                  color: darkMode ? '#9aa0a6' : '#5f6368'
                 }}
               >
                 <CalendarToday sx={{ fontSize: 40, mb: 1, opacity: 0.3 }} />
@@ -245,29 +336,46 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ upcomingEvents }) => {
                       px: 0,
                       py: 1,
                       borderBottom: '1px solid',
-                      borderColor: 'divider',
+                      borderColor: darkMode ? '#3c4043' : '#dadce0',
                       '&:last-child': {
                         borderBottom: 'none'
                       }
                     }}
                   >
                     <ListItemIcon sx={{ minWidth: 36 }}>
-                      <CalendarToday color="action" fontSize="small" />
+                      <CalendarToday sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} fontSize="small" />
                     </ListItemIcon>
-                    {/* FIXED: Using custom Box instead of ListItemText to avoid p > div nesting */}
                     <Box sx={{ flex: 1, ml: 2 }}>
-                      <Typography variant="body2" fontWeight={500}>
+                      <Typography 
+                        variant="body2" 
+                        fontWeight={500}
+                        sx={{ 
+                          fontSize: { xs: '0.85rem', sm: '0.9rem' },
+                          color: darkMode ? '#e8eaed' : '#202124'
+                        }}
+                      >
                         {event.name}
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                            color: darkMode ? '#9aa0a6' : '#5f6368'
+                          }}
+                        >
                           {formatEventDate(event.startDate)}
                         </Typography>
                         <Chip 
                           label={event.type}
                           size="small"
-                          color={getEventColor(event.type)}
-                          sx={{ height: 20, fontSize: '0.65rem' }}
+                          sx={{ 
+                            height: 20, 
+                            fontSize: '0.65rem',
+                            backgroundColor: alpha(getEventColor(event.type), darkMode ? 0.2 : 0.1),
+                            color: getEventColor(event.type),
+                            border: `1px solid ${alpha(getEventColor(event.type), 0.3)}`
+                          }}
                         />
                       </Box>
                     </Box>
@@ -286,7 +394,14 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ upcomingEvents }) => {
               sx={{ 
                 mt: 2,
                 py: 0.8,
-                borderRadius: 1
+                borderRadius: 1,
+                borderColor: darkMode ? '#5f6368' : '#dadce0',
+                color: darkMode ? '#e8eaed' : '#202124',
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                '&:hover': {
+                  borderColor: '#4285f4',
+                  backgroundColor: darkMode ? alpha('#4285f4', 0.1) : alpha('#4285f4', 0.05)
+                }
               }}
             >
               View Calendar
