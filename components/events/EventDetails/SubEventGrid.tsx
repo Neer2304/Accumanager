@@ -1,54 +1,79 @@
 import { Card, CardContent, Typography, Box, Chip, LinearProgress, useTheme, alpha, Button } from "@mui/material";
-// import { FolderIcon, AddIcon } from "@mui/icons-material";
 import { SubEvent } from "../types";
 import { formatCurrency, calculateBudgetPercentage } from "../utils";
 import { FolderIcon } from "lucide-react";
-import { AddIcon } from "@/assets/icons/InventoryIcons";
+
+// Import Google-themed components
+import { Chip as CustomChip } from '@/components/ui/Chip';
 
 interface SubEventGridProps {
   subEvents: SubEvent[];
   isMobile: boolean;
   onAddSubEvent: () => void;
+  darkMode?: boolean;
 }
 
 export const SubEventGrid: React.FC<SubEventGridProps> = ({
   subEvents,
   isMobile,
   onAddSubEvent,
+  darkMode = false,
 }) => {
   const theme = useTheme();
 
   if (subEvents.length === 0) {
     return (
-      <Card sx={{ 
+      <Box sx={{ 
         gridColumn: '1 / -1', 
         textAlign: 'center', 
-        py: 6,
-        px: 2 
+        py: { xs: 4, sm: 6 },
+        px: 2,
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        borderRadius: '16px',
+        border: `2px dashed ${darkMode ? '#3c4043' : '#dadce0'}`,
       }}>
         <FolderIcon
-        //   sx={{
-        //     fontSize: { xs: 48, sm: 64 },
-        //     color: 'text.secondary',
-        //     mb: 2,
-        //     opacity: 0.5
-        //   }}
+          style={{
+            fontSize: isMobile ? 48 : 64,
+            color: darkMode ? '#5f6368' : '#9aa0a6',
+            marginBottom: 16,
+            opacity: 0.5
+          }}
         />
-        <Typography variant="h6" color="text.secondary" gutterBottom>
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            color: darkMode ? '#e8eaed' : '#202124', 
+            fontWeight: 500,
+            mb: 1,
+            fontSize: isMobile ? '1rem' : '1.25rem',
+          }}
+          gutterBottom
+        >
           No sub-events created yet
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            mb: 3,
+            color: darkMode ? '#9aa0a6' : '#5f6368',
+            fontSize: isMobile ? '0.875rem' : '1rem',
+          }}
+        >
           Organize your event into smaller sub-events
         </Typography>
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
           onClick={onAddSubEvent}
           size={isMobile ? "medium" : "large"}
+          sx={{ 
+            backgroundColor: '#4285f4',
+            '&:hover': { backgroundColor: '#3367d6' }
+          }}
         >
           Create Sub-Event
         </Button>
-      </Card>
+      </Box>
     );
   }
 
@@ -56,15 +81,20 @@ export const SubEventGrid: React.FC<SubEventGridProps> = ({
     <>
       {subEvents.map((subEvent) => {
         const subEventPercentage = calculateBudgetPercentage(subEvent.spentAmount, subEvent.budget);
+        const isOverBudget = subEventPercentage > 100;
 
         return (
           <Card 
             key={subEvent._id}
             sx={{ 
               height: '100%',
-              border: `1px solid ${theme.palette.divider}`,
+              borderRadius: '16px',
+              border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
               '&:hover': {
-                boxShadow: theme.shadows[4],
+                boxShadow: darkMode 
+                  ? '0 8px 24px rgba(0, 0, 0, 0.3)' 
+                  : theme.shadows[4],
                 transform: 'translateY(-2px)',
                 transition: 'all 0.3s ease',
               }
@@ -72,15 +102,21 @@ export const SubEventGrid: React.FC<SubEventGridProps> = ({
           >
             <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <FolderIcon color="primary" />
-                <Typography variant="h6" fontWeight="bold" sx={{ flex: 1 }}>
+                <FolderIcon color="#4285f4" />
+                <Typography 
+                  variant="h6" 
+                  fontWeight="bold" 
+                  sx={{ 
+                    flex: 1,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
                   {subEvent.name}
                 </Typography>
               </Box>
 
               <Typography
                 variant="body2"
-                color="text.secondary"
                 sx={{ 
                   mb: 2,
                   wordBreak: 'break-word',
@@ -88,6 +124,7 @@ export const SubEventGrid: React.FC<SubEventGridProps> = ({
                   WebkitLineClamp: 3,
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
                 }}
               >
                 {subEvent.description}
@@ -96,13 +133,17 @@ export const SubEventGrid: React.FC<SubEventGridProps> = ({
               {subEvent.budget > 0 && (
                 <Box sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                    <Typography variant="body2" fontWeight="medium">
+                    <Typography 
+                      variant="body2" 
+                      fontWeight="medium"
+                      sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+                    >
                       Budget
                     </Typography>
                     <Typography 
                       variant="body2" 
                       fontWeight="bold"
-                      color={subEventPercentage > 100 ? "error.main" : "primary.main"}
+                      color={isOverBudget ? "#ea4335" : "#34a853"}
                     >
                       {subEventPercentage}%
                     </Typography>
@@ -113,22 +154,25 @@ export const SubEventGrid: React.FC<SubEventGridProps> = ({
                     sx={{
                       height: 6,
                       borderRadius: 3,
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                      backgroundColor: darkMode ? '#3c4043' : alpha('#4285f4', 0.1),
                       '& .MuiLinearProgress-bar': {
-                        backgroundColor: subEventPercentage > 100 ? theme.palette.error.main : theme.palette.primary.main,
+                        backgroundColor: isOverBudget ? "#ea4335" : "#34a853",
                         borderRadius: 3,
                       }
                     }}
                   />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography 
+                      variant="caption" 
+                      sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
+                    >
                       {formatCurrency(subEvent.spentAmount)} / {formatCurrency(subEvent.budget)}
                     </Typography>
                   </Box>
                 </Box>
               )}
 
-              <Chip
+              <CustomChip
                 label={subEvent.status}
                 size="small"
                 color={

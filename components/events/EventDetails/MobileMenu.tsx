@@ -1,3 +1,5 @@
+"use client";
+
 import { 
   Drawer, 
   Box, 
@@ -8,6 +10,7 @@ import {
   ListItemIcon, 
   ListItemText,
   Divider,
+  useTheme,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -17,12 +20,17 @@ import {
 import { Event } from "../types";
 import { formatCurrency } from "../utils";
 
+// Import Google-themed components
+import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
+
 interface MobileMenuProps {
   open: boolean;
   onClose: () => void;
   event: Event;
   onAddSubEvent: () => void;
   onAddExpense: () => void;
+  darkMode?: boolean;
 }
 
 export const MobileMenu: React.FC<MobileMenuProps> = ({
@@ -31,7 +39,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   event,
   onAddSubEvent,
   onAddExpense,
+  darkMode = false,
 }) => {
+  const theme = useTheme();
   const budgetRemaining = event.totalBudget - event.totalSpent;
 
   return (
@@ -39,89 +49,193 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
       anchor="right"
       open={open}
       onClose={onClose}
-      sx={{
-        '& .MuiDrawer-paper': {
+      PaperProps={{
+        sx: {
           width: '100%',
           maxWidth: 280,
-          p: 2,
+          backgroundColor: darkMode ? '#202124' : '#ffffff',
+          color: darkMode ? '#e8eaed' : '#202124',
         }
       }}
     >
       <Box sx={{ 
         p: 2, 
-        borderBottom: 1, 
-        borderColor: 'divider', 
+        borderBottom: darkMode ? '1px solid #3c4043' : '1px solid #dadce0', 
         display: 'flex', 
         justifyContent: 'space-between', 
-        alignItems: 'center' 
+        alignItems: 'center',
+        backgroundColor: darkMode ? '#303134' : '#f8f9fa',
       }}>
-        <Typography variant="h6" fontWeight="bold">
+        <Typography variant="h6" fontWeight="bold" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
           Event Actions
         </Typography>
-        <IconButton onClick={onClose} size="small">
+        <IconButton 
+          onClick={onClose} 
+          size="small"
+          sx={{ 
+            color: darkMode ? '#e8eaed' : '#202124',
+            '&:hover': {
+              backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.08)' : 'rgba(26, 115, 232, 0.04)',
+            }
+          }}
+        >
           <CloseIcon />
         </IconButton>
       </Box>
       
-      <List>
-        <ListItem 
-          button 
-          onClick={onAddSubEvent}
-          sx={{ borderRadius: 1, mb: 1 }}
+      <Box sx={{ p: 2 }}>
+        <Button
+          variant="contained"
+          onClick={() => {
+            onAddSubEvent();
+            onClose();
+          }}
+          fullWidth
+          size="large"
+          iconLeft={<FolderIcon />}
+          sx={{ 
+            mb: 2,
+            backgroundColor: '#4285f4',
+            '&:hover': { backgroundColor: '#3367d6' },
+            borderRadius: '12px',
+          }}
         >
-          <ListItemIcon>
-            <FolderIcon />
-          </ListItemIcon>
-          <ListItemText primary="Add Sub-Event" />
-        </ListItem>
+          Add Sub-Event
+        </Button>
         
-        <ListItem 
-          button 
-          onClick={onAddExpense}
-          sx={{ borderRadius: 1, mb: 1 }}
+        <Button
+          variant="contained"
+          onClick={() => {
+            onAddExpense();
+            onClose();
+          }}
+          fullWidth
+          size="large"
+          iconLeft={<ReceiptIcon />}
+          sx={{ 
+            mb: 3,
+            backgroundColor: '#34a853',
+            '&:hover': { backgroundColor: '#2d9248' },
+            borderRadius: '12px',
+          }}
         >
-          <ListItemIcon>
-            <ReceiptIcon />
-          </ListItemIcon>
-          <ListItemText primary="Add Expense" />
-        </ListItem>
+          Add Expense
+        </Button>
         
-        <Divider sx={{ my: 1 }} />
+        <Divider sx={{ 
+          my: 2, 
+          borderColor: darkMode ? '#3c4043' : '#dadce0' 
+        }} />
         
-        <ListItem>
-          <ListItemText 
-            primary="Quick Stats"
-            secondary={
-              <Box sx={{ mt: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Typography variant="caption">Budget</Typography>
-                  <Typography variant="caption" fontWeight="bold">
-                    {formatCurrency(event.totalBudget)}
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Typography variant="caption">Spent</Typography>
-                  <Typography variant="caption" fontWeight="bold" color="primary.main">
-                    {formatCurrency(event.totalSpent)}
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption">Balance</Typography>
-                  <Typography 
-                    variant="caption" 
-                    fontWeight="bold" 
-                    color={budgetRemaining < 0 ? "error.main" : "success.main"}
-                  >
-                    {formatCurrency(budgetRemaining)}
-                  </Typography>
-                </Box>
-              </Box>
-            }
-          />
-        </ListItem>
-      </List>
+        <Box>
+          <Typography 
+            variant="subtitle2" 
+            sx={{ 
+              mb: 2, 
+              color: darkMode ? '#9aa0a6' : '#5f6368',
+              fontSize: '0.75rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+            }}
+          >
+            Quick Stats
+          </Typography>
+          
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(2, 1fr)', 
+            gap: 2,
+            mb: 3 
+          }}>
+            <Box sx={{ 
+              p: 1.5, 
+              bgcolor: darkMode ? '#303134' : '#f8f9fa',
+              borderRadius: '8px',
+              border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+            }}>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                Total Budget
+              </Typography>
+              <Typography 
+                variant="body1" 
+                fontWeight="bold"
+                sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+              >
+                {formatCurrency(event.totalBudget)}
+              </Typography>
+            </Box>
+            
+            <Box sx={{ 
+              p: 1.5, 
+              bgcolor: darkMode ? '#303134' : '#f8f9fa',
+              borderRadius: '8px',
+              border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+            }}>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  display: 'block',
+                  mb: 0.5,
+                }}
+              >
+                Spent Amount
+              </Typography>
+              <Typography 
+                variant="body1" 
+                fontWeight="bold"
+                color="#fbbc04"
+              >
+                {formatCurrency(event.totalSpent)}
+              </Typography>
+            </Box>
+          </Box>
+          
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: budgetRemaining < 0 
+              ? (darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.05)')
+              : (darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.05)'),
+            borderRadius: '12px',
+            border: `1px solid ${
+              budgetRemaining < 0 
+                ? (darkMode ? 'rgba(234, 67, 53, 0.2)' : 'rgba(234, 67, 53, 0.15)')
+                : (darkMode ? 'rgba(52, 168, 83, 0.2)' : 'rgba(52, 168, 83, 0.15)')
+            }`,
+          }}>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: darkMode ? '#9aa0a6' : '#5f6368',
+                display: 'block',
+                mb: 0.5,
+              }}
+            >
+              Balance
+            </Typography>
+            <Typography 
+              variant="h6" 
+              fontWeight="bold"
+              color={budgetRemaining < 0 ? "#ea4335" : "#34a853"}
+            >
+              {formatCurrency(budgetRemaining)}
+            </Typography>
+            <Chip
+              label={budgetRemaining < 0 ? "Over Budget" : "Within Budget"}
+              size="small"
+              color={budgetRemaining < 0 ? "error" : "success"}
+              sx={{ mt: 1 }}
+            />
+          </Box>
+        </Box>
+      </Box>
     </Drawer>
   );
 };
