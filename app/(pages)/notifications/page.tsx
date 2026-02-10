@@ -1,4 +1,4 @@
-// app/(pages)/community/notifications/page.tsx
+// app/(pages)/notifications/page.tsx
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -6,58 +6,55 @@ import {
   Box,
   Container,
   Typography,
-  Paper,
-  List,
-  ListItem,
-  ListItemAvatar,
-  Avatar,
-  Divider,
-  Chip,
-  IconButton,
-  Button,
-  Menu,
-  MenuItem,
-  FormControlLabel,
-  Switch,
-  CircularProgress,
-  Alert,
-  ToggleButton,
-  ToggleButtonGroup,
-  Badge,
-  useTheme,
-  useMediaQuery,
-  Tooltip,
-  Collapse,
-  Stack,
   Breadcrumbs,
   Link as MuiLink,
+  CircularProgress,
+  Pagination,
+  useTheme,
+  useMediaQuery,
+  alpha,
 } from '@mui/material'
 import {
   Notifications as NotificationsIcon,
-  Circle as CircleIcon,
-  CheckCircle as ReadIcon,
-  Delete as DeleteIcon,
-  FilterList as FilterIcon,
-  MoreVert as MoreIcon,
-  MarkEmailRead as MarkReadIcon,
-  Email as MessageIcon,
-  Event as EventIcon,
-  Assignment as TaskIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  CheckCircle as SuccessIcon,
-  People as PeopleIcon,
-  NotificationsActive as UrgentIcon,
-  AccessTime as TimeIcon,
-  ClearAll as ClearAllIcon,
-  Archive as ArchiveIcon,
-  Refresh as RefreshIcon,
   Home as HomeIcon,
   ArrowBack as BackIcon,
+  Search,
+  FilterList,
+  Refresh,
+  Delete,
+  MarkEmailRead,
+  ClearAll,
+  CheckCircle,
+  Warning,
+  Info,
+  Error,
+  Event,
+  Message,
+  People,
+  NotificationsActive,
+  AccessTime,
+  Star,
 } from '@mui/icons-material'
 import { MainLayout } from '@/components/Layout/MainLayout'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+
+// Import our Google-themed components
+import { Alert } from '@/components/ui/Alert'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Chip } from '@/components/ui/Chip'
+import { Avatar } from '@/components/ui/Avatar'
+import { Select } from '@/components/ui/Select'
+import { ToggleButtonGroup } from '@/components/ui/ToggleButtonGroup'
+import { ToggleButton } from '@/components/ui/ToggleButton'
+import { Switch } from '@/components/ui/Switch'
+import { Badge } from '@/components/ui/Badge'
+import { Divider } from '@/components/ui/Divider'
+import { IconButton } from '@/components/ui/IconButton'
+import { Tooltip } from '@/components/ui/Tooltip'
+import { Collapse } from '@/components/ui/Collapse'
 
 interface Notification {
   _id: string
@@ -78,21 +75,42 @@ interface Notification {
 type FilterType = 'all' | 'unread' | 'read'
 type CategoryType = 'all' | 'message' | 'event' | 'system' | 'alert'
 
+// Safe Fade component for SSR
+const SafeFade = ({ children, ...props }: any) => {
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  if (!isMounted) {
+    return <>{children}</>;
+  }
+  
+  return (
+    <div style={{ opacity: 1, transition: 'opacity 300ms' }}>
+      {children}
+    </div>
+  );
+};
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState<FilterType>('all')
   const [category, setCategory] = useState<CategoryType>('all')
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [showOnlyUnread, setShowOnlyUnread] = useState(false)
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([])
   const [bulkActionMode, setBulkActionMode] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [page, setPage] = useState(1)
   const router = useRouter()
   
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'))
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
+  const darkMode = theme.palette.mode === 'dark'
 
   // Fetch notifications
   const fetchNotifications = async () => {
@@ -110,7 +128,7 @@ export default function NotificationsPage() {
         const result = await res.json()
         if (result.success) {
           setNotifications(result.data || [])
-          setSelectedNotifications([]) // Clear selections on refresh
+          setSelectedNotifications([])
         } else {
           setError(result.message || 'Failed to fetch notifications')
         }
@@ -132,12 +150,10 @@ export default function NotificationsPage() {
     fetchNotifications()
   }, [])
 
-  // Handle back navigation
   const handleBack = () => {
     router.back()
   }
 
-  // Mark as read
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       const res = await fetch('/api/notifications', {
@@ -157,7 +173,6 @@ export default function NotificationsPage() {
               n._id === notificationId ? { ...n, isRead: true } : n
             )
           )
-          // Remove from selected if in bulk mode
           setSelectedNotifications(prev => prev.filter(id => id !== notificationId))
         }
       }
@@ -166,7 +181,6 @@ export default function NotificationsPage() {
     }
   }
 
-  // Mark all as read
   const handleMarkAllAsRead = async () => {
     try {
       const res = await fetch('/api/notifications', {
@@ -190,7 +204,6 @@ export default function NotificationsPage() {
     }
   }
 
-  // Delete notification
   const handleDeleteNotification = async (notificationId: string) => {
     try {
       const res = await fetch(`/api/notifications/${notificationId}`, {
@@ -210,7 +223,6 @@ export default function NotificationsPage() {
     }
   }
 
-  // Delete all read
   const handleDeleteAllRead = async () => {
     try {
       const res = await fetch('/api/notifications', {
@@ -231,20 +243,16 @@ export default function NotificationsPage() {
     } catch (error) {
       console.error('Error deleting read notifications:', error)
     }
-    setAnchorEl(null)
   }
 
-  // Handle notification click
   const handleNotificationClick = (notification: Notification) => {
     if (bulkActionMode) {
-      // Toggle selection in bulk mode
       if (selectedNotifications.includes(notification._id)) {
         setSelectedNotifications(prev => prev.filter(id => id !== notification._id))
       } else {
         setSelectedNotifications(prev => [...prev, notification._id])
       }
     } else {
-      // Normal click behavior
       if (!notification.isRead) {
         handleMarkAsRead(notification._id)
       }
@@ -255,7 +263,6 @@ export default function NotificationsPage() {
     }
   }
 
-  // Handle bulk mark as read
   const handleBulkMarkAsRead = async () => {
     try {
       const res = await fetch('/api/notifications/bulk', {
@@ -287,7 +294,6 @@ export default function NotificationsPage() {
     }
   }
 
-  // Handle bulk delete
   const handleBulkDelete = async () => {
     try {
       const res = await fetch('/api/notifications/bulk', {
@@ -327,7 +333,6 @@ export default function NotificationsPage() {
     
     // Apply category filter
     if (category !== 'all' && notification.type !== category) {
-      // Map categories to types
       const categoryMap: Record<CategoryType, string[]> = {
         all: [],
         message: ['message'],
@@ -338,6 +343,16 @@ export default function NotificationsPage() {
       if (!categoryMap[category].includes(notification.type)) return false
     }
     
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase()
+      return (
+        notification.title.toLowerCase().includes(searchLower) ||
+        notification.message.toLowerCase().includes(searchLower) ||
+        notification.type.toLowerCase().includes(searchLower)
+      )
+    }
+    
     return true
   })
 
@@ -345,47 +360,41 @@ export default function NotificationsPage() {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'message':
-        return <MessageIcon fontSize={isMobile ? 'small' : 'medium'} />
+        return <Message fontSize={isMobile ? 'small' : 'medium'} />
       case 'event':
-        return <EventIcon fontSize={isMobile ? 'small' : 'medium'} />
-      case 'task':
-        return <TaskIcon fontSize={isMobile ? 'small' : 'medium'} />
+        return <Event fontSize={isMobile ? 'small' : 'medium'} />
       case 'warning':
-        return <WarningIcon fontSize={isMobile ? 'small' : 'medium'} />
+        return <Warning fontSize={isMobile ? 'small' : 'medium'} />
       case 'error':
-        return <WarningIcon color="error" fontSize={isMobile ? 'small' : 'medium'} />
+        return <Error fontSize={isMobile ? 'small' : 'medium'} />
       case 'success':
-        return <SuccessIcon color="success" fontSize={isMobile ? 'small' : 'medium'} />
-      case 'urgent':
-        return <UrgentIcon color="error" fontSize={isMobile ? 'small' : 'medium'} />
-      case 'people':
-        return <PeopleIcon fontSize={isMobile ? 'small' : 'medium'} />
+        return <CheckCircle fontSize={isMobile ? 'small' : 'medium'} />
+      case 'info':
+        return <Info fontSize={isMobile ? 'small' : 'medium'} />
       default:
-        return <InfoIcon fontSize={isMobile ? 'small' : 'medium'} />
+        return <NotificationsIcon fontSize={isMobile ? 'small' : 'medium'} />
     }
   }
 
-  // Get notification color
   const getNotificationColor = (type: string) => {
     switch (type) {
       case 'success':
-        return '#4caf50'
+        return '#0d652d'
       case 'warning':
-        return '#ff9800'
+        return '#e37400'
       case 'error':
-        return '#f44336'
+        return '#d93025'
       case 'message':
-        return '#2196f3'
+        return '#1a73e8'
       case 'event':
-        return '#9c27b0'
+        return '#9334e6'
       case 'system':
-        return '#607d8b'
+        return '#5f6368'
       default:
-        return '#2196f3'
+        return '#1a73e8'
     }
   }
 
-  // Format time
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
@@ -405,7 +414,6 @@ export default function NotificationsPage() {
     })
   }
 
-  // Get unread count
   const unreadCount = notifications.filter(n => !n.isRead).length
   const readCount = notifications.filter(n => n.isRead).length
 
@@ -418,28 +426,38 @@ export default function NotificationsPage() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 400
+      minHeight: 300
     }}>
       <NotificationsIcon sx={{ 
         fontSize: { xs: 48, md: 64 }, 
-        color: 'text.disabled', 
+        color: darkMode ? '#5f6368' : '#9aa0a6', 
         mb: 2 
       }} />
-      <Typography variant={isMobile ? "h6" : "h5"} color="text.secondary" gutterBottom>
+      <Typography 
+        variant={isMobile ? "h6" : "h5"} 
+        color={darkMode ? "#e8eaed" : "#202124"}
+        gutterBottom
+        fontWeight={500}
+      >
         No notifications found
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mx: 'auto' }}>
-        {filter !== 'all' || category !== 'all' || showOnlyUnread
+      <Typography 
+        variant="body2" 
+        color={darkMode ? "#9aa0a6" : "#5f6368"}
+        sx={{ maxWidth: 400, mx: 'auto' }}
+      >
+        {filter !== 'all' || category !== 'all' || showOnlyUnread || searchTerm
           ? 'Try changing your filters to see more notifications'
           : 'You\'re all caught up! All notifications are read.'}
       </Typography>
-      {(filter !== 'all' || category !== 'all' || showOnlyUnread) && (
+      {(filter !== 'all' || category !== 'all' || showOnlyUnread || searchTerm) && (
         <Button
           variant="outlined"
           onClick={() => {
             setFilter('all')
             setCategory('all')
             setShowOnlyUnread(false)
+            setSearchTerm('')
           }}
           sx={{ mt: 2 }}
         >
@@ -449,7 +467,7 @@ export default function NotificationsPage() {
     </Box>
   )
 
-  // Custom Notification Item Component to avoid nesting issues
+  // Custom Notification Item Component
   const NotificationItem = ({ notification, isSelected, bulkActionMode }: { 
     notification: Notification, 
     isSelected: boolean,
@@ -458,32 +476,27 @@ export default function NotificationsPage() {
     const notificationColor = getNotificationColor(notification.type)
     
     return (
-      <ListItem
+      <Card
+        hover
         sx={{
-          py: { xs: 1.5, sm: 2 },
-          px: { xs: 1.5, sm: 2, md: 3 },
+          p: 2.5,
+          mb: 2,
+          borderLeft: `4px solid ${notificationColor}`,
           backgroundColor: isSelected 
-            ? 'primary.50' 
+            ? alpha(notificationColor, 0.08)
             : notification.isRead 
               ? 'transparent' 
-              : 'action.hover',
-          borderLeft: `4px solid ${notificationColor}`,
-          cursor: 'pointer',
+              : alpha(notificationColor, 0.05),
+          cursor: bulkActionMode ? 'default' : 'pointer',
+          transition: 'all 0.2s ease-in-out',
+          position: 'relative',
           '&:hover': {
             backgroundColor: isSelected 
-              ? 'primary.100' 
-              : 'action.hover'
-          },
-          position: 'relative',
-          transition: 'all 0.2s ease-in-out',
-          ...(bulkActionMode && {
-            cursor: 'default',
-            '&:hover': {
-              backgroundColor: isSelected 
-                ? 'primary.100' 
-                : 'grey.50'
-            }
-          })
+              ? alpha(notificationColor, 0.12)
+              : alpha(notificationColor, 0.08),
+            transform: bulkActionMode ? 'none' : 'translateY(-2px)',
+            boxShadow: bulkActionMode ? 'none' : '0 4px 12px rgba(0,0,0,0.1)',
+          }
         }}
         onClick={() => handleNotificationClick(notification)}
       >
@@ -492,7 +505,7 @@ export default function NotificationsPage() {
           <Box
             sx={{
               position: 'absolute',
-              left: 4,
+              left: 8,
               top: '50%',
               transform: 'translateY(-50%)',
               zIndex: 1,
@@ -503,8 +516,8 @@ export default function NotificationsPage() {
                 width: 20,
                 height: 20,
                 borderRadius: '50%',
-                border: `2px solid ${isSelected ? 'primary.main' : 'grey.400'}`,
-                backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                border: `2px solid ${isSelected ? '#1a73e8' : '#dadce0'}`,
+                backgroundColor: isSelected ? '#1a73e8' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -521,516 +534,579 @@ export default function NotificationsPage() {
         
         {/* Unread indicator */}
         {!notification.isRead && !bulkActionMode && (
-          <Tooltip title="Unread" placement="left">
-            <CircleIcon
+          <Tooltip title="Unread" placement="top">
+            <Box
               sx={{
                 position: 'absolute',
-                left: 6,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: 8,
-                color: notificationColor,
+                left: 8,
+                top: 8,
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                backgroundColor: notificationColor,
               }}
             />
           </Tooltip>
         )}
         
-        {/* Icon */}
-        <ListItemAvatar>
-          <Avatar sx={{ 
-            bgcolor: `${notificationColor}20`, 
-            color: notificationColor,
-            width: { xs: 40, sm: 48 },
-            height: { xs: 40, sm: 48 }
-          }}>
-            {getNotificationIcon(notification.type)}
-          </Avatar>
-        </ListItemAvatar>
-        
-        {/* Content - Using custom structure instead of ListItemText to avoid nesting */}
         <Box sx={{ 
-          flex: 1,
+          display: 'flex', 
+          gap: 2,
           ml: bulkActionMode ? 3 : 0,
         }}>
-          {/* Title and Type Chip */}
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            gap: 1,
-            mb: 1 
-          }}>
-            <Typography 
-              variant={isMobile ? "body1" : "subtitle1"} 
-              fontWeight={notification.isRead ? 'normal' : '600'}
-              sx={{ flex: 1 }}
-            >
-              {notification.title}
-            </Typography>
-            <Chip
-              label={notification.type}
-              size="small"
-              sx={{
-                height: 20,
-                fontSize: '0.7rem',
-                bgcolor: `${notificationColor}20`,
-                color: notificationColor,
-                border: 'none',
-                alignSelf: { xs: 'flex-start', sm: 'center' }
-              }}
-            />
-          </Box>
-          
-          {/* Message */}
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              mb: 1,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              lineHeight: 1.5,
+          {/* Icon */}
+          <Avatar
+            sx={{ 
+              bgcolor: alpha(notificationColor, 0.1), 
+              color: notificationColor,
+              width: { xs: 40, sm: 48 },
+              height: { xs: 40, sm: 48 }
             }}
           >
-            {notification.message}
-          </Typography>
+            {getNotificationIcon(notification.type)}
+          </Avatar>
           
-          {/* Time and actions */}
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: { xs: 'column', sm: 'row' },
-            justifyContent: 'space-between',
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            gap: 1
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <TimeIcon fontSize="small" sx={{ fontSize: 14, opacity: 0.7 }} />
+          {/* Content */}
+          <Box sx={{ flex: 1 }}>
+            {/* Title and Type Chip */}
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: 1,
+              mb: 1 
+            }}>
               <Typography 
-                variant="caption" 
-                color="text.secondary"
-                sx={{ fontSize: '0.75rem' }}
+                variant={isMobile ? "body1" : "subtitle1"} 
+                fontWeight={notification.isRead ? 400 : 600}
+                color={darkMode ? "#e8eaed" : "#202124"}
+                sx={{ flex: 1 }}
               >
-                {formatTime(notification.createdAt)}
+                {notification.title}
               </Typography>
+              <Chip
+                label={notification.type.toUpperCase()}
+                size="small"
+                sx={{
+                  bgcolor: alpha(notificationColor, 0.1),
+                  color: notificationColor,
+                  fontWeight: 500,
+                  fontSize: '0.7rem',
+                  height: 20,
+                  px: 1,
+                }}
+              />
             </Box>
             
-            {!bulkActionMode && (
-              <Box sx={{ 
-                display: 'flex', 
-                gap: 0.5,
-                flexWrap: 'wrap'
-              }}>
-                {!notification.isRead && (
-                  <Tooltip title="Mark as read">
+            {/* Message */}
+            <Typography
+              variant="body2"
+              color={darkMode ? "#9aa0a6" : "#5f6368"}
+              sx={{
+                mb: 2,
+                lineHeight: 1.6,
+              }}
+            >
+              {notification.message}
+            </Typography>
+            
+            {/* Time and actions */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 1
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AccessTime sx={{ fontSize: 14, opacity: 0.7 }} />
+                <Typography 
+                  variant="caption" 
+                  color={darkMode ? "#9aa0a6" : "#5f6368"}
+                  sx={{ fontSize: '0.75rem' }}
+                >
+                  {formatTime(notification.createdAt)}
+                </Typography>
+              </Box>
+              
+              {!bulkActionMode && (
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                  {!notification.isRead && (
+                    <Tooltip title="Mark as read">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMarkAsRead(notification._id)
+                        }}
+                        sx={{ 
+                          color: notificationColor,
+                          '&:hover': { bgcolor: alpha(notificationColor, 0.1) }
+                        }}
+                      >
+                        <CheckCircle fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  <Tooltip title="Delete">
                     <IconButton
                       size="small"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleMarkAsRead(notification._id)
+                        handleDeleteNotification(notification._id)
                       }}
                       sx={{ 
-                        p: 0.5,
-                        '&:hover': { bgcolor: `${notificationColor}10` }
+                        color: '#d93025',
+                        '&:hover': { bgcolor: alpha('#d93025', 0.1) }
                       }}
                     >
-                      <ReadIcon fontSize="small" />
+                      <Delete fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                )}
-                <Tooltip title="Delete">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteNotification(notification._id)
-                    }}
-                    sx={{ 
-                      p: 0.5,
-                      '&:hover': { bgcolor: 'error.10' }
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            )}
+                </Box>
+              )}
+            </Box>
           </Box>
         </Box>
-      </ListItem>
+      </Card>
     )
   }
 
   return (
     <MainLayout title="Notifications">
-      <Container maxWidth="lg" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
-        {/* Header - Same style as Events page */}
-        <Box sx={{ mb: 4 }}>
-          {/* Back Button */}
-          <Button
-            startIcon={<BackIcon />}
-            onClick={handleBack}
-            sx={{ mb: 2 }}
-            size="small"
-          >
-            Back to Dashboard
-          </Button>
-
-          {/* Breadcrumbs */}
-          <Breadcrumbs sx={{ mb: 2 }}>
-            <MuiLink
-              component={Link}
-              href="/dashboard"
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                textDecoration: 'none',
-                color: 'text.secondary',
-                '&:hover': { color: 'primary.main' }
+      <Box
+        sx={{
+          backgroundColor: darkMode ? "#202124" : "#ffffff",
+          color: darkMode ? "#e8eaed" : "#202124",
+          minHeight: "100vh",
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            p: { xs: 2, sm: 3 },
+            borderBottom: darkMode ? "1px solid #3c4043" : "1px solid #dadce0",
+            background: darkMode
+              ? "linear-gradient(135deg, #0d3064 0%, #202124 100%)"
+              : "linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)",
+          }}
+        >
+          <SafeFade>
+            <Breadcrumbs
+              sx={{
+                mb: { xs: 2, sm: 3 },
+                fontSize: { xs: "0.8rem", sm: "0.9rem" },
               }}
             >
-              <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />
-              Dashboard
-            </MuiLink>
-            <Typography color="text.primary">Notifications</Typography>
-          </Breadcrumbs>
+              <MuiLink
+                component={Link}
+                href="/dashboard"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  textDecoration: "none",
+                  color: darkMode ? "#9aa0a6" : "#5f6368",
+                  fontWeight: 400,
+                  "&:hover": { color: darkMode ? "#8ab4f8" : "#1a73e8" },
+                }}
+              >
+                <HomeIcon
+                  sx={{
+                    mr: 0.5,
+                    fontSize: { xs: "16px", sm: "18px" },
+                  }}
+                />
+                Dashboard
+              </MuiLink>
+              <Typography
+                color={darkMode ? "#e8eaed" : "#202124"}
+                fontWeight={500}
+              >
+                Notifications
+              </Typography>
+            </Breadcrumbs>
 
-          {/* Main Header */}
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: 2,
-            mb: 3
-          }}>
-            <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+            <Box sx={{ textAlign: 'center', mb: 3 }}>
+              <Typography
+                variant={isMobile ? "h5" : isTablet ? "h4" : "h3"}
+                fontWeight={500}
+                gutterBottom
+                sx={{
+                  fontSize: { xs: "1.75rem", sm: "2.25rem", md: "2.75rem" },
+                  letterSpacing: "-0.02em",
+                  lineHeight: 1.2,
+                }}
+              >
                 Notification Center
               </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Stay updated with all your alerts and messages in one place
+              <Typography
+                variant="body1"
+                sx={{
+                  color: darkMode ? "#9aa0a6" : "#5f6368",
+                  fontWeight: 400,
+                  fontSize: { xs: "0.95rem", sm: "1.1rem" },
+                  lineHeight: 1.5,
+                  maxWidth: 600,
+                  mx: "auto",
+                }}
+              >
+                Stay updated with all your alerts and messages
               </Typography>
             </Box>
+          </SafeFade>
+        </Box>
 
-            <Stack 
-              direction={{ xs: 'column', sm: 'row' }} 
-              spacing={1}
-              alignItems={{ xs: 'stretch', sm: 'center' }}
-              sx={{ width: { xs: '100%', sm: 'auto' } }}
-            >
-              {unreadCount > 0 && (
-                <Chip 
-                  label={`${unreadCount} Unread`} 
-                  size="small" 
-                  color="error" 
-                  variant="filled"
-                  sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
-                />
-              )}
-              <Chip 
-                label={`${notifications.length} Total`} 
-                size="small" 
-                color="primary" 
-                variant="outlined"
-                sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+        {/* Main Content */}
+        <Container maxWidth="lg" sx={{ py: { xs: 3, sm: 4 } }}>
+          {/* Error Alert */}
+          <SafeFade>
+            {error && (
+              <Alert
+                severity="error"
+                title="Error"
+                message={error}
+                dismissible
+                onDismiss={() => setError('')}
+                sx={{ mb: 3 }}
               />
-            </Stack>
-          </Box>
-        </Box>
+            )}
+          </SafeFade>
 
-        {/* Bulk Actions Bar */}
-        <Collapse in={bulkActionMode && selectedNotifications.length > 0}>
-          <Paper
-            elevation={3}
-            sx={{
-              mb: 3,
-              p: 2,
-              bgcolor: 'primary.main',
-              color: 'white',
-              borderRadius: 2,
-            }}
-          >
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: 2
-            }}>
-              <Typography variant="subtitle1" fontWeight="600">
-                {selectedNotifications.length} notification{selectedNotifications.length !== 1 ? 's' : ''} selected
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Button
-                  variant="contained"
-                  startIcon={<ReadIcon />}
-                  onClick={handleBulkMarkAsRead}
-                  sx={{ bgcolor: 'white', color: 'primary.main' }}
-                >
-                  Mark as read
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<DeleteIcon />}
-                  onClick={handleBulkDelete}
-                  sx={{ bgcolor: 'error.main', color: 'white' }}
-                >
-                  Delete
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    setBulkActionMode(false)
-                    setSelectedNotifications([])
-                  }}
-                  sx={{ borderColor: 'white', color: 'white' }}
-                >
-                  Cancel
-                </Button>
+          {/* Bulk Actions Bar */}
+          <Collapse in={bulkActionMode && selectedNotifications.length > 0}>
+            <Card
+              sx={{
+                mb: 3,
+                p: 2.5,
+                bgcolor: darkMode ? '#0d3064' : '#1a73e8',
+                color: 'white',
+                border: 'none',
+              }}
+            >
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 2
+              }}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {selectedNotifications.length} notification{selectedNotifications.length !== 1 ? 's' : ''} selected
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<CheckCircle />}
+                    onClick={handleBulkMarkAsRead}
+                    sx={{ bgcolor: 'white', color: '#1a73e8', '&:hover': { bgcolor: '#f8f9fa' } }}
+                  >
+                    Mark as read
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<Delete />}
+                    onClick={handleBulkDelete}
+                    sx={{ bgcolor: '#d93025', color: 'white', '&:hover': { bgcolor: '#c5221f' } }}
+                  >
+                    Delete
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setBulkActionMode(false)
+                      setSelectedNotifications([])
+                    }}
+                    sx={{ 
+                      borderColor: 'rgba(255,255,255,0.5)', 
+                      color: 'white',
+                      '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' }
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </Box>
               </Box>
-            </Box>
-          </Paper>
-        </Collapse>
+            </Card>
+          </Collapse>
 
-        {/* Stats Cards */}
-        <Box sx={{ 
-          display: 'flex', 
-          flexWrap: 'wrap', 
-          gap: 2, 
-          mb: 3,
-          '& > *': {
-            flex: { xs: '1 0 calc(50% - 8px)', sm: '1 0 calc(25% - 8px)' }
-          }
-        }}>
-          <Paper sx={{ 
-            p: 2, 
-            textAlign: 'center',
-            borderRadius: 2,
-            bgcolor: 'primary.light',
-            color: 'primary.contrastText'
-          }}>
-            <Typography variant={isMobile ? "h6" : "h5"} fontWeight="700">
-              {notifications.length}
-            </Typography>
-            <Typography variant="caption">Total</Typography>
-          </Paper>
-          
-          <Paper sx={{ 
-            p: 2, 
-            textAlign: 'center',
-            borderRadius: 2,
-            bgcolor: 'error.light',
-            color: 'error.contrastText'
-          }}>
-            <Typography variant={isMobile ? "h6" : "h5"} fontWeight="700">
-              {unreadCount}
-            </Typography>
-            <Typography variant="caption">Unread</Typography>
-          </Paper>
-          
-          <Paper sx={{ 
-            p: 2, 
-            textAlign: 'center',
-            borderRadius: 2,
-            bgcolor: 'success.light',
-            color: 'success.contrastText'
-          }}>
-            <Typography variant={isMobile ? "h6" : "h5"} fontWeight="700">
-              {readCount}
-            </Typography>
-            <Typography variant="caption">Read</Typography>
-          </Paper>
-          
-          <Paper sx={{ 
-            p: 2, 
-            textAlign: 'center',
-            borderRadius: 2,
-            bgcolor: 'warning.light',
-            color: 'warning.contrastText'
-          }}>
-            <Typography variant={isMobile ? "h6" : "h5"} fontWeight="700">
-              {filteredNotifications.length}
-            </Typography>
-            <Typography variant="caption">Filtered</Typography>
-          </Paper>
-        </Box>
+          {/* Stats Cards */}
+          <SafeFade>
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' },
+              gap: 2, 
+              mb: 4,
+            }}>
+              <Card sx={{ 
+                p: 2.5, 
+                textAlign: 'center',
+                bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+              }}>
+                <Typography variant="h4" fontWeight={700} color="#1a73e8">
+                  {notifications.length}
+                </Typography>
+                <Typography variant="caption" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+                  Total
+                </Typography>
+              </Card>
+              
+              <Card sx={{ 
+                p: 2.5, 
+                textAlign: 'center',
+                bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+              }}>
+                <Typography variant="h4" fontWeight={700} color="#d93025">
+                  {unreadCount}
+                </Typography>
+                <Typography variant="caption" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+                  Unread
+                </Typography>
+              </Card>
+              
+              <Card sx={{ 
+                p: 2.5, 
+                textAlign: 'center',
+                bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+              }}>
+                <Typography variant="h4" fontWeight={700} color="#0d652d">
+                  {readCount}
+                </Typography>
+                <Typography variant="caption" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+                  Read
+                </Typography>
+              </Card>
+              
+              <Card sx={{ 
+                p: 2.5, 
+                textAlign: 'center',
+                bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+              }}>
+                <Typography variant="h4" fontWeight={700} color="#e37400">
+                  {filteredNotifications.length}
+                </Typography>
+                <Typography variant="caption" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+                  Filtered
+                </Typography>
+              </Card>
+            </Box>
+          </SafeFade>
 
-        {/* Filters Section */}
-        <Paper sx={{ 
-          p: { xs: 1.5, sm: 2, md: 3 }, 
-          mb: 3,
-          borderRadius: 2,
-          bgcolor: 'background.default'
-        }}>
-          <Stack 
-            direction={{ xs: 'column', sm: 'row' }} 
-            spacing={2} 
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Box sx={{ flex: 1, width: '100%' }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Filter by status
-              </Typography>
-              <ToggleButtonGroup
-                value={filter}
-                exclusive
-                onChange={(e, newFilter) => newFilter && setFilter(newFilter)}
-                size="small"
-                fullWidth={isMobile}
-              >
-                <ToggleButton value="all">
-                  {/* <Badge badgeContent={notifications.length} color="primary" max={999} size="small">
-                    All
-                  </Badge>
-                </ToggleButton>s
-                <ToggleButton value="unread">
-                  <Badge badgeContent={unreadCount} color="error" max={999} size="small">
-                    Unread
-                  </Badge>
-                </ToggleButton>
-                <ToggleButton value="read">
-                  <Badge badgeContent={readCount} color="success" max={999} size="small">
-                    Read
-                  </Badge> */}
-                </ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-            
-            <Box sx={{ flex: 1, width: '100%' }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Filter by type
-              </Typography>
-              <ToggleButtonGroup
-                value={category}
-                exclusive
-                onChange={(e, newCategory) => newCategory && setCategory(newCategory)}
-                size="small"
-                fullWidth={isMobile}
-              >
-                <ToggleButton value="all">All</ToggleButton>
-                <ToggleButton value="message">Messages</ToggleButton>
-                <ToggleButton value="event">Events</ToggleButton>
-                <ToggleButton value="system">System</ToggleButton>
-                <ToggleButton value="alert">Alerts</ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-            
-            <Box>
-              <FormControlLabel
-                control={
+          {/* Filters Section */}
+          <SafeFade>
+            <Card
+              title="Filter Notifications"
+              subtitle="Find specific notifications by type or search term"
+              hover
+              sx={{ mb: 4 }}
+            >
+              <Box sx={{ mb: 3 }}>
+                <Input
+                  placeholder="Search notifications..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  startIcon={<Search />}
+                  size="medium"
+                  sx={{ flex: 1 }}
+                />
+              </Box>
+
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 3,
+                alignItems: { xs: 'stretch', sm: 'center' },
+              }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" color={darkMode ? "#e8eaed" : "#202124"} gutterBottom>
+                    Filter by status
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={filter}
+                    exclusive
+                    onChange={(e, newFilter) => newFilter && setFilter(newFilter)}
+                    size="small"
+                    fullWidth={isMobile}
+                  >
+                    <ToggleButton value="all">
+                      <Badge badgeContent={notifications.length} color="primary" max={999}>
+                        All
+                      </Badge>
+                    </ToggleButton>
+                    <ToggleButton value="unread">
+                      <Badge badgeContent={unreadCount} color="error" max={999}>
+                        Unread
+                      </Badge>
+                    </ToggleButton>
+                    <ToggleButton value="read">
+                      <Badge badgeContent={readCount} color="success" max={999}>
+                        Read
+                      </Badge>
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+                
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" color={darkMode ? "#e8eaed" : "#202124"} gutterBottom>
+                    Filter by type
+                  </Typography>
+                  <Select
+                    size="small"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as CategoryType)}
+                    options={[
+                      { value: 'all', label: 'All Types' },
+                      { value: 'message', label: 'Messages' },
+                      { value: 'event', label: 'Events' },
+                      { value: 'system', label: 'System' },
+                      { value: 'alert', label: 'Alerts' },
+                    ]}
+                    sx={{ minWidth: 140 }}
+                  />
+                </Box>
+                
+                <Box>
                   <Switch
                     checked={showOnlyUnread}
                     onChange={(e) => setShowOnlyUnread(e.target.checked)}
-                    size="small"
+                    label="Show unread only"
                   />
-                }
-                label={
-                  <Typography variant="body2">
-                    Show unread only
-                  </Typography>
-                }
-              />
-            </Box>
-          </Stack>
-        </Paper>
+                </Box>
+              </Box>
 
-        {/* Notifications List */}
-        <Paper sx={{ 
-          overflow: 'hidden', 
-          borderRadius: 2,
-          minHeight: 400
-        }}>
-          {loading ? (
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              p: 8,
-              flexDirection: 'column',
-              gap: 2
-            }}>
-              <CircularProgress size={isMobile ? 40 : 60} />
-              <Typography variant="body1" color="text.secondary">
-                Loading notifications...
-              </Typography>
-            </Box>
-          ) : error ? (
-            <Alert 
-              severity="error" 
-              sx={{ m: 2 }}
-              action={
-                <Button 
-                  color="inherit" 
-                  size="small" 
+              {/* Action Buttons */}
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 2, 
+                mt: 3,
+                flexWrap: 'wrap'
+              }}>
+                <Button
+                  variant="contained"
+                  startIcon={<Refresh />}
                   onClick={fetchNotifications}
                 >
-                  Retry
+                  Refresh
                 </Button>
-              }
+                <Button
+                  variant="outlined"
+                  startIcon={<MarkEmailRead />}
+                  onClick={handleMarkAllAsRead}
+                  disabled={unreadCount === 0}
+                >
+                  Mark all as read
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<ClearAll />}
+                  onClick={handleDeleteAllRead}
+                  disabled={readCount === 0}
+                  color="error"
+                >
+                  Delete all read
+                </Button>
+                <Button
+                  variant={bulkActionMode ? "contained" : "outlined"}
+                  onClick={() => {
+                    setBulkActionMode(!bulkActionMode)
+                    if (bulkActionMode) setSelectedNotifications([])
+                  }}
+                  color="secondary"
+                >
+                  {bulkActionMode ? 'Cancel Bulk' : 'Bulk Actions'}
+                </Button>
+              </Box>
+            </Card>
+          </SafeFade>
+
+          {/* Notifications List */}
+          <SafeFade>
+            <Card
+              title="Your Notifications"
+              subtitle={`Showing ${filteredNotifications.length} notifications`}
+              hover={false}
+              sx={{ mb: 3 }}
             >
-              {error}
-            </Alert>
-          ) : filteredNotifications.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <List disablePadding>
-              {filteredNotifications.map((notification, index) => {
-                const isSelected = selectedNotifications.includes(notification._id)
-                
-                return (
-                  <React.Fragment key={notification._id}>
-                    <NotificationItem 
-                      notification={notification}
-                      isSelected={isSelected}
-                      bulkActionMode={bulkActionMode}
-                    />
+              {loading ? (
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center',
+                  p: 6,
+                  flexDirection: 'column',
+                  gap: 2
+                }}>
+                  <CircularProgress size={isMobile ? 40 : 60} sx={{ color: '#1a73e8' }} />
+                  <Typography variant="body1" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+                    Loading notifications...
+                  </Typography>
+                </Box>
+              ) : filteredNotifications.length === 0 ? (
+                <EmptyState />
+              ) : (
+                <Box>
+                  {filteredNotifications.map((notification, index) => {
+                    const isSelected = selectedNotifications.includes(notification._id)
                     
-                    {index < filteredNotifications.length - 1 && (
-                      <Divider sx={{ mx: { xs: 1.5, sm: 2, md: 3 } }} />
-                    )}
-                  </React.Fragment>
-                )
-              })}
-            </List>
-          )}
-        </Paper>
-        
-        {/* Stats Footer */}
-        {!loading && !error && notifications.length > 0 && (
-          <Box sx={{ 
-            mt: 3, 
-            display: 'flex', 
-            flexDirection: { xs: 'column', sm: 'row' },
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            gap: 1,
-            p: 2,
-            bgcolor: 'grey.50',
-            borderRadius: 1
-          }}>
-            <Typography variant="body2" color="grey.900">
-              Showing <strong>{filteredNotifications.length}</strong> of <strong>{notifications.length}</strong> notifications
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <CircleIcon sx={{ fontSize: 8, color: 'error.main' }} />
-                <Typography variant="caption" color="text.secondary">
-                  <strong>{unreadCount}</strong> unread
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <CircleIcon sx={{ fontSize: 8, color: 'success.main' }} />
-                <Typography variant="caption" color="text.secondary">
-                  <strong>{readCount}</strong> read
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        )}
-      </Container>
+                    return (
+                      <React.Fragment key={notification._id}>
+                        <NotificationItem 
+                          notification={notification}
+                          isSelected={isSelected}
+                          bulkActionMode={bulkActionMode}
+                        />
+                        {index < filteredNotifications.length - 1 && (
+                          <Divider sx={{ my: 2 }} />
+                        )}
+                      </React.Fragment>
+                    )
+                  })}
+                </Box>
+              )}
+            </Card>
+          </SafeFade>
+
+          {/* Stats Footer */}
+          <SafeFade>
+            {!loading && !error && notifications.length > 0 && (
+              <Card sx={{ 
+                p: 2.5,
+                bgcolor: darkMode ? '#303134' : '#f8f9fa',
+                border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
+              }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  gap: 2
+                }}>
+                  <Typography variant="body2" color={darkMode ? "#e8eaed" : "#202124"}>
+                    Showing <strong>{filteredNotifications.length}</strong> of <strong>{notifications.length}</strong> notifications
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#d93025' }} />
+                      <Typography variant="caption" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+                        <strong>{unreadCount}</strong> unread
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#0d652d' }} />
+                      <Typography variant="caption" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+                        <strong>{readCount}</strong> read
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Card>
+            )}
+          </SafeFade>
+        </Container>
+      </Box>
     </MainLayout>
   )
 }

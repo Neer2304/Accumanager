@@ -1,37 +1,46 @@
 import React from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-} from '@mui/material';
-import { REVIEWS_CONTENT } from '../ReviewsContent';
+import { Dialog } from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
+import { Typography } from '@mui/material';
+import { Box } from 'lucide-react';
 
 interface DeleteDialogProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  darkMode?: boolean;
 }
 
-export const DeleteDialog = ({ open, onClose, onConfirm }: DeleteDialogProps) => {
-  const { deleteDialog } = REVIEWS_CONTENT;
-
+export const DeleteDialog = ({ open, onClose, onConfirm, darkMode = false }: DeleteDialogProps) => {
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>{deleteDialog.title}</DialogTitle>
-      <DialogContent>
-        <Typography>
-          {deleteDialog.message}
-        </Typography>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{deleteDialog.cancel}</Button>
-        <Button onClick={onConfirm} color="error" variant="contained">
-          {deleteDialog.confirm}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="Delete Review"
+      maxWidth="sm"
+      fullWidth
+    >
+      <Typography variant="body1" sx={{ mb: 3, color: darkMode ? "#e8eaed" : "#202124" }}>
+        Are you sure you want to delete your review? This action cannot be undone.
+      </Typography>
+      
+      <Box>
+        <Button
+          variant="outlined"
+          onClick={onClose}
+          size="medium"
+        >
+          Cancel
         </Button>
-      </DialogActions>
+        <Button
+          variant="contained"
+          onClick={onConfirm}
+          size="medium"
+          color="error"
+        >
+          Delete Review
+        </Button>
+      </Box>
     </Dialog>
   );
 };

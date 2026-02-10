@@ -2,18 +2,15 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
-  Alert,
-  Stack,
-  TextField,
-  Button,
-  Rating,
-  CircularProgress,
+  Rating as MuiRating,
+  TextField as MuiTextField,
+  CircularProgress as MuiCircularProgress,
 } from '@mui/material';
-import { ReviewIcon, getStatusIcon, getStatusText } from '../ReviewsIcons';
-import { REVIEWS_CONTENT } from '../ReviewsContent';
 import { Review } from '@/hooks/useReviewsData';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
+import { Badge } from '@/components/ui/Badge';
 
 interface ReviewFormSectionProps {
   userReview: Review | null;
@@ -31,6 +28,7 @@ interface ReviewFormSectionProps {
   onEdit: () => void;
   onDelete: () => void;
   onCancelEdit: () => void;
+  darkMode?: boolean;
 }
 
 export const ReviewFormSection = ({
@@ -49,150 +47,167 @@ export const ReviewFormSection = ({
   onEdit,
   onDelete,
   onCancelEdit,
+  darkMode = false,
 }: ReviewFormSectionProps) => {
-  const { form, rating: ratingContent, title: titleContent, comment: commentContent, buttons, validation } = REVIEWS_CONTENT;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(e);
+  };
 
   return (
-    <Card>
-      <CardContent sx={{ p: 4 }}>
-        <Typography variant="h4" gutterBottom fontWeight="bold">
-          {userReview ? form.userReviewTitle : form.title}
-        </Typography>
+    <Card
+      title={userReview ? "Your Review" : "Write a Review"}
+      subtitle={userReview ? "You can update or delete your review" : "Share your experience with us"}
+      hover
+      sx={{ mb: 4 }}
+    >
+      <form onSubmit={handleSubmit}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* User Review Status */}
+          {userReview && (
+            <Alert
+              severity="info"
+              title="Your Review Status"
+              message={`Status: ${userReview.status === 'pending' ? 'Pending Approval' : 'Published'}`}
+              sx={{ mb: 2 }}
+            />
+          )}
 
-        {userReview && (
-          <Alert
-            severity="info"
-            sx={{ mb: 3 }}
-            icon={getStatusIcon(userReview.status)}
-          >
-            <Typography variant="body2" fontWeight="medium">
-              Status: {getStatusText(userReview.status)}
+          {/* Rating */}
+          <Box>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+              Your Rating
             </Typography>
-            {userReview.status === 'pending' && (
-              <Typography variant="caption" display="block">
-                {form.statusMessages.pending}
-              </Typography>
-            )}
-          </Alert>
-        )}
-
-        <form onSubmit={onSubmit}>
-          <Stack spacing={3}>
-            {/* Rating */}
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                {ratingContent.label}
-              </Typography>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Rating
-                  value={rating}
-                  onChange={(event, newValue) => {
-                    onRatingChange(newValue || 0);
-                  }}
-                  size="large"
-                  icon={<ReviewIcon name="Star" />}
-                  emptyIcon={<ReviewIcon name="Star" />}
-                />
-                <Typography variant="body2" color="text.secondary">
-                  {rating > 0 ? `${rating} star${rating !== 1 ? 's' : ''}` : ratingContent.placeholder}
-                </Typography>
-              </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <MuiRating
+                value={rating}
+                onChange={(event, newValue) => {
+                  onRatingChange(newValue || 0);
+                }}
+                size="large"
+                sx={{
+                  '& .MuiRating-iconFilled': {
+                    color: '#1a73e8',
+                  },
+                  '& .MuiRating-iconEmpty': {
+                    color: darkMode ? '#5f6368' : '#dadce0',
+                  },
+                }}
+              />
+              <Badge
+                badgeContent={rating > 0 ? `${rating} stars` : 'Not rated'}
+                // color={rating > 0 ? "primary" : "default"}
+                // size="small"
+              />
             </Box>
+          </Box>
 
-            {/* Title */}
-            <TextField
-              label={titleContent.label}
+          {/* Title */}
+          <Box>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+              Review Title
+            </Typography>
+            <MuiTextField
+              fullWidth
+              placeholder="Give your review a title"
               value={title}
               onChange={(e) => onTitleChange(e.target.value)}
-              placeholder={titleContent.placeholder}
+              size="medium"
               required
-              fullWidth
-              InputProps={{
-                startAdornment: <ReviewIcon name="Title" size="small" sx={{ mr: 1, color: 'action.active' }} />,
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  '&:hover': {
+                    backgroundColor: darkMode ? '#3c4043' : '#f8f9fa',
+                  },
+                },
               }}
             />
+          </Box>
 
-            {/* Comment */}
-            <TextField
-              label={commentContent.label}
-              value={comment}
-              onChange={(e) => onCommentChange(e.target.value)}
-              placeholder={commentContent.placeholder}
+          {/* Comment */}
+          <Box>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+              Your Review
+            </Typography>
+            <MuiTextField
+              fullWidth
               multiline
               rows={6}
+              placeholder="Share your detailed experience..."
+              value={comment}
+              onChange={(e) => onCommentChange(e.target.value)}
               required
-              fullWidth
-              helperText={`${comment.length}/${validation.commentMaxLength} ${commentContent.helperText}`}
-              InputProps={{
-                startAdornment: <ReviewIcon name="Comment" size="small" sx={{ mr: 1, color: 'action.active', alignSelf: 'flex-start', mt: 1.5 }} />,
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  '&:hover': {
+                    backgroundColor: darkMode ? '#3c4043' : '#f8f9fa',
+                  },
+                },
               }}
             />
+            <Typography variant="caption" color={darkMode ? "#9aa0a6" : "#5f6368"} sx={{ mt: 1 }}>
+              {comment.length}/500 characters
+            </Typography>
+          </Box>
 
-            {/* Action Buttons */}
-            <Box display="flex" gap={2} flexWrap="wrap">
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                disabled={submitting || rating === 0 || !title.trim() || !comment.trim()}
-                startIcon={<ReviewIcon name="Star" />}
-              >
-                {submitting ? (
-                  <CircularProgress size={20} />
-                ) : editMode ? (
-                  buttons.update
-                ) : userReview ? (
-                  buttons.update
-                ) : (
-                  buttons.submit
-                )}
-              </Button>
+          {/* Action Buttons */}
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 2, 
+            flexWrap: 'wrap',
+            pt: 2
+          }}>
+            <Button
+              type="submit"
+              variant="contained"
+              size="medium"
+              disabled={submitting || rating === 0 || !title.trim() || !comment.trim()}
+              iconLeft={submitting ? <MuiCircularProgress size={16} /> : null}
+            >
+              {submitting 
+                ? 'Submitting...' 
+                : editMode 
+                  ? 'Update Review' 
+                  : userReview 
+                    ? 'Update Review' 
+                    : 'Submit Review'
+              }
+            </Button>
 
-              {userReview && !editMode && (
-                <>
-                  <Button
-                    variant="outlined"
-                    startIcon={<ReviewIcon name="Edit" />}
-                    onClick={onEdit}
-                  >
-                    {buttons.edit}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<ReviewIcon name="Delete" />}
-                    onClick={onDelete}
-                  >
-                    {buttons.delete}
-                  </Button>
-                </>
-              )}
-
-              {editMode && (
+            {userReview && !editMode && (
+              <>
                 <Button
                   variant="outlined"
-                  onClick={onCancelEdit}
+                  onClick={onEdit}
+                  size="medium"
                 >
-                  {buttons.cancel}
+                  Edit Review
                 </Button>
-              )}
-            </Box>
-
-            {/* Messages */}
-            {error && (
-              <Alert severity="error" onClose={() => onRatingChange(0)}>
-                {error}
-              </Alert>
+                <Button
+                  variant="outlined"
+                  onClick={onDelete}
+                  size="medium"
+                  color="error"
+                >
+                  Delete Review
+                </Button>
+              </>
             )}
 
-            {success && (
-              <Alert severity="success" onClose={() => onRatingChange(0)}>
-                {success}
-              </Alert>
+            {editMode && (
+              <Button
+                variant="outlined"
+                onClick={onCancelEdit}
+                size="medium"
+              >
+                Cancel
+              </Button>
             )}
-          </Stack>
-        </form>
-      </CardContent>
+          </Box>
+        </Box>
+      </form>
     </Card>
   );
 };
