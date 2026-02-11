@@ -1,3 +1,4 @@
+// components/admin/dashboard/StatsOverview.tsx
 import React from 'react';
 import { Box } from '@mui/material';
 import {
@@ -68,7 +69,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
           value={formatNumber(totalUsers)}
           subtitle={`${activeUsers} active`}
           icon={<People fontSize="large" />}
-          color="#1976d2"
+          color="#1a73e8"
           trend={userGrowth}
           trendLabel="vs last period"
         />
@@ -79,7 +80,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
           title="Total Revenue"
           value={formatCurrency(revenue)}
           icon={<AccountBalance fontSize="large" />}
-          color="#2e7d32"
+          color="#34a853"
           trend={revenueGrowth}
           trendLabel="growth"
         />
@@ -91,7 +92,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
           value={formatTime(totalUsageHours)}
           subtitle={`${formatTime(avgDailyUsage)}/day avg`}
           icon={<AccessTime fontSize="large" />}
-          color="#ed6c02"
+          color="#fbbc04"
           trendLabel={`Peak: ${peakConcurrentUsers} users`}
         />
       </Box>
@@ -100,9 +101,9 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
         <StatsCard
           title="Trial Users"
           value={trialUsers}
-          subtitle={`${((trialUsers / totalUsers) * 100).toFixed(1)}% of total`}
+          subtitle={`${totalUsers > 0 ? ((trialUsers / totalUsers) * 100).toFixed(1) : 0}% of total`}
           icon={<TrendingUp fontSize="large" />}
-          color="#9c27b0"
+          color="#8b5cf6"
           trendLabel="Conversion tracking"
         />
       </Box>

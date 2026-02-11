@@ -1,4 +1,4 @@
-// app/admin/analysis/page.tsx - COMPLETE SUPER RESPONSIVE VERSION
+// app/admin/analysis/page.tsx - GOOGLE MATERIAL DESIGN THEME
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -30,7 +30,9 @@ import {
   Tabs,
   Tab,
   Alert,
-  AlertTitle
+  AlertTitle,
+  Avatar,
+  Stack,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import { 
@@ -60,8 +62,13 @@ import {
   ArrowDownward,
   Analytics,
   FilterAlt,
-  TrendingDown
+  TrendingDown,
+  ArrowBack,
+  Description,
+  CheckCircle as CheckCircleIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material'
+import Link from 'next/link'
 
 // Types
 interface DatabaseStats {
@@ -151,13 +158,14 @@ const LoadingState = () => (
     alignItems: 'center', 
     justifyContent: 'center', 
     minHeight: '80vh',
-    textAlign: 'center'
+    textAlign: 'center',
+    backgroundColor: '#f8f9fa',
   }}>
-    <CircularProgress size={60} />
-    <Typography variant="h6" color="text.secondary" sx={{ mt: 3 }}>
+    <CircularProgress size={60} sx={{ color: '#1a73e8' }} />
+    <Typography variant="h6" color="#5f6368" sx={{ mt: 3 }}>
       Loading analytics dashboard...
     </Typography>
-    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+    <Typography variant="body2" color="#5f6368" sx={{ mt: 1 }}>
       Please wait while we fetch your data
     </Typography>
   </Box>
@@ -169,8 +177,12 @@ const ErrorAlert = ({ message, onClose }: { message: string; onClose: () => void
     severity="error" 
     onClose={onClose}
     sx={{ 
-      borderRadius: 2,
+      borderRadius: '12px',
       mb: 3,
+      backgroundColor: '#ffffff',
+      border: '1px solid #ea4335',
+      color: '#202124',
+      '& .MuiAlert-icon': { color: '#ea4335' },
       '& .MuiAlert-message': {
         width: '100%'
       }
@@ -206,9 +218,23 @@ const StatsCard = ({
   compact = false
 }: StatsCardProps) => {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
+
+  const colorMap = {
+    primary: { main: '#1a73e8', light: '#8ab4f8' },
+    success: { main: '#34a853', light: '#81c995' },
+    warning: { main: '#fbbc04', light: '#fdd663' },
+    error: { main: '#ea4335', light: '#f28b82' },
+    info: { main: '#5f6368', light: '#9aa0a6' },
+    secondary: { main: '#8ab4f8', light: '#aecbfa' }
+  }
+
+  const getColor = (colorType: keyof typeof colorMap) => {
+    return darkMode ? colorMap[colorType].light : colorMap[colorType].main
+  }
 
   const getTrendColor = (trendValue: number) => {
-    return trendValue >= 0 ? theme.palette.success.main : theme.palette.error.main
+    return trendValue >= 0 ? '#34a853' : '#ea4335'
   }
 
   const getTrendIcon = (trendValue: number) => {
@@ -217,16 +243,19 @@ const StatsCard = ({
 
   return (
     <Card 
-      elevation={2} 
+      elevation={0}
       sx={{ 
-        borderRadius: 3, 
+        borderRadius: '16px', 
         overflow: 'hidden',
         transition: 'all 0.3s ease',
         position: 'relative',
         height: '100%',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
         '&:hover': {
           transform: 'translateY(-4px)',
-          boxShadow: `0 12px 24px ${alpha(theme.palette[color].main, 0.1)}`
+          boxShadow: `0 12px 24px ${alpha(getColor(color), 0.1)}`
         }
       }}
     >
@@ -236,7 +265,7 @@ const StatsCard = ({
         left: 0,
         right: 0,
         height: 4,
-        background: `linear-gradient(90deg, ${theme.palette[color].main} 0%, ${alpha(theme.palette[color].main, 0.7)} 100%)`
+        background: `linear-gradient(90deg, ${getColor(color)} 0%, ${alpha(getColor(color), 0.7)} 100%)`
       }} />
 
       <CardContent sx={{ 
@@ -255,7 +284,7 @@ const StatsCard = ({
               component="div"
               fontWeight="bold" 
               sx={{ 
-                color: theme.palette[color].main,
+                color: getColor(color),
                 fontSize: compact ? '1.5rem' : { xs: '1.75rem', sm: '2rem' },
                 lineHeight: 1
               }}
@@ -265,7 +294,7 @@ const StatsCard = ({
                 <Typography 
                   component="span" 
                   variant="body1" 
-                  color="text.secondary"
+                  color={darkMode ? '#9aa0a6' : '#5f6368'}
                   sx={{ ml: 0.5, fontSize: '0.875rem' }}
                 >
                   {subValue}
@@ -274,7 +303,7 @@ const StatsCard = ({
             </Typography>
             <Typography 
               variant="body2" 
-              color="text.secondary"
+              color={darkMode ? '#9aa0a6' : '#5f6368'}
               sx={{ 
                 fontSize: compact ? '0.75rem' : { xs: '0.8rem', sm: '0.875rem' },
                 mt: 0.5
@@ -287,12 +316,12 @@ const StatsCard = ({
           <Box sx={{
             width: compact ? 36 : { xs: 40, sm: 44 },
             height: compact ? 36 : { xs: 40, sm: 44 },
-            borderRadius: 2,
+            borderRadius: '12px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: `linear-gradient(135deg, ${alpha(theme.palette[color].main, 0.1)} 0%, ${alpha(theme.palette[color].main, 0.2)} 100%)`,
-            color: theme.palette[color].main,
+            background: alpha(getColor(color), 0.1),
+            color: getColor(color),
             flexShrink: 0
           }}>
             <Icon sx={{ fontSize: compact ? 20 : { xs: 22, sm: 24 } }} />
@@ -319,7 +348,7 @@ const StatsCard = ({
               {Math.abs(trend)}%
             </Typography>
             {!compact && (
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+              <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'} sx={{ fontSize: '0.75rem' }}>
                 from last period
               </Typography>
             )}
@@ -329,7 +358,7 @@ const StatsCard = ({
         {showProgress && typeof value === 'number' && (
           <Box sx={{ mt: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                 Score
               </Typography>
               <Typography variant="caption" fontWeight="bold">
@@ -342,10 +371,10 @@ const StatsCard = ({
               sx={{
                 height: 6,
                 borderRadius: 3,
-                backgroundColor: alpha(theme.palette[color].main, 0.1),
+                backgroundColor: alpha(getColor(color), 0.1),
                 '& .MuiLinearProgress-bar': {
                   borderRadius: 3,
-                  background: `linear-gradient(90deg, ${theme.palette[color].light} 0%, ${theme.palette[color].main} 100%)`
+                  background: `linear-gradient(90deg, ${alpha(getColor(color), 0.3)} 0%, ${getColor(color)} 100%)`
                 }
               }}
             />
@@ -372,6 +401,9 @@ const CompactAnalysisHeader = ({
   loading,
   compact = false 
 }: CompactAnalysisHeaderProps) => {
+  const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
+
   if (compact) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -383,8 +415,11 @@ const CompactAnalysisHeader = ({
             size="small"
             sx={{ 
               '& .MuiSelect-select': { py: 0.75 },
-              borderRadius: 1.5,
-              fontSize: '0.875rem'
+              borderRadius: '8px',
+              fontSize: '0.875rem',
+              backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+              borderColor: darkMode ? '#3c4043' : '#dadce0',
+              color: darkMode ? '#e8eaed' : '#202124',
             }}
           >
             <MenuItem value="7">7 days</MenuItem>
@@ -399,9 +434,14 @@ const CompactAnalysisHeader = ({
           disabled={loading}
           size="small"
           sx={{
-            border: `1px solid ${alpha('#000000', 0.1)}`,
-            borderRadius: 1.5,
-            p: 0.75
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            borderRadius: '8px',
+            p: 0.75,
+            color: darkMode ? '#e8eaed' : '#202124',
+            backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+            '&:hover': {
+              backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4',
+            }
           }}
         >
           <Refresh fontSize="small" />
@@ -419,12 +459,24 @@ const CompactAnalysisHeader = ({
       width: '100%'
     }}>
       <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 140 } }}>
-        <InputLabel>Timeframe</InputLabel>
+        <InputLabel sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>Timeframe</InputLabel>
         <Select
           value={timeframe}
           label="Timeframe"
           onChange={(e) => onTimeframeChange(e.target.value)}
           size="small"
+          sx={{
+            backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+            borderColor: darkMode ? '#3c4043' : '#dadce0',
+            color: darkMode ? '#e8eaed' : '#202124',
+            borderRadius: '8px',
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: darkMode ? '#3c4043' : '#dadce0',
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+            }
+          }}
         >
           <MenuItem value="7">Last 7 days</MenuItem>
           <MenuItem value="30">Last 30 days</MenuItem>
@@ -440,9 +492,15 @@ const CompactAnalysisHeader = ({
         disabled={loading}
         size="small"
         sx={{
-          borderRadius: 2,
+          borderRadius: '8px',
           borderWidth: 2,
-          '&:hover': { borderWidth: 2 },
+          borderColor: darkMode ? '#5f6368' : '#dadce0',
+          color: darkMode ? '#e8eaed' : '#202124',
+          '&:hover': { 
+            borderWidth: 2,
+            borderColor: darkMode ? '#8ab4f8' : '#1a73e8',
+            backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+          },
           minHeight: { xs: 40, sm: 36 }
         }}
       >
@@ -459,12 +517,15 @@ interface AnalysisTabsProps {
 }
 
 const AnalysisTabs = ({ activeTab, onTabChange }: AnalysisTabsProps) => {
+  const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
+
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     onTabChange(newValue)
   }
 
   return (
-    <Box>
+    <Box sx={{ borderBottom: 1, borderColor: darkMode ? '#3c4043' : '#dadce0' }}>
       <Tabs 
         value={activeTab} 
         onChange={handleChange}
@@ -477,7 +538,16 @@ const AnalysisTabs = ({ activeTab, onTabChange }: AnalysisTabsProps) => {
             fontWeight: 500,
             textTransform: 'none',
             px: { xs: 1, sm: 2 },
-            minWidth: 'auto'
+            minWidth: 'auto',
+            color: darkMode ? '#9aa0a6' : '#5f6368',
+            '&.Mui-selected': {
+              color: darkMode ? '#8ab4f8' : '#1a73e8',
+            }
+          },
+          '& .MuiTabs-indicator': {
+            backgroundColor: darkMode ? '#8ab4f8' : '#1a73e8',
+            height: 3,
+            borderRadius: '3px 3px 0 0',
           }
         }}
       >
@@ -509,6 +579,7 @@ const AnalysisTabs = ({ activeTab, onTabChange }: AnalysisTabsProps) => {
 // User Analysis Component
 const UserAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   if (!data?.userAnalysis) return null
@@ -533,51 +604,99 @@ const UserAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
             md: 'calc(50% - 12px)'
           }
         }}>
-          <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+          <Card elevation={0} sx={{ 
+            borderRadius: '16px', 
+            height: '100%',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ 
+              <Box sx={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: 1, 
+                gap: 2, 
                 mb: 3,
-                fontSize: { xs: '0.95rem', sm: '1rem' }
+                pb: 2,
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
               }}>
-                <People />
-                Users by Role
-              </Typography>
+                <People sx={{ 
+                  fontSize: 24,
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }} />
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
+                  Users by Role
+                </Typography>
+              </Box>
               <TableContainer sx={{ maxHeight: 300, overflow: 'auto' }}>
                 <Table size="small">
                   <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Role</TableCell>
-                      <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Count</TableCell>
-                      <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Percentage</TableCell>
+                    <TableRow sx={{ backgroundColor: darkMode ? '#202124' : '#f8f9fa' }}>
+                      <TableCell sx={{ 
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
+                        fontWeight: 500,
+                        borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      }}>
+                        Role
+                      </TableCell>
+                      <TableCell align="right" sx={{ 
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
+                        fontWeight: 500,
+                        borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      }}>
+                        Count
+                      </TableCell>
+                      <TableCell align="right" sx={{ 
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
+                        fontWeight: 500,
+                        borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      }}>
+                        Percentage
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {data.userAnalysis.usersByRole?.map((role, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
+                      <TableRow 
+                        key={index}
+                        sx={{ 
+                          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                          '&:hover': {
+                            backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4',
+                          }
+                        }}
+                      >
+                        <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
                           <Chip 
                             label={role._id || 'Unknown'} 
                             size="small"
                             sx={{ 
                               fontSize: { xs: '0.7rem', sm: '0.8rem' },
-                              height: { xs: 20, sm: 24 }
+                              height: { xs: 20, sm: 24 },
+                              backgroundColor: role._id === 'admin' 
+                                ? (darkMode ? 'rgba(26, 115, 232, 0.1)' : 'rgba(26, 115, 232, 0.1)')
+                                : (darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(138, 180, 248, 0.1)'),
+                              color: role._id === 'admin' 
+                                ? (darkMode ? '#8ab4f8' : '#1a73e8')
+                                : (darkMode ? '#aecbfa' : '#5f6368'),
                             }}
-                            color={
-                              role._id === 'admin' ? 'primary' : 
-                              role._id === 'user' ? 'secondary' : 'default'
-                            }
                           />
                         </TableCell>
-                        <TableCell align="right">
-                          <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                        <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                          <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' }, color: darkMode ? '#e8eaed' : '#202124' }}>
                             {role.count}
                           </Typography>
                         </TableCell>
-                        <TableCell align="right">
-                          <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                        <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                          <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' }, color: darkMode ? '#e8eaed' : '#202124' }}>
                             {Math.round((role.count / data.systemOverview.databaseStats.totalUsers) * 100)}%
                           </Typography>
                         </TableCell>
@@ -601,18 +720,35 @@ const UserAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
             md: 'calc(50% - 12px)'
           }
         }}>
-          <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+          <Card elevation={0} sx={{ 
+            borderRadius: '16px', 
+            height: '100%',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ 
+              <Box sx={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: 1, 
+                gap: 2, 
                 mb: 3,
-                fontSize: { xs: '0.95rem', sm: '1rem' }
+                pb: 2,
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
               }}>
-                <Security />
-                Users by Status
-              </Typography>
+                <Security sx={{ 
+                  fontSize: 24,
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }} />
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
+                  Users by Status
+                </Typography>
+              </Box>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {data.userAnalysis.usersByStatus?.map((status, index) => (
                   <Box 
@@ -622,11 +758,13 @@ const UserAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
                       justifyContent: 'space-between', 
                       alignItems: 'center',
                       p: { xs: 1.25, sm: 1.5 },
-                      borderRadius: 1,
-                      backgroundColor: alpha(
-                        status._id ? theme.palette.success.main : theme.palette.error.main, 
-                        0.1
-                      )
+                      borderRadius: '8px',
+                      backgroundColor: status._id 
+                        ? alpha('#34a853', darkMode ? 0.1 : 0.08)
+                        : alpha('#ea4335', darkMode ? 0.1 : 0.08),
+                      border: `1px solid ${status._id 
+                        ? alpha('#34a853', darkMode ? 0.2 : 0.15)
+                        : alpha('#ea4335', darkMode ? 0.2 : 0.15)}`,
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -635,14 +773,17 @@ const UserAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
                           width: 10,
                           height: 10,
                           borderRadius: '50%',
-                          backgroundColor: status._id ? theme.palette.success.main : theme.palette.error.main
+                          backgroundColor: status._id ? '#34a853' : '#ea4335'
                         }}
                       />
-                      <Typography sx={{ fontSize: { xs: '0.85rem', sm: '0.9rem' } }}>
+                      <Typography sx={{ fontSize: { xs: '0.85rem', sm: '0.9rem' }, color: darkMode ? '#e8eaed' : '#202124' }}>
                         {status._id ? 'Active' : 'Inactive'}
                       </Typography>
                     </Box>
-                    <Typography fontWeight="bold" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                    <Typography fontWeight="bold" sx={{ 
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
+                      color: status._id ? '#34a853' : '#ea4335'
+                    }}>
                       {status.count} users
                     </Typography>
                   </Box>
@@ -656,18 +797,34 @@ const UserAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
       {/* Daily User Signups */}
       {data.userAnalysis.newUsersByDay && (
         <Box sx={{ width: '100%' }}>
-          <Card elevation={1} sx={{ borderRadius: 2 }}>
+          <Card elevation={0} sx={{ 
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ 
+              <Box sx={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: 1, 
+                gap: 2, 
                 mb: 3,
-                fontSize: { xs: '0.95rem', sm: '1rem' }
+                pb: 2,
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
               }}>
-                <Assessment />
-                Daily User Signups (Last 14 Days)
-              </Typography>
+                <Assessment sx={{ 
+                  fontSize: 24,
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }} />
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
+                  Daily User Signups (Last 14 Days)
+                </Typography>
+              </Box>
               <Box sx={{ 
                 height: { xs: 150, sm: 200 }, 
                 display: 'flex', 
@@ -691,8 +848,8 @@ const UserAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
                       sx={{
                         width: '70%',
                         height: `${Math.min(day.count * 15, 130)}px`,
-                        backgroundColor: theme.palette.primary.main,
-                        borderRadius: 1,
+                        backgroundColor: darkMode ? '#8ab4f8' : '#1a73e8',
+                        borderRadius: '4px 4px 0 0',
                         mb: 1,
                         minHeight: 4
                       }}
@@ -701,7 +858,8 @@ const UserAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
                       variant="caption" 
                       sx={{ 
                         fontSize: { xs: '0.65rem', sm: '0.75rem' },
-                        transform: { xs: 'rotate(-90deg)', sm: 'rotate(-45deg)' }
+                        transform: { xs: 'rotate(-90deg)', sm: 'rotate(-45deg)' },
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
                       }}
                     >
                       {day._id.split('-')[2]}
@@ -720,6 +878,7 @@ const UserAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
 // Notes Analysis Component
 const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
 
   if (!data?.notesAnalysis) {
     return (
@@ -730,11 +889,11 @@ const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
         justifyContent: 'center', 
         py: { xs: 4, sm: 6, md: 8 }
       }}>
-        <Notes sx={{ fontSize: { xs: 48, sm: 56, md: 64 }, color: theme.palette.text.disabled, mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+        <Notes sx={{ fontSize: { xs: 48, sm: 56, md: 64 }, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }} />
+        <Typography variant="h6" color={darkMode ? '#9aa0a6' : '#5f6368'} gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
           No Notes Data Available
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
+        <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'} sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
           Notes analytics will appear here once notes are created by users
         </Typography>
       </Box>
@@ -785,7 +944,12 @@ const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
               }
             }}
           >
-            <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+            <Card elevation={0} sx={{ 
+              borderRadius: '16px',
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              height: '100%'
+            }}>
               <CardContent sx={{ 
                 textAlign: 'center', 
                 p: { xs: 1.5, sm: 2 }
@@ -793,7 +957,9 @@ const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
                 <Typography 
                   variant="h3" 
                   fontWeight="bold" 
-                  color={`${card.color}.main`}
+                  color={card.color === 'primary' ? (darkMode ? '#8ab4f8' : '#1a73e8') : 
+                         card.color === 'success' ? '#34a853' : 
+                         card.color === 'warning' ? '#fbbc04' : '#5f6368'}
                   sx={{ 
                     fontSize: { 
                       xs: '1.5rem', 
@@ -806,7 +972,7 @@ const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
                 </Typography>
                 <Typography 
                   variant="body2" 
-                  color="text.secondary"
+                  color={darkMode ? '#9aa0a6' : '#5f6368'}
                   sx={{ 
                     fontSize: { xs: '0.75rem', sm: '0.875rem' },
                     mt: 0.5
@@ -839,17 +1005,35 @@ const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
             lg: 'calc(50% - 12px)'
           }
         }}>
-          <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+          <Card elevation={0} sx={{ 
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            height: '100%'
+          }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ 
+              <Box sx={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: 1, 
-                mb: 3
+                gap: 2, 
+                mb: 3,
+                pb: 2,
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
               }}>
-                <Category />
-                Notes by Category
-              </Typography>
+                <Category sx={{ 
+                  fontSize: 24,
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }} />
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
+                  Notes by Category
+                </Typography>
+              </Box>
               
               {categoriesWithPercentages.length > 0 ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -860,10 +1044,10 @@ const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
                         justifyContent: 'space-between', 
                         mb: 0.5
                       }}>
-                        <Typography variant="body2" fontWeight="medium">
+                        <Typography variant="body2" fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>
                           {category._id || 'Uncategorized'}
                         </Typography>
-                        <Typography variant="body2" fontWeight="bold">
+                        <Typography variant="body2" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
                           {category.count} ({category.percentage}%)
                         </Typography>
                       </Box>
@@ -873,10 +1057,10 @@ const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
                         sx={{
                           height: 6,
                           borderRadius: 3,
-                          backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                          backgroundColor: alpha(darkMode ? '#8ab4f8' : '#1a73e8', 0.1),
                           '& .MuiLinearProgress-bar': {
                             borderRadius: 3,
-                            backgroundColor: theme.palette.primary.main
+                            backgroundColor: darkMode ? '#8ab4f8' : '#1a73e8'
                           }
                         }}
                       />
@@ -891,8 +1075,8 @@ const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
                   justifyContent: 'center', 
                   py: 4
                 }}>
-                  <InsertChart sx={{ fontSize: 48, color: theme.palette.text.disabled, mb: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
+                  <InsertChart sx={{ fontSize: 48, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }} />
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                     No categories data available
                   </Typography>
                 </Box>
@@ -912,50 +1096,99 @@ const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
             lg: 'calc(50% - 12px)'
           }
         }}>
-          <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+          <Card elevation={0} sx={{ 
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            height: '100%'
+          }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ 
+              <Box sx={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: 1, 
-                mb: 3
+                gap: 2, 
+                mb: 3,
+                pb: 2,
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
               }}>
-                <Assessment />
-                Top Users by Notes
-              </Typography>
+                <Assessment sx={{ 
+                  fontSize: 24,
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }} />
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
+                  Top Users by Notes
+                </Typography>
+              </Box>
               
               {data.notesAnalysis.topUsersByNotes.length > 0 ? (
                 <TableContainer sx={{ maxHeight: 300 }}>
                   <Table size="small">
                     <TableHead>
-                      <TableRow>
-                        <TableCell>User</TableCell>
-                        <TableCell align="right">Notes</TableCell>
-                        <TableCell align="right">Last Created</TableCell>
+                      <TableRow sx={{ backgroundColor: darkMode ? '#202124' : '#f8f9fa' }}>
+                        <TableCell sx={{ 
+                          color: darkMode ? '#9aa0a6' : '#5f6368',
+                          fontWeight: 500,
+                          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        }}>
+                          User
+                        </TableCell>
+                        <TableCell align="right" sx={{ 
+                          color: darkMode ? '#9aa0a6' : '#5f6368',
+                          fontWeight: 500,
+                          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        }}>
+                          Notes
+                        </TableCell>
+                        <TableCell align="right" sx={{ 
+                          color: darkMode ? '#9aa0a6' : '#5f6368',
+                          fontWeight: 500,
+                          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        }}>
+                          Last Created
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {data.notesAnalysis.topUsersByNotes.slice(0, 5).map((user, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
+                        <TableRow 
+                          key={index}
+                          sx={{ 
+                            borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                            '&:hover': {
+                              backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4',
+                            }
+                          }}
+                        >
+                          <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
                             <Box>
-                              <Typography variant="body2" fontWeight="medium">
+                              <Typography variant="body2" fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>
                                 {user.name || user.email}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                                 {user.email}
                               </Typography>
                             </Box>
                           </TableCell>
-                          <TableCell align="right">
+                          <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
                             <Chip 
                               label={user.noteCount} 
                               size="small" 
-                              color="primary"
+                              sx={{
+                                backgroundColor: darkMode ? 'rgba(26, 115, 232, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                                color: darkMode ? '#8ab4f8' : '#1a73e8',
+                                fontWeight: 500,
+                                border: 'none',
+                              }}
                             />
                           </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="caption" color="text.secondary">
+                          <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                            <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                               {new Date(user.lastCreated).toLocaleDateString()}
                             </Typography>
                           </TableCell>
@@ -972,8 +1205,8 @@ const NotesAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
                   justifyContent: 'center', 
                   py: 4
                 }}>
-                  <BarChart sx={{ fontSize: 48, color: theme.palette.text.disabled, mb: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
+                  <BarChart sx={{ fontSize: 48, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }} />
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                     No users data available
                   </Typography>
                 </Box>
@@ -997,6 +1230,7 @@ const MaterialsAnalysisContent = ({
   totalUsers: number 
 }) => {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
 
   if (loading) {
     return (
@@ -1007,8 +1241,8 @@ const MaterialsAnalysisContent = ({
         justifyContent: 'center', 
         py: 8
       }}>
-        <CircularProgress size={60} />
-        <Typography variant="h6" color="text.secondary" sx={{ mt: 2 }}>
+        <CircularProgress size={60} sx={{ color: darkMode ? '#8ab4f8' : '#1a73e8' }} />
+        <Typography variant="h6" color={darkMode ? '#9aa0a6' : '#5f6368'} sx={{ mt: 2 }}>
           Loading materials analysis...
         </Typography>
       </Box>
@@ -1024,11 +1258,11 @@ const MaterialsAnalysisContent = ({
         justifyContent: 'center', 
         py: 8
       }}>
-        <Inventory sx={{ fontSize: 64, color: theme.palette.text.disabled, mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" gutterBottom>
+        <Inventory sx={{ fontSize: 64, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }} />
+        <Typography variant="h6" color={darkMode ? '#9aa0a6' : '#5f6368'} gutterBottom>
           No Materials Data Available
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
           Materials analytics will appear here once materials are added
         </Typography>
       </Box>
@@ -1044,21 +1278,44 @@ const MaterialsAnalysisContent = ({
   return (
     <Box>
       {/* Stock Health */}
-      <Card elevation={1} sx={{ borderRadius: 2, mb: 3 }}>
+      <Card elevation={0} sx={{ 
+        borderRadius: '16px',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        mb: 3 
+      }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-            <Storage />
-            Stock Health Overview
-          </Typography>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, 
+            mb: 3,
+            pb: 2,
+            borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          }}>
+            <Storage sx={{ 
+              fontSize: 24,
+              color: darkMode ? '#8ab4f8' : '#1a73e8',
+            }} />
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 500,
+                color: darkMode ? '#e8eaed' : '#202124',
+              }}
+            >
+              Stock Health Overview
+            </Typography>
+          </Box>
           
           <Box sx={{ mb: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                 Overall Stock Health
               </Typography>
               <Typography variant="body2" fontWeight="bold" color={
-                stockHealthPercentage >= 80 ? 'success.main' :
-                stockHealthPercentage >= 60 ? 'warning.main' : 'error.main'
+                stockHealthPercentage >= 80 ? '#34a853' :
+                stockHealthPercentage >= 60 ? '#fbbc04' : '#ea4335'
               }>
                 {stockHealthPercentage}%
               </Typography>
@@ -1069,12 +1326,12 @@ const MaterialsAnalysisContent = ({
               sx={{
                 height: 8,
                 borderRadius: 4,
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                backgroundColor: alpha('#1a73e8', 0.1),
                 '& .MuiLinearProgress-bar': {
                   borderRadius: 4,
                   backgroundColor: 
-                    stockHealthPercentage >= 80 ? theme.palette.success.main :
-                    stockHealthPercentage >= 60 ? theme.palette.warning.main : theme.palette.error.main
+                    stockHealthPercentage >= 80 ? '#34a853' :
+                    stockHealthPercentage >= 60 ? '#fbbc04' : '#ea4335'
                 }
               }}
             />
@@ -1107,15 +1364,33 @@ const MaterialsAnalysisContent = ({
               >
                 <Box sx={{ 
                   p: 2, 
-                  borderRadius: 2, 
-                  backgroundColor: alpha(theme.palette[item.color].main, 0.1),
+                  borderRadius: '12px', 
+                  backgroundColor: alpha(
+                    item.color === 'success' ? '#34a853' :
+                    item.color === 'warning' ? '#fbbc04' :
+                    item.color === 'error' ? '#ea4335' : '#5f6368',
+                    darkMode ? 0.1 : 0.08
+                  ),
+                  border: `1px solid ${alpha(
+                    item.color === 'success' ? '#34a853' :
+                    item.color === 'warning' ? '#fbbc04' :
+                    item.color === 'error' ? '#ea4335' : '#5f6368',
+                    darkMode ? 0.2 : 0.15
+                  )}`,
                   textAlign: 'center'
                 }}>
-                  <item.icon sx={{ color: theme.palette[item.color].main, fontSize: 32, mb: 1 }} />
-                  <Typography variant="h5" fontWeight="bold" color={`${item.color}.main`}>
+                  <item.icon sx={{ 
+                    color: item.color === 'success' ? '#34a853' :
+                          item.color === 'warning' ? '#fbbc04' :
+                          item.color === 'error' ? '#ea4335' : '#5f6368', 
+                    fontSize: 32, mb: 1 
+                  }} />
+                  <Typography variant="h5" fontWeight="bold" color={item.color === 'success' ? '#34a853' :
+                    item.color === 'warning' ? '#fbbc04' :
+                    item.color === 'error' ? '#ea4335' : '#5f6368'}>
                     {item.format ? item.format(item.value) : item.value}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                     {item.label}
                   </Typography>
                 </Box>
@@ -1144,12 +1419,35 @@ const MaterialsAnalysisContent = ({
             lg: 'calc(50% - 12px)'
           }
         }}>
-          <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+          <Card elevation={0} sx={{ 
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            height: '100%'
+          }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                <Category />
-                Materials by Category
-              </Typography>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 2, 
+                mb: 3,
+                pb: 2,
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              }}>
+                <Category sx={{ 
+                  fontSize: 24,
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }} />
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
+                  Materials by Category
+                </Typography>
+              </Box>
               
               {data.materialAnalysis.materialsByCategory.length > 0 ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1166,12 +1464,16 @@ const MaterialsAnalysisContent = ({
                               label={category._id || 'Uncategorized'} 
                               size="small" 
                               variant="outlined"
+                              sx={{
+                                color: darkMode ? '#e8eaed' : '#202124',
+                                borderColor: darkMode ? '#5f6368' : '#dadce0',
+                              }}
                             />
-                            <Typography variant="body2" fontWeight="medium">
+                            <Typography variant="body2" fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>
                               {category.count}
                             </Typography>
                           </Box>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                             {percentage}%
                           </Typography>
                         </Box>
@@ -1180,7 +1482,12 @@ const MaterialsAnalysisContent = ({
                           value={percentage}
                           sx={{
                             height: 6,
-                            borderRadius: 3
+                            borderRadius: 3,
+                            backgroundColor: alpha(darkMode ? '#8ab4f8' : '#1a73e8', 0.1),
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: 3,
+                              backgroundColor: darkMode ? '#8ab4f8' : '#1a73e8'
+                            }
                           }}
                         />
                       </Box>
@@ -1195,8 +1502,8 @@ const MaterialsAnalysisContent = ({
                   justifyContent: 'center', 
                   py: 4
                 }}>
-                  <Category sx={{ fontSize: 48, color: theme.palette.text.disabled, mb: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
+                  <Category sx={{ fontSize: 48, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }} />
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                     No categories data available
                   </Typography>
                 </Box>
@@ -1216,45 +1523,99 @@ const MaterialsAnalysisContent = ({
             lg: 'calc(50% - 12px)'
           }
         }}>
-          <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+          <Card elevation={0} sx={{ 
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            height: '100%'
+          }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                <Assessment />
-                Top Users by Materials
-              </Typography>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 2, 
+                mb: 3,
+                pb: 2,
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              }}>
+                <Assessment sx={{ 
+                  fontSize: 24,
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }} />
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
+                  Top Users by Materials
+                </Typography>
+              </Box>
               
               {data.materialAnalysis.topUsersByMaterials.length > 0 ? (
                 <TableContainer sx={{ maxHeight: 300 }}>
                   <Table size="small">
                     <TableHead>
-                      <TableRow>
-                        <TableCell>User</TableCell>
-                        <TableCell align="right">Materials</TableCell>
-                        <TableCell align="right">Total Value</TableCell>
+                      <TableRow sx={{ backgroundColor: darkMode ? '#202124' : '#f8f9fa' }}>
+                        <TableCell sx={{ 
+                          color: darkMode ? '#9aa0a6' : '#5f6368',
+                          fontWeight: 500,
+                          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        }}>
+                          User
+                        </TableCell>
+                        <TableCell align="right" sx={{ 
+                          color: darkMode ? '#9aa0a6' : '#5f6368',
+                          fontWeight: 500,
+                          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        }}>
+                          Materials
+                        </TableCell>
+                        <TableCell align="right" sx={{ 
+                          color: darkMode ? '#9aa0a6' : '#5f6368',
+                          fontWeight: 500,
+                          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        }}>
+                          Total Value
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {data.materialAnalysis.topUsersByMaterials.slice(0, 5).map((user, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
+                        <TableRow 
+                          key={index}
+                          sx={{ 
+                            borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                            '&:hover': {
+                              backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4',
+                            }
+                          }}
+                        >
+                          <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
                             <Box>
-                              <Typography variant="body2" fontWeight="medium">
+                              <Typography variant="body2" fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>
                                 {user.name || user.email}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                                 {user.company || 'No company'}
                               </Typography>
                             </Box>
                           </TableCell>
-                          <TableCell align="right">
+                          <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
                             <Chip 
                               label={user.materialCount} 
                               size="small" 
-                              color="primary"
+                              sx={{
+                                backgroundColor: darkMode ? 'rgba(26, 115, 232, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                                color: darkMode ? '#8ab4f8' : '#1a73e8',
+                                fontWeight: 500,
+                                border: 'none',
+                              }}
                             />
                           </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="body2" fontWeight="bold">
+                          <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                            <Typography variant="body2" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
                               ₹{user.totalInventoryValue?.toLocaleString() || '0'}
                             </Typography>
                           </TableCell>
@@ -1271,8 +1632,8 @@ const MaterialsAnalysisContent = ({
                   justifyContent: 'center', 
                   py: 4
                 }}>
-                  <Person sx={{ fontSize: 48, color: theme.palette.text.disabled, mb: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
+                  <Person sx={{ fontSize: 48, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }} />
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                     No users data available
                   </Typography>
                 </Box>
@@ -1288,12 +1649,13 @@ const MaterialsAnalysisContent = ({
 // Engagement Analysis Component
 const EngagementAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   if (!data?.engagement) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography color="text.secondary">
+        <Typography color={darkMode ? '#9aa0a6' : '#5f6368'}>
           No engagement data available
         </Typography>
       </Box>
@@ -1315,28 +1677,28 @@ const EngagementAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
       label: 'Avg. Engagement Rate',
       value: `${formatNumber(engagement.averageEngagementRate)}%`,
       icon: TrendingUpIcon,
-      color: theme.palette.primary.main,
+      color: darkMode ? '#8ab4f8' : '#1a73e8',
       progress: Number(engagement.averageEngagementRate) || 0
     },
     {
       label: 'Avg. Session Duration',
       value: `${formatNumber(engagement.averageSessionDuration)}m`,
       icon: AccessTime,
-      color: theme.palette.success.main,
+      color: '#34a853',
       progress: Math.min((Number(engagement.averageSessionDuration) || 0) / 10 * 100, 100)
     },
     {
       label: 'Daily Active Users',
       value: engagement.dailyActiveUsers?.toLocaleString() || '0',
       icon: People,
-      color: theme.palette.info.main,
+      color: '#5f6368',
       progress: Math.min((engagement.dailyActiveUsers || 0) / 1000 * 100, 100)
     },
     {
       label: 'Notes per Active User',
       value: formatNumber(notesPerActiveUser),
       icon: NoteAdd,
-      color: theme.palette.warning.main,
+      color: '#fbbc04',
       progress: Math.min(notesPerActiveUser / 5 * 100, 100)
     }
   ]
@@ -1344,10 +1706,10 @@ const EngagementAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
   return (
     <Box>
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" fontWeight={600} gutterBottom>
+        <Typography variant="h6" fontWeight={600} gutterBottom color={darkMode ? '#e8eaed' : '#202124'}>
           Engagement Metrics
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
           User interaction and activity patterns
         </Typography>
       </Box>
@@ -1378,21 +1740,26 @@ const EngagementAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
           >
             <Card elevation={0} sx={{ 
               p: 2.5,
-              borderRadius: 2,
+              borderRadius: '16px',
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
               border: `1px solid ${alpha(metric.color, 0.1)}`,
-              background: alpha(metric.color, 0.03),
               height: '100%'
             }}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
                 <Box>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                     {metric.label}
                   </Typography>
                   <Typography variant="h4" fontWeight={700} sx={{ color: metric.color }}>
                     {metric.value}
                   </Typography>
                 </Box>
-                <Box sx={{ p: 1, borderRadius: 1.5, background: alpha(metric.color, 0.1), color: metric.color }}>
+                <Box sx={{ 
+                  p: 1, 
+                  borderRadius: '12px', 
+                  background: alpha(metric.color, 0.1), 
+                  color: metric.color 
+                }}>
                   <metric.icon />
                 </Box>
               </Box>
@@ -1416,8 +1783,13 @@ const EngagementAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
       </Box>
 
       {/* Detailed Stats */}
-      <Card elevation={0} sx={{ p: 3, borderRadius: 2, background: alpha(theme.palette.primary.main, 0.02) }}>
-        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+      <Card elevation={0} sx={{ 
+        p: 3, 
+        borderRadius: '16px',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      }}>
+        <Typography variant="subtitle1" fontWeight={600} gutterBottom color={darkMode ? '#e8eaed' : '#202124'}>
           Performance Indicators
         </Typography>
         
@@ -1440,21 +1812,21 @@ const EngagementAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
           }}>
             <Box sx={{ 
               p: 2,
-              borderRadius: 1.5,
-              background: alpha(theme.palette.success.main, 0.05),
-              border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`
+              borderRadius: '12px',
+              background: alpha('#34a853', darkMode ? 0.1 : 0.05),
+              border: `1px solid ${alpha('#34a853', darkMode ? 0.2 : 0.1)}`
             }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'} gutterBottom>
                 30-day Retention Rate
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="h5" fontWeight={700}>
+                <Typography variant="h5" fontWeight={700} color="#34a853">
                   {formatNumber(engagement.retentionRate)}%
                 </Typography>
                 {Number(engagement.retentionRate) > 50 ? (
-                  <ArrowUpward sx={{ color: 'success.main' }} />
+                  <ArrowUpward sx={{ color: '#34a853' }} />
                 ) : (
-                  <ArrowDownward sx={{ color: 'error.main' }} />
+                  <ArrowDownward sx={{ color: '#ea4335' }} />
                 )}
               </Box>
             </Box>
@@ -1473,21 +1845,21 @@ const EngagementAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
           }}>
             <Box sx={{ 
               p: 2,
-              borderRadius: 1.5,
-              background: alpha(theme.palette.error.main, 0.05),
-              border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`
+              borderRadius: '12px',
+              background: alpha('#ea4335', darkMode ? 0.1 : 0.05),
+              border: `1px solid ${alpha('#ea4335', darkMode ? 0.2 : 0.1)}`
             }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'} gutterBottom>
                 Bounce Rate
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="h5" fontWeight={700}>
+                <Typography variant="h5" fontWeight={700} color="#ea4335">
                   {formatNumber(engagement.bounceRate)}%
                 </Typography>
                 {Number(engagement.bounceRate) < 30 ? (
-                  <ArrowDownward sx={{ color: 'success.main' }} />
+                  <ArrowDownward sx={{ color: '#34a853' }} />
                 ) : (
-                  <ArrowUpward sx={{ color: 'error.main' }} />
+                  <ArrowUpward sx={{ color: '#ea4335' }} />
                 )}
               </Box>
             </Box>
@@ -1498,11 +1870,14 @@ const EngagementAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
           <Box sx={{ 
             mt: 3, 
             p: 2,
-            borderRadius: 1.5,
-            background: alpha(theme.palette.info.main, 0.05),
-            border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`
+            borderRadius: '12px',
+            background: alpha(darkMode ? '#8ab4f8' : '#1a73e8', darkMode ? 0.1 : 0.05),
+            border: `1px solid ${alpha(darkMode ? '#8ab4f8' : '#1a73e8', darkMode ? 0.2 : 0.1)}`
           }}>
-            <Typography variant="body2" sx={{ color: theme.palette.info.main, fontStyle: 'italic' }}>
+            <Typography variant="body2" sx={{ 
+              color: darkMode ? '#8ab4f8' : '#1a73e8', 
+              fontStyle: 'italic' 
+            }}>
               {engagement.summary}
             </Typography>
           </Box>
@@ -1515,6 +1890,7 @@ const EngagementAnalysisContent = ({ data }: { data: AnalysisData | null }) => {
 // Main Component
 export default function AdminAnalysisPage() {
   const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'lg'))
   
@@ -1698,369 +2074,327 @@ export default function AdminAnalysisPage() {
   ]
 
   return (
-    <Fade in={!loading}>
-      <Box
-        sx={{
-          minHeight: '100vh',
-          background: theme.palette.mode === 'dark' 
-            ? `linear-gradient(135deg, ${theme.palette.background.default} 0%, #0a1929 100%)`
-            : `linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)`,
-          py: { xs: 1, sm: 2, md: 3 },
-          px: { xs: 0.5, sm: 1, md: 2 }
-        }}
-      >
-        <Container 
-          maxWidth="xl" 
-          sx={{ 
-            px: { xs: 1, sm: 1.5, md: 2 }
-          }}
-        >
-          {/* Header */}
-          <Paper
-            elevation={0}
-            sx={{
-              mb: { xs: 2, sm: 3 },
-              p: { xs: 1.5, sm: 2, md: 2.5 },
-              borderRadius: { xs: 2, sm: 3 },
-              background: theme.palette.mode === 'dark'
-                ? `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.2)} 0%, ${alpha(theme.palette.background.paper, 0.8)} 100%)`
-                : `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.1)} 0%, ${alpha('#ffffff', 0.9)} 100%)`,
-              backdropFilter: 'blur(10px)',
-              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.05)'
+    <Box sx={{ 
+      minHeight: '100vh',
+      backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+      py: { xs: 2, sm: 3, md: 4 },
+    }}>
+      <Container maxWidth="xl">
+        {/* Header Section */}
+        <Box sx={{ mb: { xs: 3, sm: 4, md: 5 } }}>
+          <Button
+            component={Link}
+            href="/admin/dashboard"
+            startIcon={<ArrowBack />}
+            sx={{ 
+              mb: 2,
+              color: darkMode ? '#8ab4f8' : '#1a73e8',
+              '&:hover': {
+                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.08)' : 'rgba(26, 115, 232, 0.08)',
+              },
             }}
           >
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: isMobile ? 'column' : 'row',
-              alignItems: isMobile ? 'stretch' : 'center',
-              justifyContent: 'space-between',
-              gap: { xs: 2, sm: 3 }
-            }}>
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: { xs: 1, sm: 2 },
-                flexShrink: 0
-              }}>
-                <DashboardCustomize 
-                  sx={{ 
-                    fontSize: { xs: 28, sm: 32, md: 36 },
-                    color: 'primary.main',
-                    background: alpha(theme.palette.primary.main, 0.1),
-                    p: { xs: 1, sm: 1.25 },
-                    borderRadius: 2,
-                    flexShrink: 0
-                  }} 
-                />
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography 
-                    variant="h1"
-                    sx={{ 
-                      fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem', lg: '2rem' },
-                      fontWeight: 700,
-                      lineHeight: 1.2,
-                      background: theme.palette.mode === 'dark'
-                        ? 'linear-gradient(45deg, #fff 30%, #90caf9 90%)'
-                        : 'linear-gradient(45deg, #1976d2 30%, #21CBF3 90%)',
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}
-                  >
-                    Analytics Dashboard
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 0.5, 
-                      mt: 0.5,
-                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                    }}
-                  >
-                    <Schedule fontSize="small" sx={{ fontSize: 'inherit' }} />
-                    Real-time insights and performance metrics
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: { xs: 1, sm: 2 },
-                justifyContent: isMobile ? 'space-between' : 'flex-end',
-                flexWrap: 'wrap',
-                width: isMobile ? '100%' : 'auto'
-              }}>
-                {!isMobile && (
-                  <Chip
-                    icon={<Timeline fontSize="small" />}
-                    label={`Last ${timeframe} days`}
-                    size={isTablet ? "small" : "medium"}
-                    sx={{ 
-                      background: alpha(theme.palette.primary.main, 0.1),
-                      color: 'primary.main',
-                      fontWeight: 500
-                    }}
-                  />
-                )}
-                
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1,
-                  flexShrink: 0,
-                  width: isMobile ? '100%' : 'auto'
-                }}>
-                  <CompactAnalysisHeader
-                    timeframe={timeframe}
-                    onTimeframeChange={setTimeframe}
-                    onRefresh={handleRefresh}
-                    loading={loading || materialsLoading || refreshing}
-                    compact={isMobile}
-                  />
-                </Box>
-              </Box>
-            </Box>
-          </Paper>
+            Back to Dashboard
+          </Button>
 
-          {/* Performance Overview */}
-          <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: isMobile ? 'column' : 'row',
-              alignItems: isMobile ? 'flex-start' : 'center',
-              justifyContent: 'space-between',
-              gap: 1,
-              mb: 2 
-            }}>
-              <Typography 
-                variant="h6" 
-                fontWeight={600} 
-                sx={{ 
-                  fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' }
-                }}
-              >
-                Performance Overview
-              </Typography>
-              {data?.summary?.growthRate !== undefined && (
-                <Chip
-                  icon={<TrendingUp sx={{ fontSize: { xs: '14px !important', sm: '16px !important' } }} />}
-                  label={`${Number(data.summary.growthRate) > 0 ? '+' : ''}${Number(data.summary.growthRate).toFixed(1)}%`}
-                  color={Number(data.summary.growthRate) > 0 ? 'success' : 'error'}
-                  size={isMobile ? "small" : "medium"}
-                  variant="outlined"
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{
+                width: { xs: 48, sm: 56 },
+                height: { xs: 48, sm: 56 },
+                borderRadius: '16px',
+                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: darkMode ? '#8ab4f8' : '#1a73e8',
+              }}>
+                <Analytics sx={{ fontSize: { xs: 24, sm: 28 } }} />
+              </Box>
+              <Box>
+                <Typography 
+                  variant={isMobile ? "h5" : isTablet ? "h4" : "h3"}
                   sx={{ 
-                    fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' }
-                  }}
-                />
-              )}
-            </Box>
-            
-            {/* Main Cards */}
-            <Box sx={{ 
-              display: 'flex',
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: { xs: 1.5, sm: 2, md: 3 },
-              mb: { xs: 3, sm: 4 }
-            }}>
-              {mainCards.map((card, index) => (
-                <Box 
-                  key={index}
-                  sx={{ 
-                    flex: {
-                      xs: '1 1 calc(50% - 12px)',
-                      sm: '1 1 calc(33.333% - 16px)',
-                      md: '1 1 calc(25% - 18px)',
-                      lg: '1 1 calc(16.666% - 20px)'
-                    },
-                    minWidth: {
-                      xs: 'calc(50% - 12px)',
-                      sm: 'calc(33.333% - 16px)',
-                      md: 'calc(25% - 18px)',
-                      lg: 'calc(16.666% - 20px)'
-                    }
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    lineHeight: 1.2,
                   }}
                 >
-                  <StatsCard
-                    title={card.title}
-                    value={card.value}
-                    subValue={card.subValue}
-                    icon={card.icon}
-                    color={card.color}
-                    trend={card.trend}
-                    showTrend={card.showTrend}
-                    showProgress={card.showProgress}
-                  />
-                </Box>
-              ))}
+                  Analytics Dashboard
+                </Typography>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                    mt: 0.5,
+                  }}
+                >
+                  Real-time insights and performance metrics
+                </Typography>
+              </Box>
             </Box>
+            
+            <CompactAnalysisHeader
+              timeframe={timeframe}
+              onTimeframeChange={setTimeframe}
+              onRefresh={handleRefresh}
+              loading={loading || materialsLoading || refreshing}
+              compact={isMobile}
+            />
+          </Box>
+        </Box>
 
-            {/* Stock Status Cards */}
-            {materialsData && (
+        {/* Error Alert */}
+        {error && (
+          <ErrorAlert 
+            message={error}
+            onClose={() => setError('')}
+          />
+        )}
+
+        {/* Performance Overview */}
+        <Box sx={{ mb: { xs: 3, sm: 4 } }}>
+          <Card sx={{ 
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
+            mb: 3,
+          }}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                justifyContent: 'space-between',
+                gap: 1,
+                mb: 3,
+                pb: 2,
+                borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              }}>
+                <Typography 
+                  variant="h6" 
+                  fontWeight={600} 
+                  sx={{ 
+                    fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' },
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  }}
+                >
+                  Performance Overview
+                </Typography>
+                {data?.summary?.growthRate !== undefined && (
+                  <Chip
+                    icon={<TrendingUp sx={{ fontSize: { xs: '14px !important', sm: '16px !important' } }} />}
+                    label={`${Number(data.summary.growthRate) > 0 ? '+' : ''}${Number(data.summary.growthRate).toFixed(1)}%`}
+                    sx={{
+                      backgroundColor: Number(data.summary.growthRate) > 0 
+                        ? (darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.1)')
+                        : (darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.1)'),
+                      color: Number(data.summary.growthRate) > 0 
+                        ? (darkMode ? '#34a853' : '#34a853')
+                        : (darkMode ? '#ea4335' : '#ea4335'),
+                      border: 'none',
+                      fontWeight: 500,
+                    }}
+                    size={isMobile ? "small" : "medium"}
+                    // sx={{ 
+                    //   fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' }
+                    // }}
+                  />
+                )}
+              </Box>
+              
+              {/* Main Cards */}
               <Box sx={{ 
                 display: 'flex',
                 flexDirection: 'row',
                 flexWrap: 'wrap',
-                gap: { xs: 1.5, sm: 2, md: 3 }
+                gap: { xs: 1.5, sm: 2, md: 3 },
+                mb: { xs: 3, sm: 4 }
               }}>
-                {stockStatusCards.map((card, index) => (
+                {mainCards.map((card, index) => (
                   <Box 
                     key={index}
                     sx={{ 
                       flex: {
                         xs: '1 1 calc(50% - 12px)',
-                        sm: '1 1 calc(50% - 16px)',
-                        md: '1 1 calc(25% - 18px)'
+                        sm: '1 1 calc(33.333% - 16px)',
+                        md: '1 1 calc(25% - 18px)',
+                        lg: '1 1 calc(16.666% - 20px)'
                       },
                       minWidth: {
                         xs: 'calc(50% - 12px)',
-                        sm: 'calc(50% - 16px)',
-                        md: 'calc(25% - 18px)'
+                        sm: 'calc(33.333% - 16px)',
+                        md: 'calc(25% - 18px)',
+                        lg: 'calc(16.666% - 20px)'
                       }
                     }}
                   >
                     <StatsCard
                       title={card.title}
                       value={card.value}
+                      subValue={card.subValue}
                       icon={card.icon}
                       color={card.color}
-                      compact
+                      trend={card.trend}
+                      showTrend={card.showTrend}
+                      showProgress={card.showProgress}
                     />
                   </Box>
                 ))}
               </Box>
-            )}
-          </Box>
 
-          {/* Main Content Area */}
-          <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-            <Paper
-              elevation={0}
-              sx={{
-                borderRadius: { xs: 2, sm: 3 },
-                overflow: 'hidden',
-                background: theme.palette.mode === 'dark'
-                  ? alpha(theme.palette.background.paper, 0.8)
-                  : '#ffffff',
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              {/* Tabs */}
-              <Box sx={{
-                px: { xs: 1, sm: 2, md: 3 },
-                pt: { xs: 2, sm: 3 },
-                pb: 0,
-                background: `linear-gradient(90deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 100%)`,
-                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`
-              }}>
-                <AnalysisTabs
-                  activeTab={activeTab}
-                  onTabChange={handleTabChange}
-                />
-              </Box>
-              
-              {/* Tab Content */}
-              <Box sx={{ 
-                p: { xs: 1.5, sm: 2, md: 3 },
-                minHeight: { xs: '350px', sm: '450px', md: '500px' }
-              }}>
-                {data && renderActiveTabContent()}
-              </Box>
-            </Paper>
-          </Box>
+              {/* Stock Status Cards */}
+              {materialsData && (
+                <Box sx={{ 
+                  display: 'flex',
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: { xs: 1.5, sm: 2, md: 3 }
+                }}>
+                  {stockStatusCards.map((card, index) => (
+                    <Box 
+                      key={index}
+                      sx={{ 
+                        flex: {
+                          xs: '1 1 calc(50% - 12px)',
+                          sm: '1 1 calc(50% - 16px)',
+                          md: '1 1 calc(25% - 18px)'
+                        },
+                        minWidth: {
+                          xs: 'calc(50% - 12px)',
+                          sm: 'calc(50% - 16px)',
+                          md: 'calc(25% - 18px)'
+                        }
+                      }}
+                    >
+                      <StatsCard
+                        title={card.title}
+                        value={card.value}
+                        icon={card.icon}
+                        color={card.color}
+                        compact
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
 
-          {/* Error Alert */}
-          {error && (
-            <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-              <ErrorAlert 
-                message={error}
-                onClose={() => setError('')}
+        {/* Main Content Area */}
+        <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+          <Card sx={{ 
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
+            overflow: 'hidden',
+          }}>
+            {/* Tabs */}
+            <Box sx={{
+              px: { xs: 2, sm: 3 },
+              pt: { xs: 2, sm: 3 },
+              pb: 0,
+              backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+              borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}>
+              <AnalysisTabs
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
               />
             </Box>
-          )}
-
-          {/* Footer */}
-          <Box sx={{ 
-            display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
-            justifyContent: 'space-between',
-            alignItems: isMobile ? 'flex-start' : 'center',
-            gap: 1,
-            pt: 2,
-            borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`
-          }}>
-            <Typography 
-              variant="caption" 
-              color="text.secondary" 
-              sx={{ 
-                fontSize: { xs: '0.65rem', sm: '0.75rem' }
-              }}
-            >
-              Last updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Typography>
-            <Typography 
-              variant="caption" 
-              color="text.secondary" 
-              sx={{ 
-                fontSize: { xs: '0.65rem', sm: '0.75rem' }
-              }}
-            >
-              {data?.summary?.lastUpdated && `Data as of ${new Date(data.summary.lastUpdated).toLocaleDateString()}`}
-            </Typography>
-          </Box>
-
-          {/* Debug Info */}
-          {process.env.NODE_ENV === 'development' && data && (
-            <Box 
-              sx={{ 
-                mt: 3, 
-                p: { xs: 1, sm: 1.5 }, 
-                borderRadius: 2,
-                background: alpha(theme.palette.info.light, 0.05),
-                border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`
-              }}
-            >
-              <details>
-                <summary style={{ 
-                  cursor: 'pointer', 
-                  color: theme.palette.info.main,
-                  fontWeight: 500,
-                  outline: 'none',
-                  fontSize: isMobile ? '0.8rem' : '0.875rem'
-                }}>
-                  Debug Information
-                </summary>
-                <Box 
-                  sx={{ 
-                    mt: 1, 
-                    p: 1, 
-                    borderRadius: 1,
-                    background: alpha(theme.palette.background.paper, 0.5),
-                    maxHeight: '150px',
-                    overflow: 'auto'
-                  }}
-                >
-                  <pre style={{ 
-                    margin: 0, 
-                    fontSize: isMobile ? '10px' : '11px'
-                  }}>
-                    {JSON.stringify(data.systemOverview?.databaseStats, null, 2)}
-                  </pre>
-                </Box>
-              </details>
+            
+            {/* Tab Content */}
+            <Box sx={{ 
+              p: { xs: 2, sm: 3 },
+              minHeight: { xs: '350px', sm: '450px', md: '500px' }
+            }}>
+              {data && renderActiveTabContent()}
             </Box>
-          )}
-        </Container>
-      </Box>
-    </Fade>
+          </Card>
+        </Box>
+
+        {/* Footer */}
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          gap: 1,
+          pt: 2,
+          borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`
+        }}>
+          <Typography 
+            variant="caption" 
+            color={darkMode ? '#9aa0a6' : '#5f6368'} 
+            sx={{ 
+              fontSize: { xs: '0.65rem', sm: '0.75rem' }
+            }}
+          >
+            Last updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Typography>
+          <Typography 
+            variant="caption" 
+            color={darkMode ? '#9aa0a6' : '#5f6368'} 
+            sx={{ 
+              fontSize: { xs: '0.65rem', sm: '0.75rem' }
+            }}
+          >
+            {data?.summary?.lastUpdated && `Data as of ${new Date(data.summary.lastUpdated).toLocaleDateString()}`}
+          </Typography>
+        </Box>
+
+        {/* Debug Info */}
+        {process.env.NODE_ENV === 'development' && data && (
+          <Box 
+            sx={{ 
+              mt: 3, 
+              p: { xs: 1, sm: 1.5 }, 
+              borderRadius: '12px',
+              backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`
+            }}
+          >
+            <details>
+              <summary style={{ 
+                cursor: 'pointer', 
+                color: darkMode ? '#8ab4f8' : '#1a73e8',
+                fontWeight: 500,
+                outline: 'none',
+                fontSize: isMobile ? '0.8rem' : '0.875rem'
+              }}>
+                Debug Information
+              </summary>
+              <Box 
+                sx={{ 
+                  mt: 1, 
+                  p: 1, 
+                  borderRadius: '8px',
+                  backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                  maxHeight: '150px',
+                  overflow: 'auto'
+                }}
+              >
+                <pre style={{ 
+                  margin: 0, 
+                  fontSize: isMobile ? '10px' : '11px',
+                  color: darkMode ? '#e8eaed' : '#202124'
+                }}>
+                  {JSON.stringify(data.systemOverview?.databaseStats, null, 2)}
+                </pre>
+              </Box>
+            </details>
+          </Box>
+        )}
+      </Container>
+    </Box>
   )
 }

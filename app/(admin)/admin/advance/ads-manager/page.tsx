@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import {
   Box,
+  Container,
   Card,
   CardContent,
   Typography,
@@ -17,7 +18,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   TextField,
   Select,
@@ -26,23 +26,41 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Alert,
+  useTheme,
+  useMediaQuery,
+  Avatar,
+  IconButton,
+  Badge,
+  Stack,
 } from '@mui/material'
 import {
   TrendingUp,
   Visibility,
   MonetizationOn,
-  Add,
-  Edit,
-  Delete,
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
   Campaign,
   Analytics,
   Settings,
+  ArrowBack,
+  Description,
+  CheckCircle,
 } from '@mui/icons-material'
+import Link from 'next/link'
 
 export default function AdsManagerPage() {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
+  const darkMode = theme.palette.mode === 'dark'
+  
   const [adsEnabled, setAdsEnabled] = useState(true)
   const [adDensity, setAdDensity] = useState(50)
   const [openAdDialog, setOpenAdDialog] = useState(false)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   
   // Mock ad campaigns
   const campaigns = [
@@ -78,191 +96,773 @@ export default function AdsManagerPage() {
     },
   ]
 
+  const totalRevenue = campaigns.reduce((sum, c) => sum + c.revenue, 0)
+  const totalImpressions = campaigns.reduce((sum, c) => sum + c.impressions, 0)
+  const averageCTR = campaigns.reduce((sum, c) => sum + c.ctr, 0) / campaigns.length
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            📢 Ad Management
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Manage advertisements and monetization
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => setOpenAdDialog(true)}
-        >
-          Create New Ad
-        </Button>
-      </Box>
+    <Box sx={{ 
+      minHeight: '100vh',
+      backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+      py: { xs: 2, sm: 3, md: 4 },
+    }}>
+      <Container maxWidth="lg">
+        {/* Header Section */}
+        <Box sx={{ mb: { xs: 3, sm: 4, md: 5 } }}>
+          <Button
+            component={Link}
+            href="/admin/dashboard"
+            startIcon={<ArrowBack />}
+            sx={{ 
+              mb: 2,
+              color: darkMode ? '#8ab4f8' : '#1a73e8',
+              '&:hover': {
+                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.08)' : 'rgba(26, 115, 232, 0.08)',
+              },
+            }}
+          >
+            Back to Dashboard
+          </Button>
 
-      {/* Stats Overview */}
-      <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
-        <Card sx={{ flex: 1, minWidth: 200 }}>
-          <CardContent>
-            <Typography color="text.secondary" variant="body2">
-              Total Revenue
-            </Typography>
-            <Typography variant="h4" fontWeight="bold" color="success.main">
-              ₹{campaigns.reduce((sum, c) => sum + c.revenue, 0).toFixed(2)}
-            </Typography>
-          </CardContent>
-        </Card>
-        
-        <Card sx={{ flex: 1, minWidth: 200 }}>
-          <CardContent>
-            <Typography color="text.secondary" variant="body2">
-              Total Impressions
-            </Typography>
-            <Typography variant="h4" fontWeight="bold">
-              {campaigns.reduce((sum, c) => sum + c.impressions, 0).toLocaleString()}
-            </Typography>
-          </CardContent>
-        </Card>
-        
-        <Card sx={{ flex: 1, minWidth: 200 }}>
-          <CardContent>
-            <Typography color="text.secondary" variant="body2">
-              Average CTR
-            </Typography>
-            <Typography variant="h4" fontWeight="bold">
-              {(
-                campaigns.reduce((sum, c) => sum + c.ctr, 0) / campaigns.length
-              ).toFixed(2)}%
-            </Typography>
-          </CardContent>
-        </Card>
-      </Box>
-
-      {/* Ad Settings */}
-      <Card sx={{ mb: 4 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
-            <Settings /> Ad Settings
-          </Typography>
-          
-          <Box sx={{ p: 2 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={adsEnabled}
-                  onChange={(e) => setAdsEnabled(e.target.checked)}
-                  color="primary"
-                />
-              }
-              label="Enable advertisements"
-              sx={{ mb: 3, display: 'block' }}
-            />
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{
+                width: { xs: 48, sm: 56 },
+                height: { xs: 48, sm: 56 },
+                borderRadius: '16px',
+                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: darkMode ? '#8ab4f8' : '#1a73e8',
+              }}>
+                <Campaign sx={{ fontSize: { xs: 24, sm: 28 } }} />
+              </Box>
+              <Box>
+                <Typography 
+                  variant={isMobile ? "h5" : isTablet ? "h4" : "h3"}
+                  sx={{ 
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Ad Management
+                </Typography>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                    mt: 0.5,
+                  }}
+                >
+                  Manage advertisements and monetization
+                </Typography>
+              </Box>
+            </Box>
             
-            <Typography variant="body2" gutterBottom sx={{ mt: 2 }}>
-              Ad Density: {adDensity}%
-            </Typography>
-            <Slider
-              value={adDensity}
-              onChange={(_, value) => setAdDensity(value as number)}
-              min={10}
-              max={100}
-              marks={[
-                { value: 25, label: 'Low' },
-                { value: 50, label: 'Medium' },
-                { value: 75, label: 'High' },
-              ]}
-            />
-            
-            <Typography variant="body2" gutterBottom sx={{ mt: 3 }}>
-              Ad Categories
-            </Typography>
-            <Select fullWidth size="small" defaultValue="all" sx={{ mb: 2 }}>
-              <MenuItem value="all">All Categories</MenuItem>
-              <MenuItem value="tech">Technology</MenuItem>
-              <MenuItem value="business">Business</MenuItem>
-              <MenuItem value="saas">SaaS</MenuItem>
-              <MenuItem value="marketing">Marketing</MenuItem>
-            </Select>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setOpenAdDialog(true)}
+              sx={{
+                backgroundColor: '#1a73e8',
+                '&:hover': {
+                  backgroundColor: '#1669c1',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(26, 115, 232, 0.2)',
+                },
+                borderRadius: '12px',
+                px: 3,
+                py: 1.25,
+                fontWeight: 500,
+              }}
+            >
+              Create New Ad
+            </Button>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
 
-      {/* Campaigns Table */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
-            <Campaign /> Active Campaigns
-          </Typography>
+        {/* Alerts */}
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 3,
+              borderRadius: '12px',
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: '1px solid #ea4335',
+              color: darkMode ? '#e8eaed' : '#202124',
+              '& .MuiAlert-icon': { color: '#ea4335' },
+            }}
+            onClose={() => setError(null)}
+          >
+            {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert 
+            severity="success" 
+            sx={{ 
+              mb: 3,
+              borderRadius: '12px',
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: '1px solid #34a853',
+              color: darkMode ? '#e8eaed' : '#202124',
+              '& .MuiAlert-icon': { color: '#34a853' },
+            }}
+            onClose={() => setSuccess(null)}
+          >
+            {success}
+          </Alert>
+        )}
+
+        {/* Stats Overview */}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          sx={{ mb: 4, flexWrap: "wrap" }}
+        >
+          <Card sx={{ 
+            flex: 1, 
+            minWidth: 200,
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: darkMode 
+              ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+              : '0 2px 8px rgba(0, 0, 0, 0.05)',
+          }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ 
+                  bgcolor: darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.1)',
+                  color: darkMode ? '#34a853' : '#34a853',
+                }}>
+                  <MonetizationOn />
+                </Avatar>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" color={darkMode ? '#34a853' : '#34a853'}>
+                    ₹{totalRevenue.toFixed(2)}
+                  </Typography>
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                    Total Revenue
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
           
-          <TableContainer component={Paper} variant="outlined">
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Campaign Name</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Impressions</TableCell>
-                  <TableCell>Clicks</TableCell>
-                  <TableCell>CTR</TableCell>
-                  <TableCell>Revenue</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {campaigns.map((campaign) => (
-                  <TableRow key={campaign.id}>
-                    <TableCell>
-                      <Typography fontWeight="medium">{campaign.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {campaign.placement}
-                      </Typography>
+          <Card sx={{ 
+            flex: 1, 
+            minWidth: 200,
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: darkMode 
+              ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+              : '0 2px 8px rgba(0, 0, 0, 0.05)',
+          }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ 
+                  bgcolor: darkMode ? 'rgba(26, 115, 232, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }}>
+                  <Visibility />
+                </Avatar>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
+                    {totalImpressions.toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                    Total Impressions
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+          
+          <Card sx={{ 
+            flex: 1, 
+            minWidth: 200,
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: darkMode 
+              ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+              : '0 2px 8px rgba(0, 0, 0, 0.05)',
+          }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ 
+                  bgcolor: darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.1)',
+                  color: darkMode ? '#fbbc04' : '#fbbc04',
+                }}>
+                  <TrendingUp />
+                </Avatar>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
+                    {averageCTR.toFixed(2)}%
+                  </Typography>
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                    Average CTR
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Stack>
+
+        {/* Ad Settings Card */}
+        <Card sx={{ 
+          mb: 4,
+          borderRadius: '16px',
+          backgroundColor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          boxShadow: darkMode 
+            ? '0 4px 24px rgba(0, 0, 0, 0.2)'
+            : '0 4px 24px rgba(0, 0, 0, 0.05)',
+        }}>
+          <CardContent>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 2, 
+              mb: 3,
+              pb: 2,
+              borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}>
+              <Settings sx={{ 
+                fontSize: 24,
+                color: darkMode ? '#8ab4f8' : '#1a73e8',
+              }} />
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 500,
+                  color: darkMode ? '#e8eaed' : '#202124',
+                }}
+              >
+                Ad Settings
+              </Typography>
+            </Box>
+            
+            <Box sx={{ px: { xs: 1, sm: 2 } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={adsEnabled}
+                    onChange={(e) => setAdsEnabled(e.target.checked)}
+                    sx={{
+                      color: '#1a73e8',
+                      '&.Mui-checked': {
+                        color: '#1a73e8',
+                      },
+                    }}
+                  />
+                }
+                label={
+                  <Typography color={darkMode ? '#e8eaed' : '#202124'}>
+                    Enable advertisements
+                  </Typography>
+                }
+                sx={{ mb: 3, display: 'block' }}
+              />
+              
+              <Typography variant="body2" gutterBottom sx={{ mt: 2, color: darkMode ? '#e8eaed' : '#202124' }}>
+                Ad Density: {adDensity}%
+              </Typography>
+              <Slider
+                value={adDensity}
+                onChange={(_, value) => setAdDensity(value as number)}
+                min={10}
+                max={100}
+                sx={{
+                  color: '#1a73e8',
+                  '& .MuiSlider-mark': {
+                    backgroundColor: darkMode ? '#9aa0a6' : '#5f6368',
+                  },
+                  '& .MuiSlider-markLabel': {
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                  },
+                }}
+                marks={[
+                  { value: 25, label: 'Low' },
+                  { value: 50, label: 'Medium' },
+                  { value: 75, label: 'High' },
+                ]}
+              />
+              
+              <Typography variant="body2" gutterBottom sx={{ mt: 3, color: darkMode ? '#e8eaed' : '#202124' }}>
+                Ad Categories
+              </Typography>
+              <Select 
+                fullWidth 
+                size="small" 
+                defaultValue="all" 
+                sx={{ 
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    '&:hover': {
+                      borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                  },
+                  '& .MuiSelect-select': {
+                    color: darkMode ? '#e8eaed' : '#202124',
+                  },
+                }}
+              >
+                <MenuItem value="all">All Categories</MenuItem>
+                <MenuItem value="tech">Technology</MenuItem>
+                <MenuItem value="business">Business</MenuItem>
+                <MenuItem value="saas">SaaS</MenuItem>
+                <MenuItem value="marketing">Marketing</MenuItem>
+              </Select>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Campaigns Table Card */}
+        <Card sx={{ 
+          borderRadius: '16px',
+          backgroundColor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          boxShadow: darkMode 
+            ? '0 4px 24px rgba(0, 0, 0, 0.2)'
+            : '0 4px 24px rgba(0, 0, 0, 0.05)',
+          overflow: 'hidden',
+        }}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ 
+              p: 3, 
+              pb: 2, 
+              borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+            }}>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                justifyContent="space-between"
+                alignItems={{ xs: "flex-start", sm: "center" }}
+                spacing={2}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Campaign sx={{ 
+                    color: darkMode ? '#8ab4f8' : '#1a73e8',
+                  }} />
+                  <Box>
+                    <Typography variant="h6" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
+                      Active Campaigns
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color={darkMode ? '#9aa0a6' : '#5f6368'}
+                      sx={{ mt: 0.5 }}
+                    >
+                      {campaigns.length} campaigns running
+                    </Typography>
+                  </Box>
+                </Box>
+                <Badge 
+                  badgeContent={campaigns.filter(c => c.status === 'active').length} 
+                  color="primary" 
+                  showZero
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      backgroundColor: '#1a73e8',
+                      color: '#ffffff',
+                    }
+                  }}
+                >
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                    Active Campaigns
+                  </Typography>
+                </Badge>
+              </Stack>
+            </Box>
+
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ 
+                    backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                    borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  }}>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Campaign Name
                     </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={campaign.status}
-                        color={campaign.status === 'active' ? 'success' : 'warning'}
-                        size="small"
-                      />
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Status
                     </TableCell>
-                    <TableCell>{campaign.impressions.toLocaleString()}</TableCell>
-                    <TableCell>{campaign.clicks}</TableCell>
-                    <TableCell>{campaign.ctr}%</TableCell>
-                    <TableCell>₹{campaign.revenue.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Box display="flex" gap={1}>
-                        <Button size="small" startIcon={<Edit />}>Edit</Button>
-                        <Button size="small" color="error" startIcon={<Delete />}>Delete</Button>
-                      </Box>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Impressions
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Clicks
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      CTR
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Revenue
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Actions
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+                </TableHead>
+                <TableBody>
+                  {campaigns.map((campaign) => (
+                    <TableRow
+                      key={campaign.id}
+                      hover
+                      sx={{
+                        backgroundColor: darkMode ? '#303134' : '#ffffff',
+                        '&:hover': { backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4' },
+                        borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      }}
+                    >
+                      <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                        <Box>
+                          <Typography fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>
+                            {campaign.name}
+                          </Typography>
+                          <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                            {campaign.placement}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                        <Chip
+                          label={campaign.status}
+                          size="small"
+                          sx={{
+                            bgcolor: campaign.status === 'active' 
+                              ? (darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.1)')
+                              : (darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.1)'),
+                            color: campaign.status === 'active' 
+                              ? (darkMode ? '#34a853' : '#34a853')
+                              : (darkMode ? '#fbbc04' : '#f57c00'),
+                            fontWeight: "medium",
+                            border: 'none',
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                        <Typography color={darkMode ? '#e8eaed' : '#202124'}>
+                          {campaign.impressions.toLocaleString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                        <Typography color={darkMode ? '#e8eaed' : '#202124'}>
+                          {campaign.clicks}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                        <Typography color={darkMode ? '#e8eaed' : '#202124'}>
+                          {campaign.ctr}%
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                        <Typography fontWeight="bold" color={darkMode ? '#34a853' : '#34a853'}>
+                          ₹{campaign.revenue.toFixed(2)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                        <Box display="flex" gap={1}>
+                          <Button 
+                            size="small" 
+                            startIcon={<EditIcon />}
+                            sx={{
+                              color: darkMode ? '#fbbc04' : '#f57c00',
+                              borderColor: darkMode ? '#3c4043' : '#dadce0',
+                              borderRadius: '8px',
+                              '&:hover': {
+                                backgroundColor: darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.1)',
+                                borderColor: darkMode ? '#fbbc04' : '#f57c00',
+                              },
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            size="small" 
+                            startIcon={<DeleteIcon />}
+                            sx={{
+                              color: darkMode ? '#ea4335' : '#d32f2f',
+                              borderColor: darkMode ? '#3c4043' : '#dadce0',
+                              borderRadius: '8px',
+                              '&:hover': {
+                                backgroundColor: darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.1)',
+                                borderColor: darkMode ? '#ea4335' : '#d32f2f',
+                              },
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
 
-      {/* Create Ad Dialog */}
-      <Dialog open={openAdDialog} onClose={() => setOpenAdDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Create New Advertisement</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <TextField fullWidth label="Ad Title" sx={{ mb: 2 }} />
-            <TextField fullWidth label="Description" multiline rows={3} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Target URL" sx={{ mb: 2 }} />
-            <Select fullWidth label="Placement" defaultValue="banner" sx={{ mb: 2 }}>
+        {/* Create Ad Dialog */}
+        <CreateAdDialog
+          open={openAdDialog}
+          onClose={() => setOpenAdDialog(false)}
+          darkMode={darkMode}
+        />
+      </Container>
+    </Box>
+  )
+}
+
+function CreateAdDialog({ open, onClose, darkMode }: any) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    url: '',
+    placement: 'banner',
+    budget: '',
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Handle form submission
+    onClose()
+  }
+
+  return (
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: '16px',
+          backgroundColor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        }
+      }}
+    >
+      <DialogTitle sx={{ 
+        borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        color: darkMode ? '#e8eaed' : '#202124',
+        fontWeight: 500,
+        pb: 2,
+      }}>
+        Create New Advertisement
+      </DialogTitle>
+      <form onSubmit={handleSubmit}>
+        <DialogContent sx={{ pt: 3 }}>
+          <Stack spacing={2}>
+            <TextField
+              fullWidth
+              label="Ad Title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              required
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  '&:hover': {
+                    borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                },
+                '& .MuiInputBase-input': {
+                  color: darkMode ? '#e8eaed' : '#202124',
+                },
+              }}
+            />
+            
+            <TextField
+              fullWidth
+              label="Description"
+              multiline
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  '&:hover': {
+                    borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                },
+                '& .MuiInputBase-input': {
+                  color: darkMode ? '#e8eaed' : '#202124',
+                },
+              }}
+            />
+            
+            <TextField
+              fullWidth
+              label="Target URL"
+              value={formData.url}
+              onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+              required
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  '&:hover': {
+                    borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                },
+                '& .MuiInputBase-input': {
+                  color: darkMode ? '#e8eaed' : '#202124',
+                },
+              }}
+            />
+            
+            <Select
+              fullWidth
+              label="Placement"
+              value={formData.placement}
+              onChange={(e) => setFormData({ ...formData, placement: e.target.value })}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  '&:hover': {
+                    borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                },
+                '& .MuiSelect-select': {
+                  color: darkMode ? '#e8eaed' : '#202124',
+                },
+              }}
+            >
               <MenuItem value="banner">Top Banner</MenuItem>
               <MenuItem value="sidebar">Sidebar</MenuItem>
-              <MenuItem value="inline">Inline Content</MenuItem>
+              <MenuItem value="content">Inline Content</MenuItem>
               <MenuItem value="popup">Popup</MenuItem>
             </Select>
-            <TextField fullWidth label="Budget (₹)" type="number" sx={{ mb: 2 }} />
-          </Box>
+            
+            <TextField
+              fullWidth
+              label="Budget (₹)"
+              type="number"
+              value={formData.budget}
+              onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+              required
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  '&:hover': {
+                    borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                },
+                '& .MuiInputBase-input': {
+                  color: darkMode ? '#e8eaed' : '#202124',
+                },
+              }}
+            />
+          </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenAdDialog(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => setOpenAdDialog(false)}>
+        <DialogActions sx={{ 
+          px: 3, 
+          pb: 3,
+          borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          pt: 2,
+        }}>
+          <Button 
+            onClick={onClose}
+            sx={{
+              color: darkMode ? '#9aa0a6' : '#5f6368',
+              '&:hover': {
+                backgroundColor: darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(95, 99, 104, 0.1)',
+              },
+              borderRadius: '8px',
+              px: 3,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            variant="contained"
+            sx={{
+              backgroundColor: '#1a73e8',
+              '&:hover': {
+                backgroundColor: '#1669c1',
+              },
+              borderRadius: '8px',
+              px: 3,
+              fontWeight: 500,
+            }}
+          >
             Create Campaign
           </Button>
         </DialogActions>
-      </Dialog>
-    </Box>
+      </form>
+    </Dialog>
   )
 }

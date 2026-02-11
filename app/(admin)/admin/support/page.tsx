@@ -3,7 +3,24 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
+  Container,
   Typography,
+  Button,
+  TextField,
+  Alert,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
+  Chip,
+  Paper,
+  useTheme,
+  useMediaQuery,
   Card,
   CardContent,
   Table,
@@ -12,20 +29,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  TextField,
-  Button,
-  Chip,
-  Alert,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextareaAutosize,
   Stack,
   Avatar,
-  IconButton,
   InputAdornment,
   Badge,
   Divider,
@@ -34,7 +40,6 @@ import {
   Support as SupportIcon,
   Search as SearchIcon,
   Refresh as RefreshIcon,
-  CheckCircle as ResolveIcon,
   Chat as ChatIcon,
   Email as EmailIcon,
   PriorityHigh as PriorityIcon,
@@ -44,7 +49,16 @@ import {
   FilterList,
   Clear,
   CheckCircle,
+  ArrowBack,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Add as AddIcon,
+  History as HistoryIcon,
+  Description,
+  CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface SupportTicket {
   _id: string;
@@ -65,9 +79,16 @@ interface SupportTicket {
 }
 
 export default function AdminSupportPage() {
+  const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const darkMode = theme.palette.mode === 'dark';
+
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
@@ -84,7 +105,7 @@ export default function AdminSupportPage() {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      setError("");
+      setError(null);
 
       // Use real API endpoint
       const response = await fetch("/api/admin/support");
@@ -127,9 +148,13 @@ export default function AdminSupportPage() {
       const data = await response.json();
       setReplyMessage("");
       setSelectedTicket(data.ticket);
+      setSuccess("Reply sent successfully!");
 
       // Refresh tickets list
       fetchTickets();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       setError(err.message || "Failed to send reply");
     }
@@ -158,6 +183,9 @@ export default function AdminSupportPage() {
       if (selectedTicket?._id === ticketId) {
         setSelectedTicket(data.ticket);
       }
+
+      setSuccess(`Ticket marked as ${status.replace("-", " ")} successfully!`);
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       setError(err.message || "Failed to update ticket status");
     }
@@ -166,31 +194,41 @@ export default function AdminSupportPage() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "urgent":
-        return "#dc2626";
+        return "#ea4335";
       case "high":
-        return "#ea580c";
+        return "#f57c00";
       case "medium":
-        return "#2563eb";
+        return "#fbbc04";
       case "low":
-        return "#16a34a";
+        return "#34a853";
       default:
-        return "#6b7280";
+        return "#5f6368";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "open":
-        return "#3b82f6";
+        return "#1a73e8";
       case "in-progress":
-        return "#f59e0b";
+        return "#fbbc04";
       case "resolved":
-        return "#10b981";
+        return "#34a853";
       case "closed":
-        return "#6b7280";
+        return "#5f6368";
       default:
-        return "#6b7280";
+        return "#5f6368";
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   const filteredTickets = tickets.filter((ticket) => {
@@ -221,423 +259,682 @@ export default function AdminSupportPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 4,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="h4"
-            component="h1"
-            fontWeight="bold"
-            gutterBottom
-            sx={{ display: "flex", alignItems: "center", gap: 2 }}
+    <Box sx={{ 
+      minHeight: '100vh',
+      backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+      py: { xs: 2, sm: 3, md: 4 },
+    }}>
+      <Container maxWidth="lg">
+        {/* Header Section */}
+        <Box sx={{ mb: { xs: 3, sm: 4, md: 5 } }}>
+          <Button
+            component={Link}
+            href="/admin/dashboard"
+            startIcon={<ArrowBack />}
+            sx={{ 
+              mb: 2,
+              color: darkMode ? '#8ab4f8' : '#1a73e8',
+              '&:hover': {
+                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.08)' : 'rgba(26, 115, 232, 0.08)',
+              },
+            }}
           >
-            <SupportIcon sx={{ fontSize: 36 }} />
-            Support Center
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Manage user inquiries and support requests
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<RefreshIcon />}
-          onClick={fetchTickets}
-          disabled={loading}
-          sx={{
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            "&:hover": {
-              background: "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
-            },
-          }}
-        >
-          Refresh
-        </Button>
-      </Box>
+            Back to Dashboard
+          </Button>
 
-      {error && (
-        <Alert
-          severity="error"
-          sx={{ mb: 3, borderRadius: 2 }}
-          onClose={() => setError("")}
-          action={
-            <Button color="inherit" size="small" onClick={fetchTickets}>
-              Retry
-            </Button>
-          }
-        >
-          {error}
-        </Alert>
-      )}
-
-      {/* Stats Cards - Using Stack instead of Grid */}
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        sx={{ mb: 4, flexWrap: "wrap" }}
-      >
-        <Card sx={{ flex: 1, minWidth: 200 }}>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: "#3b82f620", color: "#3b82f6" }}>
-                <Forum />
-              </Avatar>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{
+                width: { xs: 48, sm: 56 },
+                height: { xs: 48, sm: 56 },
+                borderRadius: '16px',
+                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: darkMode ? '#8ab4f8' : '#1a73e8',
+              }}>
+                <SupportIcon sx={{ fontSize: { xs: 24, sm: 28 } }} />
+              </Box>
               <Box>
-                <Typography variant="h3" fontWeight="bold" color="#3b82f6">
-                  {stats.total}
+                <Typography 
+                  variant={isMobile ? "h5" : isTablet ? "h4" : "h3"}
+                  sx={{ 
+                    fontWeight: 500,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Support Center
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Tickets
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                    mt: 0.5,
+                  }}
+                >
+                  Manage user inquiries and support requests
                 </Typography>
               </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ flex: 1, minWidth: 200 }}>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: "#dc262620", color: "#dc2626" }}>
-                <PriorityIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="h3" fontWeight="bold" color="#dc2626">
-                  {stats.urgent}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Urgent Priority
-                </Typography>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ flex: 1, minWidth: 200 }}>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: "#3b82f620", color: "#3b82f6" }}>
-                <ChatIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="h3" fontWeight="bold" color="#3b82f6">
-                  {stats.open}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Open Tickets
-                </Typography>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ flex: 1, minWidth: 200 }}>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: "#10b98120", color: "#10b981" }}>
-                <CheckCircle />
-              </Avatar>
-              <Box>
-                <Typography variant="h3" fontWeight="bold" color="#10b981">
-                  {stats.resolved}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Resolved
-                </Typography>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-      </Stack>
-
-      {/* Search and Filters */}
-      <Card sx={{ mb: 3, borderRadius: 2 }}>
-        <CardContent>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
-            alignItems="center"
-          >
-            <Box sx={{ flex: 1, minWidth: 300 }}>
-              <TextField
-                fullWidth
-                placeholder="Search tickets by user, subject, or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon color="action" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: search && (
-                    <InputAdornment position="end">
-                      <IconButton size="small" onClick={() => setSearch("")}>
-                        <Clear fontSize="small" />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                size="small"
-              />
             </Box>
-
-            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-              <Button
-                variant={statusFilter === "" ? "contained" : "outlined"}
-                size="small"
-                onClick={() => setStatusFilter("")}
-              >
-                All Status
-              </Button>
-              <Button
-                variant={statusFilter === "open" ? "contained" : "outlined"}
-                color="primary"
-                size="small"
-                onClick={() => setStatusFilter("open")}
-              >
-                Open
-              </Button>
-              <Button
-                variant={
-                  statusFilter === "in-progress" ? "contained" : "outlined"
-                }
-                color="warning"
-                size="small"
-                onClick={() => setStatusFilter("in-progress")}
-              >
-                In Progress
-              </Button>
-              <Button
-                variant={statusFilter === "resolved" ? "contained" : "outlined"}
-                color="success"
-                size="small"
-                onClick={() => setStatusFilter("resolved")}
-              >
-                Resolved
-              </Button>
-            </Stack>
-
+            
             <Button
-              variant="outlined"
-              startIcon={<FilterList />}
-              onClick={() => {
-                setSearch("");
-                setStatusFilter("");
-                setPriorityFilter("");
+              variant="contained"
+              startIcon={<RefreshIcon />}
+              onClick={fetchTickets}
+              disabled={loading}
+              sx={{
+                backgroundColor: '#1a73e8',
+                '&:hover': {
+                  backgroundColor: '#1669c1',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(26, 115, 232, 0.2)',
+                },
+                borderRadius: '12px',
+                px: 3,
+                py: 1.25,
+                fontWeight: 500,
               }}
-              size="small"
             >
-              Clear All
+              Refresh
             </Button>
-          </Stack>
-        </CardContent>
-      </Card>
+          </Box>
+        </Box>
 
-      {/* Tickets Table */}
-      <Card sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <CardContent sx={{ p: 0 }}>
-          <Box sx={{ p: 3, pb: 2, borderBottom: 1, borderColor: "divider" }}>
+        {/* Alerts */}
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 3,
+              borderRadius: '12px',
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: '1px solid #ea4335',
+              color: darkMode ? '#e8eaed' : '#202124',
+              '& .MuiAlert-icon': { color: '#ea4335' },
+            }}
+            onClose={() => setError(null)}
+          >
+            {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert 
+            severity="success" 
+            sx={{ 
+              mb: 3,
+              borderRadius: '12px',
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: '1px solid #34a853',
+              color: darkMode ? '#e8eaed' : '#202124',
+              '& .MuiAlert-icon': { color: '#34a853' },
+            }}
+            onClose={() => setSuccess(null)}
+          >
+            {success}
+          </Alert>
+        )}
+
+        {/* Stats Cards */}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          sx={{ mb: 4, flexWrap: "wrap" }}
+        >
+          <Card sx={{ 
+            flex: 1, 
+            minWidth: 200,
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: darkMode 
+              ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+              : '0 2px 8px rgba(0, 0, 0, 0.05)',
+          }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ 
+                  bgcolor: darkMode ? 'rgba(26, 115, 232, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }}>
+                  <Forum />
+                </Avatar>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" color={darkMode ? '#8ab4f8' : '#1a73e8'}>
+                    {stats.total}
+                  </Typography>
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                    Total Tickets
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ 
+            flex: 1, 
+            minWidth: 200,
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: darkMode 
+              ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+              : '0 2px 8px rgba(0, 0, 0, 0.05)',
+          }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ 
+                  bgcolor: darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.1)',
+                  color: darkMode ? '#ea4335' : '#ea4335',
+                }}>
+                  <PriorityIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" color={darkMode ? '#ea4335' : '#ea4335'}>
+                    {stats.urgent}
+                  </Typography>
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                    Urgent Priority
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ 
+            flex: 1, 
+            minWidth: 200,
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: darkMode 
+              ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+              : '0 2px 8px rgba(0, 0, 0, 0.05)',
+          }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ 
+                  bgcolor: darkMode ? 'rgba(26, 115, 232, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }}>
+                  <ChatIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" color={darkMode ? '#8ab4f8' : '#1a73e8'}>
+                    {stats.open}
+                  </Typography>
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                    Open Tickets
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ 
+            flex: 1, 
+            minWidth: 200,
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: darkMode 
+              ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+              : '0 2px 8px rgba(0, 0, 0, 0.05)',
+          }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ 
+                  bgcolor: darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.1)',
+                  color: darkMode ? '#34a853' : '#34a853',
+                }}>
+                  <CheckCircleIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" color={darkMode ? '#34a853' : '#34a853'}>
+                    {stats.resolved}
+                  </Typography>
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                    Resolved
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Stack>
+
+        {/* Search and Filters */}
+        <Card sx={{ 
+          mb: 3, 
+          borderRadius: '16px',
+          backgroundColor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          boxShadow: darkMode 
+            ? '0 4px 24px rgba(0, 0, 0, 0.2)'
+            : '0 4px 24px rgba(0, 0, 0, 0.05)',
+        }}>
+          <CardContent>
             <Stack
-              direction="row"
-              justifyContent="space-between"
+              direction={{ xs: "column", md: "row" }}
+              spacing={2}
               alignItems="center"
             >
-              <Typography variant="h6" fontWeight="bold">
-                Support Tickets
-                <Typography
-                  component="span"
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ ml: 1 }}
-                >
-                  ({filteredTickets.length} of {tickets.length})
-                </Typography>
-              </Typography>
-              <Badge badgeContent={stats.open} color="primary" showZero>
-                <Typography variant="body2" color="text.secondary">
-                  Open Tickets
-                </Typography>
-              </Badge>
-            </Stack>
-          </Box>
+              <Box sx={{ flex: 1, minWidth: 300 }}>
+                <TextField
+                  fullWidth
+                  placeholder="Search tickets by user, subject, or email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon color={darkMode ? "inherit" : "action"} sx={{ 
+                          color: darkMode ? '#9aa0a6' : 'inherit'
+                        }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: search && (
+                      <InputAdornment position="end">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => setSearch("")}
+                          sx={{ color: darkMode ? '#9aa0a6' : 'inherit' }}
+                        >
+                          <Clear fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  size="small"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      '&:hover': {
+                        borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                    },
+                    '& .MuiInputBase-input': {
+                      color: darkMode ? '#e8eaed' : '#202124',
+                    },
+                  }}
+                />
+              </Box>
 
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "action.hover" }}>
-                  <TableCell width="250">User</TableCell>
-                  <TableCell>Subject & Message</TableCell>
-                  <TableCell width="120">Priority</TableCell>
-                  <TableCell width="120">Status</TableCell>
-                  <TableCell width="120">Created</TableCell>
-                  <TableCell width="100" align="right">
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                      <CircularProgress />
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 2 }}
-                      >
-                        Loading support tickets...
-                      </Typography>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                <Button
+                  variant={statusFilter === "" ? "contained" : "outlined"}
+                  size="small"
+                  onClick={() => setStatusFilter("")}
+                  sx={{
+                    backgroundColor: statusFilter === "" ? '#1a73e8' : 'transparent',
+                    color: statusFilter === "" ? '#ffffff' : (darkMode ? '#e8eaed' : '#202124'),
+                    borderColor: darkMode ? '#5f6368' : '#dadce0',
+                    borderRadius: '8px',
+                    '&:hover': {
+                      backgroundColor: statusFilter === "" ? '#1669c1' : (darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(95, 99, 104, 0.1)'),
+                    },
+                  }}
+                >
+                  All Status
+                </Button>
+                <Button
+                  variant={statusFilter === "open" ? "contained" : "outlined"}
+                  size="small"
+                  onClick={() => setStatusFilter("open")}
+                  sx={{
+                    backgroundColor: statusFilter === "open" ? '#1a73e8' : 'transparent',
+                    color: statusFilter === "open" ? '#ffffff' : (darkMode ? '#e8eaed' : '#202124'),
+                    borderColor: darkMode ? '#5f6368' : '#dadce0',
+                    borderRadius: '8px',
+                    '&:hover': {
+                      backgroundColor: statusFilter === "open" ? '#1669c1' : (darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(95, 99, 104, 0.1)'),
+                    },
+                  }}
+                >
+                  Open
+                </Button>
+                <Button
+                  variant={statusFilter === "in-progress" ? "contained" : "outlined"}
+                  size="small"
+                  onClick={() => setStatusFilter("in-progress")}
+                  sx={{
+                    backgroundColor: statusFilter === "in-progress" ? '#fbbc04' : 'transparent',
+                    color: statusFilter === "in-progress" ? '#202124' : (darkMode ? '#e8eaed' : '#202124'),
+                    borderColor: darkMode ? '#5f6368' : '#dadce0',
+                    borderRadius: '8px',
+                    '&:hover': {
+                      backgroundColor: statusFilter === "in-progress" ? '#e6a800' : (darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(95, 99, 104, 0.1)'),
+                    },
+                  }}
+                >
+                  In Progress
+                </Button>
+                <Button
+                  variant={statusFilter === "resolved" ? "contained" : "outlined"}
+                  size="small"
+                  onClick={() => setStatusFilter("resolved")}
+                  sx={{
+                    backgroundColor: statusFilter === "resolved" ? '#34a853' : 'transparent',
+                    color: statusFilter === "resolved" ? '#ffffff' : (darkMode ? '#e8eaed' : '#202124'),
+                    borderColor: darkMode ? '#5f6368' : '#dadce0',
+                    borderRadius: '8px',
+                    '&:hover': {
+                      backgroundColor: statusFilter === "resolved" ? '#2d8e47' : (darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(95, 99, 104, 0.1)'),
+                    },
+                  }}
+                >
+                  Resolved
+                </Button>
+              </Stack>
+
+              <Button
+                variant="outlined"
+                startIcon={<FilterList />}
+                onClick={() => {
+                  setSearch("");
+                  setStatusFilter("");
+                  setPriorityFilter("");
+                }}
+                size="small"
+                sx={{
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  borderColor: darkMode ? '#5f6368' : '#dadce0',
+                  borderRadius: '8px',
+                  '&:hover': {
+                    backgroundColor: darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(95, 99, 104, 0.1)',
+                    borderColor: darkMode ? '#8ab4f8' : '#1a73e8',
+                  },
+                }}
+              >
+                Clear All
+              </Button>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Tickets Table */}
+        <Card sx={{ 
+          borderRadius: '16px',
+          backgroundColor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          boxShadow: darkMode 
+            ? '0 4px 24px rgba(0, 0, 0, 0.2)'
+            : '0 4px 24px rgba(0, 0, 0, 0.05)',
+          overflow: 'hidden',
+        }}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ 
+              p: 3, 
+              pb: 2, 
+              borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+            }}>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                justifyContent="space-between"
+                alignItems={{ xs: "flex-start", sm: "center" }}
+                spacing={2}
+              >
+                <Box>
+                  <Typography variant="h6" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
+                    Support Tickets
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color={darkMode ? '#9aa0a6' : '#5f6368'}
+                    sx={{ mt: 0.5 }}
+                  >
+                    {filteredTickets.length} of {tickets.length} tickets
+                  </Typography>
+                </Box>
+                <Badge 
+                  badgeContent={stats.open} 
+                  color="primary" 
+                  showZero
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      backgroundColor: '#1a73e8',
+                      color: '#ffffff',
+                    }
+                  }}
+                >
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                    Open Tickets
+                  </Typography>
+                </Badge>
+              </Stack>
+            </Box>
+
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ 
+                    backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                    borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  }}>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      User
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Subject & Message
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Priority
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Status
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Created
+                    </TableCell>
+                    <TableCell align="right" sx={{ 
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      fontWeight: 500,
+                      borderBottom: 'none',
+                    }}>
+                      Actions
                     </TableCell>
                   </TableRow>
-                ) : filteredTickets.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                      <ChatIcon
-                        sx={{ fontSize: 48, color: "text.disabled", mb: 2 }}
-                      />
-                      <Typography variant="h6" color="text.secondary">
-                        No support tickets found
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 1 }}
-                      >
-                        {search || statusFilter
-                          ? "Try changing your search criteria"
-                          : "No support requests yet"}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredTickets.map((ticket) => (
-                    <TableRow
-                      key={ticket._id}
-                      hover
-                      sx={{
-                        "&:hover": { backgroundColor: "action.hover" },
-                        cursor: "pointer",
-                      }}
-                      onClick={() => handleViewTicket(ticket)}
-                    >
-                      <TableCell>
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <Avatar
-                            sx={{ bgcolor: getPriorityColor(ticket.priority) }}
-                          >
-                            <Person />
-                          </Avatar>
-                          <Box>
-                            <Typography variant="subtitle2" fontWeight="bold">
-                              {ticket.userName}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {ticket.userEmail}
-                            </Typography>
-                          </Box>
-                        </Stack>
+                </TableHead>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                        <CircularProgress />
+                        <Typography
+                          variant="body2"
+                          color={darkMode ? '#9aa0a6' : '#5f6368'}
+                          sx={{ mt: 2 }}
+                        >
+                          Loading support tickets...
+                        </Typography>
                       </TableCell>
-                      <TableCell>
-                        <Typography variant="subtitle2" fontWeight="medium">
-                          {ticket.subject}
+                    </TableRow>
+                  ) : filteredTickets.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                        <ChatIcon
+                          sx={{ fontSize: 48, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2 }}
+                        />
+                        <Typography variant="h6" color={darkMode ? '#e8eaed' : '#202124'}>
+                          No support tickets found
                         </Typography>
                         <Typography
                           variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                            maxWidth: 400,
-                          }}
+                          color={darkMode ? '#9aa0a6' : '#5f6368'}
+                          sx={{ mt: 1 }}
                         >
-                          {ticket.message}
+                          {search || statusFilter
+                            ? "Try changing your search criteria"
+                            : "No support requests yet"}
                         </Typography>
                       </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={ticket.priority}
-                          size="small"
-                          sx={{
-                            bgcolor: `${getPriorityColor(ticket.priority)}20`,
-                            color: getPriorityColor(ticket.priority),
-                            fontWeight: "bold",
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={ticket.status}
-                          size="small"
-                          sx={{
-                            bgcolor: `${getStatusColor(ticket.status)}20`,
-                            color: getStatusColor(ticket.status),
-                            fontWeight: "medium",
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Stack spacing={0.5}>
-                          <Typography variant="caption">
-                            {new Date(ticket.createdAt).toLocaleDateString()}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(ticket.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<ChatIcon />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewTicket(ticket);
-                          }}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+                  ) : (
+                    filteredTickets.map((ticket) => (
+                      <TableRow
+                        key={ticket._id}
+                        hover
+                        sx={{
+                          backgroundColor: darkMode ? '#303134' : '#ffffff',
+                          '&:hover': { backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4' },
+                          cursor: "pointer",
+                          borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        }}
+                        onClick={() => handleViewTicket(ticket)}
+                      >
+                        <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                          <Stack direction="row" spacing={2} alignItems="center">
+                            <Avatar
+                              sx={{ 
+                                bgcolor: getPriorityColor(ticket.priority),
+                                color: '#ffffff',
+                              }}
+                            >
+                              <Person />
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle2" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
+                                {ticket.userName}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color={darkMode ? '#9aa0a6' : '#5f6368'}
+                              >
+                                {ticket.userEmail}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </TableCell>
+                        <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                          <Typography variant="subtitle2" fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>
+                            {ticket.subject}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color={darkMode ? '#9aa0a6' : '#5f6368'}
+                            sx={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                              maxWidth: 400,
+                            }}
+                          >
+                            {ticket.message}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                          <Chip
+                            label={ticket.priority}
+                            size="small"
+                            sx={{
+                              bgcolor: `${getPriorityColor(ticket.priority)}20`,
+                              color: getPriorityColor(ticket.priority),
+                              fontWeight: "bold",
+                              border: 'none',
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                          <Chip
+                            label={ticket.status.replace("-", " ")}
+                            size="small"
+                            sx={{
+                              bgcolor: `${getStatusColor(ticket.status)}20`,
+                              color: getStatusColor(ticket.status),
+                              fontWeight: "medium",
+                              border: 'none',
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                          <Stack spacing={0.5}>
+                            <Typography variant="caption" color={darkMode ? '#e8eaed' : '#202124'}>
+                              {formatDate(ticket.createdAt)}
+                            </Typography>
+                          </Stack>
+                        </TableCell>
+                        <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<ChatIcon />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewTicket(ticket);
+                            }}
+                            sx={{
+                              color: darkMode ? '#8ab4f8' : '#1a73e8',
+                              borderColor: darkMode ? '#3c4043' : '#dadce0',
+                              borderRadius: '8px',
+                              '&:hover': {
+                                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                                borderColor: darkMode ? '#8ab4f8' : '#1a73e8',
+                              },
+                            }}
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
 
-      {/* Ticket Details Dialog */}
-      {selectedTicket && (
-        <TicketDetailsDialog
-          open={viewDialogOpen}
-          ticket={selectedTicket}
-          replyMessage={replyMessage}
-          onReplyChange={setReplyMessage}
-          onSendReply={handleSendReply}
-          onUpdateStatus={handleUpdateStatus}
-          onClose={() => {
-            setViewDialogOpen(false);
-            setSelectedTicket(null);
-            setReplyMessage("");
-          }}
-        />
-      )}
+        {/* Ticket Details Dialog */}
+        {selectedTicket && (
+          <TicketDetailsDialog
+            open={viewDialogOpen}
+            ticket={selectedTicket}
+            replyMessage={replyMessage}
+            onReplyChange={setReplyMessage}
+            onSendReply={handleSendReply}
+            onUpdateStatus={handleUpdateStatus}
+            onClose={() => {
+              setViewDialogOpen(false);
+              setSelectedTicket(null);
+              setReplyMessage("");
+            }}
+            darkMode={darkMode}
+          />
+        )}
+      </Container>
     </Box>
   );
 }
@@ -650,6 +947,7 @@ function TicketDetailsDialog({
   onSendReply,
   onUpdateStatus,
   onClose,
+  darkMode,
 }: any) {
   if (!ticket) return null;
 
@@ -657,14 +955,61 @@ function TicketDetailsDialog({
     onUpdateStatus(ticket._id, status);
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+        return "#ea4335";
+      case "high":
+        return "#f57c00";
+      case "medium":
+        return "#fbbc04";
+      case "low":
+        return "#34a853";
+      default:
+        return "#5f6368";
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "open":
+        return "#1a73e8";
+      case "in-progress":
+        return "#fbbc04";
+      case "resolved":
+        return "#34a853";
+      case "closed":
+        return "#5f6368";
+      default:
+        return "#5f6368";
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: '16px',
+          backgroundColor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        }
+      }}
+    >
+      <DialogTitle sx={{ 
+        borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        color: darkMode ? '#e8eaed' : '#202124',
+        fontWeight: 500,
+        pb: 2,
+      }}>
         <Stack spacing={1}>
           <Typography variant="h6" fontWeight="bold">
             Support Ticket #{ticket._id.substring(0, 8)}
           </Typography>
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
             <Chip
               label={`Priority: ${ticket.priority}`}
               size="small"
@@ -672,6 +1017,7 @@ function TicketDetailsDialog({
                 bgcolor: `${getPriorityColor(ticket.priority)}20`,
                 color: getPriorityColor(ticket.priority),
                 fontWeight: "bold",
+                border: 'none',
               }}
             />
             <Chip
@@ -681,6 +1027,7 @@ function TicketDetailsDialog({
                 bgcolor: `${getStatusColor(ticket.status)}20`,
                 color: getStatusColor(ticket.status),
                 fontWeight: "medium",
+                border: 'none',
               }}
             />
           </Stack>
@@ -688,25 +1035,33 @@ function TicketDetailsDialog({
       </DialogTitle>
 
       <DialogContent>
-        <Stack spacing={3}>
+        <Stack spacing={3} sx={{ pt: 2 }}>
           {/* User Info */}
-          <Card variant="outlined">
+          <Card sx={{
+            borderRadius: '12px',
+            backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: 'none',
+          }}>
             <CardContent>
               <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: "primary.main" }}>
+                <Avatar sx={{ 
+                  bgcolor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                }}>
                   <Person />
                 </Avatar>
                 <Box>
-                  <Typography variant="subtitle1" fontWeight="bold">
+                  <Typography variant="subtitle1" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
                     {ticket.userName}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                     {ticket.userEmail}
                   </Typography>
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    color={darkMode ? '#9aa0a6' : '#5f6368'}
+                    sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}
                   >
                     <AccessTime fontSize="small" />
                     Created: {new Date(ticket.createdAt).toLocaleString()}
@@ -717,20 +1072,30 @@ function TicketDetailsDialog({
           </Card>
 
           {/* Ticket Content */}
-          <Card variant="outlined">
+          <Card sx={{
+            borderRadius: '12px',
+            backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            boxShadow: 'none',
+          }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom color="primary">
+              <Typography variant="h6" gutterBottom color={darkMode ? '#8ab4f8' : '#1a73e8'}>
                 {ticket.subject}
               </Typography>
-              <Typography variant="body1" paragraph>
+              <Typography variant="body1" color={darkMode ? '#e8eaed' : '#202124'} paragraph>
                 {ticket.message}
               </Typography>
             </CardContent>
           </Card>
 
           {/* Status Actions */}
-          <Paper variant="outlined" sx={{ p: 2 }}>
-            <Typography variant="subtitle2" gutterBottom fontWeight="bold">
+          <Paper sx={{ 
+            p: 2,
+            borderRadius: '12px',
+            backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          }}>
+            <Typography variant="subtitle2" gutterBottom fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
               Update Status:
             </Typography>
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
@@ -741,12 +1106,17 @@ function TicketDetailsDialog({
                       key={status}
                       size="small"
                       variant="outlined"
-                      // color={
-                      //   status === 'in-progress' ? 'warning' :
-                      //   status === 'resolved' ? 'success' : 'default'
-                      // }
                       onClick={() => handleStatusChange(status)}
-                      sx={{ textTransform: "capitalize" }}
+                      sx={{ 
+                        textTransform: "capitalize",
+                        color: darkMode ? '#e8eaed' : '#202124',
+                        borderColor: darkMode ? '#5f6368' : '#dadce0',
+                        borderRadius: '8px',
+                        '&:hover': {
+                          backgroundColor: darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(95, 99, 104, 0.1)',
+                          borderColor: darkMode ? '#8ab4f8' : '#1a73e8',
+                        },
+                      }}
                     >
                       Mark as {status.replace("-", " ")}
                     </Button>
@@ -758,7 +1128,7 @@ function TicketDetailsDialog({
           {/* Conversation */}
           {ticket.replies.length > 0 && (
             <Box>
-              <Typography variant="subtitle2" gutterBottom fontWeight="bold">
+              <Typography variant="subtitle2" gutterBottom fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
                 Conversation ({ticket.replies.length} replies):
               </Typography>
               <Stack spacing={2}>
@@ -767,24 +1137,29 @@ function TicketDetailsDialog({
                     key={index}
                     sx={{
                       p: 2,
-                      borderRadius: 2,
-                      bgcolor: reply.isAdmin ? "#e3f2fd" : "#f5f5f5",
-                      borderLeft: `4px solid ${reply.isAdmin ? "#1976d2" : "#757575"}`,
+                      borderRadius: '12px',
+                      bgcolor: reply.isAdmin 
+                        ? (darkMode ? 'rgba(26, 115, 232, 0.1)' : 'rgba(26, 115, 232, 0.08)') 
+                        : (darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(95, 99, 104, 0.08)'),
+                      borderLeft: `4px solid ${reply.isAdmin 
+                        ? (darkMode ? '#8ab4f8' : '#1a73e8') 
+                        : (darkMode ? '#9aa0a6' : '#5f6368')}`,
                     }}
                   >
                     <Stack
-                      direction="row"
+                      direction={{ xs: "column", sm: "row" }}
                       justifyContent="space-between"
-                      alignItems="flex-start"
+                      alignItems={{ xs: "flex-start", sm: "center" }}
+                      spacing={1}
                     >
-                      <Typography variant="subtitle2" fontWeight="bold">
+                      <Typography variant="subtitle2" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
                         {reply.isAdmin ? "📌 Admin" : "👤 User"}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                         {new Date(reply.createdAt).toLocaleString()}
                       </Typography>
                     </Stack>
-                    <Typography variant="body1" sx={{ mt: 1 }}>
+                    <Typography variant="body1" sx={{ mt: 1 }} color={darkMode ? '#e8eaed' : '#202124'}>
                       {reply.message}
                     </Typography>
                   </Box>
@@ -795,7 +1170,7 @@ function TicketDetailsDialog({
 
           {/* Reply Box */}
           <Box>
-            <Typography variant="subtitle2" gutterBottom fontWeight="bold">
+            <Typography variant="subtitle2" gutterBottom fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
               Send Reply:
             </Typography>
             <TextareaAutosize
@@ -806,17 +1181,15 @@ function TicketDetailsDialog({
               style={{
                 width: "100%",
                 padding: "16px",
-                borderRadius: "8px",
-                border: "2px solid #e5e7eb",
+                borderRadius: "12px",
+                backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                border: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                 fontFamily: "inherit",
                 fontSize: "14px",
+                color: darkMode ? '#e8eaed' : '#202124',
                 marginBottom: "12px",
                 resize: "vertical",
                 transition: "border 0.2s",
-                // '&:focus': {
-                //   outline: 'none',
-                //   borderColor: '#667eea',
-                // }
               }}
             />
             <Button
@@ -825,11 +1198,15 @@ function TicketDetailsDialog({
               disabled={!replyMessage.trim()}
               startIcon={<EmailIcon />}
               sx={{
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                "&:hover": {
-                  background:
-                    "linear-gradient(135deg, #764ba2 0%, #667eea 100%)",
+                backgroundColor: '#1a73e8',
+                '&:hover': {
+                  backgroundColor: '#1669c1',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(26, 115, 232, 0.2)',
                 },
+                borderRadius: '12px',
+                fontWeight: 500,
+                px: 3,
               }}
               fullWidth
             >
@@ -839,40 +1216,24 @@ function TicketDetailsDialog({
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-        <Button onClick={onClose}>Close</Button>
+      <DialogActions sx={{ 
+        p: 2, 
+        borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      }}>
+        <Button 
+          onClick={onClose}
+          sx={{
+            color: darkMode ? '#9aa0a6' : '#5f6368',
+            '&:hover': {
+              backgroundColor: darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(95, 99, 104, 0.1)',
+            },
+            borderRadius: '8px',
+            px: 3,
+          }}
+        >
+          Close
+        </Button>
       </DialogActions>
     </Dialog>
   );
-}
-
-// Helper functions moved outside
-function getPriorityColor(priority: string) {
-  switch (priority) {
-    case "urgent":
-      return "#dc2626";
-    case "high":
-      return "#ea580c";
-    case "medium":
-      return "#2563eb";
-    case "low":
-      return "#16a34a";
-    default:
-      return "#6b7280";
-  }
-}
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case "open":
-      return "#3b82f6";
-    case "in-progress":
-      return "#f59e0b";
-    case "resolved":
-      return "#10b981";
-    case "closed":
-      return "#6b7280";
-    default:
-      return "#6b7280";
-  }
 }

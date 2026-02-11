@@ -1,3 +1,4 @@
+// components/admin/dashboard/PlatformMetrics.tsx
 import React from 'react';
 import {
   Card,
@@ -6,6 +7,8 @@ import {
   Box,
   LinearProgress,
   Chip,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import {
   Speed,
@@ -31,6 +34,29 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
   revenue,
   totalUsers,
 }) => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+
+  // Google Material Design Colors
+  const googleColors = {
+    primary: '#1a73e8',
+    primaryLight: '#8ab4f8',
+    secondary: '#34a853',
+    warning: '#fbbc04',
+    error: '#ea4335',
+    purple: '#8b5cf6',
+    cyan: '#0ea5e9',
+    grey50: '#f8f9fa',
+    grey100: '#f1f3f4',
+    grey200: '#e8eaed',
+    grey300: '#dadce0',
+    grey400: '#bdc1c6',
+    grey500: '#9aa0a6',
+    grey600: '#80868b',
+    grey700: '#5f6368',
+    grey800: '#3c4043',
+    grey900: '#202124',
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -49,7 +75,7 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
       label: 'Platform Uptime',
       value: '99.9%',
       icon: <Speed />,
-      color: '#2e7d32',
+      color: googleColors.secondary,
       progress: 99.9,
       description: 'Last 30 days',
     },
@@ -57,7 +83,7 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
       label: 'API Response Time',
       value: '< 200ms',
       icon: <Speed />,
-      color: '#0288d1',
+      color: googleColors.cyan,
       progress: 95,
       description: 'Average response',
     },
@@ -65,7 +91,7 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
       label: 'Data Accuracy',
       value: '99.5%',
       icon: <Storage />,
-      color: '#1976d2',
+      color: googleColors.primary,
       progress: 99.5,
       description: 'Real-time sync',
     },
@@ -73,7 +99,7 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
       label: 'System Load',
       value: '45%',
       icon: <DeviceHub />,
-      color: '#ed6c02',
+      color: googleColors.warning,
       progress: 45,
       description: 'Current capacity',
     },
@@ -81,7 +107,7 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
       label: 'Security Score',
       value: 'A+',
       icon: <Security />,
-      color: '#2e7d32',
+      color: googleColors.secondary,
       progress: 98,
       description: 'Encryption & auth',
     },
@@ -89,7 +115,7 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
       label: 'User Satisfaction',
       value: '4.8/5',
       icon: <People />,
-      color: '#9c27b0',
+      color: googleColors.purple,
       progress: 96,
       description: 'Average rating',
     },
@@ -102,7 +128,7 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
       icon: <MonetizationOn />,
       change: '+12%',
       trend: 'up',
-      trendColor: '#2e7d32',
+      trendColor: googleColors.secondary,
     },
     {
       label: 'Daily Active Users',
@@ -110,7 +136,7 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
       icon: <People />,
       change: '+8%',
       trend: 'up',
-      trendColor: '#2e7d32',
+      trendColor: googleColors.secondary,
     },
     {
       label: 'Avg Session Duration',
@@ -118,7 +144,7 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
       icon: <AccessTime />,
       change: '+5%',
       trend: 'up',
-      trendColor: '#2e7d32',
+      trendColor: googleColors.secondary,
     },
     {
       label: 'Feature Adoption',
@@ -126,27 +152,38 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
       icon: <TrendingUp />,
       change: '+15%',
       trend: 'up',
-      trendColor: '#2e7d32',
+      trendColor: googleColors.secondary,
     },
   ];
 
   const services = [
-    { label: 'Database', status: 'operational', color: '#2e7d32' },
-    { label: 'API Gateway', status: 'operational', color: '#2e7d32' },
-    { label: 'Cache Server', status: 'operational', color: '#2e7d32' },
-    { label: 'File Storage', status: 'operational', color: '#2e7d32' },
-    { label: 'Email Service', status: 'operational', color: '#2e7d32' },
-    { label: 'Analytics', status: 'operational', color: '#2e7d32' },
+    { label: 'Database', status: 'operational', color: googleColors.secondary },
+    { label: 'API Gateway', status: 'operational', color: googleColors.secondary },
+    { label: 'Cache Server', status: 'operational', color: googleColors.secondary },
+    { label: 'File Storage', status: 'operational', color: googleColors.secondary },
+    { label: 'Email Service', status: 'operational', color: googleColors.secondary },
+    { label: 'Analytics', status: 'operational', color: googleColors.secondary },
   ];
 
   return (
-    <Card>
-      <CardContent>
+    <Card sx={{
+      borderRadius: '16px',
+      backgroundColor: darkMode ? googleColors.grey900 : '#ffffff',
+      border: `1px solid ${darkMode ? googleColors.grey800 : googleColors.grey200}`,
+      boxShadow: 'none',
+    }}>
+      <CardContent sx={{ p: 3 }}>
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
+          <Typography variant="h6" sx={{ 
+            fontWeight: 500,
+            color: darkMode ? googleColors.grey200 : googleColors.grey900,
+            mb: 1,
+          }}>
             Platform Health & Performance
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ 
+            color: darkMode ? googleColors.grey500 : googleColors.grey600,
+          }}>
             Real-time system metrics and user engagement analytics
           </Typography>
         </Box>
@@ -166,11 +203,17 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
             <Box
               key={index}
               sx={{
-                p: 2,
-                borderRadius: 2,
-                border: `1px solid ${metric.color}20`,
-                backgroundColor: `${metric.color}10`,
+                p: 2.5,
+                borderRadius: '12px',
+                border: `1px solid ${alpha(metric.color, 0.2)}`,
+                backgroundColor: alpha(metric.color, 0.05),
                 height: '100%',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  backgroundColor: alpha(metric.color, 0.08),
+                  transform: 'translateY(-2px)',
+                  boxShadow: `0 4px 12px ${alpha(metric.color, 0.15)}`,
+                },
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -179,20 +222,25 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    backgroundColor: `${metric.color}20`,
+                    width: 44,
+                    height: 44,
+                    borderRadius: '12px',
+                    backgroundColor: alpha(metric.color, 0.1),
                     color: metric.color,
                   }}
                 >
                   {metric.icon}
                 </Box>
                 <Box>
-                  <Typography variant="h5" fontWeight="bold">
+                  <Typography variant="h5" sx={{ 
+                    fontWeight: 500,
+                    color: darkMode ? googleColors.grey200 : googleColors.grey900,
+                  }}>
                     {metric.value}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ 
+                    color: darkMode ? googleColors.grey500 : googleColors.grey600,
+                  }}>
                     {metric.label}
                   </Typography>
                 </Box>
@@ -203,14 +251,18 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
                 sx={{
                   height: 6,
                   borderRadius: 3,
-                  backgroundColor: `${metric.color}10`,
+                  backgroundColor: darkMode ? googleColors.grey800 : googleColors.grey200,
                   '& .MuiLinearProgress-bar': {
                     backgroundColor: metric.color,
                     borderRadius: 3,
                   },
                 }}
               />
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              <Typography variant="caption" sx={{ 
+                mt: 1, 
+                display: 'block',
+                color: darkMode ? googleColors.grey500 : googleColors.grey600,
+              }}>
                 {metric.description}
               </Typography>
             </Box>
@@ -219,7 +271,11 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
 
         {/* KPI Indicators */}
         <Box sx={{ mb: 4 }}>
-          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+          <Typography variant="subtitle1" sx={{ 
+            fontWeight: 500,
+            color: darkMode ? googleColors.grey200 : googleColors.grey900,
+            mb: 2,
+          }}>
             Key Performance Indicators
           </Typography>
           <Box sx={{ 
@@ -236,10 +292,13 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
                 key={index}
                 sx={{
                   p: 2,
-                  borderRadius: 2,
-                  border: '1px solid rgba(0, 0, 0, 0.12)',
+                  borderRadius: '12px',
+                  border: `1px solid ${darkMode ? googleColors.grey800 : googleColors.grey200}`,
+                  backgroundColor: darkMode ? googleColors.grey800 : googleColors.grey50,
+                  transition: 'all 0.2s ease',
                   '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    backgroundColor: darkMode ? googleColors.grey700 : googleColors.grey100,
+                    borderColor: darkMode ? googleColors.grey600 : googleColors.grey300,
                   },
                 }}
               >
@@ -251,18 +310,23 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
                       justifyContent: 'center',
                       width: 36,
                       height: 36,
-                      borderRadius: '50%',
-                      backgroundColor: `${kpi.trendColor}20`,
+                      borderRadius: '10px',
+                      backgroundColor: alpha(kpi.trendColor, 0.1),
                       color: kpi.trendColor,
                     }}
                   >
                     {kpi.icon}
                   </Box>
                   <Box>
-                    <Typography variant="h6" fontWeight="bold">
+                    <Typography variant="h6" sx={{ 
+                      fontWeight: 500,
+                      color: darkMode ? googleColors.grey200 : googleColors.grey900,
+                    }}>
                       {kpi.value}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ 
+                      color: darkMode ? googleColors.grey500 : googleColors.grey600,
+                    }}>
                       {kpi.label}
                     </Typography>
                   </Box>
@@ -271,13 +335,13 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
                   label={kpi.change}
                   size="small"
                   sx={{
-                    height: 20,
-                    fontSize: '0.675rem',
+                    height: 22,
+                    fontSize: '0.7rem',
+                    fontWeight: 500,
                     color: kpi.trendColor,
-                    borderColor: `${kpi.trendColor}50`,
-                    backgroundColor: `${kpi.trendColor}10`,
+                    backgroundColor: alpha(kpi.trendColor, 0.1),
+                    border: 'none',
                   }}
-                  variant="outlined"
                 />
               </Box>
             ))}
@@ -286,10 +350,14 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
 
         {/* System Status */}
         <Box>
-          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+          <Typography variant="subtitle1" sx={{ 
+            fontWeight: 500,
+            color: darkMode ? googleColors.grey200 : googleColors.grey900,
+            mb: 2,
+          }}>
             System Status
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
             {services.map((service, index) => (
               <Chip
                 key={index}
@@ -307,9 +375,10 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
                   />
                 }
                 sx={{
-                  borderColor: `${service.color}50`,
-                  backgroundColor: `${service.color}10`,
+                  borderColor: alpha(service.color, 0.3),
+                  backgroundColor: alpha(service.color, 0.1),
                   color: service.color,
+                  fontWeight: 500,
                 }}
               />
             ))}

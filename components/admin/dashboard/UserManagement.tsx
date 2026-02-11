@@ -1,3 +1,4 @@
+// components/admin/dashboard/UserManagement.tsx
 import React from 'react';
 import {
   Card,
@@ -59,6 +60,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 }) => {
   const router = useRouter();
   const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Never';
@@ -86,49 +88,60 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'active':
-        return 'success';
+        return '#34a853';
       case 'trial':
-        return 'info';
+        return '#1a73e8';
       case 'inactive':
-        return 'error';
+        return '#ea4335';
       case 'pending':
-        return 'warning';
+        return '#fbbc04';
       default:
-        return 'default';
+        return '#9aa0a6';
     }
   };
 
   const getPlanColor = (plan: string) => {
     switch (plan?.toLowerCase()) {
       case 'yearly':
-        return 'secondary';
+        return '#34a853';
       case 'quarterly':
-        return 'primary';
+        return '#1a73e8';
       case 'monthly':
-        return 'warning';
+        return '#fbbc04';
       case 'trial':
-        return 'info';
+        return '#1a73e8';
       default:
-        return 'default';
+        return '#9aa0a6';
     }
   };
 
   const getUserAvatarColor = (userId: string, usageHours: number = 0) => {
-    if (usageHours > 100) return theme.palette.success.main;
-    if (usageHours > 10) return theme.palette.primary.main;
-    if (usageHours > 1) return theme.palette.warning.main;
-    return theme.palette.grey[500];
+    if (usageHours > 100) return '#34a853';
+    if (usageHours > 10) return '#1a73e8';
+    if (usageHours > 1) return '#fbbc04';
+    return darkMode ? '#5f6368' : '#9aa0a6';
   };
 
   return (
-    <Card>
-      <CardContent>
+    <Card sx={{
+      borderRadius: '16px',
+      backgroundColor: darkMode ? '#303134' : '#ffffff',
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      boxShadow: 'none',
+    }}>
+      <CardContent sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Box>
-            <Typography variant="h6" fontWeight="bold">
+            <Typography variant="h6" sx={{ 
+              fontWeight: 500,
+              color: darkMode ? '#e8eaed' : '#202124',
+              mb: 0.5,
+            }}>
               Recent Users
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ 
+              color: darkMode ? '#9aa0a6' : '#5f6368',
+            }}>
               Latest registered users with usage analytics
             </Typography>
           </Box>
@@ -137,20 +150,68 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             endIcon={<ArrowForward />}
             onClick={onViewAll}
             size="small"
+            sx={{
+              borderColor: darkMode ? '#3c4043' : '#dadce0',
+              color: darkMode ? '#e8eaed' : '#202124',
+              '&:hover': {
+                borderColor: darkMode ? '#5f6368' : '#5f6368',
+                backgroundColor: darkMode ? alpha('#ffffff', 0.05) : alpha('#000000', 0.02),
+              },
+            }}
           >
             View All Users
           </Button>
         </Box>
 
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer 
+          component={Paper} 
+          variant="outlined"
+          sx={{
+            borderRadius: '12px',
+            backgroundColor: darkMode ? '#202124' : '#ffffff',
+            borderColor: darkMode ? '#3c4043' : '#dadce0',
+          }}
+        >
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell>User Profile</TableCell>
-                <TableCell>Plan & Status</TableCell>
-                <TableCell>Usage Analytics</TableCell>
-                <TableCell>Activity Timeline</TableCell>
-                <TableCell align="right">Actions</TableCell>
+              <TableRow sx={{ 
+                backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+              }}>
+                <TableCell sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                }}>
+                  User Profile
+                </TableCell>
+                <TableCell sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                }}>
+                  Plan & Status
+                </TableCell>
+                <TableCell sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                }}>
+                  Usage Analytics
+                </TableCell>
+                <TableCell sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                }}>
+                  Activity Timeline
+                </TableCell>
+                <TableCell align="right" sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                }}>
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -160,28 +221,36 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   hover
                   sx={{
                     '&:hover': {
-                      backgroundColor: alpha(theme.palette.action.hover, 0.05),
+                      backgroundColor: darkMode ? alpha('#ffffff', 0.03) : alpha('#000000', 0.02),
                     },
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
                   }}
                 >
-                  <TableCell>
+                  <TableCell sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Avatar
                         sx={{
                           bgcolor: getUserAvatarColor(user._id, user.totalUsageHours),
-                          width: 42,
-                          height: 42,
+                          width: 40,
+                          height: 40,
+                          fontSize: 14,
+                          fontWeight: 500,
                         }}
                       >
                         {user.name?.charAt(0).toUpperCase() || 'U'}
                       </Avatar>
                       <Box>
-                        <Typography variant="subtitle2" fontWeight="bold">
+                        <Typography variant="subtitle2" sx={{ 
+                          fontWeight: 500,
+                          color: darkMode ? '#e8eaed' : '#202124',
+                        }}>
                           {user.name || 'Unknown User'}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                          <Email sx={{ fontSize: 12, color: 'text.secondary' }} />
-                          <Typography variant="caption" color="text.secondary">
+                          <Email sx={{ fontSize: 12, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                          <Typography variant="caption" sx={{ 
+                            color: darkMode ? '#9aa0a6' : '#5f6368',
+                          }}>
                             {user.email || 'No email'}
                           </Typography>
                         </Box>
@@ -189,44 +258,63 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     </Box>
                   </TableCell>
                   
-                  <TableCell>
+                  <TableCell sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       <Chip
                         label={user.subscription?.plan?.toUpperCase() || 'NO PLAN'}
                         size="small"
-                        color={getPlanColor(user.subscription?.plan || 'none') as any}
-                        variant="outlined"
-                        sx={{ width: 'fit-content' }}
+                        sx={{
+                          width: 'fit-content',
+                          backgroundColor: alpha(getPlanColor(user.subscription?.plan || 'none'), 0.1),
+                          color: getPlanColor(user.subscription?.plan || 'none'),
+                          border: 'none',
+                          fontWeight: 500,
+                        }}
                       />
                       <Chip
                         label={user.subscription?.status?.toUpperCase() || 'INACTIVE'}
                         size="small"
-                        color={getStatusColor(user.subscription?.status || 'inactive') as any}
-                        sx={{ width: 'fit-content' }}
+                        sx={{
+                          width: 'fit-content',
+                          backgroundColor: alpha(getStatusColor(user.subscription?.status || 'inactive'), 0.1),
+                          color: getStatusColor(user.subscription?.status || 'inactive'),
+                          border: 'none',
+                          fontWeight: 500,
+                        }}
                       />
                     </Box>
                   </TableCell>
                   
-                  <TableCell>
+                  <TableCell sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <AccessTime sx={{ fontSize: 16, color: 'text.secondary' }} />
+                        <AccessTime sx={{ fontSize: 16, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
                         <Box>
-                          <Typography variant="body2" fontWeight="500">
+                          <Typography variant="body2" sx={{ 
+                            fontWeight: 500,
+                            color: darkMode ? '#e8eaed' : '#202124',
+                          }}>
                             {formatTime(user.totalUsageHours)}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{ 
+                            color: darkMode ? '#9aa0a6' : '#5f6368',
+                          }}>
                             Total Usage
                           </Typography>
                         </Box>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Person sx={{ fontSize: 16, color: 'text.secondary' }} />
+                        <Person sx={{ fontSize: 16, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
                         <Box>
-                          <Typography variant="body2" fontWeight="500">
+                          <Typography variant="body2" sx={{ 
+                            fontWeight: 500,
+                            color: darkMode ? '#e8eaed' : '#202124',
+                          }}>
                             {user.isActive ? 'Active' : 'Inactive'}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{ 
+                            color: darkMode ? '#9aa0a6' : '#5f6368',
+                          }}>
                             Status
                           </Typography>
                         </Box>
@@ -234,36 +322,40 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     </Box>
                   </TableCell>
                   
-                  <TableCell>
+                  <TableCell sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CalendarToday sx={{ fontSize: 12, color: 'text.secondary' }} />
-                        <Typography variant="caption">
+                        <CalendarToday sx={{ fontSize: 12, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                        <Typography variant="caption" sx={{ 
+                          color: darkMode ? '#e8eaed' : '#202124',
+                        }}>
                           Joined: {formatDate(user.createdAt)}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <AccessTime sx={{ fontSize: 12, color: 'text.secondary' }} />
-                        <Typography variant="caption">
+                        <AccessTime sx={{ fontSize: 12, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                        <Typography variant="caption" sx={{ 
+                          color: darkMode ? '#e8eaed' : '#202124',
+                        }}>
                           Last active: {formatDate(user.lastActive || user.lastLogin)}
                         </Typography>
                       </Box>
                     </Box>
                   </TableCell>
                   
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }}>
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                       <Tooltip title="View Details">
                         <IconButton
                           size="small"
-                          color="primary"
-                          onClick={() => router.push(`/admin/users/${user._id}`)}
                           sx={{
-                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            bgcolor: alpha('#1a73e8', 0.1),
+                            color: '#1a73e8',
                             '&:hover': {
-                              bgcolor: alpha(theme.palette.primary.main, 0.2),
+                              bgcolor: alpha('#1a73e8', 0.2),
                             },
                           }}
+                          onClick={() => router.push(`/admin/users/${user._id}`)}
                         >
                           <Visibility fontSize="small" />
                         </IconButton>
@@ -271,14 +363,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       <Tooltip title="Edit User">
                         <IconButton
                           size="small"
-                          color="info"
-                          onClick={() => router.push(`/admin/users/${user._id}/edit`)}
                           sx={{
-                            bgcolor: alpha(theme.palette.info.main, 0.1),
+                            bgcolor: alpha('#fbbc04', 0.1),
+                            color: '#fbbc04',
                             '&:hover': {
-                              bgcolor: alpha(theme.palette.info.main, 0.2),
+                              bgcolor: alpha('#fbbc04', 0.2),
                             },
                           }}
+                          onClick={() => router.push(`/admin/users/${user._id}/edit`)}
                         >
                           <Edit fontSize="small" />
                         </IconButton>

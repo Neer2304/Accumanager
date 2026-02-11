@@ -4,26 +4,35 @@
 import React, { useState, useRef, useEffect } from 'react'
 import {
   Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Alert,
   Container,
-  Fade,
+  Typography,
   alpha,
   useTheme,
   useMediaQuery,
-  Link,
-  CircularProgress,
+  Snackbar,
 } from '@mui/material'
-import { Security, ArrowBack, Email, Phone } from '@mui/icons-material'
+import {
+  Security,
+  ArrowBack,
+  Email,
+  Phone,
+  CheckCircle,
+  Warning,
+  Refresh,
+} from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Alert } from '@/components/ui/Alert'
+import { Card, CardContent2 } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 
 export default function VerifyOTPPage() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
   const router = useRouter()
+  const darkMode = theme.palette.mode === 'dark'
   
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [isLoading, setIsLoading] = useState(false)
@@ -33,8 +42,18 @@ export default function VerifyOTPPage() {
   const [canResend, setCanResend] = useState(false)
   
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+  
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info',
+  })
 
-  // Mock data - in real app, get from state/context
+  // Mock data
   const verificationMethod = 'email' // or 'sms'
   const target = verificationMethod === 'email' ? 'user@example.com' : '+91 98765 43210'
 
@@ -52,14 +71,13 @@ export default function VerifyOTPPage() {
   }, [timer, canResend])
 
   const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return // Only allow numbers
+    if (!/^\d*$/.test(value)) return
     
     const newOtp = [...otp]
     newOtp[index] = value
     setOtp(newOtp)
     setError('')
 
-    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus()
     }
@@ -67,7 +85,6 @@ export default function VerifyOTPPage() {
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      // Move to previous input on backspace
       inputRefs.current[index - 1]?.focus()
     }
   }
@@ -79,8 +96,6 @@ export default function VerifyOTPPage() {
     if (/^\d{6}$/.test(pastedData)) {
       const otpArray = pastedData.split('').slice(0, 6)
       setOtp(otpArray)
-      
-      // Focus last input
       inputRefs.current[5]?.focus()
     }
   }
@@ -89,7 +104,9 @@ export default function VerifyOTPPage() {
     const otpString = otp.join('')
     
     if (otpString.length !== 6) {
-      setError('Please enter the complete 6-digit OTP')
+      const errorMsg = 'Please enter the complete 6-digit OTP'
+      setError(errorMsg)
+      showSnackbar(errorMsg, 'error')
       return
     }
 
@@ -100,16 +117,18 @@ export default function VerifyOTPPage() {
     setTimeout(() => {
       setIsLoading(false)
       
-      // Mock verification - always success for demo
       if (otpString === '123456') { // Demo OTP
-        setSuccess('OTP verified successfully!')
+        const successMsg = 'OTP verified successfully!'
+        setSuccess(successMsg)
+        showSnackbar(successMsg, 'success')
         
-        // Redirect after success
         setTimeout(() => {
-          router.push('/dashboard') // Change to your success route
+          router.push('/dashboard')
         }, 1500)
       } else {
-        setError('Invalid OTP. Please try again.')
+        const errorMsg = 'Invalid OTP. Please try again.'
+        setError(errorMsg)
+        showSnackbar(errorMsg, 'error')
       }
     }, 1500)
   }
@@ -121,43 +140,40 @@ export default function VerifyOTPPage() {
     setError('')
     setSuccess('')
     
-    // Focus first input
     inputRefs.current[0]?.focus()
     
-    // Simulate resend API call
     setTimeout(() => {
-      // In real app, show success message from API
-      console.log('OTP resent successfully')
+      showSnackbar('New OTP sent successfully', 'success')
     }, 1000)
   }
 
+  const showSnackbar = (message: string, severity: typeof snackbar.severity) => {
+    setSnackbar({ open: true, message, severity })
+  }
+
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.08)} 100%)`,
-        py: isMobile ? 3 : 0,
-        px: isMobile ? 2 : 0,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Decorative Background */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `radial-gradient(circle at 20% 80%, ${alpha(theme.palette.primary.light, 0.1)} 0%, transparent 50%),
-                      radial-gradient(circle at 80% 20%, ${alpha(theme.palette.secondary.light, 0.1)} 0%, transparent 50%)`,
-          zIndex: 0,
-        }}
-      />
+    <Box sx={{ 
+      backgroundColor: darkMode ? '#202124' : '#ffffff',
+      color: darkMode ? '#e8eaed' : '#202124',
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      py: { xs: 3, sm: 4 },
+      px: { xs: 2, sm: 3 },
+    }}>
+      {/* Background Pattern */}
+      <Box sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: darkMode
+          ? 'radial-gradient(circle at 20% 50%, #0d3064 0%, transparent 50%), radial-gradient(circle at 80% 20%, #202124 0%, transparent 50%)'
+          : 'radial-gradient(circle at 20% 50%, #e3f2fd 0%, transparent 50%), radial-gradient(circle at 80% 20%, #f8f9fa 0%, transparent 50%)',
+        zIndex: 0,
+      }} />
 
       <Container 
         maxWidth="sm" 
@@ -166,277 +182,379 @@ export default function VerifyOTPPage() {
           zIndex: 1,
         }}
       >
-        <Fade in={true} timeout={600}>
-          <Card 
-            elevation={8}
-            sx={{ 
-              borderRadius: 4,
-              overflow: 'hidden',
-              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              backdropFilter: 'blur(10px)',
-              backgroundColor: alpha(theme.palette.background.paper, 0.95),
-            }}
-          >
-            {/* Header */}
-            <Box
-              sx={{
-                background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                color: 'white',
-                textAlign: 'center',
-                py: isMobile ? 2.5 : 3,
-                px: 2,
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 1 }}>
-                <Security sx={{ fontSize: isMobile ? 28 : 32 }} />
+        <Card
+          hover
+          variant="elevation"
+          sx={{
+            borderRadius: '24px',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            background: darkMode 
+              ? 'linear-gradient(135deg, #303134 0%, #202124 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+            boxShadow: darkMode 
+              ? '0 8px 32px rgba(0, 0, 0, 0.3)'
+              : '0 8px 32px rgba(66, 133, 244, 0.12)',
+            overflow: 'hidden',
+          }}
+        >
+          <CardContent2>
+            {/* Header Section */}
+            <Box sx={{ 
+              textAlign: 'center', 
+              mb: 4,
+              px: { xs: 2, sm: 3 },
+            }}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: 2, 
+                mb: 2 
+              }}>
+                <Box sx={{
+                  p: 1.5,
+                  borderRadius: '12px',
+                  backgroundColor: darkMode ? '#4285f420' : '#e3f2fd',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Security sx={{ 
+                    fontSize: isMobile ? 28 : 32,
+                    color: darkMode ? '#8ab4f8' : '#1a73e8'
+                  }} />
+                </Box>
                 <Typography 
                   variant={isMobile ? "h5" : "h4"} 
-                  fontWeight="700"
+                  fontWeight={500}
+                  sx={{ 
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.25rem' },
+                  }}
                 >
-                  Verify Identity
+                  Verify Your Identity
                 </Typography>
               </Box>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  mb: 1,
+                }}
+              >
                 Enter the verification code sent to your {verificationMethod}
               </Typography>
             </Box>
 
-            <CardContent sx={{ p: isMobile ? 3 : 4 }}>
-              {/* Target Info */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 1.5,
-                  mb: 4,
-                  p: 2,
-                  borderRadius: 2,
-                  backgroundColor: alpha(theme.palette.info.light, 0.1),
-                  border: `1px solid ${alpha(theme.palette.info.light, 0.2)}`,
-                }}
-              >
+            {/* Target Info Card */}
+            <Card
+              variant="outlined"
+              hover={false}
+              sx={{
+                mb: 4,
+                p: 2,
+                borderRadius: '16px',
+                backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+              }}
+            >
+              <Box sx={{
+                p: 1.5,
+                borderRadius: '12px',
+                backgroundColor: darkMode ? '#4285f420' : '#e3f2fd',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
                 {verificationMethod === 'email' ? (
-                  <Email color="primary" />
+                  <Email sx={{ 
+                    fontSize: 24,
+                    color: darkMode ? '#8ab4f8' : '#1a73e8'
+                  }} />
                 ) : (
-                  <Phone color="primary" />
+                  <Phone sx={{ 
+                    fontSize: 24,
+                    color: darkMode ? '#8ab4f8' : '#1a73e8'
+                  }} />
                 )}
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  }}
+                >
+                  Verification code sent to
+                </Typography>
                 <Typography 
                   variant="body1" 
-                  fontWeight="600"
-                  color="primary"
+                  fontWeight={500}
+                  sx={{ 
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                  }}
                 >
                   {target}
                 </Typography>
               </Box>
+            </Card>
 
-              {/* Messages */}
-              {error && (
-                <Alert 
-                  severity="error" 
-                  sx={{ mb: 3 }} 
-                  onClose={() => setError('')}
-                  variant="outlined"
-                >
-                  {error}
-                </Alert>
-              )}
+            {/* Error/Success Alerts */}
+            {error && (
+              <Alert
+                severity="error"
+                onClose={() => setError('')}
+                sx={{ mb: 3 }}
+                icon={<Warning />}
+              >
+                {error}
+              </Alert>
+            )}
 
-              {success && (
-                <Alert 
-                  severity="success" 
-                  sx={{ mb: 3 }} 
-                  onClose={() => setSuccess('')}
-                  variant="outlined"
-                >
-                  {success}
-                </Alert>
-              )}
+            {success && (
+              <Alert
+                severity="success"
+                onClose={() => setSuccess('')}
+                sx={{ mb: 3 }}
+                icon={<CheckCircle />}
+              >
+                {success}
+              </Alert>
+            )}
 
-              {/* OTP Inputs */}
-              <Box sx={{ mb: 4 }}>
-                <Typography 
-                  variant="body1" 
-                  align="center" 
-                  sx={{ mb: 3, color: 'text.secondary' }}
-                >
-                  Enter 6-digit verification code
-                </Typography>
+            {/* OTP Inputs Section */}
+            <Box sx={{ mb: 4 }}>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  mb: 3,
+                  textAlign: 'center',
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                }}
+              >
+                Enter 6-digit verification code
+              </Typography>
 
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    gap: isMobile ? 1 : 2,
-                    mb: 3,
-                  }}
-                >
-                  {otp.map((digit, index) => (
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: { xs: 1, sm: 2 },
+                  mb: 4,
+                }}
+              >
+                {otp.map((digit, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      width: { xs: 44, sm: 52, md: 56 },
+                      height: { xs: 44, sm: 52, md: 56 },
+                    }}
+                  >
                     <Box
-                      key={index}
+                      component="input"
+                      // ref={(el: HTMLInputElement | null) => (inputRefs.current[index] = el)}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleOtpChange(index, e.target.value)}
+                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyDown(index, e)}
+                      onPaste={index === 0 ? handlePaste : undefined}
                       sx={{
-                        width: isMobile ? 44 : 52,
-                        height: isMobile ? 44 : 52,
-                      }}
-                    >
-                      <input
-                        ref={(el) => (inputRefs.current[index] = el)}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => handleOtpChange(index, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(index, e)}
-                        onPaste={index === 0 ? handlePaste : undefined}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          textAlign: 'center',
-                          fontSize: isMobile ? '1.5rem' : '1.75rem',
-                          fontWeight: 'bold',
-                          borderRadius: 12,
-                          border: `2px solid ${
-                            error 
-                              ? theme.palette.error.main 
-                              : digit 
-                                ? theme.palette.primary.main 
-                                : theme.palette.divider
-                          }`,
-                          backgroundColor: theme.palette.background.paper,
-                          color: theme.palette.text.primary,
-                          outline: 'none',
-                          transition: 'all 0.2s ease',
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = theme.palette.primary.main
-                          e.target.style.boxShadow = `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = digit 
-                            ? theme.palette.primary.main 
-                            : theme.palette.divider
-                          e.target.style.boxShadow = 'none'
-                        }}
-                      />
-                    </Box>
-                  ))}
-                </Box>
-
-                {/* Timer/Resend */}
-                <Box sx={{ textAlign: 'center', mb: 4 }}>
-                  {canResend ? (
-                    <Button
-                      onClick={handleResendOTP}
-                      variant="text"
-                      sx={{
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        color: theme.palette.primary.main,
+                        width: '100%',
+                        height: '100%',
+                        textAlign: 'center',
+                        fontSize: { xs: '1.5rem', sm: '1.75rem' },
+                        fontWeight: 'bold',
+                        borderRadius: '12px',
+                        backgroundColor: darkMode ? '#303134' : '#ffffff',
+                        border: `2px solid ${
+                          error 
+                            ? '#ea4335'
+                            : digit 
+                              ? darkMode ? '#8ab4f8' : '#1a73e8'
+                              : darkMode ? '#3c4043' : '#dadce0'
+                        }`,
+                        color: darkMode ? '#e8eaed' : '#202124',
+                        outline: 'none',
+                        transition: 'all 0.2s ease',
+                        '&:focus': {
+                          borderColor: darkMode ? '#8ab4f8' : '#1a73e8',
+                          boxShadow: `0 0 0 3px ${darkMode ? '#4285f440' : '#4285f420'}`,
+                        },
                         '&:hover': {
-                          backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                          borderColor: darkMode ? '#5f6368' : '#9aa0a6',
                         },
                       }}
-                    >
-                      Resend OTP
-                    </Button>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Resend OTP in{' '}
-                      <Box component="span" fontWeight="bold" color="primary">
-                        00:{timer.toString().padStart(2, '0')}
-                      </Box>
-                    </Typography>
-                  )}
-                </Box>
-
-                {/* Verify Button */}
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={handleVerify}
-                  disabled={isLoading || otp.join('').length !== 6}
-                  size={isMobile ? "medium" : "large"}
-                  sx={{
-                    py: isMobile ? 1.2 : 1.5,
-                    borderRadius: 3,
-                    fontSize: isMobile ? '1rem' : '1.1rem',
-                    fontWeight: 'bold',
-                    textTransform: 'none',
-                    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                    '&:hover': {
-                      background: `linear-gradient(45deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})`,
-                      transform: 'translateY(-2px)',
-                      boxShadow: theme.shadows[8],
-                    },
-                    '&:disabled': {
-                      background: theme.palette.action.disabledBackground,
-                    },
-                    transition: 'all 0.3s ease',
-                    mb: 2,
-                  }}
-                >
-                  {isLoading ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                      <CircularProgress size={20} color="inherit" />
-                      Verifying...
-                    </Box>
-                  ) : (
-                    'Verify & Continue'
-                  )}
-                </Button>
+                    />
+                  </Box>
+                ))}
               </Box>
 
-              {/* Back Link */}
-              <Box sx={{ textAlign: 'center', mt: 4 }}>
-                <Link 
-                  href="/login" 
-                  sx={{ 
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    fontWeight: 'bold',
-                    textDecoration: 'none',
-                    color: theme.palette.text.secondary,
-                    '&:hover': {
-                      color: theme.palette.primary.main,
-                    },
-                  }}
-                >
-                  <ArrowBack fontSize="small" />
-                  Back to Login
-                </Link>
-              </Box>
-
-              {/* Help Text */}
-              <Box sx={{ mt: 4, pt: 3, borderTop: `1px solid ${theme.palette.divider}` }}>
+              {/* Timer/Resend Section */}
+              <Box sx={{ 
+                textAlign: 'center', 
+                mb: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 1,
+              }}>
                 <Typography 
-                  variant="caption" 
-                  color="text.secondary" 
-                  align="center"
-                  sx={{ display: 'block', lineHeight: 1.5 }}
+                  variant="body2" 
+                  sx={{ 
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  }}
                 >
-                  Didn't receive the code? Check your spam folder or{' '}
+                  {canResend ? 'Didn\'t receive the code?' : 'Resend code in'}
+                </Typography>
+                
+                {canResend ? (
                   <Button
                     onClick={handleResendOTP}
                     variant="text"
+                    size="small"
+                    iconLeft={<Refresh />}
                     sx={{
-                      fontSize: 'inherit',
-                      fontWeight: 'bold',
-                      textTransform: 'none',
-                      color: 'inherit',
-                      textDecoration: 'underline',
-                      p: 0,
-                      minWidth: 'auto',
-                      verticalAlign: 'baseline',
+                      color: darkMode ? '#8ab4f8' : '#1a73e8',
+                      fontWeight: 500,
+                      '&:hover': {
+                        backgroundColor: darkMode ? '#4285f420' : '#e3f2fd',
+                      },
                     }}
                   >
-                    resend
+                    Resend OTP
                   </Button>
-                </Typography>
+                ) : (
+                  <Typography 
+                    variant="body2" 
+                    fontWeight={600}
+                    sx={{ 
+                      color: darkMode ? '#8ab4f8' : '#1a73e8',
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    }}
+                  >
+                    00:{timer.toString().padStart(2, '0')}
+                  </Typography>
+                )}
               </Box>
-            </CardContent>
-          </Card>
-        </Fade>
+
+              {/* Verify Button */}
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleVerify}
+                disabled={isLoading || otp.join('').length !== 6}
+                size="large"
+                loading={isLoading}
+                // loadingText="Verifying..."
+                sx={{
+                  py: 1.5,
+                  borderRadius: '12px',
+                  fontSize: { xs: '1rem', sm: '1.125rem' },
+                  fontWeight: 500,
+                  backgroundColor: darkMode ? '#8ab4f8' : '#1a73e8',
+                  '&:hover': {
+                    backgroundColor: darkMode ? '#669df6' : '#1669c1',
+                    transform: 'translateY(-1px)',
+                    boxShadow: darkMode 
+                      ? '0 6px 20px rgba(138, 180, 248, 0.3)'
+                      : '0 6px 20px rgba(26, 115, 232, 0.2)',
+                  },
+                  '&.Mui-disabled': {
+                    backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
+                    color: darkMode ? '#5f6368' : '#9aa0a6',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                Verify & Continue
+              </Button>
+            </Box>
+
+            {/* Footer Links */}
+            <Box sx={{ 
+              pt: 3,
+              mt: 3,
+              borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+            }}>
+              <Button
+                component={Link}
+                href="/login"
+                variant="text"
+                size="small"
+                iconLeft={<ArrowBack />}
+                sx={{
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  '&:hover': {
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
+                  },
+                }}
+              >
+                Back to Login
+              </Button>
+
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  textAlign: 'center',
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                }}
+              >
+                Having trouble?{' '}
+                <Box
+                  component="span"
+                  sx={{ 
+                    color: darkMode ? '#8ab4f8' : '#1a73e8',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  Contact support
+                </Box>
+              </Typography>
+            </Box>
+          </CardContent2>
+        </Card>
+
+        {/* Snackbar */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+            sx={{ 
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Container>
     </Box>
   )
