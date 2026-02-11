@@ -9,6 +9,7 @@ interface ProductPriceDisplayProps {
   showIcon?: boolean;
   showCurrency?: boolean;
   discountPrice?: number;
+  darkMode?: boolean;
 }
 
 const ProductPriceDisplay: React.FC<ProductPriceDisplayProps> = ({
@@ -18,6 +19,7 @@ const ProductPriceDisplay: React.FC<ProductPriceDisplayProps> = ({
   showIcon = false,
   showCurrency = true,
   discountPrice,
+  darkMode = false,
 }) => {
   const getFontSize = () => {
     switch (size) {
@@ -41,7 +43,7 @@ const ProductPriceDisplay: React.FC<ProductPriceDisplayProps> = ({
             sx={{
               fontSize: getFontSize(),
               fontWeight: getFontWeight(),
-              color: 'error.main',
+              color: darkMode ? '#34a853' : '#34a853',
             }}
           >
             {showCurrency && currency}
@@ -51,7 +53,7 @@ const ProductPriceDisplay: React.FC<ProductPriceDisplayProps> = ({
             sx={{
               fontSize: getFontSize(),
               fontWeight: 'normal',
-              color: 'text.secondary',
+              color: darkMode ? '#9aa0a6' : '#5f6368',
               textDecoration: 'line-through',
             }}
           >
@@ -64,6 +66,7 @@ const ProductPriceDisplay: React.FC<ProductPriceDisplayProps> = ({
           sx={{
             fontSize: getFontSize(),
             fontWeight: getFontWeight(),
+            color: darkMode ? '#e8eaed' : '#202124',
           }}
         >
           {showCurrency && currency}

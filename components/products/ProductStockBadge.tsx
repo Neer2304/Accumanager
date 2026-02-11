@@ -5,6 +5,7 @@ interface ProductStockBadgeProps extends Omit<ChipProps, 'label'> {
   stock: number;
   lowStockThreshold?: number;
   showText?: boolean;
+  darkMode?: boolean;
 }
 
 const ProductStockBadge: React.FC<ProductStockBadgeProps> = ({
@@ -12,6 +13,7 @@ const ProductStockBadge: React.FC<ProductStockBadgeProps> = ({
   lowStockThreshold = 10,
   showText = false,
   size = 'small',
+  darkMode = false,
   ...props
 }) => {
   const getStockConfig = () => {
@@ -19,19 +21,22 @@ const ProductStockBadge: React.FC<ProductStockBadgeProps> = ({
       return {
         color: 'error' as const,
         label: 'Out of Stock',
-        variant: 'filled' as const,
+        bgColor: darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.1)',
+        textColor: darkMode ? '#f28b82' : '#ea4335',
       };
     } else if (stock <= lowStockThreshold) {
       return {
         color: 'warning' as const,
         label: `Low (${stock})`,
-        variant: 'filled' as const,
+        bgColor: darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.1)',
+        textColor: darkMode ? '#fdd663' : '#fbbc04',
       };
     } else {
       return {
         color: 'success' as const,
         label: `In Stock (${stock})`,
-        variant: 'outlined' as const,
+        bgColor: darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.1)',
+        textColor: darkMode ? '#81c995' : '#34a853',
       };
     }
   };
@@ -41,13 +46,19 @@ const ProductStockBadge: React.FC<ProductStockBadgeProps> = ({
   if (showText) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
           Stock:
         </Typography>
         <Chip
           label={config.label}
-          color={config.color}
-          variant={config.variant}
+          sx={{
+            backgroundColor: config.bgColor,
+            color: config.textColor,
+            border: 'none',
+            '& .MuiChip-label': {
+              color: config.textColor,
+            },
+          }}
           size={size}
           {...props}
         />
@@ -58,8 +69,14 @@ const ProductStockBadge: React.FC<ProductStockBadgeProps> = ({
   return (
     <Chip
       label={config.label}
-      color={config.color}
-      variant={config.variant}
+      sx={{
+        backgroundColor: config.bgColor,
+        color: config.textColor,
+        border: 'none',
+        '& .MuiChip-label': {
+          color: config.textColor,
+        },
+      }}
       size={size}
       {...props}
     />

@@ -26,6 +26,8 @@ interface MonthlyData {
   revenue: number;
   users: number;
   payments: number;
+  activeUsers?: number;
+  uniqueUsers?: number;
 }
 
 interface PlanDistribution {
@@ -39,6 +41,7 @@ interface AnalyticsChartsSectionProps {
   planDistribution?: PlanDistribution[];
   showPlanDistribution?: boolean;
   showUserGrowth?: boolean;
+  darkMode?: boolean;
 }
 
 export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
@@ -46,6 +49,7 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
   planDistribution = [],
   showPlanDistribution = false,
   showUserGrowth = false,
+  darkMode = false,
 }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -60,14 +64,14 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
       return (
         <Box
           sx={{
-            backgroundColor: '#ffffff',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
             p: 2,
-            border: '1px solid #e0e0e0',
-            borderRadius: 1,
-            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
           }}
         >
-          <Typography variant="body2" fontWeight="bold" color="text.primary" gutterBottom>
+          <Typography variant="body2" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'} gutterBottom>
             {label}
           </Typography>
           {payload.map((entry: any, index: number) => (
@@ -89,11 +93,11 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
                     backgroundColor: entry.color,
                   }}
                 />
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                   {entry.name}:
                 </Typography>
               </Box>
-              <Typography variant="body2" fontWeight="bold">
+              <Typography variant="body2" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
                 {entry.name.toLowerCase().includes('revenue')
                   ? formatCurrency(entry.value)
                   : entry.value.toLocaleString()}
@@ -115,14 +119,14 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
       return (
         <Box
           sx={{
-            backgroundColor: '#ffffff',
+            backgroundColor: darkMode ? '#303134' : '#ffffff',
             p: 2,
-            border: '1px solid #e0e0e0',
-            borderRadius: 1,
-            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
           }}
         >
-          <Typography variant="body2" fontWeight="bold" color="text.primary" gutterBottom>
+          <Typography variant="body2" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'} gutterBottom>
             {data.name}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -135,15 +139,15 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
               }}
             />
             <Box>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                 Users:
               </Typography>
-              <Typography variant="body1" fontWeight="bold">
+              <Typography variant="body1" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
                 {data.value.toLocaleString()}
               </Typography>
             </Box>
           </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+          <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'} sx={{ mt: 1, display: 'block' }}>
             {percentage}% of total
           </Typography>
         </Box>
@@ -156,9 +160,15 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
     const totalUsers = planDistribution.reduce((sum, item) => sum + item.value, 0);
 
     return (
-      <Card sx={{ height: '100%' }}>
+      <Card sx={{ 
+        height: '100%',
+        borderRadius: '16px',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
+      }}>
         <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="h6" gutterBottom fontWeight="bold">
+          <Typography variant="h6" gutterBottom fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
             Plan Distribution
           </Typography>
           <Box sx={{ height: 300, position: 'relative' }}>
@@ -166,12 +176,11 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
               <>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    {/* Outer donut ring */}
                     <Pie
                       data={planDistribution}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60} // Creates the donut hole
+                      innerRadius={60}
                       outerRadius={80}
                       paddingAngle={2}
                       dataKey="value"
@@ -190,7 +199,7 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
                       iconType="circle"
                       iconSize={8}
                       formatter={(value, entry) => (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                           {value}
                         </Typography>
                       )}
@@ -209,17 +218,17 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
                     pointerEvents: 'none',
                   }}
                 >
-                  <Typography variant="h4" fontWeight="bold" color="text.primary">
+                  <Typography variant="h4" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
                     {totalUsers.toLocaleString()}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                     Total Users
                   </Typography>
                 </Box>
               </>
             ) : (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                <Typography color="text.secondary">
+                <Typography color={darkMode ? '#9aa0a6' : '#5f6368'}>
                   No plan distribution data
                 </Typography>
               </Box>
@@ -240,9 +249,13 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
                       gap: 1,
                       px: 1.5,
                       py: 0.5,
-                      borderRadius: 1,
-                      backgroundColor: `${plan.color}15`,
-                      border: `1px solid ${plan.color}30`,
+                      borderRadius: '8px',
+                      backgroundColor: darkMode ? 
+                        `${plan.color}20` : 
+                        `${plan.color}15`,
+                      border: `1px solid ${darkMode ? 
+                        `${plan.color}40` : 
+                        `${plan.color}30`}`,
                     }}
                   >
                     <Box
@@ -253,7 +266,7 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
                         backgroundColor: plan.color,
                       }}
                     />
-                    <Typography variant="caption" fontWeight="medium">
+                    <Typography variant="caption" fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>
                       {plan.name}: {plan.value} ({percentage}%)
                     </Typography>
                   </Box>
@@ -268,26 +281,41 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
 
   if (showUserGrowth) {
     return (
-      <Card>
+      <Card sx={{ 
+        borderRadius: '16px',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
+      }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom fontWeight="bold">
+          <Typography variant="h6" gutterBottom fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
             User Growth (Last 6 Months)
           </Typography>
           <Box sx={{ height: 300 }}>
             {monthlyData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" stroke="#666666" />
-                  <YAxis stroke="#666666" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#3c4043' : '#f0f0f0'} />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke={darkMode ? '#9aa0a6' : '#666666'} 
+                  />
+                  <YAxis 
+                    stroke={darkMode ? '#9aa0a6' : '#666666'} 
+                  />
                   <RechartsTooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="users" fill="#82ca9d" name="New Users" radius={[4, 4, 0, 0]} />
+                  <Bar 
+                    dataKey="users" 
+                    fill={darkMode ? '#34a853' : '#34a853'} 
+                    name="New Users" 
+                    radius={[4, 4, 0, 0]} 
+                  />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                <Typography color="text.secondary">
+                <Typography color={darkMode ? '#9aa0a6' : '#5f6368'}>
                   No user growth data available
                 </Typography>
               </Box>
@@ -300,24 +328,36 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
 
   // Default: Revenue Trends Chart
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card sx={{ 
+      height: '100%',
+      borderRadius: '16px',
+      backgroundColor: darkMode ? '#303134' : '#ffffff',
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
+    }}>
       <CardContent sx={{ height: '100%' }}>
-        <Typography variant="h6" gutterBottom fontWeight="bold">
+        <Typography variant="h6" gutterBottom fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
           Revenue Trends (Last 6 Months)
         </Typography>
         <Box sx={{ height: 300 }}>
           {monthlyData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" stroke="#666666" />
-                <YAxis stroke="#666666" tickFormatter={(value) => `₹${value}`} />
+                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#3c4043' : '#f0f0f0'} />
+                <XAxis 
+                  dataKey="month" 
+                  stroke={darkMode ? '#9aa0a6' : '#666666'} 
+                />
+                <YAxis 
+                  stroke={darkMode ? '#9aa0a6' : '#666666'} 
+                  tickFormatter={(value) => `₹${value}`} 
+                />
                 <RechartsTooltip content={<CustomTooltip />} />
                 <Legend />
                 <Line 
                   type="monotone" 
                   dataKey="revenue" 
-                  stroke="#1976d2" 
+                  stroke={darkMode ? '#8ab4f8' : '#1a73e8'} 
                   strokeWidth={2}
                   activeDot={{ r: 8 }}
                   name="Revenue"
@@ -326,7 +366,7 @@ export const AnalyticsChartsSection: React.FC<AnalyticsChartsSectionProps> = ({
             </ResponsiveContainer>
           ) : (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <Typography color="text.secondary">
+              <Typography color={darkMode ? '#9aa0a6' : '#5f6368'}>
                 No revenue data available
               </Typography>
             </Box>

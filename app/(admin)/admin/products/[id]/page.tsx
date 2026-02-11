@@ -1,4 +1,4 @@
-// app/admin/products/[id]/page.tsx
+// app/admin/products/[id]/page.tsx - GOOGLE MATERIAL DESIGN THEME
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -27,6 +27,8 @@ import {
   Tooltip,
   Badge,
   LinearProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -55,11 +57,18 @@ import {
   Business,
   Label,
   ShoppingCart,
+  Refresh,
 } from '@mui/icons-material';
+import Link from 'next/link';
 
 export default function AdminProductDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const darkMode = theme.palette.mode === 'dark';
+  
   const [loading, setLoading] = useState(true);
   const [product, setProduct] = useState<any>(null);
   const [error, setError] = useState('');
@@ -161,9 +170,9 @@ export default function AdminProductDetailPage() {
 
   // Get stock status color
   const getStockStatus = (stock: number) => {
-    if (stock === 0) return { color: 'error', label: 'Out of Stock' };
-    if (stock < 10) return { color: 'warning', label: 'Low Stock' };
-    return { color: 'success', label: 'In Stock' };
+    if (stock === 0) return { color: '#ea4335', label: 'Out of Stock' };
+    if (stock < 10) return { color: '#fbbc04', label: 'Low Stock' };
+    return { color: '#34a853', label: 'In Stock' };
   };
 
   // Render tabs
@@ -183,42 +192,59 @@ export default function AdminProductDetailPage() {
   const renderOverview = () => (
     <Stack spacing={3}>
       {/* Product Stats */}
-      <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
+      <Card sx={{ 
+        borderRadius: '16px',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
+      }}>
         <CardContent>
-          <Stack direction="row" spacing={3} alignItems="center">
-            <Avatar sx={{ width: 80, height: 80, bgcolor: 'primary.main' }}>
-              <Typography variant="h4">{product.name?.charAt(0)}</Typography>
+          <Stack direction="row" spacing={3} alignItems="center" sx={{ flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+            <Avatar sx={{ 
+              width: 80, 
+              height: 80, 
+              backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+              color: darkMode ? '#8ab4f8' : '#1a73e8',
+              fontSize: '2rem',
+            }}>
+              {product.name?.charAt(0)}
             </Avatar>
             <Box sx={{ flex: 1 }}>
-              <Typography variant="h5" fontWeight="bold">{product.name}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography variant="h5" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>{product.name}</Typography>
+              <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'} sx={{ mt: 0.5 }}>
                 {product.description || 'No description available'}
               </Typography>
             </Box>
             <Badge 
               badgeContent={product.isActive ? 'Active' : 'Inactive'} 
-              color={product.isActive ? 'success' : 'error'}
-              sx={{ '& .MuiBadge-badge': { fontSize: '0.7rem', padding: '0 8px' } }}
+              sx={{ 
+                '& .MuiBadge-badge': { 
+                  fontSize: '0.7rem', 
+                  padding: '0 8px',
+                  backgroundColor: product.isActive ? '#34a853' : '#ea4335',
+                  color: '#ffffff',
+                } 
+              }}
             />
           </Stack>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 3, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
 
-          <Stack direction="row" spacing={4} justifyContent="space-around">
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">Base Price</Typography>
-              <Typography variant="h4" color="primary.main" fontWeight="bold">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={4} justifyContent="space-around" sx={{ flexWrap: 'wrap' }}>
+            <Box sx={{ textAlign: 'center', flex: 1, minWidth: 150 }}>
+              <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>Base Price</Typography>
+              <Typography variant="h4" color={darkMode ? '#8ab4f8' : '#1a73e8'} fontWeight="bold">
                 {formatCurrency(product.basePrice || 0)}
               </Typography>
             </Box>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">Cost Price</Typography>
-              <Typography variant="h5">
+            <Box sx={{ textAlign: 'center', flex: 1, minWidth: 150 }}>
+              <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>Cost Price</Typography>
+              <Typography variant="h5" color={darkMode ? '#e8eaed' : '#202124'}>
                 {formatCurrency(product.baseCostPrice || 0)}
               </Typography>
             </Box>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">Stock Status</Typography>
+            <Box sx={{ textAlign: 'center', flex: 1, minWidth: 150 }}>
+              <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>Stock Status</Typography>
               <Typography variant="h5" color={getStockStatus(calculateTotalStock(product)).color}>
                 {calculateTotalStock(product)} units
               </Typography>
@@ -228,18 +254,27 @@ export default function AdminProductDetailPage() {
       </Card>
 
       {/* Quick Info Cards */}
-      <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 2 }}>
-        <Card sx={{ minWidth: 200, flex: 1, borderRadius: 2 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flexWrap: 'wrap', gap: 2 }}>
+        <Card sx={{ 
+          flex: 1, 
+          minWidth: 200,
+          borderRadius: '16px',
+          backgroundColor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        }}>
           <CardContent>
             <Stack direction="row" alignItems="center" spacing={2}>
-              <Avatar sx={{ bgcolor: 'primary.50', color: 'primary.main' }}>
+              <Avatar sx={{ 
+                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                color: darkMode ? '#8ab4f8' : '#1a73e8',
+              }}>
                 <Category />
               </Avatar>
               <Box>
-                <Typography variant="body2" color="text.secondary">Category</Typography>
-                <Typography variant="body1" fontWeight="medium">{product.category}</Typography>
+                <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>Category</Typography>
+                <Typography variant="body1" fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>{product.category}</Typography>
                 {product.subCategory && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                     {product.subCategory}
                   </Typography>
                 )}
@@ -248,15 +283,24 @@ export default function AdminProductDetailPage() {
           </CardContent>
         </Card>
 
-        <Card sx={{ minWidth: 200, flex: 1, borderRadius: 2 }}>
+        <Card sx={{ 
+          flex: 1, 
+          minWidth: 200,
+          borderRadius: '16px',
+          backgroundColor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        }}>
           <CardContent>
             <Stack direction="row" alignItems="center" spacing={2}>
-              <Avatar sx={{ bgcolor: 'secondary.50', color: 'secondary.main' }}>
+              <Avatar sx={{ 
+                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                color: darkMode ? '#8ab4f8' : '#1a73e8',
+              }}>
                 <Business />
               </Avatar>
               <Box>
-                <Typography variant="body2" color="text.secondary">Brand</Typography>
-                <Typography variant="body1" fontWeight="medium">
+                <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>Brand</Typography>
+                <Typography variant="body1" fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>
                   {product.brand || 'No Brand'}
                 </Typography>
               </Box>
@@ -264,15 +308,24 @@ export default function AdminProductDetailPage() {
           </CardContent>
         </Card>
 
-        <Card sx={{ minWidth: 200, flex: 1, borderRadius: 2 }}>
+        <Card sx={{ 
+          flex: 1, 
+          minWidth: 200,
+          borderRadius: '16px',
+          backgroundColor: darkMode ? '#303134' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        }}>
           <CardContent>
             <Stack direction="row" alignItems="center" spacing={2}>
-              <Avatar sx={{ bgcolor: 'success.50', color: 'success.main' }}>
+              <Avatar sx={{ 
+                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                color: darkMode ? '#8ab4f8' : '#1a73e8',
+              }}>
                 <Label />
               </Avatar>
               <Box>
-                <Typography variant="body2" color="text.secondary">SKU</Typography>
-                <Typography variant="body1" fontWeight="medium" fontFamily="monospace">
+                <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>SKU</Typography>
+                <Typography variant="body1" fontWeight="medium" fontFamily="monospace" color={darkMode ? '#e8eaed' : '#202124'}>
                   {product.sku || 'N/A'}
                 </Typography>
               </Box>
@@ -282,51 +335,84 @@ export default function AdminProductDetailPage() {
       </Stack>
 
       {/* Stock Summary */}
-      <Card sx={{ borderRadius: 3 }}>
+      <Card sx={{ 
+        borderRadius: '16px',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
+      }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="h6" gutterBottom sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: darkMode ? '#e8eaed' : '#202124',
+          }}>
             <Inventory /> Inventory Summary
           </Typography>
           
           <Stack spacing={3}>
             <Box>
               <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                <Typography variant="body2">Total Stock</Typography>
-                <Typography variant="body1" fontWeight="bold">
+                <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>Total Stock</Typography>
+                <Typography variant="body1" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
                   {calculateTotalStock(product)} units
                 </Typography>
               </Stack>
               <LinearProgress 
                 variant="determinate" 
                 value={Math.min(calculateTotalStock(product) * 2, 100)} 
-                // color={getStockStatus(calculateTotalStock(product)).color}
-                sx={{ height: 8, borderRadius: 4 }}
+                sx={{ 
+                  height: 8, 
+                  borderRadius: 4,
+                  backgroundColor: darkMode ? '#3c4043' : '#f8f9fa',
+                  '& .MuiLinearProgress-bar': {
+                    backgroundColor: getStockStatus(calculateTotalStock(product)).color,
+                    borderRadius: 4,
+                  }
+                }}
               />
             </Box>
 
-            <Stack direction="row" spacing={3}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
               <Box sx={{ textAlign: 'center', flex: 1 }}>
-                <Avatar sx={{ bgcolor: 'info.50', color: 'info.main', margin: '0 auto 8px' }}>
+                <Avatar sx={{ 
+                  backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                  margin: '0 auto 8px' 
+                }}>
                   <LocalOffer />
                 </Avatar>
-                <Typography variant="h5">{product.variations?.length || 0}</Typography>
-                <Typography variant="caption" color="text.secondary">Variations</Typography>
+                <Typography variant="h5" color={darkMode ? '#e8eaed' : '#202124'}>{product.variations?.length || 0}</Typography>
+                <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>Variations</Typography>
               </Box>
               
               <Box sx={{ textAlign: 'center', flex: 1 }}>
-                <Avatar sx={{ bgcolor: 'warning.50', color: 'warning.main', margin: '0 auto 8px' }}>
+                <Avatar sx={{ 
+                  backgroundColor: darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.1)',
+                  color: darkMode ? '#fbbc04' : '#fbbc04',
+                  margin: '0 auto 8px' 
+                }}>
                   <ShoppingCart />
                 </Avatar>
-                <Typography variant="h5">{product.batches?.length || 0}</Typography>
-                <Typography variant="caption" color="text.secondary">Batches</Typography>
+                <Typography variant="h5" color={darkMode ? '#e8eaed' : '#202124'}>{product.batches?.length || 0}</Typography>
+                <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>Batches</Typography>
               </Box>
               
               <Box sx={{ textAlign: 'center', flex: 1 }}>
-                <Avatar sx={{ bgcolor: 'success.50', color: 'success.main', margin: '0 auto 8px' }}>
+                <Avatar sx={{ 
+                  backgroundColor: product.isReturnable 
+                    ? (darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.1)')
+                    : (darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.1)'),
+                  color: product.isReturnable 
+                    ? (darkMode ? '#34a853' : '#34a853')
+                    : (darkMode ? '#ea4335' : '#ea4335'),
+                  margin: '0 auto 8px' 
+                }}>
                   {product.isReturnable ? <CheckCircle /> : <Cancel />}
                 </Avatar>
-                <Typography variant="h5">{product.isReturnable ? 'Yes' : 'No'}</Typography>
-                <Typography variant="caption" color="text.secondary">Returnable</Typography>
+                <Typography variant="h5" color={darkMode ? '#e8eaed' : '#202124'}>{product.isReturnable ? 'Yes' : 'No'}</Typography>
+                <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>Returnable</Typography>
               </Box>
             </Stack>
           </Stack>
@@ -336,25 +422,83 @@ export default function AdminProductDetailPage() {
   );
 
   const renderVariations = () => (
-    <Card sx={{ borderRadius: 3 }}>
+    <Card sx={{ 
+      borderRadius: '16px',
+      backgroundColor: darkMode ? '#303134' : '#ffffff',
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
+    }}>
       <CardContent>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: darkMode ? '#e8eaed' : '#202124',
+            mb: { xs: 1, sm: 0 }
+          }}>
             <LocalOffer /> Product Variations
           </Typography>
-          <Chip label={`${product.variations?.length || 0} variations`} color="primary" />
+          <Chip 
+            label={`${product.variations?.length || 0} variations`} 
+            sx={{
+              backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+              color: darkMode ? '#8ab4f8' : '#1a73e8',
+              border: 'none',
+            }}
+          />
         </Stack>
         
-        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+        <TableContainer component={Paper} sx={{ 
+          borderRadius: '12px',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+        }}>
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: 'action.hover' }}>
-                <TableCell><strong>Variation</strong></TableCell>
-                <TableCell><strong>SKU</strong></TableCell>
-                <TableCell align="right"><strong>Price</strong></TableCell>
-                <TableCell align="right"><strong>Cost</strong></TableCell>
-                <TableCell align="right"><strong>Stock</strong></TableCell>
-                <TableCell align="right"><strong>Status</strong></TableCell>
+              <TableRow sx={{ backgroundColor: darkMode ? '#202124' : '#f8f9fa' }}>
+                <TableCell sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  Variation
+                </TableCell>
+                <TableCell sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  SKU
+                </TableCell>
+                <TableCell align="right" sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  Price
+                </TableCell>
+                <TableCell align="right" sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  Cost
+                </TableCell>
+                <TableCell align="right" sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  Stock
+                </TableCell>
+                <TableCell align="right" sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  Status
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -363,50 +507,70 @@ export default function AdminProductDetailPage() {
                   key={index}
                   hover
                   sx={{ 
-                    '&:hover': { backgroundColor: 'action.hover' },
-                    '&:last-child td, &:last-child th': { border: 0 }
+                    backgroundColor: darkMode ? '#303134' : '#ffffff',
+                    borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                    '&:hover': {
+                      backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4',
+                    }
                   }}
                 >
-                  <TableCell>
+                  <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
                     <Stack direction="row" alignItems="center" spacing={1}>
-                      <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.50', color: 'primary.main' }}>
+                      <Avatar sx={{ 
+                        width: 32, 
+                        height: 32, 
+                        backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                        color: darkMode ? '#8ab4f8' : '#1a73e8',
+                        fontSize: '0.875rem',
+                      }}>
                         {variation.name?.charAt(0)}
                       </Avatar>
-                      <Typography variant="body2">{variation.name}</Typography>
+                      <Typography variant="body2" color={darkMode ? '#e8eaed' : '#202124'}>{variation.name}</Typography>
                     </Stack>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
                     <Chip 
                       label={variation.sku || 'N/A'} 
                       size="small" 
-                      variant="outlined"
-                      sx={{ fontFamily: 'monospace' }}
+                      sx={{ 
+                        fontFamily: 'monospace',
+                        backgroundColor: darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(154, 160, 166, 0.1)',
+                        color: darkMode ? '#9aa0a6' : '#5f6368',
+                        border: 'none',
+                      }}
                     />
                   </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body1" fontWeight="medium">
+                  <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                    <Typography variant="body1" fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>
                       {formatCurrency(variation.price || 0)}
                     </Typography>
                   </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" color="text.secondary">
+                  <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                    <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
                       {formatCurrency(variation.costPrice || 0)}
                     </Typography>
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
                     <Chip 
                       label={variation.stock || 0} 
                       size="small"
-                    //   color={getStockStatus(variation.stock || 0).color}
-                      sx={{ minWidth: 60 }}
+                      sx={{ 
+                        backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                        color: darkMode ? '#8ab4f8' : '#1a73e8',
+                        border: 'none',
+                        minWidth: 60,
+                      }}
                     />
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
                     <Chip 
                       label={getStockStatus(variation.stock || 0).label}
                       size="small"
-                    //   color={getStockStatus(variation.stock || 0).color}
-                      variant="outlined"
+                      sx={{ 
+                        backgroundColor: `${getStockStatus(variation.stock || 0).color}20`,
+                        color: getStockStatus(variation.stock || 0).color,
+                        border: 'none',
+                      }}
                     />
                   </TableCell>
                 </TableRow>
@@ -419,77 +583,167 @@ export default function AdminProductDetailPage() {
   );
 
   const renderBatches = () => (
-    <Card sx={{ borderRadius: 3 }}>
+    <Card sx={{ 
+      borderRadius: '16px',
+      backgroundColor: darkMode ? '#303134' : '#ffffff',
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
+    }}>
       <CardContent>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: darkMode ? '#e8eaed' : '#202124',
+            mb: { xs: 1, sm: 0 }
+          }}>
             <Inventory /> Product Batches
           </Typography>
-          <Chip label={`${product.batches?.length || 0} batches`} color="primary" />
+          <Chip 
+            label={`${product.batches?.length || 0} batches`} 
+            sx={{
+              backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+              color: darkMode ? '#8ab4f8' : '#1a73e8',
+              border: 'none',
+            }}
+          />
         </Stack>
         
-        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+        <TableContainer component={Paper} sx={{ 
+          borderRadius: '12px',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+        }}>
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: 'action.hover' }}>
-                <TableCell><strong>Batch No.</strong></TableCell>
-                <TableCell align="right"><strong>Quantity</strong></TableCell>
-                <TableCell align="right"><strong>Cost Price</strong></TableCell>
-                <TableCell align="right"><strong>Selling Price</strong></TableCell>
-                <TableCell><strong>MFG Date</strong></TableCell>
-                <TableCell><strong>EXP Date</strong></TableCell>
-                <TableCell><strong>Received</strong></TableCell>
+              <TableRow sx={{ backgroundColor: darkMode ? '#202124' : '#f8f9fa' }}>
+                <TableCell sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  <strong>Batch No.</strong>
+                </TableCell>
+                <TableCell align="right" sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  <strong>Quantity</strong>
+                </TableCell>
+                <TableCell align="right" sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  <strong>Cost Price</strong>
+                </TableCell>
+                <TableCell align="right" sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  <strong>Selling Price</strong>
+                </TableCell>
+                <TableCell sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  <strong>MFG Date</strong>
+                </TableCell>
+                <TableCell sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  <strong>EXP Date</strong>
+                </TableCell>
+                <TableCell sx={{ 
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  fontWeight: 500,
+                  borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                }}>
+                  <strong>Received</strong>
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {product.batches?.map((batch: any, index: number) => (
-                <TableRow 
-                  key={index}
-                  hover
-                  sx={{ 
-                    '&:hover': { backgroundColor: 'action.hover' },
-                    '&:last-child td, &:last-child th': { border: 0 }
-                  }}
-                >
-                  <TableCell>
-                    <Chip 
-                      label={batch.batchNumber} 
-                      size="small"
-                      sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body1" fontWeight="medium">
-                      {batch.quantity}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body1">
-                      {formatCurrency(batch.costPrice || 0)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body1" fontWeight="medium" color="primary.main">
-                      {formatCurrency(batch.sellingPrice || 0)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {batch.mfgDate ? new Date(batch.mfgDate).toLocaleDateString() : 'N/A'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color={batch.expDate && new Date(batch.expDate) < new Date() ? 'error' : 'inherit'}>
-                      {batch.expDate ? new Date(batch.expDate).toLocaleDateString() : 'N/A'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="caption" color="text.secondary">
-                      {batch.receivedDate ? new Date(batch.receivedDate).toLocaleDateString() : 'N/A'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {product.batches?.map((batch: any, index: number) => {
+                const isExpired = batch.expDate && new Date(batch.expDate) < new Date();
+                
+                return (
+                  <TableRow 
+                    key={index}
+                    hover
+                    sx={{ 
+                      backgroundColor: darkMode ? '#303134' : '#ffffff',
+                      borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      '&:hover': {
+                        backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4',
+                      }
+                    }}
+                  >
+                    <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                      <Chip 
+                        label={batch.batchNumber} 
+                        size="small"
+                        sx={{ 
+                          fontFamily: 'monospace', 
+                          fontWeight: 'bold',
+                          backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                          color: darkMode ? '#8ab4f8' : '#1a73e8',
+                          border: 'none',
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                      <Typography variant="body1" fontWeight="medium" color={darkMode ? '#e8eaed' : '#202124'}>
+                        {batch.quantity}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                      <Typography variant="body1" color={darkMode ? '#e8eaed' : '#202124'}>
+                        {formatCurrency(batch.costPrice || 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right" sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                      <Typography variant="body1" fontWeight="medium" color={darkMode ? '#8ab4f8' : '#1a73e8'}>
+                        {formatCurrency(batch.sellingPrice || 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                      <Typography variant="body2" color={darkMode ? '#e8eaed' : '#202124'}>
+                        {batch.mfgDate ? new Date(batch.mfgDate).toLocaleDateString() : 'N/A'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                      <Typography variant="body2" color={isExpired ? '#ea4335' : (darkMode ? '#e8eaed' : '#202124')}>
+                        {batch.expDate ? new Date(batch.expDate).toLocaleDateString() : 'N/A'}
+                        {isExpired && (
+                          <Chip 
+                            label="Expired" 
+                            size="small" 
+                            sx={{ 
+                              ml: 1,
+                              backgroundColor: 'rgba(234, 67, 53, 0.1)',
+                              color: '#ea4335',
+                              border: 'none',
+                              fontSize: '0.65rem',
+                            }}
+                          />
+                        )}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                      <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                        {batch.receivedDate ? new Date(batch.receivedDate).toLocaleDateString() : 'N/A'}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
@@ -497,322 +751,519 @@ export default function AdminProductDetailPage() {
     </Card>
   );
 
-  const renderGSTDetails = () => (
-    <Card sx={{ borderRadius: 3 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Receipt /> GST & Tax Details
-        </Typography>
-        
-        {product.gstDetails ? (
-          <Stack spacing={3}>
-            {/* GST Summary */}
-            <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
-              <Stack direction="row" spacing={4} alignItems="center">
-                <Avatar sx={{ width: 60, height: 60, bgcolor: 'primary.50', color: 'primary.main' }}>
-                  <Receipt fontSize="large" />
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">GST Type</Typography>
-                  <Typography variant="h6" textTransform="uppercase">
-                    {product.gstDetails.type?.replace('_', ' + ')}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">HSN Code</Typography>
-                  <Typography variant="h6" fontFamily="monospace">
-                    {product.gstDetails.hsnCode}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
+  const renderGSTDetails = () => {
+    const gstDetails = product.gstDetails;
+    
+    return (
+      <Card sx={{ 
+        borderRadius: '16px',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)',
+      }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: darkMode ? '#e8eaed' : '#202124',
+          }}>
+            <Receipt /> GST & Tax Details
+          </Typography>
+          
+          {gstDetails ? (
+            <Stack spacing={3}>
+              {/* GST Summary */}
+              <Paper sx={{ 
+                p: 3, 
+                borderRadius: '12px',
+                backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={4} alignItems="center">
+                  <Avatar sx={{ 
+                    width: 60, 
+                    height: 60, 
+                    backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                    color: darkMode ? '#8ab4f8' : '#1a73e8',
+                  }}>
+                    <Receipt fontSize="large" />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>GST Type</Typography>
+                    <Typography variant="h6" textTransform="uppercase" color={darkMode ? '#e8eaed' : '#202124'}>
+                      {gstDetails.type?.replace('_', ' + ')}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>HSN Code</Typography>
+                    <Typography variant="h6" fontFamily="monospace" color={darkMode ? '#e8eaed' : '#202124'}>
+                      {gstDetails.hsnCode}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Paper>
 
-            {/* Tax Rates */}
-            <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 2 }}>
-              {product.gstDetails.cgstRate > 0 && (
-                <Card sx={{ flex: 1, minWidth: 150, borderRadius: 2 }}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">CGST</Typography>
-                    <Typography variant="h4" color="primary.main">
-                      {product.gstDetails.cgstRate}%
-                    </Typography>
-                    <Typography variant="caption">Central GST</Typography>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {product.gstDetails.sgstRate > 0 && (
-                <Card sx={{ flex: 1, minWidth: 150, borderRadius: 2 }}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">SGST</Typography>
-                    <Typography variant="h4" color="secondary.main">
-                      {product.gstDetails.sgstRate}%
-                    </Typography>
-                    <Typography variant="caption">State GST</Typography>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {product.gstDetails.igstRate > 0 && (
-                <Card sx={{ flex: 1, minWidth: 150, borderRadius: 2 }}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">IGST</Typography>
-                    <Typography variant="h4" color="info.main">
-                      {product.gstDetails.igstRate}%
-                    </Typography>
-                    <Typography variant="caption">Interstate GST</Typography>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Tax Rates */}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flexWrap: 'wrap', gap: 2 }}>
+                {gstDetails.cgstRate > 0 && (
+                  <Card sx={{ 
+                    flex: 1, 
+                    minWidth: 150,
+                    borderRadius: '12px',
+                    backgroundColor: darkMode ? '#                    202124' : '#f8f9fa',
+                    border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  }}>
+                    <CardContent>
+                      <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'} gutterBottom>
+                        CGST
+                      </Typography>
+                      <Typography variant="h4" color={darkMode ? '#8ab4f8' : '#1a73e8'} fontWeight="bold">
+                        {gstDetails.cgstRate}%
+                      </Typography>
+                      <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                        Central Goods & Services Tax
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {gstDetails.sgstRate > 0 && (
+                  <Card sx={{ 
+                    flex: 1, 
+                    minWidth: 150,
+                    borderRadius: '12px',
+                    backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                    border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  }}>
+                    <CardContent>
+                      <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'} gutterBottom>
+                        SGST
+                      </Typography>
+                      <Typography variant="h4" color={darkMode ? '#8ab4f8' : '#1a73e8'} fontWeight="bold">
+                        {gstDetails.sgstRate}%
+                      </Typography>
+                      <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                        State Goods & Services Tax
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {gstDetails.igstRate > 0 && (
+                  <Card sx={{ 
+                    flex: 1, 
+                    minWidth: 150,
+                    borderRadius: '12px',
+                    backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                    border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  }}>
+                    <CardContent>
+                      <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'} gutterBottom>
+                        IGST
+                      </Typography>
+                      <Typography variant="h4" color={darkMode ? '#8ab4f8' : '#1a73e8'} fontWeight="bold">
+                        {gstDetails.igstRate}%
+                      </Typography>
+                      <Typography variant="caption" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                        Integrated Goods & Services Tax
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                )}
+              </Stack>
+
+              {/* Tax Calculation Example */}
+              <Card sx={{ 
+                borderRadius: '12px',
+                backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              }}>
+                <CardContent>
+                  <Typography variant="subtitle1" gutterBottom sx={{ 
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    fontWeight: 500,
+                  }}>
+                    Tax Calculation Example (for ₹1,000)
+                  </Typography>
+                  
+                  <Stack spacing={1} sx={{ mt: 2 }}>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>Base Price</Typography>
+                      <Typography variant="body2" color={darkMode ? '#e8eaed' : '#202124'}>₹1,000.00</Typography>
+                    </Stack>
+                    
+                    {gstDetails.cgstRate > 0 && (
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                          CGST ({gstDetails.cgstRate}%)
+                        </Typography>
+                        <Typography variant="body2" color={darkMode ? '#e8eaed' : '#202124'}>
+                          ₹{(1000 * gstDetails.cgstRate / 100).toFixed(2)}
+                        </Typography>
+                      </Stack>
+                    )}
+                    
+                    {gstDetails.sgstRate > 0 && (
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                          SGST ({gstDetails.sgstRate}%)
+                        </Typography>
+                        <Typography variant="body2" color={darkMode ? '#e8eaed' : '#202124'}>
+                          ₹{(1000 * gstDetails.sgstRate / 100).toFixed(2)}
+                        </Typography>
+                      </Stack>
+                    )}
+                    
+                    {gstDetails.igstRate > 0 && (
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+                          IGST ({gstDetails.igstRate}%)
+                        </Typography>
+                        <Typography variant="body2" color={darkMode ? '#e8eaed' : '#202124'}>
+                          ₹{(1000 * gstDetails.igstRate / 100).toFixed(2)}
+                        </Typography>
+                      </Stack>
+                    )}
+                    
+                    <Divider sx={{ my: 1, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
+                    
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body1" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
+                        Total Price
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold" color={darkMode ? '#8ab4f8' : '#1a73e8'}>
+                        ₹{(
+                          1000 + 
+                          (1000 * gstDetails.cgstRate / 100) + 
+                          (1000 * gstDetails.sgstRate / 100) + 
+                          (1000 * gstDetails.igstRate / 100)
+                        ).toFixed(2)}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
             </Stack>
-
-            {/* Price Breakdown */}
-            <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>Price Breakdown</Typography>
-              <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2">Base Price</Typography>
-                  <Typography variant="body1">{formatCurrency(product.basePrice)}</Typography>
-                </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2">GST ({product.gstDetails.cgstRate + product.gstDetails.sgstRate}%)</Typography>
-                  <Typography variant="body1">
-                    {formatCurrency(product.basePrice * (product.gstDetails.cgstRate + product.gstDetails.sgstRate) / 100)}
-                  </Typography>
-                </Stack>
-                <Divider />
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="h6">Total Price</Typography>
-                  <Typography variant="h6" color="primary.main" fontWeight="bold">
-                    {formatCurrency(product.basePrice * (1 + (product.gstDetails.cgstRate + product.gstDetails.sgstRate) / 100))}
-                  </Typography>
-                </Stack>
-              </Stack>
-            </Paper>
-          </Stack>
-        ) : (
-          <Paper variant="outlined" sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
-            <Receipt sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-            <Typography color="text.secondary">No GST details available</Typography>
-          </Paper>
-        )}
-      </CardContent>
-    </Card>
-  );
+          ) : (
+            <Alert severity="info" sx={{ 
+              borderRadius: '12px',
+              backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            }}>
+              No GST details configured for this product. Add GST details in the edit page.
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   if (loading) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        flexDirection: 'column',
-        gap: 3
-      }}>
-        <CircularProgress size={60} />
-        <Typography variant="h6" color="text.secondary">
-          Loading product details...
-        </Typography>
-      </Box>
+      <Container maxWidth="xl">
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '80vh',
+          flexDirection: 'column',
+          gap: 3
+        }}>
+          <CircularProgress size={64} sx={{ color: darkMode ? '#8ab4f8' : '#1a73e8' }} />
+          <Typography variant="h6" color={darkMode ? '#e8eaed' : '#202124'}>
+            Loading product details...
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="xl">
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mt: 3, 
+            borderRadius: '16px',
+            backgroundColor: darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.1)',
+            border: `1px solid ${darkMode ? '#ea4335' : '#ea4335'}`,
+            color: darkMode ? '#ea4335' : '#d32f2f',
+          }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={handleRefresh}
+              sx={{ color: darkMode ? '#ea4335' : '#d32f2f' }}
+            >
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (!product) {
+    return (
+      <Container maxWidth="xl">
+        <Alert 
+          severity="warning" 
+          sx={{ 
+            mt: 3, 
+            borderRadius: '16px',
+            backgroundColor: darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.1)',
+            border: `1px solid ${darkMode ? '#fbbc04' : '#fbbc04'}`,
+            color: darkMode ? '#fbbc04' : '#ed6c02',
+          }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={handleBack}
+              sx={{ color: darkMode ? '#fbbc04' : '#ed6c02' }}
+            >
+              Back to Products
+            </Button>
+          }
+        >
+          Product not found
+        </Alert>
+      </Container>
     );
   }
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Error display */}
-      {error && (
-        <Alert 
-          severity="error" 
-          sx={{ 
-            mb: 3, 
-            borderRadius: 2,
-            '& .MuiAlert-message': { width: '100%' }
-          }}
-          action={
-            <Stack direction="row" spacing={1}>
-              <Button color="inherit" size="small" onClick={handleRefresh}>
-                Retry
-              </Button>
-              <Button color="inherit" size="small" onClick={handleBack}>
-                Back
-              </Button>
-            </Stack>
-          }
-        >
-          <Typography fontWeight="medium">{error}</Typography>
-          <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-            Product ID: {params.id}
-          </Typography>
-        </Alert>
-      )}
-
       {/* Header */}
-      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2 }}>
-        <CardContent>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-            <Stack spacing={1}>
-              <Button
-                startIcon={<ArrowBack />}
-                onClick={handleBack}
-                variant="outlined"
-                sx={{ alignSelf: 'flex-start' }}
-              >
-                Back to Products
-              </Button>
-              {product && (
-                <Typography variant="h4" fontWeight="bold">
-                  {product.name}
-                </Typography>
-              )}
-              <Typography variant="body1" color="text.secondary">
-                Product Details & Management
-              </Typography>
-            </Stack>
-            
-            <Stack direction="row" spacing={1}>
-              <Tooltip title="View Product">
-                <IconButton color="info">
-                  <Visibility />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Print">
-                <IconButton>
-                  <Print />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Export">
-                <IconButton>
-                  <Download />
-                </IconButton>
-              </Tooltip>
-              <Button
-                startIcon={<Edit />}
-                onClick={handleEdit}
-                variant="contained"
-                color="primary"
-                sx={{ ml: 1 }}
-              >
-                Edit Product
-              </Button>
-            </Stack>
-          </Stack>
-        </CardContent>
-      </Card>
-
-      {/* Tabs Navigation */}
-      {product && (
-        <Paper sx={{ mb: 3, borderRadius: 3, overflow: 'hidden' }}>
-          <Stack 
-            direction="row" 
-            sx={{ 
-              borderBottom: 1, 
-              borderColor: 'divider',
-              overflowX: 'auto'
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 4 }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Tooltip title="Back to Products">
+            <IconButton 
+              onClick={handleBack}
+              sx={{ 
+                backgroundColor: darkMode ? '#303134' : '#ffffff',
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                '&:hover': {
+                  backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
+                }
+              }}
+            >
+              <ArrowBack />
+            </IconButton>
+          </Tooltip>
+          <Box>
+            <Typography variant="h4" fontWeight="bold" color={darkMode ? '#e8eaed' : '#202124'}>
+              Product Details
+            </Typography>
+            <Typography variant="body2" color={darkMode ? '#9aa0a6' : '#5f6368'}>
+              Manage and view detailed information about this product
+            </Typography>
+          </Box>
+        </Stack>
+        
+        <Stack direction="row" spacing={2}>
+          <Tooltip title="Refresh">
+            <IconButton 
+              onClick={handleRefresh}
+              sx={{ 
+                backgroundColor: darkMode ? '#303134' : '#ffffff',
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                '&:hover': {
+                  backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
+                }
+              }}
+            >
+              <Refresh />
+            </IconButton>
+          </Tooltip>
+          
+          <Button
+            variant="contained"
+            startIcon={<Edit />}
+            onClick={handleEdit}
+            sx={{
+              backgroundColor: darkMode ? '#8ab4f8' : '#1a73e8',
+              color: darkMode ? '#202124' : '#ffffff',
+              borderRadius: '24px',
+              px: 3,
+              py: 1,
+              '&:hover': {
+                backgroundColor: darkMode ? '#aecbfa' : '#1669c1',
+              }
             }}
           >
-            {[
-              { id: 'overview', label: 'Overview', icon: <Description /> },
-              { id: 'variations', label: 'Variations', icon: <LocalOffer />, count: product.variations?.length },
-              { id: 'batches', label: 'Batches', icon: <Inventory />, count: product.batches?.length },
-              { id: 'gst', label: 'GST & Tax', icon: <Receipt /> },
-            ].map((tab) => (
-              <Button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                sx={{
-                  px: 3,
-                  py: 2,
-                  borderRadius: 0,
-                  borderBottom: activeTab === tab.id ? 3 : 0,
-                  borderColor: 'primary.main',
-                  color: activeTab === tab.id ? 'primary.main' : 'text.secondary',
-                  fontWeight: activeTab === tab.id ? 'bold' : 'normal',
-                  minWidth: 120,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                }}
-              >
-                {tab.icon}
-                {tab.label}
-                {tab.count !== undefined && tab.count > 0 && (
-                  <Chip 
-                    label={tab.count} 
-                    size="small" 
-                    color="primary" 
-                    sx={{ ml: 1, height: 20 }}
-                  />
-                )}
-              </Button>
-            ))}
-          </Stack>
-        </Paper>
-      )}
+            Edit Product
+          </Button>
+        </Stack>
+      </Stack>
 
-      {/* Main Content */}
-      {product && (
-        <Box sx={{ mb: 4 }}>
-          {renderTabContent()}
-        </Box>
-      )}
+      {/* Product ID Badge */}
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 3 }}>
+        <Chip 
+          icon={<Numbers />}
+          label={`ID: ${product._id}`}
+          sx={{
+            backgroundColor: darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(154, 160, 166, 0.1)',
+            color: darkMode ? '#9aa0a6' : '#5f6368',
+            fontFamily: 'monospace',
+            border: 'none',
+          }}
+        />
+        <Chip 
+          icon={<Store />}
+          label={`Category: ${product.category}`}
+          sx={{
+            backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+            color: darkMode ? '#8ab4f8' : '#1a73e8',
+            border: 'none',
+          }}
+        />
+        {product.isActive ? (
+          <Chip 
+            icon={<CheckCircle />}
+            label="Active"
+            sx={{
+              backgroundColor: darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.1)',
+              color: darkMode ? '#34a853' : '#34a853',
+              border: 'none',
+            }}
+          />
+        ) : (
+          <Chip 
+            icon={<Cancel />}
+            label="Inactive"
+            sx={{
+              backgroundColor: darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.1)',
+              color: darkMode ? '#ea4335' : '#ea4335',
+              border: 'none',
+            }}
+          />
+        )}
+      </Stack>
 
-      {/* Footer Stats */}
-      {product && (
-        <Card sx={{ borderRadius: 3, boxShadow: 1 }}>
-          <CardContent>
-            <Stack direction="row" spacing={4} justifyContent="space-around" alignItems="center">
-              <Stack alignItems="center">
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  <CalendarToday sx={{ fontSize: 14, mr: 0.5 }} />
-                  Created
-                </Typography>
-                <Typography variant="body1" fontWeight="medium">
-                  {new Date(product.createdAt).toLocaleDateString()}
-                </Typography>
-              </Stack>
-              
-              <Divider orientation="vertical" flexItem />
-              
-              <Stack alignItems="center">
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  <Person sx={{ fontSize: 14, mr: 0.5 }} />
-                  Created By
-                </Typography>
-                <Typography variant="body1" fontWeight="medium">
-                  User #{product.userId?.slice(-6)}
-                </Typography>
-              </Stack>
-              
-              <Divider orientation="vertical" flexItem />
-              
-              <Stack alignItems="center">
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  <Security sx={{ fontSize: 14, mr: 0.5 }} />
-                  Product ID
-                </Typography>
-                <Typography variant="caption" fontFamily="monospace">
-                  {product._id}
-                </Typography>
-              </Stack>
-              
-              <Divider orientation="vertical" flexItem />
-              
-              <Stack alignItems="center">
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  <Numbers sx={{ fontSize: 14, mr: 0.5 }} />
-                  Status
-                </Typography>
+      {/* Tabs Navigation */}
+      <Paper sx={{ 
+        mb: 3, 
+        borderRadius: '16px',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        overflow: 'hidden',
+      }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0}>
+          {[
+            { key: 'overview', label: 'Overview', icon: <Visibility /> },
+            { key: 'variations', label: 'Variations', icon: <LocalOffer /> },
+            { key: 'batches', label: 'Batches', icon: <Inventory /> },
+            { key: 'gst', label: 'GST & Tax', icon: <Receipt /> },
+          ].map((tab) => (
+            <Button
+              key={tab.key}
+              startIcon={tab.icon}
+              onClick={() => setActiveTab(tab.key)}
+              sx={{
+                flex: 1,
+                py: 2,
+                borderRadius: 0,
+                color: activeTab === tab.key 
+                  ? (darkMode ? '#8ab4f8' : '#1a73e8')
+                  : (darkMode ? '#9aa0a6' : '#5f6368'),
+                borderBottom: activeTab === tab.key 
+                  ? `3px solid ${darkMode ? '#8ab4f8' : '#1a73e8'}` 
+                  : '3px solid transparent',
+                backgroundColor: activeTab === tab.key
+                  ? (darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.05)')
+                  : 'transparent',
+                '&:hover': {
+                  backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4',
+                }
+              }}
+            >
+              {tab.label}
+              {tab.key === 'variations' && product.variations?.length > 0 && (
                 <Chip 
-                  label={product.isActive ? 'Active' : 'Inactive'} 
-                  color={product.isActive ? 'success' : 'error'}
+                  label={product.variations.length}
                   size="small"
+                  sx={{ 
+                    ml: 1,
+                    backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.2)' : 'rgba(26, 115, 232, 0.1)',
+                    color: darkMode ? '#8ab4f8' : '#1a73e8',
+                    fontSize: '0.65rem',
+                    height: 20,
+                  }}
                 />
-              </Stack>
-            </Stack>
-          </CardContent>
-        </Card>
-      )}
+              )}
+            </Button>
+          ))}
+        </Stack>
+      </Paper>
+
+      {/* Tab Content */}
+      <Box sx={{ animation: 'fadeIn 0.3s ease-in' }}>
+        {renderTabContent()}
+      </Box>
+
+      {/* Action Buttons */}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="flex-end" sx={{ mt: 4 }}>
+        <Button
+          variant="outlined"
+          startIcon={<Print />}
+          sx={{
+            borderColor: darkMode ? '#3c4043' : '#dadce0',
+            color: darkMode ? '#e8eaed' : '#202124',
+            borderRadius: '24px',
+            px: 3,
+            '&:hover': {
+              borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+              backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4',
+            }
+          }}
+        >
+          Print
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<Download />}
+          sx={{
+            borderColor: darkMode ? '#3c4043' : '#dadce0',
+            color: darkMode ? '#e8eaed' : '#202124',
+            borderRadius: '24px',
+            px: 3,
+            '&:hover': {
+              borderColor: darkMode ? '#5f6368' : '#bdc1c6',
+              backgroundColor: darkMode ? '#2d2f31' : '#f1f3f4',
+            }
+          }}
+        >
+          Export
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<Share />}
+          sx={{
+            backgroundColor: darkMode ? '#34a853' : '#34a853',
+            color: '#ffffff',
+            borderRadius: '24px',
+            px: 3,
+            '&:hover': {
+              backgroundColor: darkMode ? '#2e8b47' : '#2e8b47',
+            }
+          }}
+        >
+          Share
+        </Button>
+      </Stack>
+
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </Container>
   );
 }

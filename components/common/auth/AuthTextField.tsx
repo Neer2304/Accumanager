@@ -1,9 +1,12 @@
+'use client';
+
 import React, { useState } from 'react';
 import {
   TextField,
   InputAdornment,
   IconButton,
   TextFieldProps,
+  useTheme,
 } from '@mui/material';
 import {
   Email,
@@ -27,20 +30,24 @@ const AuthTextField: React.FC<AuthTextFieldProps> = ({
   showPasswordToggle = fieldType === 'password',
   ...props
 }) => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   const [showPassword, setShowPassword] = useState(false);
 
   const getIcon = () => {
+    const iconSx = { color: darkMode ? '#9aa0a6' : '#5f6368' };
+    
     switch (fieldType) {
       case 'email':
-        return <Email sx={{ color: '#667eea', opacity: 0.8 }} />;
+        return <Email sx={iconSx} />;
       case 'password':
-        return <Lock sx={{ color: '#667eea', opacity: 0.8 }} />;
+        return <Lock sx={iconSx} />;
       case 'name':
-        return <Person sx={{ color: '#667eea', opacity: 0.8 }} />;
+        return <Person sx={iconSx} />;
       case 'phone':
-        return <Phone sx={{ color: '#667eea', opacity: 0.8 }} />;
+        return <Phone sx={iconSx} />;
       case 'username':
-        return <Badge sx={{ color: '#667eea', opacity: 0.8 }} />;
+        return <Badge sx={iconSx} />;
       default:
         return null;
     }
@@ -79,51 +86,55 @@ const AuthTextField: React.FC<AuthTextFieldProps> = ({
       margin="normal"
       InputProps={{
         startAdornment: (
-          <InputAdornment position="start">
-            {getIcon()}
-          </InputAdornment>
+          <InputAdornment position="start">{getIcon()}</InputAdornment>
         ),
-        endAdornment: showPasswordToggle && fieldType === 'password' ? (
-          <InputAdornment position="end">
-            <IconButton
-              size="small"
-              onClick={() => setShowPassword(!showPassword)}
-              edge="end"
-              sx={{ 
-                color: '#94a3b8',
-                '&:hover': {
-                  color: '#667eea',
-                  background: 'rgba(102, 126, 234, 0.1)',
-                }
-              }}
-            >
-              {showPassword ? <VisibilityOff /> : <Visibility />}
-            </IconButton>
-          </InputAdornment>
-        ) : null,
+        endAdornment:
+          showPasswordToggle && fieldType === 'password' ? (
+            <InputAdornment position="end">
+              <IconButton
+                size="small"
+                onClick={() => setShowPassword(!showPassword)}
+                edge="end"
+                sx={{
+                  color: darkMode ? '#9aa0a6' : '#5f6368',
+                  '&:hover': {
+                    color: darkMode ? '#8ab4f8' : '#1a73e8',
+                    backgroundColor: darkMode
+                      ? 'rgba(138, 180, 248, 0.1)'
+                      : 'rgba(26, 115, 232, 0.05)',
+                  },
+                }}
+              >
+                {showPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            </InputAdornment>
+          ) : null,
       }}
       sx={{
         '& .MuiOutlinedInput-root': {
-          borderRadius: 3,
-          background: 'rgba(30, 41, 59, 0.7)',
-          border: '1px solid',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          transition: 'all 0.3s ease',
+          borderRadius: '12px',
+          backgroundColor: darkMode ? '#202124' : '#ffffff',
+          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          transition: 'all 0.2s ease',
           '&:hover': {
-            borderColor: 'rgba(102, 126, 234, 0.5)',
-            background: 'rgba(30, 41, 59, 0.9)',
-            boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+            borderColor: darkMode ? '#8ab4f8' : '#1a73e8',
+            backgroundColor: darkMode ? '#2d2e30' : '#f8f9fa',
           },
           '&.Mui-focused': {
-            borderColor: '#667eea',
-            boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.2)',
+            borderColor: darkMode ? '#8ab4f8' : '#1a73e8',
+            boxShadow: `0 0 0 3px ${
+              darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)'
+            }`,
           },
         },
         '& .MuiInputLabel-root': {
-          color: '#94a3b8',
+          color: darkMode ? '#9aa0a6' : '#5f6368',
+          '&.Mui-focused': {
+            color: darkMode ? '#8ab4f8' : '#1a73e8',
+          },
         },
         '& .MuiInputBase-input': {
-          color: '#f8fafc',
+          color: darkMode ? '#e8eaed' : '#202124',
         },
         ...props.sx,
       }}
