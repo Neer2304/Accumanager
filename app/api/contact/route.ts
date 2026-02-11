@@ -169,7 +169,7 @@ async function sendAdminNotification(data: any, clientIp: string, userAgent: str
     const transporter = createTransporter();
     
     const mailOptions = {
-      from: `AccumaManage Contact <${process.env.SMTP_FROM || 'noreply@accumanage.com'}>`,
+      from: `AccuManage Contact <${process.env.SMTP_FROM || 'noreply@accumanage.com'}>`,
       to: process.env.ADMIN_EMAIL,
       replyTo: data.email,
       subject: `📨 New Contact Form: ${data.subject || 'No Subject'} [${ticketNumber}]`,
@@ -421,7 +421,7 @@ async function sendAdminNotification(data: any, clientIp: string, userAgent: str
         </div>
         
         <div class="footer">
-            <p>This is an automated notification from AccumaManage Contact Form.</p>
+            <p>This is an automated notification from AccuManage Contact Form.</p>
             <p>Ticket ID: ${ticketNumber}</p>
         </div>
     </div>
@@ -459,7 +459,7 @@ QUICK ACTIONS
 • Call: ${data.phone || '+91 98765 43210'}
 • View in dashboard: https://accumanage.com/admin/contacts
 
-This is an automated notification from AccumaManage.
+This is an automated notification from AccuManage.
       `,
     };
     
@@ -484,16 +484,16 @@ async function sendAutoResponse(data: any, ticketNumber: string) {
     const transporter = createTransporter();
     
     const mailOptions = {
-      from: `AccumaManage Support <${process.env.SMTP_FROM || 'support@accumanage.com'}>`,
+      from: `AccuManage Support <${process.env.SMTP_FROM || 'support@accumanage.com'}>`,
       to: data.email,
-      subject: `✅ Thank You for Contacting AccumaManage [${ticketNumber}]`,
+      subject: `✅ Thank You for Contacting AccuManage [${ticketNumber}]`,
       html: `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thank You - AccumaManage</title>
+    <title>Thank You - AccuManage</title>
     <style>
         body {
             font-family: 'Google Sans', 'Segoe UI', Roboto, Arial, sans-serif;
@@ -699,7 +699,7 @@ async function sendAutoResponse(data: any, ticketNumber: string) {
                     <span style="font-size: 28px;">✅</span>
                 </div>
                 <h1>Message Received</h1>
-                <p>Thank you for contacting AccumaManage</p>
+                <p>Thank you for contacting AccuManage</p>
                 <div class="ticket-badge">Ticket: ${ticketNumber}</div>
             </div>
         </div>
@@ -778,19 +778,19 @@ async function sendAutoResponse(data: any, ticketNumber: string) {
         <div class="footer">
             <p>This is an automated confirmation email. Please do not reply to this message.</p>
             <p>If you need to add more information to your inquiry, please reply to the email thread.</p>
-            <p>© ${new Date().getFullYear()} AccumaManage. All rights reserved.</p>
+            <p>© ${new Date().getFullYear()} AccuManage. All rights reserved.</p>
         </div>
     </div>
 </body>
 </html>
       `,
       text: `
-THANK YOU FOR CONTACTING ACCUMAMANAGE
+THANK YOU FOR CONTACTING ACCUMANAGE
 ======================================
 
 Dear ${data.name},
 
-Thank you for reaching out to AccumaManage. We have received your inquiry and will get back to you shortly.
+Thank you for reaching out to AccuManage. We have received your inquiry and will get back to you shortly.
 
 TICKET INFORMATION
 ------------------
@@ -817,10 +817,10 @@ Phone: +91 93132 02038
 Email: mehtaneer143@gmail.com
 WhatsApp: +91 93132 02038
 
-Thank you for choosing AccumaManage. We look forward to assisting you!
+Thank you for choosing AccuManage. We look forward to assisting you!
 
 Best regards,
-The AccumaManage Team
+The AccuManage Team
 
 ---
 This is an automated confirmation email. Please do not reply to this message.
@@ -842,7 +842,7 @@ Ticket ID: ${ticketNumber}
 export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
-    message: 'AccumaManage Contact API',
+    message: 'AccuManage Contact API',
     endpoints: {
       POST: '/api/contact - Submit contact form',
     },

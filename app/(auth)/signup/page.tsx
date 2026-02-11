@@ -66,7 +66,7 @@ export default function RegisterPage() {
         {/* Left Side - Hero Content */}
         <RegisterHeroSection
           appName="AccuManage"
-          tagline="Get started with AccumaManage and transform your business operations. No credit card required for the 14-day free trial."
+          tagline="Get started with AccuManage and transform your business operations. No credit card required for the 14-day free trial."
         >
           <RegisterFeatureList />
           <RegisterTrustBadges />

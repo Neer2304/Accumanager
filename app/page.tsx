@@ -208,7 +208,7 @@ export default function LandingPage() {
                     opacity: 0.9,
                   }}
                 >
-                  with AccumaManage
+                  with AccuManage
                 </Box>
               </Typography>
               <Typography
@@ -565,7 +565,7 @@ export default function LandingPage() {
                 fontSize: getResponsiveTypography('0.9rem', '1rem', '1.1rem'),
               }}
             >
-              Join hundreds of businesses that trust AccumaManage
+              Join hundreds of businesses that trust AccuManage
             </Typography>
           </Box>
 
@@ -848,7 +848,7 @@ export default function LandingPage() {
                 fontSize: getResponsiveTypography('0.9rem', '1rem', '1.1rem'),
               }}
             >
-              Join thousands of businesses using AccumaManage
+              Join thousands of businesses using AccuManage
             </Typography>
             <Box sx={{ position: 'relative', zIndex: 1 }}>
               {!isAuthenticated && !authLoading ? (
@@ -947,7 +947,7 @@ export default function LandingPage() {
                   fontSize: getResponsiveTypography('1rem', '1.1rem', '1.25rem'),
                 }}
               >
-                AccumaManage
+                AccuManage
               </Typography>
               <Typography
                 variant="body2"
@@ -1047,7 +1047,7 @@ export default function LandingPage() {
                 fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem'),
               }}
             >
-              © {new Date().getFullYear()} AccumaManage. All rights reserved.
+              © {new Date().getFullYear()} AccuManage. All rights reserved.
             </Typography>
           </Box>
         </Container>

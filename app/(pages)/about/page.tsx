@@ -1162,7 +1162,7 @@ export default function AboutPage() {
                     fontSize: getResponsiveTypography('1rem', '1.1rem', '1.25rem'),
                   }}
                 >
-                  AccumaManage
+                  AccuManage
                 </Typography>
               </Box>
               <Typography
@@ -1299,7 +1299,7 @@ export default function AboutPage() {
                 fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem'),
               }}
             >
-              © {new Date().getFullYear()} AccumaManage. All rights reserved.
+              © {new Date().getFullYear()} AccuManage. All rights reserved.
             </Typography>
           </Box>
         </Container>

@@ -138,7 +138,7 @@ export default function RegisterPage() {
                 mb: 2,
               }}
             >
-              Join AccumaManage Today
+              Join AccuManage Today
             </Typography>
             <Typography 
               variant="body1" 

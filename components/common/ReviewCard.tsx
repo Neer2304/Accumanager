@@ -91,7 +91,7 @@ export const ReviewCard = ({ review, onHelpful }: ReviewCardProps) => {
         {review.reply && (
           <Paper variant="outlined" sx={{ p: 2, mt: 2, bgcolor: 'grey.50' }}>
             <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-              Response from AccumaManage Team
+              Response from AccuManage Team
             </Typography>
             <Typography variant="body2">
               {review.reply.message}

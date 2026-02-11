@@ -50,7 +50,7 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<AppSettings>({
     siteName: 'AccuManage',
     siteUrl: 'https://accumanae.com',
-    supportEmail: 'support@accumanae.com',
+    supportEmail: 'mehtaneer143@gmail.com',
     enableRegistration: true,
     trialDays: 14,
     pricing: {

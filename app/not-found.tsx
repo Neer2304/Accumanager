@@ -522,7 +522,7 @@ export default function NotFound() {
                 flexWrap: 'wrap',
               }}
             >
-              <Box component="span">AccumaManage CRM</Box>
+              <Box component="span">AccuManage CRM</Box>
               <Box component="span" sx={{ opacity: 0.6 }}>•</Box>
               <Box component="span">{new Date().getFullYear()}</Box>
               <Box component="span" sx={{ opacity: 0.6 }}>•</Box>

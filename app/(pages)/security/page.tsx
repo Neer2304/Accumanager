@@ -922,7 +922,7 @@ export default function SecurityPage() {
                     fontSize: getResponsiveTypography('1rem', '1.1rem', '1.25rem'),
                   }}
                 >
-                  AccumaManage Security
+                  AccuManage Security
                 </Typography>
               </Box>
               <Typography
@@ -1054,7 +1054,7 @@ export default function SecurityPage() {
                 fontSize: getResponsiveTypography('0.7rem', '0.75rem', '0.8rem'),
               }}
             >
-              © {new Date().getFullYear()} AccumaManage Security. All rights reserved.
+              © {new Date().getFullYear()} AccuManage Security. All rights reserved.
             </Typography>
           </Box>
         </Container>

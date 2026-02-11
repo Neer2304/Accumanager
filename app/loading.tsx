@@ -212,7 +212,7 @@ export default function Loading() {
               fontFamily: '"Google Sans", Roboto, Arial, sans-serif',
             }}
           >
-            Loading AccumaManage
+            Loading AccuManage
           </Typography>
 
           <Typography
@@ -374,7 +374,7 @@ export default function Loading() {
               flexWrap: 'wrap',
             }}
           >
-            <Box component="span">AccumaManage CRM</Box>
+            <Box component="span">AccuManage CRM</Box>
             <Box component="span" sx={{ opacity: 0.6 }}>•</Box>
             <Box component="span">{new Date().getFullYear()}</Box>
           </Typography>

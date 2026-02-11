@@ -37,7 +37,7 @@ export const ContactHeader: React.FC = () => {
         }}
       >
         Have questions? We&apos;re here to help. Reach out to our team for any inquiries 
-        about AccumaManage solutions.
+        about AccuManage solutions.
       </Typography>
     </Box>
   );

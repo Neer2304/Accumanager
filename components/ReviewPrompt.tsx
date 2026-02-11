@@ -20,7 +20,7 @@ export function ReviewPrompt() {
       <DialogTitle>How's Your Experience?</DialogTitle>
       <DialogContent>
         <Typography>
-          You've been using AccumaManage for a week! We'd love to hear your feedback.
+          You've been using AccuManage for a week! We'd love to hear your feedback.
         </Typography>
         <Button component={Link} href="/reviews/submit">
           Write a Review

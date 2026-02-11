@@ -15,7 +15,7 @@ export const HELP_SUPPORT_CONTENT = {
 
   header: {
     gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    title: "AccumaManage Help Center",
+    title: "AccuManage Help Center",
   },
 
   tabs: {
@@ -104,7 +104,7 @@ export const HELP_SUPPORT_CONTENT = {
           name: "Rajesh Kumar",
           company: "RK Traders",
           rating: 5,
-          comment: "AccumaManage simplified my GST compliance and inventory management. Highly recommended for Indian businesses!",
+          comment: "AccuManage simplified my GST compliance and inventory management. Highly recommended for Indian businesses!",
           avatar: "RK",
         },
         {

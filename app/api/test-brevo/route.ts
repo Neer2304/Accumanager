@@ -17,7 +17,7 @@ export async function GET() {
     
     // Test email
     const info = await transporter.sendMail({
-      from: `AccumaManage <${process.env.SMTP_FROM}>`,
+      from: `AccaManage <${process.env.SMTP_FROM}>`,
       to: process.env.ADMIN_EMAIL, // Your email address
       subject: '✅ Brevo SMTP Test - Working!',
       text: 'Congratulations! Your Brevo SMTP is working perfectly.',

@@ -268,7 +268,7 @@ export default function ApiDocumentationPage() {
                 mx: 'auto',
               }}
             >
-              Documentation for all available REST APIs in AccumaManage
+              Documentation for all available REST APIs in AccuManage
             </Typography>
           </Box>
 
