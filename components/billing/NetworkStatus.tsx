@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   Box,
@@ -6,19 +8,24 @@ import {
   Tooltip,
   Badge,
   Paper,
+  Chip,
+  Avatar,
+  Stack,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import {
-  CloudQueueIcon,
-  CloudOffIcon,
-  SyncIcon,
-} from "@/assets/icons/BillingIcons";
+  CloudQueue as CloudQueueIcon,
+  CloudOff as CloudOffIcon,
+  Sync as SyncIcon,
+} from "@mui/icons-material";
 
 interface NetworkStatusProps {
   isOnline: boolean;
   offlineBillsCount: number;
   onSyncClick: () => void;
-  subscription?: any; // Accept any type
-  usage?: any; // Accept any type
+  subscription?: any;
+  usage?: any;
 }
 
 export const NetworkStatus: React.FC<NetworkStatusProps> = ({
@@ -28,6 +35,9 @@ export const NetworkStatus: React.FC<NetworkStatusProps> = ({
   subscription,
   usage,
 }) => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+
   // Safely extract values with fallbacks
   const plan = subscription?.plan;
   const invoiceLimit = 
@@ -40,61 +50,106 @@ export const NetworkStatus: React.FC<NetworkStatusProps> = ({
     0;
 
   return (
-    <Paper sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: 'background.default' }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {isOnline ? (
-            <>
-              <CloudQueueIcon color="success" />
-              <Typography variant="body2" color="success.main">
-                Online - Real-time billing
+    <Paper
+      sx={{
+        p: 2,
+        mb: 3,
+        borderRadius: '16px',
+        backgroundColor: darkMode ? '#303134' : '#ffffff',
+        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        boxShadow: 'none',
+      }}
+    >
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        spacing={2}
+      >
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+          <Avatar
+            sx={{
+              width: 32,
+              height: 32,
+              backgroundColor: isOnline
+                ? darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.1)'
+                : darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.1)',
+              color: isOnline
+                ? darkMode ? '#81c995' : '#34a853'
+                : darkMode ? '#fdd663' : '#fbbc04',
+            }}
+          >
+            {isOnline ? <CloudQueueIcon sx={{ fontSize: 18 }} /> : <CloudOffIcon sx={{ fontSize: 18 }} />}
+          </Avatar>
+          <Box>
+            <Typography
+              variant="body2"
+              fontWeight={500}
+              sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+            >
+              {isOnline ? 'Online - Real-time billing' : 'Offline - Bills saved locally'}
+            </Typography>
+            {!isOnline && (
+              <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                You're working offline
               </Typography>
-            </>
-          ) : (
-            <>
-              <CloudOffIcon color="warning" />
-              <Typography variant="body2" color="warning.main">
-                Offline - Bills saved locally
-              </Typography>
-            </>
-          )}
+            )}
+          </Box>
           
           {offlineBillsCount > 0 && (
             <Tooltip title={`${offlineBillsCount} bills waiting to sync`}>
-              <Badge badgeContent={offlineBillsCount} color="warning">
-                <IconButton 
-                  size="small" 
+              <Badge
+                badgeContent={offlineBillsCount}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    backgroundColor: darkMode ? '#fdd663' : '#fbbc04',
+                    color: darkMode ? '#202124' : '#ffffff',
+                    fontSize: '0.65rem',
+                    height: 18,
+                    minWidth: 18,
+                  },
+                }}
+              >
+                <IconButton
+                  size="small"
                   onClick={onSyncClick}
                   disabled={!isOnline}
+                  sx={{
+                    backgroundColor: darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.05)',
+                    '&:hover': {
+                      backgroundColor: darkMode ? 'rgba(251, 188, 4, 0.2)' : 'rgba(251, 188, 4, 0.1)',
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(154, 160, 166, 0.05)',
+                    },
+                  }}
                 >
-                  <SyncIcon />
+                  <SyncIcon sx={{ fontSize: 18, color: darkMode ? '#fdd663' : '#fbbc04' }} />
                 </IconButton>
               </Badge>
             </Tooltip>
           )}
-        </Box>
+        </Stack>
         
         {plan && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box 
-              component="span" 
-              sx={{ 
-                padding: '4px 8px',
-                borderRadius: 1,
-                bgcolor: 'primary.main',
-                color: 'white',
-                fontSize: '0.75rem',
-                fontWeight: 600
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <Chip
+              label={typeof plan === 'string' ? plan.toUpperCase() : 'PLAN'}
+              size="small"
+              sx={{
+                backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                color: darkMode ? '#8ab4f8' : '#1a73e8',
+                border: 'none',
+                fontWeight: 600,
+                height: 24,
               }}
-            >
-              {typeof plan === 'string' ? plan.toUpperCase() : 'PLAN'}
-            </Box>
-            <Typography variant="caption" color="text.secondary">
+            />
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               {invoiceCount} / {invoiceLimit} invoices
             </Typography>
-          </Box>
+          </Stack>
         )}
-      </Box>
+      </Stack>
     </Paper>
   );
 };

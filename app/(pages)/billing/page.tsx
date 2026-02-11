@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
@@ -9,6 +9,11 @@ import {
   Snackbar,
   Backdrop,
   Stack,
+  Container,
+  Paper,
+  useTheme,
+  useMediaQuery,
+  alpha,
 } from "@mui/material";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import { useProducts } from "@/hooks/useProducts";
@@ -45,6 +50,9 @@ import { Subscription, Usage } from "@/types/billing";
 
 export default function BillingPage() {
   const router = useRouter();
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Use hooks with proper dependencies
   const {
@@ -998,17 +1006,24 @@ export default function BillingPage() {
   if (productsLoading || customersLoading) {
     return (
       <MainLayout title="Point of Sale">
-        <Box
-          sx={{
-            p: 3,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: 400,
-          }}
-        >
-          <CircularProgress />
-        </Box>
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+          <Box
+            sx={{
+              p: 3,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexDirection: "column",
+              gap: 3,
+              minHeight: 400,
+            }}
+          >
+            <CircularProgress size={48} sx={{ color: darkMode ? '#8ab4f8' : '#1a73e8' }} />
+            <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+              Loading billing system...
+            </Typography>
+          </Box>
+        </Container>
       </MainLayout>
     );
   }
@@ -1016,8 +1031,8 @@ export default function BillingPage() {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <MainLayout title="Point of Sale - Billing">
-        <Box sx={{ p: 3, maxWidth: "1400px", margin: "0 auto" }}>
-          {/* Online/Offline Status */}
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1.5, sm: 2, md: 3 } }}>
+          {/* Online/Offline Status - Google Material Design Style */}
           <NetworkStatus
             isOnline={isOnline}
             offlineBillsCount={offlineBillsCount}
@@ -1026,7 +1041,7 @@ export default function BillingPage() {
             usage={usage || undefined}
           />
 
-          {/* Subscription Status */}
+          {/* Subscription Status - Google Material Design Style */}
           <SubscriptionStatus
             isLoading={subscriptionLoading}
             isActive={subscription?.isActive || false}
@@ -1034,18 +1049,27 @@ export default function BillingPage() {
             remainingInvoices={getRemaining("invoices")}
           />
 
-          {/* Error Display */}
+          {/* Error Display - Google Material Design Style */}
           {error && (
             <Alert
               severity="error"
-              sx={{ mb: 2 }}
+              sx={{
+                mb: 3,
+                borderRadius: '12px',
+                backgroundColor: darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.05)',
+                border: `1px solid ${darkMode ? 'rgba(234, 67, 53, 0.2)' : 'rgba(234, 67, 53, 0.1)'}`,
+                color: darkMode ? '#f28b82' : '#c5221f',
+                '& .MuiAlert-icon': {
+                  color: darkMode ? '#f28b82' : '#c5221f',
+                },
+              }}
               onClose={() => setError(null)}
             >
               {error}
             </Alert>
           )}
 
-          {/* Header */}
+          {/* Header - Google Material Design Style */}
           <HeaderSection isOnline={isOnline} grandTotal={totals.grandTotal} />
 
           {/* Main Content - Using flexbox instead of Grid */}
@@ -1062,7 +1086,7 @@ export default function BillingPage() {
           >
             {/* Left Column - Customer & Products */}
             <Box>
-              {/* Customer & Business Details */}
+              {/* Customer & Business Details - Google Material Design Style */}
               <Box
                 sx={{
                   display: "flex",
@@ -1087,7 +1111,7 @@ export default function BillingPage() {
                 />
               </Box>
 
-              {/* Product Search & Bill Items */}
+              {/* Product Search & Bill Items - Google Material Design Style */}
               <BillItemsTable
                 items={billItems}
                 isInterState={customer.isInterState}
@@ -1099,7 +1123,7 @@ export default function BillingPage() {
               />
             </Box>
 
-            {/* Right Column - Summary & Actions */}
+            {/* Right Column - Summary & Actions - Google Material Design Style */}
             <Box sx={{ flex: "1 1 calc(33.333% - 12px)", minWidth: 300 }}>
               <InvoiceSummary
                 invoiceNumber={invoiceDetails.invoiceNumber}
@@ -1140,7 +1164,7 @@ export default function BillingPage() {
             </Box>
           </Box>
 
-          {/* Product Search Dialog */}
+          {/* Product Search Dialog - Google Material Design Style */}
           <ProductSearchDialog
             open={searchDialogOpen}
             searchTerm={searchTerm}
@@ -1151,7 +1175,7 @@ export default function BillingPage() {
             onSelectProduct={addToBill}
           />
 
-          {/* Customer Search Dialog */}
+          {/* Customer Search Dialog - Google Material Design Style */}
           <CustomerSearchDialog
             open={customerSearchDialog}
             searchTerm={customerSearchTerm}
@@ -1161,7 +1185,7 @@ export default function BillingPage() {
             onSelectCustomer={selectCustomer}
           />
 
-          {/* Snackbar */}
+          {/* Snackbar - Google Material Design Style */}
           <Snackbar
             open={snackbar.open}
             autoHideDuration={6000}
@@ -1171,25 +1195,92 @@ export default function BillingPage() {
             <Alert
               onClose={() => setSnackbar({ ...snackbar, open: false })}
               severity={snackbar.severity}
-              sx={{ width: "100%" }}
+              sx={{
+                width: "100%",
+                borderRadius: '12px',
+                backgroundColor: snackbar.severity === 'success'
+                  ? darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.05)'
+                  : snackbar.severity === 'error'
+                  ? darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.05)'
+                  : snackbar.severity === 'warning'
+                  ? darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.05)'
+                  : darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.05)',
+                border: `1px solid ${
+                  snackbar.severity === 'success'
+                    ? darkMode ? 'rgba(52, 168, 83, 0.2)' : 'rgba(52, 168, 83, 0.1)'
+                    : snackbar.severity === 'error'
+                    ? darkMode ? 'rgba(234, 67, 53, 0.2)' : 'rgba(234, 67, 53, 0.1)'
+                    : snackbar.severity === 'warning'
+                    ? darkMode ? 'rgba(251, 188, 4, 0.2)' : 'rgba(251, 188, 4, 0.1)'
+                    : darkMode ? 'rgba(138, 180, 248, 0.2)' : 'rgba(26, 115, 232, 0.1)'
+                }`,
+                color: snackbar.severity === 'success'
+                  ? darkMode ? '#81c995' : '#1e7e34'
+                  : snackbar.severity === 'error'
+                  ? darkMode ? '#f28b82' : '#c5221f'
+                  : snackbar.severity === 'warning'
+                  ? darkMode ? '#fdd663' : '#b45a1c'
+                  : darkMode ? '#8ab4f8' : '#1a73e8',
+                '& .MuiAlert-icon': {
+                  color: 'inherit',
+                },
+              }}
             >
               {snackbar.message}
             </Alert>
           </Snackbar>
 
-          {/* Backdrop for loading */}
+          {/* Backdrop for loading - Google Material Design Style */}
           <Backdrop
-            sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+            sx={{
+              color: '#fff',
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+              backgroundColor: darkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.5)',
+              backdropFilter: 'blur(8px)',
+            }}
             open={isSubmitting}
           >
-            <Box sx={{ textAlign: "center" }}>
-              <CircularProgress color="inherit" />
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                {isOnline ? "Creating Bill..." : "Saving Bill Locally..."}
-              </Typography>
+            <Box sx={{ textAlign: 'center' }}>
+              <Paper
+                sx={{
+                  p: 4,
+                  borderRadius: '16px',
+                  backgroundColor: darkMode ? '#303134' : '#ffffff',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  boxShadow: darkMode
+                    ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+                    : '0 8px 32px rgba(0, 0, 0, 0.08)',
+                }}
+              >
+                <CircularProgress
+                  size={48}
+                  sx={{
+                    color: darkMode ? '#8ab4f8' : '#1a73e8',
+                    mb: 2,
+                  }}
+                />
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    fontWeight: 500,
+                    mb: 1,
+                  }}
+                >
+                  {isOnline ? "Creating Bill..." : "Saving Bill Locally..."}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                  }}
+                >
+                  Please wait while we process your request
+                </Typography>
+              </Paper>
             </Box>
           </Backdrop>
-        </Box>
+        </Container>
       </MainLayout>
     </LocalizationProvider>
   );

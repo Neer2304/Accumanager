@@ -1,4 +1,3 @@
-// app/billing/print/[id]/page.tsx
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -22,7 +21,13 @@ import {
   IconButton,
   Tooltip,
   Card,
-  CardContent
+  CardContent,
+  Avatar,
+  Breadcrumbs,
+  Link as MuiLink,
+  useTheme,
+  useMediaQuery,
+  alpha,
 } from '@mui/material'
 import {
   Print as PrintIcon,
@@ -36,10 +41,13 @@ import {
   ErrorOutline as ErrorIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
-  LocationOn as LocationIcon
+  LocationOn as LocationIcon,
+  Home as HomeIcon,
 } from '@mui/icons-material'
+import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { MainLayout } from '@/components/Layout/MainLayout'
 
 interface OrderItem {
   name: string
@@ -107,6 +115,10 @@ interface Business {
 export default function PrintBillPage() {
   const params = useParams()
   const router = useRouter()
+  const theme = useTheme()
+  const darkMode = theme.palette.mode === 'dark'
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+
   const [order, setOrder] = useState<Order | null>(null)
   const [business, setBusiness] = useState<Business | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -566,118 +578,163 @@ export default function PrintBillPage() {
     }
   }
 
-  // Loading State
+  // Loading State - Google Material Design Style
   if (isLoading && !isRetrying) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <Container maxWidth="lg" sx={{ 
-          py: 8, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          minHeight: '80vh',
-          bgcolor: 'background.default'
-        }}>
-          <CircularProgress 
-            size={80} 
-            thickness={4}
-            sx={{ 
-              mb: 4, 
-              color: 'primary.main',
-              '& .MuiCircularProgress-circle': {
-                strokeLinecap: 'round'
-              }
-            }} 
-          />
-          <Typography variant="h5" fontWeight="700" gutterBottom color="primary">
-            Loading Invoice
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Fetching invoice details...
-          </Typography>
-          {invoiceId && (
-            <Chip
-              label={`ID: ${invoiceId.substring(0, 12)}...`}
-              size="small"
-              variant="outlined"
-              sx={{ mt: 1 }}
+      <MainLayout title="Print Invoice">
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1.5, sm: 2, md: 3 } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              flexDirection: 'column',
+              gap: 3,
+              minHeight: '80vh',
+            }}
+          >
+            <CircularProgress
+              size={64}
+              thickness={4}
+              sx={{
+                color: darkMode ? '#8ab4f8' : '#1a73e8',
+                '& .MuiCircularProgress-circle': {
+                  strokeLinecap: 'round',
+                },
+              }}
             />
-          )}
+            <Typography
+              variant="h5"
+              fontWeight={500}
+              sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+            >
+              Loading Invoice
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
+            >
+              Fetching invoice details...
+            </Typography>
+            {invoiceId && (
+              <Chip
+                label={`ID: ${invoiceId.substring(0, 12)}...`}
+                size="small"
+                sx={{
+                  backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                  border: 'none',
+                  fontFamily: 'monospace',
+                  mt: 2,
+                }}
+              />
+            )}
+          </Box>
         </Container>
-      </motion.div>
+      </MainLayout>
     )
   }
 
-  // Error State
+  // Error State - Google Material Design Style
   if (error) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <Container maxWidth="md" sx={{ py: 8, bgcolor: 'background.default' }}>
-          <Paper 
-            elevation={0}
-            sx={{ 
-              p: 4, 
-              borderRadius: 3, 
-              border: '1px solid',
-              borderColor: 'error.light',
-              bgcolor: 'error.50'
+      <MainLayout title="Error - Print Invoice">
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1.5, sm: 2, md: 3 } }}>
+          <Paper
+            sx={{
+              p: 4,
+              borderRadius: '16px',
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              boxShadow: 'none',
+              maxWidth: 600,
+              margin: '0 auto',
             }}
           >
             <Stack spacing={3} alignItems="center" textAlign="center">
-              <ErrorIcon sx={{ fontSize: 60, color: 'error.main' }} />
-              
+              <Avatar
+                sx={{
+                  width: 64,
+                  height: 64,
+                  backgroundColor: darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.1)',
+                  color: darkMode ? '#f28b82' : '#ea4335',
+                }}
+              >
+                <ErrorIcon sx={{ fontSize: 32 }} />
+              </Avatar>
+
               <Box>
-                <Typography variant="h5" fontWeight="700" gutterBottom color="error.dark">
+                <Typography
+                  variant="h5"
+                  fontWeight={500}
+                  gutterBottom
+                  sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+                >
                   Unable to Load Invoice
                 </Typography>
-                <Typography variant="body1" color="text.secondary" paragraph>
+                <Typography
+                  variant="body2"
+                  sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mb: 1 }}
+                >
                   {error}
                 </Typography>
                 {invoiceId && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', fontFamily: 'monospace' }}
+                  >
                     Invoice ID: {invoiceId}
                   </Typography>
                 )}
               </Box>
 
-              <Stack direction="row" spacing={2} sx={{ mt: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                sx={{ width: '100%', justifyContent: 'center', mt: 1 }}
+              >
                 <Button
                   startIcon={<ArrowBackIcon />}
                   onClick={() => router.push('/billing')}
                   variant="contained"
-                  size="large"
-                  sx={{ 
-                    px: 4,
-                    borderRadius: '10px',
-                    bgcolor: 'primary.main',
-                    '&:hover': { bgcolor: 'primary.dark' },
-                    mb: { xs: 1, sm: 0 }
+                  sx={{
+                    borderRadius: '28px',
+                    px: 3,
+                    py: 1,
+                    backgroundColor: darkMode ? '#8ab4f8' : '#1a73e8',
+                    color: darkMode ? '#202124' : '#ffffff',
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    boxShadow: 'none',
+                    '&:hover': {
+                      backgroundColor: darkMode ? '#aecbfa' : '#1669c1',
+                      boxShadow: darkMode
+                        ? '0 4px 12px rgba(138, 180, 248, 0.3)'
+                        : '0 4px 12px rgba(26, 115, 232, 0.3)',
+                    },
                   }}
                 >
                   Back to Billing
                 </Button>
-                
+
                 <Button
                   startIcon={<RefreshIcon />}
                   onClick={handleRetry}
                   variant="outlined"
-                  size="large"
                   disabled={isRetrying}
-                  sx={{ 
-                    px: 4,
-                    borderRadius: '10px',
-                    borderColor: 'primary.main',
-                    color: 'primary.main',
-                    mb: { xs: 1, sm: 0 }
+                  sx={{
+                    borderRadius: '28px',
+                    px: 3,
+                    py: 1,
+                    borderColor: darkMode ? '#3c4043' : '#dadce0',
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    '&:hover': {
+                      borderColor: darkMode ? '#8ab4f8' : '#1a73e8',
+                      backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.05)' : 'rgba(26, 115, 232, 0.05)',
+                      color: darkMode ? '#8ab4f8' : '#1a73e8',
+                    },
                   }}
                 >
                   {isRetrying ? 'Retrying...' : 'Try Again'}
@@ -686,23 +743,86 @@ export default function PrintBillPage() {
             </Stack>
           </Paper>
         </Container>
-      </motion.div>
+      </MainLayout>
     )
   }
 
-  // Main Invoice Content
+  // Main Invoice Content - Google Material Design Style
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Box sx={{ 
-        minHeight: '100vh', 
-        bgcolor: 'background.default',
-        position: 'relative'
+    <MainLayout title={`Invoice ${order?.invoiceNumber || ''}`}>
+      <Box sx={{
+        minHeight: '100vh',
+        backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+        position: 'relative',
       }}>
-        {/* Floating Action Buttons */}
+        {/* Header with Breadcrumbs - Google Material Design Style */}
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 1.5, sm: 2, md: 3 } }}>
+          <Stack spacing={3} sx={{ mb: 4 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Tooltip title="Back to Billing">
+                <IconButton
+                  onClick={() => router.push('/billing')}
+                  sx={{
+                    backgroundColor: darkMode ? '#303134' : '#ffffff',
+                    border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                    borderRadius: '12px',
+                    width: 40,
+                    height: 40,
+                    '&:hover': {
+                      backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
+                    },
+                  }}
+                >
+                  <ArrowBackIcon sx={{ color: darkMode ? '#e8eaed' : '#202124', fontSize: 20 }} />
+                </IconButton>
+              </Tooltip>
+
+              <Breadcrumbs>
+                <MuiLink
+                  component={Link}
+                  href="/dashboard"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    textDecoration: 'none',
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                    '&:hover': {
+                      color: darkMode ? '#8ab4f8' : '#1a73e8',
+                    },
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                  }}
+                >
+                  <HomeIcon sx={{ mr: 0.5, fontSize: { xs: 16, sm: 18 } }} />
+                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                    Dashboard
+                  </Box>
+                </MuiLink>
+                <MuiLink
+                  component={Link}
+                  href="/billing"
+                  sx={{
+                    textDecoration: 'none',
+                    color: darkMode ? '#9aa0a6' : '#5f6368',
+                    '&:hover': {
+                      color: darkMode ? '#8ab4f8' : '#1a73e8',
+                    },
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                  }}
+                >
+                  Billing
+                </MuiLink>
+                <Typography
+                  color={darkMode ? '#e8eaed' : '#202124'}
+                  fontSize={{ xs: '0.875rem', sm: '1rem' }}
+                >
+                  Invoice {order?.invoiceNumber}
+                </Typography>
+              </Breadcrumbs>
+            </Stack>
+          </Stack>
+        </Container>
+
+        {/* Floating Action Buttons - Google Material Design Style */}
         <Box sx={{
           position: 'fixed',
           top: 100,
@@ -710,49 +830,67 @@ export default function PrintBillPage() {
           zIndex: 1000,
           display: 'flex',
           flexDirection: 'column',
-          gap: 2,
-          '@media print': { display: 'none' }
+          gap: 1.5,
+          '@media print': { display: 'none' },
         }}>
-          <Tooltip title="Back to Billing" arrow>
+          <Tooltip title="Back to Billing" arrow placement="left">
             <IconButton
               onClick={() => router.push('/billing')}
               sx={{
-                bgcolor: 'background.paper',
-                boxShadow: 3,
-                '&:hover': { 
-                  bgcolor: 'primary.main',
-                  color: 'white'
-                }
+                backgroundColor: darkMode ? '#303134' : '#ffffff',
+                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                borderRadius: '12px',
+                width: 44,
+                height: 44,
+                boxShadow: darkMode
+                  ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+                  : '0 4px 12px rgba(0, 0, 0, 0.08)',
+                '&:hover': {
+                  backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
+                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                },
               }}
             >
               <ArrowBackIcon />
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Print Invoice" arrow>
+          <Tooltip title="Print Invoice" arrow placement="left">
             <IconButton
               onClick={handlePrint}
               sx={{
-                bgcolor: 'primary.main',
-                color: 'white',
-                boxShadow: 3,
-                '&:hover': { bgcolor: 'primary.dark' }
+                backgroundColor: darkMode ? '#8ab4f8' : '#1a73e8',
+                color: darkMode ? '#202124' : '#ffffff',
+                borderRadius: '12px',
+                width: 44,
+                height: 44,
+                boxShadow: darkMode
+                  ? '0 4px 12px rgba(138, 180, 248, 0.3)'
+                  : '0 4px 12px rgba(26, 115, 232, 0.3)',
+                '&:hover': {
+                  backgroundColor: darkMode ? '#aecbfa' : '#1669c1',
+                },
               }}
             >
               <PrintIcon />
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Download PDF" arrow>
+          <Tooltip title="Download PDF" arrow placement="left">
             <IconButton
               onClick={handleDownloadPDF}
               sx={{
-                bgcolor: 'background.paper',
-                boxShadow: 3,
-                '&:hover': { 
-                  bgcolor: 'success.main',
-                  color: 'white'
-                }
+                backgroundColor: darkMode ? '#34a853' : '#34a853',
+                color: '#ffffff',
+                borderRadius: '12px',
+                width: 44,
+                height: 44,
+                boxShadow: darkMode
+                  ? '0 4px 12px rgba(52, 168, 83, 0.3)'
+                  : '0 4px 12px rgba(52, 168, 83, 0.3)',
+                '&:hover': {
+                  backgroundColor: darkMode ? '#2e8b47' : '#2e8b47',
+                },
               }}
             >
               <DownloadIcon />
@@ -760,24 +898,25 @@ export default function PrintBillPage() {
           </Tooltip>
         </Box>
 
-        {/* Invoice Container */}
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Paper 
+        {/* Invoice Container - Google Material Design Style */}
+        <Container maxWidth="lg" sx={{ py: 2, px: { xs: 1.5, sm: 2, md: 3 } }}>
+          <Paper
             id="invoice-content"
-            elevation={0}
-            sx={{ 
-              borderRadius: 4,
+            sx={{
+              borderRadius: '24px',
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              boxShadow: darkMode
+                ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+                : '0 8px 32px rgba(0, 0, 0, 0.08)',
               overflow: 'hidden',
-              border: '1px solid',
-              borderColor: 'divider',
-              bgcolor: 'background.paper',
               position: 'relative',
-              '@media print': { 
+              '@media print': {
                 border: 'none',
                 borderRadius: 0,
-                bgcolor: 'white',
-                boxShadow: 'none'
-              }
+                backgroundColor: '#ffffff',
+                boxShadow: 'none',
+              },
             }}
           >
             {/* Watermark */}
@@ -787,24 +926,38 @@ export default function PrintBillPage() {
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%) rotate(-45deg)',
-                opacity: 0.1,
+                opacity: 0.05,
                 zIndex: 0,
-                pointerEvents: 'none'
+                pointerEvents: 'none',
               }}>
-                <Typography variant="h1" fontWeight="900" color="text.secondary">
+                <Typography
+                  variant="h1"
+                  fontWeight={900}
+                  sx={{ color: darkMode ? '#e8eaed' : '#202124', fontSize: { xs: '3rem', sm: '5rem' } }}
+                >
                   DRAFT
                 </Typography>
               </Box>
             )}
 
-            {/* Header */}
-            <Box sx={{ 
-              p: 4, 
-              bgcolor: 'primary.main',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
+            {/* Header - Google Material Design Style Gradient */}
+            <Box sx={{
+              p: { xs: 3, sm: 4 },
+              background: darkMode
+                ? 'linear-gradient(135deg, #0d3064 0%, #202124 100%)'
+                : 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)',
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '4px',
+                background: 'linear-gradient(90deg, #1a73e8, #8ab4f8, #fbbc04)',
+                zIndex: 1,
+              },
             }}>
               {/* Decorative elements */}
               <Box sx={{
@@ -814,9 +967,8 @@ export default function PrintBillPage() {
                 width: 200,
                 height: 200,
                 borderRadius: '50%',
-                bgcolor: 'rgba(255,255,255,0.1)'
+                bgcolor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.05)',
               }} />
-              
               <Box sx={{
                 position: 'absolute',
                 bottom: -80,
@@ -824,117 +976,158 @@ export default function PrintBillPage() {
                 width: 300,
                 height: 300,
                 borderRadius: '50%',
-                bgcolor: 'rgba(255,255,255,0.05)'
+                bgcolor: darkMode ? 'rgba(251, 188, 4, 0.05)' : 'rgba(251, 188, 4, 0.03)',
               }} />
 
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: { xs: 'column', sm: 'row' },
-                justifyContent: 'space-between', 
-                alignItems: { xs: 'flex-start', sm: 'center' },
-                gap: 2,
-                position: 'relative', 
-                zIndex: 1 
-              }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                justifyContent="space-between"
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                spacing={2}
+                sx={{ position: 'relative', zIndex: 1 }}
+              >
                 <Box>
-                  <Typography variant="h3" fontWeight="900" gutterBottom>
+                  <Typography
+                    variant={isMobile ? "h4" : "h3"}
+                    fontWeight={700}
+                    gutterBottom
+                    sx={{
+                      color: darkMode ? '#e8eaed' : '#202124',
+                      letterSpacing: '-0.5px',
+                    }}
+                  >
                     TAX INVOICE
                   </Typography>
-                  <Typography variant="h6" fontWeight="500" sx={{ opacity: 0.9 }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={500}
+                    sx={{
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                      opacity: 0.9,
+                    }}
+                  >
                     {business?.businessName || 'My Business'}
                   </Typography>
                 </Box>
 
                 <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-                  <Typography variant="h4" fontWeight="800">
+                  <Typography
+                    variant={isMobile ? "h5" : "h4"}
+                    fontWeight={700}
+                    sx={{
+                      color: darkMode ? '#8ab4f8' : '#1a73e8',
+                      mb: 0.5,
+                    }}
+                  >
                     {order?.invoiceNumber}
                   </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: darkMode ? '#9aa0a6' : '#5f6368',
+                    }}
+                  >
                     {order && formatDate(order.invoiceDate)}
                   </Typography>
                 </Box>
-              </Box>
+              </Stack>
             </Box>
 
-            {/* Business & Customer Info */}
-            <Box sx={{ p: 4 }}>
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: { xs: 'column', md: 'row' },
-                gap: 3,
-                mb: 3
-              }}>
+            {/* Business & Customer Info - Google Material Design Style */}
+            <Box sx={{ p: { xs: 3, sm: 4 } }}>
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={3}
+                sx={{ mb: 4 }}
+              >
                 {/* Seller Details Card */}
                 <Box sx={{ flex: 1 }}>
-                  <Card sx={{ 
-                    borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: 'primary.light',
-                    height: '100%'
-                  }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                        <StoreIcon sx={{ 
-                          color: 'primary.main', 
-                          fontSize: 28,
-                          p: 1,
-                          borderRadius: '50%'
-                        }} />
-                        <Typography variant="h6" fontWeight="700" color="primary">
+                  <Card
+                    sx={{
+                      borderRadius: '16px',
+                      backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      boxShadow: 'none',
+                      height: '100%',
+                    }}
+                  >
+                    <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+                      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
+                        <Avatar
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                            color: darkMode ? '#8ab4f8' : '#1a73e8',
+                          }}
+                        >
+                          <StoreIcon sx={{ fontSize: 18 }} />
+                        </Avatar>
+                        <Typography variant="h6" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                           Seller Details
                         </Typography>
-                      </Box>
+                      </Stack>
 
                       {business ? (
                         <Stack spacing={2}>
                           <Box>
-                            <Typography variant="subtitle1" fontWeight="600" gutterBottom color="text.primary">
+                            <Typography variant="subtitle1" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                               {business.businessName}
                             </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                              <LocationIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography variant="body2" color="text.secondary">
-                                {business.address}, {business.city}
+                            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1 }}>
+                              <LocationIcon sx={{ fontSize: 16, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                              <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+                                {business.address}, {business.city}, {business.state} - {business.pincode}
                               </Typography>
-                            </Box>
-                            <Typography variant="body2" color="text.secondary">
-                              {business.state} - {business.pincode}
-                            </Typography>
+                            </Stack>
                           </Box>
 
-                          <Divider />
+                          <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
 
                           <Stack spacing={1.5}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <ReceiptIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-                              <Typography variant="body2">
-                                <strong style={{ color: '#2c3e50' }}>GSTIN:</strong>{' '}
-                                <span style={{ color: '#4b5563', fontFamily: 'monospace' }}>
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <ReceiptIcon sx={{ fontSize: 16, color: darkMode ? '#8ab4f8' : '#1a73e8' }} />
+                              <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                <strong>GSTIN:</strong>{' '}
+                                <span style={{ fontFamily: 'monospace', color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                                   {business.gstNumber}
                                 </span>
                               </Typography>
-                            </Box>
-                            
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <PhoneIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-                              <Typography variant="body2">
-                                <strong style={{ color: '#2c3e50' }}>Phone:</strong>{' '}
-                                <span style={{ color: '#4b5563' }}>{business.phone}</span>
+                            </Stack>
+
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <PhoneIcon sx={{ fontSize: 16, color: darkMode ? '#8ab4f8' : '#1a73e8' }} />
+                              <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                <strong>Phone:</strong>{' '}
+                                <span style={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>{business.phone}</span>
                               </Typography>
-                            </Box>
-                            
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <EmailIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-                              <Typography variant="body2">
-                                <strong style={{ color: '#2c3e50' }}>Email:</strong>{' '}
-                                <span style={{ color: '#4b5563' }}>{business.email}</span>
+                            </Stack>
+
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <EmailIcon sx={{ fontSize: 16, color: darkMode ? '#8ab4f8' : '#1a73e8' }} />
+                              <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                <strong>Email:</strong>{' '}
+                                <span style={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>{business.email}</span>
                               </Typography>
-                            </Box>
+                            </Stack>
                           </Stack>
                         </Stack>
                       ) : (
-                        <Alert severity="info" sx={{ mt: 2 }}>
-                          Business information not available. Please update your business profile.
+                        <Alert
+                          severity="info"
+                          sx={{
+                            borderRadius: '12px',
+                            backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.05)',
+                            border: `1px solid ${darkMode ? 'rgba(138, 180, 248, 0.2)' : 'rgba(26, 115, 232, 0.1)'}`,
+                            color: darkMode ? '#8ab4f8' : '#1a73e8',
+                            '& .MuiAlert-icon': {
+                              color: darkMode ? '#8ab4f8' : '#1a73e8',
+                            },
+                          }}
+                        >
+                          <Typography variant="body2">
+                            Business information not available. Please update your business profile.
+                          </Typography>
                         </Alert>
                       )}
                     </CardContent>
@@ -943,200 +1136,232 @@ export default function PrintBillPage() {
 
                 {/* Customer Details Card */}
                 <Box sx={{ flex: 1 }}>
-                  <Card sx={{ 
-                    borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: 'secondary.light',
-                    height: '100%'
-                  }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                        <PersonIcon sx={{ 
-                          color: 'secondary.main', 
-                          fontSize: 28,
-                          p: 1,
-                          borderRadius: '50%'
-                        }} />
-                        <Typography variant="h6" fontWeight="700" color="secondary">
+                  <Card
+                    sx={{
+                      borderRadius: '16px',
+                      backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      boxShadow: 'none',
+                      height: '100%',
+                    }}
+                  >
+                    <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+                      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
+                        <Avatar
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                            color: darkMode ? '#8ab4f8' : '#1a73e8',
+                          }}
+                        >
+                          <PersonIcon sx={{ fontSize: 18 }} />
+                        </Avatar>
+                        <Typography variant="h6" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                           Bill To
                         </Typography>
-                      </Box>
+                      </Stack>
 
                       {order && (
                         <Stack spacing={2}>
                           <Box>
-                            <Typography variant="subtitle1" fontWeight="600" gutterBottom color="text.primary">
+                            <Typography variant="subtitle1" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                               {order.customer.name}
                             </Typography>
-                            
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                              <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography variant="body2" color="text.secondary">
+
+                            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1 }}>
+                              <PhoneIcon sx={{ fontSize: 16, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                              <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                                 {order.customer.phone}
                               </Typography>
-                            </Box>
-                            
+                            </Stack>
+
                             {order.customer.email && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                <Typography variant="body2" color="text.secondary">
+                              <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.5 }}>
+                                <EmailIcon sx={{ fontSize: 16, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                                   {order.customer.email}
                                 </Typography>
-                              </Box>
+                              </Stack>
                             )}
-                            
+
                             {order.customer.address && (
-                              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                                <LocationIcon sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }} />
-                                <Typography variant="body2" color="text.secondary">
+                              <Stack direction="row" alignItems="flex-start" spacing={0.5} sx={{ mt: 0.5 }}>
+                                <LocationIcon sx={{ fontSize: 16, color: darkMode ? '#9aa0a6' : '#5f6368', mt: 0.2 }} />
+                                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                                   {order.customer.address}
                                   {order.customer.city && `, ${order.customer.city}`}
                                   {order.customer.pincode && ` - ${order.customer.pincode}`}
                                 </Typography>
-                              </Box>
+                              </Stack>
                             )}
                           </Box>
 
-                          <Divider />
+                          <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
 
                           <Stack spacing={1.5}>
                             {order.customer.gstin && order.customer.gstin !== 'NA' && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <ReceiptIcon sx={{ fontSize: 16, color: 'secondary.main' }} />
-                                <Typography variant="body2">
-                                  <strong style={{ color: '#2c3e50' }}>GSTIN:</strong>{' '}
-                                  <span style={{ color: '#4b5563', fontFamily: 'monospace' }}>
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                <ReceiptIcon sx={{ fontSize: 16, color: darkMode ? '#8ab4f8' : '#1a73e8' }} />
+                                <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                                  <strong>GSTIN:</strong>{' '}
+                                  <span style={{ fontFamily: 'monospace', color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                                     {order.customer.gstin}
                                   </span>
                                 </Typography>
-                              </Box>
+                              </Stack>
                             )}
-                            
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+
+                            <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
                               <Chip
                                 label={order.customer.isInterState ? 'Inter-State' : 'Intra-State'}
                                 size="small"
-                                color={order.customer.isInterState ? 'warning' : 'success'}
-                                variant="outlined"
+                                sx={{
+                                  backgroundColor: order.customer.isInterState
+                                    ? darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.1)'
+                                    : darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.1)',
+                                  color: order.customer.isInterState
+                                    ? darkMode ? '#fdd663' : '#fbbc04'
+                                    : darkMode ? '#81c995' : '#34a853',
+                                  border: 'none',
+                                }}
                               />
                               <Chip
                                 label={`State: ${order.customer.state}`}
                                 size="small"
-                                variant="outlined"
+                                sx={{
+                                  backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                                  color: darkMode ? '#8ab4f8' : '#1a73e8',
+                                  border: 'none',
+                                }}
                               />
-                            </Box>
+                            </Stack>
                           </Stack>
                         </Stack>
                       )}
                     </CardContent>
                   </Card>
                 </Box>
-              </Box>
-            </Box>
+              </Stack>
 
-            {/* Items Table */}
-            <Box sx={{ px: { xs: 2, md: 4 }, overflowX: 'auto' }}>
-              <Paper sx={{ 
-                borderRadius: 3, 
-                overflow: 'hidden', 
-                border: '1px solid', 
-                borderColor: 'divider',
-                minWidth: 800
-              }}>
-                <TableContainer>
+              {/* Items Table - Google Material Design Style */}
+              <Paper
+                sx={{
+                  borderRadius: '16px',
+                  backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                  boxShadow: 'none',
+                  overflow: 'hidden',
+                  mb: 4,
+                }}
+              >
+                <TableContainer sx={{ overflowX: 'auto' }}>
                   <Table sx={{ minWidth: 800 }}>
                     <TableHead>
-                      <TableRow>
+                      <TableRow sx={{ backgroundColor: darkMode ? '#202124' : '#f8f9fa' }}>
                         {['#', 'Description', 'HSN', 'Qty', 'Rate', 'Disc%', 'Taxable Amt', 'Tax Amt', 'Total'].map((header, index) => (
-                          <TableCell 
+                          <TableCell
                             key={header}
-                            sx={{ 
-                              fontWeight: '800', 
-                              py: 2.5,
-                              color: 'primary.main',
-                              borderBottom: '2px solid',
-                              borderColor: 'primary.main',
-                              whiteSpace: 'nowrap'
+                            sx={{
+                              fontWeight: 600,
+                              py: 2,
+                              color: darkMode ? '#9aa0a6' : '#5f6368',
+                              borderBottom: `2px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                              whiteSpace: 'nowrap',
+                              ...(index >= 3 && { textAlign: 'right' }),
                             }}
-                            align={index >= 3 ? 'right' : 'left'}
                           >
                             {header}
                           </TableCell>
                         ))}
                       </TableRow>
                     </TableHead>
-                    
+
                     <TableBody>
                       {order?.items.map((item, index) => (
-                        <TableRow 
+                        <TableRow
                           key={index}
                           hover
-                          sx={{ 
-                            '&:last-child td': { borderBottom: 0 },
-                            '&:hover': { bgcolor: 'action.hover' }
+                          sx={{
+                            '&:hover': {
+                              backgroundColor: darkMode ? alpha('#8ab4f8', 0.08) : alpha('#1a73e8', 0.04),
+                            },
+                            '& td': {
+                              borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                              py: 2,
+                            },
                           }}
                         >
-                          <TableCell sx={{ py: 2.5, fontWeight: '500', whiteSpace: 'nowrap' }}>
+                          <TableCell sx={{ color: darkMode ? '#e8eaed' : '#202124', fontWeight: 500, whiteSpace: 'nowrap' }}>
                             {index + 1}
                           </TableCell>
-                          
-                          <TableCell sx={{ py: 2.5, minWidth: 180 }}>
-                            <Typography variant="body2" fontWeight="600" color="text.primary">
+
+                          <TableCell sx={{ minWidth: 180 }}>
+                            <Typography variant="body2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                               {item.name}
                             </Typography>
                             {item.variationName && (
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                                 {item.variationName}
                               </Typography>
                             )}
                           </TableCell>
-                          
-                          <TableCell sx={{ py: 2.5, whiteSpace: 'nowrap' }}>
-                            <Chip 
-                              label={item.hsnCode} 
-                              size="small" 
-                              variant="outlined"
-                              sx={{ borderColor: 'primary.light' }}
+
+                          <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                            <Chip
+                              label={item.hsnCode}
+                              size="small"
+                              sx={{
+                                backgroundColor: darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(154, 160, 166, 0.1)',
+                                color: darkMode ? '#9aa0a6' : '#5f6368',
+                                border: 'none',
+                                fontFamily: 'monospace',
+                              }}
                             />
                           </TableCell>
-                          
-                          <TableCell align="right" sx={{ py: 2.5, fontWeight: '600', whiteSpace: 'nowrap' }}>
+
+                          <TableCell align="right" sx={{ color: darkMode ? '#e8eaed' : '#202124', fontWeight: 600, whiteSpace: 'nowrap' }}>
                             {item.quantity}
                           </TableCell>
-                          
-                          <TableCell align="right" sx={{ py: 2.5, whiteSpace: 'nowrap' }}>
+
+                          <TableCell align="right" sx={{ color: darkMode ? '#e8eaed' : '#202124', whiteSpace: 'nowrap' }}>
                             {formatCurrency(item.price)}
                           </TableCell>
-                          
-                          <TableCell align="right" sx={{ py: 2.5, whiteSpace: 'nowrap' }}>
+
+                          <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                             {item.discount > 0 ? (
-                              <Chip 
-                                label={`${item.discount}%`} 
-                                size="small" 
-                                color="error"
-                                variant="outlined"
+                              <Chip
+                                label={`${item.discount}%`}
+                                size="small"
+                                sx={{
+                                  backgroundColor: darkMode ? 'rgba(234, 67, 53, 0.1)' : 'rgba(234, 67, 53, 0.1)',
+                                  color: darkMode ? '#f28b82' : '#ea4335',
+                                  border: 'none',
+                                }}
                               />
                             ) : (
-                              <Typography variant="body2" color="text.secondary">
+                              <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                                 0%
                               </Typography>
                             )}
                           </TableCell>
-                          
-                          <TableCell align="right" sx={{ py: 2.5, fontWeight: '500', whiteSpace: 'nowrap', color: 'text.primary' }}>
+
+                          <TableCell align="right" sx={{ color: darkMode ? '#e8eaed' : '#202124', fontWeight: 500, whiteSpace: 'nowrap' }}>
                             {formatCurrency(item.taxableAmount)}
                           </TableCell>
-                          
-                          <TableCell align="right" sx={{ py: 2.5, whiteSpace: 'nowrap', color: 'text.primary' }}>
+
+                          <TableCell align="right" sx={{ color: darkMode ? '#e8eaed' : '#202124', whiteSpace: 'nowrap' }}>
                             {formatCurrency(item.cgstAmount + item.sgstAmount + item.igstAmount)}
                           </TableCell>
-                          
-                          <TableCell align="right" sx={{ 
-                            py: 2.5, 
-                            fontWeight: '700', 
-                            color: 'primary.main', 
-                            whiteSpace: 'nowrap'
-                          }}>
+
+                          <TableCell
+                            align="right"
+                            sx={{
+                              fontWeight: 700,
+                              color: darkMode ? '#8ab4f8' : '#1a73e8',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
                             {formatCurrency(item.total)}
                           </TableCell>
                         </TableRow>
@@ -1145,187 +1370,210 @@ export default function PrintBillPage() {
                   </Table>
                 </TableContainer>
               </Paper>
-            </Box>
 
-            {/* Totals Section */}
-            <Box sx={{ p: 4, mt: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              {/* Totals Section - Google Material Design Style */}
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 4 }}>
                 <Box sx={{ width: '100%', maxWidth: 400 }}>
-                  <Paper sx={{ 
-                    p: 4, 
-                    borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: 'divider'
-                  }}>
+                  <Paper
+                    sx={{
+                      p: { xs: 2.5, sm: 3 },
+                      borderRadius: '16px',
+                      backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                      boxShadow: 'none',
+                    }}
+                  >
                     <Stack spacing={2}>
                       {/* Subtotal & Discount */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body1" color="text.secondary">
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                           Subtotal:
                         </Typography>
-                        <Typography variant="body1" fontWeight="600" color="text.primary">
+                        <Typography variant="body2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                           {order && formatCurrency(order.subtotal)}
                         </Typography>
-                      </Box>
-                      
+                      </Stack>
+
                       {order && order.totalDiscount > 0 && (
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body1" color="text.secondary">
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                             Discount:
                           </Typography>
-                          <Typography variant="body1" fontWeight="600" color="error.main">
+                          <Typography variant="body2" fontWeight={600} sx={{ color: darkMode ? '#f28b82' : '#ea4335' }}>
                             -{order && formatCurrency(order.totalDiscount)}
                           </Typography>
-                        </Box>
+                        </Stack>
                       )}
-                      
+
                       {/* Taxable Amount */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body1" color="text.secondary">
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                           Taxable Amount:
                         </Typography>
-                        <Typography variant="body1" fontWeight="600" color="text.primary">
+                        <Typography variant="body2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                           {order && formatCurrency(order.totalTaxableAmount)}
                         </Typography>
-                      </Box>
-                      
+                      </Stack>
+
                       {/* Taxes */}
                       {order && order.totalCgst > 0 && (
                         <>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="body1" color="text.secondary">
+                          <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                               CGST:
                             </Typography>
-                            <Typography variant="body1" color="text.primary">
+                            <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                               {order && formatCurrency(order.totalCgst)}
                             </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="body1" color="text.secondary">
+                          </Stack>
+                          <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                               SGST:
                             </Typography>
-                            <Typography variant="body1" color="text.primary">
+                            <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                               {order && formatCurrency(order.totalSgst)}
                             </Typography>
-                          </Box>
+                          </Stack>
                         </>
                       )}
-                      
+
                       {order && order.totalIgst > 0 && (
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body1" color="text.secondary">
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
                             IGST:
                           </Typography>
-                          <Typography variant="body1" color="text.primary">
+                          <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
                             {order && formatCurrency(order.totalIgst)}
                           </Typography>
-                        </Box>
+                        </Stack>
                       )}
-                      
-                      <Divider sx={{ my: 1, borderColor: 'divider' }} />
-                      
+
+                      <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
+
                       {/* Grand Total */}
-                      <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        py: 2,
-                        px: 3,
-                        borderRadius: 2,
-                        border: '2px solid',
-                        borderColor: 'primary.main'
-                      }}>
-                        <Typography variant="h5" fontWeight="800" color="primary.dark">
-                          GRAND TOTAL:
-                        </Typography>
-                        <Typography variant="h4" fontWeight="900" color="primary.main">
-                          {order && formatCurrency(order.grandTotal)}
-                        </Typography>
-                      </Box>
+                      <Paper
+                        sx={{
+                          p: 2,
+                          borderRadius: '12px',
+                          backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.05)',
+                          border: `1px solid ${darkMode ? 'rgba(138, 180, 248, 0.2)' : 'rgba(26, 115, 232, 0.1)'}`,
+                        }}
+                      >
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography variant="h6" fontWeight={600} sx={{ color: darkMode ? '#8ab4f8' : '#1a73e8' }}>
+                            GRAND TOTAL:
+                          </Typography>
+                          <Typography variant="h5" fontWeight={700} sx={{ color: darkMode ? '#8ab4f8' : '#1a73e8' }}>
+                            {order && formatCurrency(order.grandTotal)}
+                          </Typography>
+                        </Stack>
+                      </Paper>
                     </Stack>
                   </Paper>
                 </Box>
               </Box>
-            </Box>
 
-            {/* Footer */}
-            <Box sx={{ 
-              p: 4, 
-              borderTop: '1px solid',
-              borderColor: 'divider'
-            }}>
-              <Stack spacing={3}>
-                {/* Payment & Status Info */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  justifyContent: 'space-between', 
-                  alignItems: { xs: 'flex-start', sm: 'center' },
-                  gap: 2
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PaymentIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-                      <Typography variant="body2" fontWeight="600" color="text.primary">
-                        Payment:
+              {/* Footer - Google Material Design Style */}
+              <Box sx={{ pt: 2 }}>
+                <Stack spacing={3}>
+                  {/* Payment & Status Info */}
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    justifyContent="space-between"
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    spacing={2}
+                  >
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <PaymentIcon sx={{ fontSize: 20, color: darkMode ? '#8ab4f8' : '#1a73e8' }} />
+                        <Typography variant="body2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                          Payment:
+                        </Typography>
+                      </Stack>
+                      <Chip
+                        icon={<span style={{ fontSize: '1rem' }}>{getPaymentMethodIcon(order?.paymentMethod || '')}</span>}
+                        label={order?.paymentMethod?.toUpperCase() || 'CASH'}
+                        size="small"
+                        sx={{
+                          backgroundColor: darkMode ? 'rgba(138, 180, 248, 0.1)' : 'rgba(26, 115, 232, 0.1)',
+                          color: darkMode ? '#8ab4f8' : '#1a73e8',
+                          border: 'none',
+                        }}
+                      />
+                    </Stack>
+
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Typography variant="body2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                        Status:
                       </Typography>
+                      <Chip
+                        label={order?.status?.toUpperCase() || 'PENDING'}
+                        size="small"
+                        sx={{
+                          backgroundColor: order?.status?.toLowerCase() === 'paid'
+                            ? darkMode ? 'rgba(52, 168, 83, 0.1)' : 'rgba(52, 168, 83, 0.1)'
+                            : order?.status?.toLowerCase() === 'pending'
+                            ? darkMode ? 'rgba(251, 188, 4, 0.1)' : 'rgba(251, 188, 4, 0.1)'
+                            : darkMode ? 'rgba(154, 160, 166, 0.1)' : 'rgba(154, 160, 166, 0.1)',
+                          color: order?.status?.toLowerCase() === 'paid'
+                            ? darkMode ? '#81c995' : '#34a853'
+                            : order?.status?.toLowerCase() === 'pending'
+                            ? darkMode ? '#fdd663' : '#fbbc04'
+                            : darkMode ? '#9aa0a6' : '#5f6368',
+                          border: 'none',
+                        }}
+                      />
+                    </Stack>
+                  </Stack>
+
+                  {/* Notes */}
+                  {order?.notes && (
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        gutterBottom
+                        sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
+                      >
+                        Notes:
+                      </Typography>
+                      <Paper
+                        sx={{
+                          p: 2,
+                          borderRadius: '12px',
+                          backgroundColor: darkMode ? '#202124' : '#f8f9fa',
+                          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                          {order.notes}
+                        </Typography>
+                      </Paper>
                     </Box>
-                    <Chip
-                      icon={<span>{getPaymentMethodIcon(order?.paymentMethod || '')}</span>}
-                      label={order?.paymentMethod?.toUpperCase() || 'CASH'}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="body2" fontWeight="600" color="text.primary">
-                      Status:
-                    </Typography>
-                    <Chip
-                      label={order?.status?.toUpperCase() || 'PENDING'}
-                      color={getStatusColor(order?.status || '') as any}
-                      size="small"
-                    />
-                  </Box>
-                </Box>
+                  )}
 
-                {/* Notes */}
-                {order?.notes && (
-                  <Box>
-                    <Typography variant="body2" fontWeight="600" gutterBottom color="text.primary">
-                      Notes:
+                  {/* Footer Text */}
+                  <Box sx={{ textAlign: 'center', pt: 2 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mb: 1 }}
+                    >
+                      Thank you for your business! We appreciate your trust in us.
                     </Typography>
-                    <Paper sx={{ 
-                      p: 2, 
-                      bgcolor: 'background.paper', 
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'divider'
-                    }}>
-                      <Typography variant="body2" color="text.primary">
-                        {order.notes}
-                      </Typography>
-                    </Paper>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}
+                    >
+                      This is a computer generated invoice. No signature required. • Invoice ID: {order?._id}
+                    </Typography>
                   </Box>
-                )}
-
-                {/* Footer Text */}
-                <Box sx={{ textAlign: 'center', pt: 2 }}>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    Thank you for your business! We appreciate your trust in us.
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    This is a computer generated invoice. No signature required. • Invoice ID: {order?._id}
-                  </Typography>
-                </Box>
-              </Stack>
+                </Stack>
+              </Box>
             </Box>
           </Paper>
         </Container>
 
-        {/* Print Styles */}
+        {/* Print Styles - Keep as is */}
         <style jsx global>{`
           @media print {
             body {
@@ -1397,6 +1645,6 @@ export default function PrintBillPage() {
           }
         `}</style>
       </Box>
-    </motion.div>
+    </MainLayout>
   )
 }
