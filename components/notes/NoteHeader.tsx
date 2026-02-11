@@ -152,7 +152,7 @@ export function NoteHeader({
           {mode === 'edit' && (
             <>
               <Button
-                onClick={() => router.push(`/note/${noteId}`)}
+                onClick={() => router.push(`/notes/${noteId}`)}
                 iconLeft={<Cancel />}
                 variant="outlined"
                 size="medium"

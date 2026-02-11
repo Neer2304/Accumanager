@@ -214,7 +214,7 @@ const menuItems = [
   {
     text: "Notes",
     icon: <NoteIcon sx={{ color: iconColors.notes }} />,
-    path: "/note",
+    path: "/notes",
   },
   {
     text: "Business Setup",

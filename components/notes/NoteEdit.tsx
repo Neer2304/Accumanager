@@ -331,7 +331,7 @@ export default function NoteEdit() {
       const noteId = Array.isArray(id) ? id[0] : id;
       sessionStorage.removeItem(`note_password_${noteId}`);
       
-      router.push(`/note/${id}`);
+      router.push(`/notes/${id}`);
     } catch (err: any) {
       setError(err.message || 'Failed to update note');
     } finally {
@@ -340,7 +340,7 @@ export default function NoteEdit() {
   };
 
   const handlePasswordDialogClose = () => {
-    router.push(`/note/${id}`);
+    router.push(`/notes/${id}`);
   };
 
   if (requiresPassword) {

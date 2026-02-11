@@ -1,4 +1,4 @@
-// app/api/customers/[id]/route.ts - UPDATED COMPLETE VERSION
+// app/api/customers/[id]/route.ts - COMPLETE FIXED VERSION FOR NEXT.JS 15+
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import Customer from '@/models/Customer'
@@ -13,9 +13,6 @@ async function verifyAuthAndSubscription(request: NextRequest) {
     const authToken = request.cookies.get('auth_token')?.value
     const authHeader = request.headers.get('authorization')
     
-    console.log('🔐 Customer Auth check - Cookie exists:', !!authToken)
-    console.log('🔐 Customer Auth check - Header exists:', !!authHeader)
-    
     const token = authHeader?.replace('Bearer ', '') || authToken
     
     if (!token) {
@@ -23,11 +20,8 @@ async function verifyAuthAndSubscription(request: NextRequest) {
     }
     
     const decoded = verifyToken(token)
-    console.log('✅ Customer Token verified for user:', decoded.userId)
-    
     await connectToDatabase()
     
-    // Check subscription status
     const subscription = await PaymentService.checkSubscription(decoded.userId)
     if (!subscription.isActive) {
       throw new Error('Your subscription has expired. Please upgrade to continue managing customers.')
@@ -44,21 +38,34 @@ async function verifyAuthAndSubscription(request: NextRequest) {
   }
 }
 
-// GET /api/customers/[id] - Get single customer with detailed stats and orders
+// ===========================================
+// GET /api/customers/[id] - Get single customer with orders
+// ===========================================
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    console.log(`🔍 GET /api/customers/${params.id} - Starting...`)
+    // ✅ IMPORTANT: Await the params (Next.js 15+ fix)
+    const params = await context.params
+    const customerIdParam = params.id
+    
+    console.log(`🔍 GET /api/customers/${customerIdParam} - Starting...`)
+    
+    if (!customerIdParam) {
+      return NextResponse.json(
+        { 
+          success: false,
+          message: 'Customer ID is required' 
+        },
+        { status: 400 }
+      )
+    }
     
     const { userId } = await verifyAuthAndSubscription(request)
     
-    console.log('👤 GET Customer - User ID:', userId)
-    console.log('🎯 GET Customer - Customer ID:', params.id)
-
     // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(customerIdParam)) {
       return NextResponse.json(
         { 
           success: false,
@@ -68,31 +75,44 @@ export async function GET(
       )
     }
 
-    const customerId = new mongoose.Types.ObjectId(params.id)
+    const customerObjectId = new mongoose.Types.ObjectId(customerIdParam)
 
     // Get customer with all details
     const customer = await Customer.findOne({ 
-      _id: customerId,
+      _id: customerObjectId,
       userId: userId 
     }).lean()
 
     if (!customer) {
-      console.log('❌ GET Customer - Customer not found')
       return NextResponse.json({ 
         success: false,
         message: 'Customer not found' 
       }, { status: 404 })
     }
 
-    // Get customer's orders
+    console.log('✅ Customer found:', customer.name, 'Phone:', customer.phone)
+
+    // Get orders with MULTIPLE query strategies for backward compatibility
     const orders = await Order.find({
       userId: userId,
-      'customer.customerId': customerId
+      $or: [
+        // Strategy 1: By customerId as string (recommended)
+        { 'customer.customerId': customerIdParam },
+        // Strategy 2: By customerId as ObjectId
+        { 'customer.customerId': customerObjectId },
+        // Strategy 3: By customerId as ObjectId string
+        { 'customer.customerId': customerObjectId.toString() },
+        // Strategy 4: By phone number (works for old orders)
+        { 'customer.phone': customer.phone },
+        // Strategy 5: By name (last resort)
+        { 'customer.name': customer.name }
+      ]
     })
     .sort({ createdAt: -1 })
     .limit(50)
-    .select('invoiceNumber invoiceDate grandTotal subtotal totalDiscount totalCgst totalSgst totalIgst paymentStatus status items notes createdAt updatedAt')
     .lean()
+
+    console.log(`📦 Found ${orders.length} orders for customer ${customer.name}`)
 
     // Calculate statistics
     const totalOrders = orders.length
@@ -102,42 +122,23 @@ export async function GET(
       .filter(order => order.paymentStatus === 'pending')
       .reduce((sum, order) => sum + (order.grandTotal || 0), 0)
     
-    // Calculate tax totals
     const totalCgst = orders.reduce((sum, order) => sum + (order.totalCgst || 0), 0)
     const totalSgst = orders.reduce((sum, order) => sum + (order.totalSgst || 0), 0)
     const totalIgst = orders.reduce((sum, order) => sum + (order.totalIgst || 0), 0)
 
-    // Get recent orders (last 10)
-    const recentOrders = orders.slice(0, 10).map(order => ({
-      _id: order._id.toString(),
-      id: order._id.toString(),
-      invoiceNumber: order.invoiceNumber,
-      invoiceDate: order.invoiceDate,
-      amount: order.grandTotal,
-      subtotal: order.subtotal,
-      discount: order.totalDiscount,
-      tax: (order.totalCgst || 0) + (order.totalSgst || 0) + (order.totalIgst || 0),
-      paymentStatus: order.paymentStatus,
-      status: order.status,
-      itemsCount: order.items?.length || 0,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt
-    }))
-
     // Calculate days since last order
-    const lastOrderDate = orders[0]?.createdAt
-    const daysSinceLastOrder = lastOrderDate 
-      ? Math.floor((new Date().getTime() - new Date(lastOrderDate).getTime()) / (1000 * 60 * 60 * 24))
+    const daysSinceLastOrder = customer.lastOrderDate 
+      ? Math.floor((new Date().getTime() - new Date(customer.lastOrderDate).getTime()) / (1000 * 60 * 60 * 24))
       : null
 
-    // Get payment summary
+    // Payment summary
     const paymentSummary = {
       pending: orders.filter(o => o.paymentStatus === 'pending').length,
       completed: orders.filter(o => o.paymentStatus === 'completed').length,
       failed: orders.filter(o => o.paymentStatus === 'failed').length
     }
 
-    // Get order status summary
+    // Order status summary
     const orderStatusSummary = {
       completed: orders.filter(o => o.status === 'completed').length,
       pending: orders.filter(o => o.status === 'pending').length,
@@ -157,11 +158,11 @@ export async function GET(
       state: customer.state || '',
       city: customer.city || '',
       pincode: customer.pincode || '',
-      gstin: customer.gstin || customer.gstNumber || '',
-      gstNumber: customer.gstin || customer.gstNumber || '',
+      gstin: customer.gstin || '',
+      gstNumber: customer.gstin || '',
       isInterState: customer.isInterState || false,
-      totalOrders: customer.totalOrders || customer.totalPurchases || 0,
-      totalPurchases: customer.totalOrders || customer.totalPurchases || 0,
+      totalOrders: customer.totalOrders || 0,
+      totalPurchases: customer.totalOrders || 0,
       totalSpent: customer.totalSpent || 0,
       lastOrderDate: customer.lastOrderDate || null,
       createdAt: customer.createdAt,
@@ -171,8 +172,57 @@ export async function GET(
       tags: customer.tags || []
     }
 
-    console.log('✅ GET Customer - Customer found:', customer.name)
-    console.log(`📊 Customer statistics: ${totalOrders} orders, ₹${totalRevenue.toLocaleString()} revenue`)
+    // Transform recent orders (last 10)
+    const recentOrders = orders.slice(0, 10).map(order => ({
+      _id: order._id.toString(),
+      id: order._id.toString(),
+      invoiceNumber: order.invoiceNumber,
+      invoiceDate: order.invoiceDate,
+      amount: order.grandTotal,
+      subtotal: order.subtotal,
+      discount: order.totalDiscount,
+      tax: (order.totalCgst || 0) + (order.totalSgst || 0) + (order.totalIgst || 0),
+      paymentStatus: order.paymentStatus,
+      status: order.status,
+      itemsCount: order.items?.length || 0,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt
+    }))
+
+    // Transform all orders
+    const allOrders = orders.map(order => ({
+      _id: order._id.toString(),
+      id: order._id.toString(),
+      invoiceNumber: order.invoiceNumber,
+      invoiceDate: order.invoiceDate,
+      amount: order.grandTotal,
+      subtotal: order.subtotal,
+      discount: order.totalDiscount,
+      tax: (order.totalCgst || 0) + (order.totalSgst || 0) + (order.totalIgst || 0),
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      status: order.status,
+      items: order.items?.map((item: any) => ({
+        productId: item.productId?.toString(),
+        name: item.name,
+        hsnCode: item.hsnCode,
+        price: item.price,
+        quantity: item.quantity,
+        discount: item.discount,
+        taxableAmount: item.taxableAmount,
+        cgstRate: item.cgstRate,
+        sgstRate: item.sgstRate,
+        igstRate: item.igstRate,
+        cgstAmount: item.cgstAmount,
+        sgstAmount: item.sgstAmount,
+        igstAmount: item.igstAmount,
+        total: item.total,
+        stockDeducted: item.stockDeducted
+      })) || [],
+      notes: order.notes,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt
+    }))
 
     return NextResponse.json({
       success: true,
@@ -190,29 +240,7 @@ export async function GET(
         orderStatusSummary
       },
       recentOrders,
-      allOrders: orders.map(order => ({
-        _id: order._id.toString(),
-        id: order._id.toString(),
-        invoiceNumber: order.invoiceNumber,
-        invoiceDate: order.invoiceDate,
-        amount: order.grandTotal,
-        subtotal: order.subtotal,
-        discount: order.totalDiscount,
-        tax: (order.totalCgst || 0) + (order.totalSgst || 0) + (order.totalIgst || 0),
-        paymentMethod: order.paymentMethod,
-        paymentStatus: order.paymentStatus,
-        status: order.status,
-        items: order.items?.map((item: any) => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          total: item.total,
-          hsnCode: item.hsnCode
-        })) || [],
-        notes: order.notes,
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt
-      }))
+      allOrders
     })
 
   } catch (error: any) {
@@ -242,21 +270,24 @@ export async function GET(
   }
 }
 
-// PUT /api/customers/[id] - Update customer with comprehensive validation
+// ===========================================
+// PUT /api/customers/[id] - Update customer
+// ===========================================
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    console.log('🔄 PUT /api/customers/[id] - Starting...')
+    // ✅ IMPORTANT: Await the params (Next.js 15+ fix)
+    const params = await context.params
+    const customerIdParam = params.id
+    
+    console.log(`🔄 PUT /api/customers/${customerIdParam} - Starting...`)
     
     const { userId } = await verifyAuthAndSubscription(request)
-    
-    console.log('👤 PUT Customer - User ID:', userId)
-    console.log('🎯 PUT Customer - Customer ID:', params.id)
 
     // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(customerIdParam)) {
       return NextResponse.json(
         { 
           success: false,
@@ -266,10 +297,10 @@ export async function PUT(
       )
     }
 
-    const customerId = new mongoose.Types.ObjectId(params.id)
+    const customerId = new mongoose.Types.ObjectId(customerIdParam)
     const updateData = await request.json()
     
-    console.log('📦 PUT Customer - Update data:', updateData)
+    console.log('📦 Update data received:', updateData)
 
     // Check if customer exists
     const existingCustomer = await Customer.findOne({ 
@@ -278,7 +309,6 @@ export async function PUT(
     })
 
     if (!existingCustomer) {
-      console.log('❌ PUT Customer - Customer not found')
       return NextResponse.json({ 
         success: false,
         message: 'Customer not found' 
@@ -416,10 +446,6 @@ export async function PUT(
     
     if (updateData.gstin !== undefined) {
       cleanUpdateData.gstin = updateData.gstin?.trim().toUpperCase() || ''
-      cleanUpdateData.gstNumber = updateData.gstin?.trim().toUpperCase() || ''
-    } else if (updateData.gstNumber !== undefined) {
-      cleanUpdateData.gstin = updateData.gstNumber?.trim().toUpperCase() || ''
-      cleanUpdateData.gstNumber = updateData.gstNumber?.trim().toUpperCase() || ''
     }
     
     if (updateData.isInterState !== undefined) {
@@ -453,6 +479,39 @@ export async function PUT(
       )
     }
 
+    // 🔥 IMPORTANT: Also update customer details in all associated orders
+    try {
+      const orderUpdateData: any = {}
+      if (cleanUpdateData.name) orderUpdateData['customer.name'] = cleanUpdateData.name
+      if (cleanUpdateData.phone) orderUpdateData['customer.phone'] = cleanUpdateData.phone
+      if (cleanUpdateData.email) orderUpdateData['customer.email'] = cleanUpdateData.email
+      if (cleanUpdateData.gstin) orderUpdateData['customer.gstin'] = cleanUpdateData.gstin
+      if (cleanUpdateData.state) orderUpdateData['customer.state'] = cleanUpdateData.state
+      if (cleanUpdateData.address) orderUpdateData['customer.address'] = cleanUpdateData.address
+      if (cleanUpdateData.isInterState !== undefined) {
+        orderUpdateData['customer.isInterState'] = cleanUpdateData.isInterState
+      }
+
+      if (Object.keys(orderUpdateData).length > 0) {
+        const orderUpdateResult = await Order.updateMany(
+          { 
+            userId: userId,
+            $or: [
+              { 'customer.customerId': customerIdParam },
+              { 'customer.customerId': customerId },
+              { 'customer.customerId': customerId.toString() },
+              { 'customer.phone': existingCustomer.phone }
+            ]
+          },
+          { $set: orderUpdateData }
+        )
+        console.log(`📦 Updated ${orderUpdateResult.modifiedCount} orders with new customer details`)
+      }
+    } catch (orderError) {
+      console.warn('⚠️ Failed to update orders:', orderError)
+      // Don't fail the request if order update fails
+    }
+
     // Transform response
     const transformedCustomer = {
       _id: updatedCustomer._id.toString(),
@@ -465,11 +524,11 @@ export async function PUT(
       state: updatedCustomer.state || '',
       city: updatedCustomer.city || '',
       pincode: updatedCustomer.pincode || '',
-      gstin: updatedCustomer.gstin || updatedCustomer.gstNumber || '',
-      gstNumber: updatedCustomer.gstin || updatedCustomer.gstNumber || '',
+      gstin: updatedCustomer.gstin || '',
+      gstNumber: updatedCustomer.gstin || '',
       isInterState: updatedCustomer.isInterState || false,
-      totalOrders: updatedCustomer.totalOrders || updatedCustomer.totalPurchases || 0,
-      totalPurchases: updatedCustomer.totalOrders || updatedCustomer.totalPurchases || 0,
+      totalOrders: updatedCustomer.totalOrders || 0,
+      totalPurchases: updatedCustomer.totalOrders || 0,
       totalSpent: updatedCustomer.totalSpent || 0,
       lastOrderDate: updatedCustomer.lastOrderDate || null,
       createdAt: updatedCustomer.createdAt,
@@ -479,7 +538,7 @@ export async function PUT(
       tags: updatedCustomer.tags || []
     }
 
-    console.log('✅ PUT Customer - Customer updated:', updatedCustomer.name)
+    console.log('✅ Customer updated successfully:', updatedCustomer.name)
 
     return NextResponse.json({
       success: true,
@@ -539,21 +598,24 @@ export async function PUT(
   }
 }
 
-// DELETE /api/customers/[id] - Delete customer with cleanup
+// ===========================================
+// DELETE /api/customers/[id] - Delete customer
+// ===========================================
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    console.log('🗑️ DELETE /api/customers/[id] - Starting...')
+    // ✅ IMPORTANT: Await the params (Next.js 15+ fix)
+    const params = await context.params
+    const customerIdParam = params.id
+    
+    console.log(`🗑️ DELETE /api/customers/${customerIdParam} - Starting...`)
     
     const { userId } = await verifyAuthAndSubscription(request)
-    
-    console.log('👤 DELETE Customer - User ID:', userId)
-    console.log('🎯 DELETE Customer - Customer ID:', params.id)
 
     // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(customerIdParam)) {
       return NextResponse.json(
         { 
           success: false,
@@ -563,16 +625,34 @@ export async function DELETE(
       )
     }
 
-    const customerId = new mongoose.Types.ObjectId(params.id)
+    const customerId = new mongoose.Types.ObjectId(customerIdParam)
 
-    // First, check if customer has any orders
+    // First, get customer details for phone fallback
+    const customer = await Customer.findOne({ 
+      _id: customerId, 
+      userId: userId 
+    }).lean()
+
+    if (!customer) {
+      return NextResponse.json({ 
+        success: false,
+        message: 'Customer not found' 
+      }, { status: 404 })
+    }
+
+    // Check if customer has any orders
     const customerOrders = await Order.countDocuments({
       userId: userId,
-      'customer.customerId': customerId
+      $or: [
+        { 'customer.customerId': customerIdParam },
+        { 'customer.customerId': customerId },
+        { 'customer.customerId': customerId.toString() },
+        { 'customer.phone': customer.phone }
+      ]
     })
 
     if (customerOrders > 0) {
-      console.log(`⚠️ DELETE Customer - Customer has ${customerOrders} orders, cannot delete`)
+      console.log(`⚠️ Customer has ${customerOrders} orders, cannot delete`)
       return NextResponse.json(
         { 
           success: false,
@@ -584,13 +664,12 @@ export async function DELETE(
     }
 
     // Delete customer
-    const customer = await Customer.findOneAndDelete({ 
+    const deletedCustomer = await Customer.findOneAndDelete({ 
       _id: customerId, 
       userId: userId 
     })
 
-    if (!customer) {
-      console.log('❌ DELETE Customer - Customer not found')
+    if (!deletedCustomer) {
       return NextResponse.json({ 
         success: false,
         message: 'Customer not found' 
@@ -600,26 +679,22 @@ export async function DELETE(
     // Update customer usage (decrement by 1)
     try {
       await PaymentService.updateUsage(userId, 'customers', -1)
-      console.log('📊 DELETE Customer - Customer usage updated (decremented)')
+      console.log('📊 Customer usage updated (decremented)')
     } catch (usageError) {
-      console.warn('⚠️ DELETE Customer - Failed to update customer usage:', usageError)
+      console.warn('⚠️ Failed to update customer usage:', usageError)
       // Don't fail the request if usage update fails
     }
 
-    console.log('✅ DELETE Customer - Customer deleted:', customer.name)
+    console.log('✅ Customer deleted successfully:', deletedCustomer.name)
 
     return NextResponse.json({ 
       success: true,
       message: 'Customer deleted successfully',
       deletedCustomer: {
-        id: customer._id.toString(),
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone
-      },
-      statistics: {
-        orderCount: customerOrders,
-        totalSpent: customer.totalSpent || 0
+        id: deletedCustomer._id.toString(),
+        name: deletedCustomer.name,
+        email: deletedCustomer.email,
+        phone: deletedCustomer.phone
       }
     })
 
@@ -650,21 +725,24 @@ export async function DELETE(
   }
 }
 
-// PATCH /api/customers/[id] - Partial updates (for specific fields)
+// ===========================================
+// PATCH /api/customers/[id] - Partial update
+// ===========================================
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    console.log('🔧 PATCH /api/customers/[id] - Starting...')
+    // ✅ IMPORTANT: Await the params (Next.js 15+ fix)
+    const params = await context.params
+    const customerIdParam = params.id
+    
+    console.log(`🔧 PATCH /api/customers/${customerIdParam} - Starting...`)
     
     const { userId } = await verifyAuthAndSubscription(request)
-    
-    console.log('👤 PATCH Customer - User ID:', userId)
-    console.log('🎯 PATCH Customer - Customer ID:', params.id)
 
     // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(customerIdParam)) {
       return NextResponse.json(
         { 
           success: false,
@@ -674,11 +752,11 @@ export async function PATCH(
       )
     }
 
-    const customerId = new mongoose.Types.ObjectId(params.id)
+    const customerId = new mongoose.Types.ObjectId(customerIdParam)
     const patchData = await request.json()
 
-    // Only allow specific fields for PATCH
-    const allowedFields = ['notes', 'tags', 'isActive', 'address', 'email']
+    // Only allow specific fields for PATCH (partial updates)
+    const allowedFields = ['notes', 'tags', 'address', 'email', 'company', 'isInterState']
     const updateData: any = {}
 
     for (const key in patchData) {
@@ -716,7 +794,7 @@ export async function PATCH(
           updateData[key] = patchData[key].trim()
         } else if (key === 'tags') {
           updateData[key] = Array.isArray(patchData[key]) ? patchData[key] : []
-        } else if (key === 'isActive') {
+        } else if (key === 'isInterState') {
           updateData[key] = Boolean(patchData[key])
         } else {
           updateData[key] = patchData[key]?.toString().trim() || ''
@@ -734,6 +812,7 @@ export async function PATCH(
       )
     }
 
+    // Update customer
     const updatedCustomer = await Customer.findOneAndUpdate(
       { _id: customerId, userId: userId },
       { $set: updateData },
@@ -762,11 +841,11 @@ export async function PATCH(
       state: updatedCustomer.state || '',
       city: updatedCustomer.city || '',
       pincode: updatedCustomer.pincode || '',
-      gstin: updatedCustomer.gstin || updatedCustomer.gstNumber || '',
-      gstNumber: updatedCustomer.gstin || updatedCustomer.gstNumber || '',
+      gstin: updatedCustomer.gstin || '',
+      gstNumber: updatedCustomer.gstin || '',
       isInterState: updatedCustomer.isInterState || false,
-      totalOrders: updatedCustomer.totalOrders || updatedCustomer.totalPurchases || 0,
-      totalPurchases: updatedCustomer.totalOrders || updatedCustomer.totalPurchases || 0,
+      totalOrders: updatedCustomer.totalOrders || 0,
+      totalPurchases: updatedCustomer.totalOrders || 0,
       totalSpent: updatedCustomer.totalSpent || 0,
       lastOrderDate: updatedCustomer.lastOrderDate || null,
       createdAt: updatedCustomer.createdAt,
@@ -776,7 +855,8 @@ export async function PATCH(
       tags: updatedCustomer.tags || []
     }
 
-    console.log('✅ PATCH Customer - Customer partially updated:', updatedCustomer.name)
+    console.log('✅ Customer partially updated:', updatedCustomer.name)
+    console.log('📝 Updated fields:', Object.keys(updateData))
 
     return NextResponse.json({
       success: true,

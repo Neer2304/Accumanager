@@ -256,7 +256,7 @@ function NoteDetailContent() {
       if (note.passwordProtected && passwordUsed) {
         sessionStorage.setItem(`note_password_${note._id}`, passwordUsed);
       }
-      router.push(`/note/${note._id}/edit`);
+      router.push(`/notes/${note._id}/edit`);
     }
   };
 

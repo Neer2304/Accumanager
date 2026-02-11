@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const decoded = verifyToken(authToken);
-      const userId = decoded.userId?.toString()
+      const userId = decoded.userId?.toString();
 
       // Check subscription before processing billing
       const subscription = await PaymentService.checkSubscription(userId);
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
             message:
               "Your subscription has expired. Please renew to create bills.",
           },
-          { status: 403 }
+          { status: 403 },
         );
       }
 
@@ -38,14 +38,14 @@ export async function POST(request: NextRequest) {
       const limitCheck = await PaymentService.checkUsageLimit(
         userId,
         "invoices",
-        1
+        1,
       );
       if (!limitCheck.canProceed) {
         return NextResponse.json(
           {
             message: `You've reached your invoice limit (${limitCheck.currentUsage}/${limitCheck.limit}). Please upgrade your plan.`,
           },
-          { status: 403 }
+          { status: 403 },
         );
       }
 
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
             message:
               "Missing required fields: items, customer name, and phone are required",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -95,14 +95,14 @@ export async function POST(request: NextRequest) {
         const customerLimitCheck = await PaymentService.checkUsageLimit(
           userId,
           "customers",
-          1
+          1,
         );
         if (!customerLimitCheck.canProceed) {
           return NextResponse.json(
             {
               message: `Customer limit reached (${customerLimitCheck.currentUsage}/${customerLimitCheck.limit}). Cannot create new customer.`,
             },
-            { status: 403 }
+            { status: 403 },
           );
         }
 
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
         if (!product) {
           return NextResponse.json(
             { message: `Product not found: ${item.name}` },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -191,18 +191,18 @@ export async function POST(request: NextRequest) {
         let availableStock = 0;
         if (item.variationId) {
           const variation = product.variations.find(
-            (v: any) => v._id.toString() === item.variationId
+            (v: any) => v._id.toString() === item.variationId,
           );
           availableStock = variation?.stock || 0;
         } else {
           availableStock =
             product.variations.reduce(
               (sum: number, v: any) => sum + v.stock,
-              0
+              0,
             ) +
             product.batches.reduce(
               (sum: number, b: any) => sum + b.quantity,
-              0
+              0,
             );
         }
 
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
             {
               message: `Insufficient stock for ${item.name}. Available: ${availableStock}`,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -283,7 +283,14 @@ export async function POST(request: NextRequest) {
           : new Date(),
         customer: {
           ...customer,
-          customerId: customerRecord._id,
+          customerId: customerRecord._id.toString(), // 👈 ALWAYS store as string for consistency
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email || "",
+          address: customer.address || "",
+          gstin: customer.gstin || "",
+          state: customer.state || "",
+          isInterState: customer.isInterState || false,
         },
         items: processedItems,
         subtotal,
@@ -316,26 +323,34 @@ export async function POST(request: NextRequest) {
         if (item.variationId) {
           // Deduct from specific variation
           const variationIndex = product.variations.findIndex(
-            (v: any) => v._id.toString() === item.variationId
+            (v: any) => v._id.toString() === item.variationId,
           );
 
           if (variationIndex !== -1) {
             const variation = product.variations[variationIndex];
             if (variation.stock >= item.quantity) {
               variation.stock -= item.quantity;
-              
+
               // Mark item as stock deducted
               const orderItemIndex = order.items.findIndex(
-                (oi: any) => oi.productId === item.productId && oi.variationId === item.variationId
+                (oi: any) =>
+                  oi.productId === item.productId &&
+                  oi.variationId === item.variationId,
               );
               if (orderItemIndex !== -1) {
                 order.items[orderItemIndex].stockDeducted = true;
               }
 
-              console.log(`✅ Deducted ${item.quantity} from ${item.productName} variation`);
+              console.log(
+                `✅ Deducted ${item.quantity} from ${item.productName} variation`,
+              );
             } else {
-              console.error(`❌ Insufficient stock for variation: ${item.productName}`);
-              throw new Error(`Insufficient stock for ${item.productName} variation`);
+              console.error(
+                `❌ Insufficient stock for variation: ${item.productName}`,
+              );
+              throw new Error(
+                `Insufficient stock for ${item.productName} variation`,
+              );
             }
           }
         } else {
@@ -398,7 +413,10 @@ export async function POST(request: NextRequest) {
       // Update invoice usage
       await PaymentService.updateUsage(userId, "invoices", 1);
 
-      console.log("✅ Order saved and inventory deducted successfully:", order._id);
+      console.log(
+        "✅ Order saved and inventory deducted successfully:",
+        order._id,
+      );
 
       return NextResponse.json(
         {
@@ -417,9 +435,8 @@ export async function POST(request: NextRequest) {
           },
           message: "Invoice created and inventory updated successfully",
         },
-        { status: 201 }
+        { status: 201 },
       );
-
     } catch (authError) {
       console.error("❌ Auth error in billing:", authError);
       return NextResponse.json({ message: "Invalid token" }, { status: 401 });
@@ -435,15 +452,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (error.message.includes("Insufficient stock")) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: error.message }, { status: 400 });
     }
 
     return NextResponse.json(
       { message: error.message || "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -470,7 +484,7 @@ export async function PATCH(request: NextRequest) {
       if (!orderId || !items || !items.length) {
         return NextResponse.json(
           { message: "Order ID and items are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -483,7 +497,7 @@ export async function PATCH(request: NextRequest) {
       if (!order) {
         return NextResponse.json(
           { message: "Order not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -499,12 +513,14 @@ export async function PATCH(request: NextRequest) {
         if (item.variationId) {
           // Restock to specific variation
           const variationIndex = product.variations.findIndex(
-            (v: any) => v._id.toString() === item.variationId
+            (v: any) => v._id.toString() === item.variationId,
           );
 
           if (variationIndex !== -1) {
             product.variations[variationIndex].stock += item.quantity;
-            console.log(`✅ Restocked ${item.quantity} to ${product.name} variation`);
+            console.log(
+              `✅ Restocked ${item.quantity} to ${product.name} variation`,
+            );
           }
         } else {
           // Restock to first variation
@@ -545,7 +561,6 @@ export async function PATCH(request: NextRequest) {
           updatedAt: order.updatedAt,
         },
       });
-
     } catch (authError) {
       return NextResponse.json({ message: "Invalid token" }, { status: 401 });
     }
@@ -553,7 +568,7 @@ export async function PATCH(request: NextRequest) {
     console.error("❌ Reverse inventory error:", error);
     return NextResponse.json(
       { message: error.message || "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
