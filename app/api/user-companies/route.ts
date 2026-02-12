@@ -8,6 +8,8 @@ import User from '@/models/User';
 import { NotificationService } from '@/services/notificationService';
 
 // ✅ GET USER COMPANIES
+// app/api/user-companies/route.ts - FIXED
+
 export async function GET(request: NextRequest) {
   try {
     console.log('🔄 GET /api/user-companies - Starting...');
@@ -23,22 +25,31 @@ export async function GET(request: NextRequest) {
       
       await connectToDatabase();
 
+      // ✅ FIX: Properly populate and handle data
       const userCompanies = await UserCompany.find({ 
         userId: decoded.userId,
         status: 'active'
-      }).populate('companyId');
+      })
+        .populate('companyId')
+        .lean();
+
+      // ✅ FIX: Filter out invalid companies
+      const validUserCompanies = userCompanies.filter(uc => 
+        uc.companyId && typeof uc.companyId === 'object' && '_id' in uc.companyId
+      );
 
       // Get default company
-      const defaultCompany = userCompanies.find(uc => uc.isDefault);
+      const defaultCompany = validUserCompanies.find(uc => uc.isDefault);
 
       return NextResponse.json({ 
         success: true,
-        userCompanies,
-        defaultCompany: defaultCompany || userCompanies[0],
-        count: userCompanies.length
+        userCompanies: validUserCompanies,
+        defaultCompany: defaultCompany || validUserCompanies[0] || null,
+        count: validUserCompanies.length
       });
 
     } catch (authError) {
+      console.error('❌ Auth error:', authError);
       return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
     }
   } catch (error: any) {
