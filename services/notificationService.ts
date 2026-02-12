@@ -804,6 +804,1718 @@ export class NotificationService {
     }
   }
 
+  // ============ LEAD NOTIFICATIONS ============
+
+  /**
+   * Notify when a lead is created
+   */
+  static async notifyLeadCreated(
+    lead: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "New Lead Created 🎯",
+        `${lead.fullName || `${lead.firstName} ${lead.lastName}`} has been added as a lead. Source: ${lead.source?.replace("_", " ") || "Unknown"}`,
+        "success",
+        {
+          actionUrl: `/leads/${lead._id}`,
+          metadata: {
+            leadId: lead._id.toString(),
+            leadName: lead.fullName || `${lead.firstName} ${lead.lastName}`,
+            leadEmail: lead.email,
+            leadPhone: lead.phone,
+            source: lead.source,
+            companyName: lead.companyName,
+            event: "lead_created",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Lead creation notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating lead creation notification:", error);
+      throw new Error(`Failed to create lead notification: ${error.message}`);
+    }
+  }
+
+  /**
+   * Notify when a lead status is updated
+   */
+  static async notifyLeadStatusChanged(
+    lead: any,
+    oldStatus: string,
+    newStatus: string,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const statusEmoji: Record<string, string> = {
+        new: "🆕",
+        contacted: "📞",
+        qualified: "✅",
+        disqualified: "❌",
+        converted: "🎉",
+        lost: "💔",
+      };
+
+      const notificationData = this.createNotificationData(
+        userId,
+        `Lead Status Updated ${statusEmoji[newStatus] || "📝"}`,
+        `${lead.fullName || `${lead.firstName} ${lead.lastName}`} status changed from ${oldStatus.replace("_", " ")} to ${newStatus.replace("_", " ")}.`,
+        newStatus === "converted"
+          ? "success"
+          : newStatus === "lost" || newStatus === "disqualified"
+            ? "warning"
+            : "info",
+        {
+          actionUrl: `/leads/${lead._id}`,
+          metadata: {
+            leadId: lead._id.toString(),
+            leadName: lead.fullName || `${lead.firstName} ${lead.lastName}`,
+            oldStatus,
+            newStatus,
+            updatedAt: new Date().toISOString(),
+            event: "lead_status_updated",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Lead status update notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating lead status update notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create lead status update notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a lead is assigned
+   */
+  static async notifyLeadAssigned(
+    lead: any,
+    assignedTo: string | mongoose.Types.ObjectId,
+    assignedBy: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        assignedTo,
+        "Lead Assigned to You 📋",
+        `${lead.fullName || `${lead.firstName} ${lead.lastName}`} has been assigned to you${lead.companyName ? ` from ${lead.companyName}` : ""}.`,
+        "assignment",
+        {
+          actionUrl: `/leads/${lead._id}`,
+          metadata: {
+            leadId: lead._id.toString(),
+            leadName: lead.fullName || `${lead.firstName} ${lead.lastName}`,
+            assignedBy: assignedBy.toString(),
+            companyName: lead.companyName,
+            event: "lead_assigned",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Lead assignment notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating lead assignment notification:", error);
+      throw new Error(
+        `Failed to create lead assignment notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a lead is converted to contact/deal
+   */
+  static async notifyLeadConverted(
+    lead: any,
+    contact: any,
+    deal: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Lead Converted Successfully! 🎉",
+        `${lead.fullName || `${lead.firstName} ${lead.lastName}`} has been converted to a contact and deal.`,
+        "success",
+        {
+          actionUrl: `/contacts/${contact._id}`,
+          metadata: {
+            leadId: lead._id.toString(),
+            leadName: lead.fullName || `${lead.firstName} ${lead.lastName}`,
+            contactId: contact._id.toString(),
+            contactName: contact.fullName,
+            dealId: deal._id.toString(),
+            dealName: deal.name,
+            dealValue: deal.dealValue,
+            convertedAt: new Date().toISOString(),
+            event: "lead_converted",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Lead conversion notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating lead conversion notification:", error);
+      throw new Error(
+        `Failed to create lead conversion notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a lead is deleted
+   */
+  static async notifyLeadDeleted(
+    lead: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Lead Deleted 🗑️",
+        `${lead.fullName || `${lead.firstName} ${lead.lastName}`} has been deleted.`,
+        "info",
+        {
+          metadata: {
+            leadName: lead.fullName || `${lead.firstName} ${lead.lastName}`,
+            leadEmail: lead.email,
+            deletedAt: new Date().toISOString(),
+            event: "lead_deleted",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Lead deletion notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating lead deletion notification:", error);
+      throw new Error(
+        `Failed to create lead deletion notification: ${error.message}`,
+      );
+    }
+  }
+
+  // ============ CONTACT NOTIFICATIONS ============
+
+  /**
+   * Notify when a contact is created
+   */
+  static async notifyContactCreated(
+    contact: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "New Contact Created 👤",
+        `${contact.fullName} has been added as a contact${contact.companyName ? ` from ${contact.companyName}` : ""}.`,
+        "success",
+        {
+          actionUrl: `/contacts/${contact._id}`,
+          metadata: {
+            contactId: contact._id.toString(),
+            contactName: contact.fullName,
+            contactEmail: contact.emails?.find((e: any) => e.isPrimary)?.email,
+            contactPhone: contact.phones?.find((p: any) => p.isPrimary)?.number,
+            companyName: contact.companyName,
+            lifecycleStage: contact.lifecycleStage,
+            event: "contact_created",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Contact creation notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating contact creation notification:", error);
+      throw new Error(
+        `Failed to create contact notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a contact is assigned
+   */
+  static async notifyContactAssigned(
+    contact: any,
+    assignedTo: string | mongoose.Types.ObjectId,
+    assignedBy: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        assignedTo,
+        "Contact Assigned to You 📋",
+        `${contact.fullName} has been assigned to you${contact.companyName ? ` from ${contact.companyName}` : ""}.`,
+        "assignment",
+        {
+          actionUrl: `/contacts/${contact._id}`,
+          metadata: {
+            contactId: contact._id.toString(),
+            contactName: contact.fullName,
+            assignedBy: assignedBy.toString(),
+            companyName: contact.companyName,
+            event: "contact_assigned",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Contact assignment notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating contact assignment notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create contact assignment notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a contact's lifecycle stage changes
+   */
+  static async notifyContactLifecycleChanged(
+    contact: any,
+    oldStage: string,
+    newStage: string,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const stageEmoji: Record<string, string> = {
+        lead: "🎯",
+        prospect: "🔍",
+        customer: "💼",
+        churned: "📉",
+        inactive: "💤",
+      };
+
+      const notificationData = this.createNotificationData(
+        userId,
+        `Contact Lifecycle Updated ${stageEmoji[newStage] || "🔄"}`,
+        `${contact.fullName} moved from ${oldStage} to ${newStage}.`,
+        newStage === "customer"
+          ? "success"
+          : newStage === "churned"
+            ? "warning"
+            : "info",
+        {
+          actionUrl: `/contacts/${contact._id}`,
+          metadata: {
+            contactId: contact._id.toString(),
+            contactName: contact.fullName,
+            oldStage,
+            newStage,
+            updatedAt: new Date().toISOString(),
+            event: "contact_lifecycle_changed",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Contact lifecycle update notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating contact lifecycle update notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create contact lifecycle update notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify on contact birthday
+   */
+  static async notifyContactBirthday(
+    contact: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "🎂 Birthday Today!",
+        `Today is ${contact.fullName}'s birthday. Send them your wishes!`,
+        "info",
+        {
+          actionUrl: `/contacts/${contact._id}`,
+          metadata: {
+            contactId: contact._id.toString(),
+            contactName: contact.fullName,
+            birthday: contact.birthday,
+            event: "contact_birthday",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Contact birthday notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating contact birthday notification:", error);
+      throw new Error(
+        `Failed to create contact birthday notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify on contact anniversary
+   */
+  static async notifyContactAnniversary(
+    contact: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "🎉 Anniversary Today!",
+        `${contact.fullName} is celebrating their anniversary with your company.`,
+        "info",
+        {
+          actionUrl: `/contacts/${contact._id}`,
+          metadata: {
+            contactId: contact._id.toString(),
+            contactName: contact.fullName,
+            anniversary: contact.anniversary,
+            event: "contact_anniversary",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Contact anniversary notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating contact anniversary notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create contact anniversary notification: ${error.message}`,
+      );
+    }
+  }
+
+  // ============ DEAL NOTIFICATIONS ============
+
+  /**
+   * Notify when a deal is created
+   */
+  static async notifyDealCreated(
+    deal: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "New Deal Created 💰",
+        `${deal.name} worth ${deal.currency || "USD"} ${deal.dealValue?.toLocaleString()} has been created.`,
+        "success",
+        {
+          actionUrl: `/deals/${deal._id}`,
+          metadata: {
+            dealId: deal._id.toString(),
+            dealName: deal.name,
+            dealValue: deal.dealValue,
+            currency: deal.currency || "USD",
+            probability: deal.probability,
+            expectedClosingDate: deal.expectedClosingDate,
+            accountName: deal.accountName,
+            contactName: deal.contactName,
+            event: "deal_created",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Deal creation notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating deal creation notification:", error);
+      throw new Error(`Failed to create deal notification: ${error.message}`);
+    }
+  }
+
+  /**
+   * Notify when a deal stage changes
+   */
+  static async notifyDealStageChanged(
+    deal: any,
+    oldStage: string,
+    newStage: string,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const stageEmoji: Record<string, string> = {
+        lead_in: "📥",
+        qualification: "🔍",
+        needs_analysis: "📊",
+        proposal: "📄",
+        negotiation: "🤝",
+        closed_won: "🏆",
+        closed_lost: "💔",
+      };
+
+      const notificationData = this.createNotificationData(
+        userId,
+        `Deal Stage Updated ${stageEmoji[newStage] || "🔄"}`,
+        `${deal.name} moved from ${oldStage.replace("_", " ")} to ${newStage.replace("_", " ")}.`,
+        newStage === "closed_won"
+          ? "success"
+          : newStage === "closed_lost"
+            ? "warning"
+            : "info",
+        {
+          actionUrl: `/deals/${deal._id}`,
+          metadata: {
+            dealId: deal._id.toString(),
+            dealName: deal.name,
+            oldStage,
+            newStage,
+            dealValue: deal.dealValue,
+            probability: deal.probability,
+            updatedAt: new Date().toISOString(),
+            event: "deal_stage_changed",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Deal stage update notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating deal stage update notification:", error);
+      throw new Error(
+        `Failed to create deal stage update notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a deal is won
+   */
+  static async notifyDealWon(
+    deal: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Deal Won! 🏆🎉",
+        `Congratulations! Deal "${deal.name}" worth ${deal.currency || "USD"} ${deal.dealValue?.toLocaleString()} has been won.`,
+        "success",
+        {
+          actionUrl: `/deals/${deal._id}`,
+          metadata: {
+            dealId: deal._id.toString(),
+            dealName: deal.name,
+            dealValue: deal.dealValue,
+            currency: deal.currency || "USD",
+            accountName: deal.accountName,
+            contactName: deal.contactName,
+            wonAt: deal.wonAt || new Date().toISOString(),
+            event: "deal_won",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Deal won notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating deal won notification:", error);
+      throw new Error(
+        `Failed to create deal won notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a deal is lost
+   */
+  static async notifyDealLost(
+    deal: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Deal Lost 💔",
+        `Deal "${deal.name}" worth ${deal.currency || "USD"} ${deal.dealValue?.toLocaleString()} has been lost. Reason: ${deal.lossReason || "Not specified"}`,
+        "warning",
+        {
+          actionUrl: `/deals/${deal._id}`,
+          metadata: {
+            dealId: deal._id.toString(),
+            dealName: deal.name,
+            dealValue: deal.dealValue,
+            currency: deal.currency || "USD",
+            lossReason: deal.lossReason,
+            lostToCompetitor: deal.lostToCompetitor,
+            lostAt: deal.lostAt || new Date().toISOString(),
+            event: "deal_lost",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Deal lost notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating deal lost notification:", error);
+      throw new Error(
+        `Failed to create deal lost notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a deal is assigned
+   */
+  static async notifyDealAssigned(
+    deal: any,
+    assignedTo: string | mongoose.Types.ObjectId,
+    assignedBy: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        assignedTo,
+        "Deal Assigned to You 💼",
+        `${deal.name} worth ${deal.currency || "USD"} ${deal.dealValue?.toLocaleString()} has been assigned to you.`,
+        "assignment",
+        {
+          actionUrl: `/deals/${deal._id}`,
+          metadata: {
+            dealId: deal._id.toString(),
+            dealName: deal.name,
+            dealValue: deal.dealValue,
+            currency: deal.currency || "USD",
+            assignedBy: assignedBy.toString(),
+            expectedClosingDate: deal.expectedClosingDate,
+            event: "deal_assigned",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Deal assignment notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating deal assignment notification:", error);
+      throw new Error(
+        `Failed to create deal assignment notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when deal is approaching expected closing date
+   */
+  static async notifyDealClosingSoon(
+    deal: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      if (!deal.expectedClosingDate) return null;
+
+      const closingDate = new Date(deal.expectedClosingDate);
+      const now = new Date();
+      const daysUntilClosing = Math.ceil(
+        (closingDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      if (daysUntilClosing > 7) return null; // Only notify if within 7 days
+
+      const notificationData = this.createNotificationData(
+        userId,
+        "Deal Closing Soon ⏰",
+        `Deal "${deal.name}" worth ${deal.currency || "USD"} ${deal.dealValue?.toLocaleString()} is expected to close in ${daysUntilClosing} day${daysUntilClosing !== 1 ? "s" : ""}.`,
+        daysUntilClosing <= 2 ? "warning" : "info",
+        {
+          actionUrl: `/deals/${deal._id}`,
+          metadata: {
+            dealId: deal._id.toString(),
+            dealName: deal.name,
+            dealValue: deal.dealValue,
+            daysUntilClosing,
+            expectedClosingDate: deal.expectedClosingDate,
+            probability: deal.probability,
+            event: "deal_closing_soon",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Deal closing soon notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating deal closing soon notification:", error);
+      throw new Error(
+        `Failed to create deal closing soon notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when deal is overdue
+   */
+  static async notifyDealOverdue(
+    deal: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      if (!deal.expectedClosingDate) return null;
+
+      const closingDate = new Date(deal.expectedClosingDate);
+      const now = new Date();
+
+      if (now < closingDate) return null; // Not overdue yet
+
+      const daysOverdue = Math.ceil(
+        (now.getTime() - closingDate.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      const notificationData = this.createNotificationData(
+        userId,
+        "Deal Overdue ⚠️",
+        `Deal "${deal.name}" worth ${deal.currency || "USD"} ${deal.dealValue?.toLocaleString()} is ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""} overdue.`,
+        "error",
+        {
+          actionUrl: `/deals/${deal._id}`,
+          metadata: {
+            dealId: deal._id.toString(),
+            dealName: deal.name,
+            dealValue: deal.dealValue,
+            daysOverdue,
+            originalClosingDate: deal.expectedClosingDate,
+            event: "deal_overdue",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Deal overdue notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating deal overdue notification:", error);
+      throw new Error(
+        `Failed to create deal overdue notification: ${error.message}`,
+      );
+    }
+  }
+
+  // ============ ACTIVITY NOTIFICATIONS ============
+
+  /**
+   * Notify when an activity is created
+   */
+  static async notifyActivityCreated(
+    activity: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const typeEmoji: Record<string, string> = {
+        call: "📞",
+        email: "📧",
+        meeting: "👥",
+        task: "📝",
+        note: "📌",
+        reminder: "⏰",
+      };
+
+      const notificationData = this.createNotificationData(
+        userId,
+        `New ${activity.type.charAt(0).toUpperCase() + activity.type.slice(1)} ${typeEmoji[activity.type] || "📋"}`,
+        `${activity.subject} has been scheduled${activity.relatedTo?.length ? ` for ${activity.relatedTo[0].name}` : ""}.`,
+        "info",
+        {
+          actionUrl: `/activities/${activity._id}`,
+          metadata: {
+            activityId: activity._id.toString(),
+            activityType: activity.type,
+            activitySubject: activity.subject,
+            relatedEntity: activity.relatedTo?.[0],
+            dueDate: activity.dueDate,
+            event: "activity_created",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Activity creation notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating activity creation notification:", error);
+      throw new Error(
+        `Failed to create activity notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when an activity is assigned
+   */
+  static async notifyActivityAssigned(
+    activity: any,
+    assignedTo: string | mongoose.Types.ObjectId,
+    assignedBy: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        assignedTo,
+        `${activity.type.charAt(0).toUpperCase() + activity.type.slice(1)} Assigned to You 📋`,
+        `${activity.subject} has been assigned to you.`,
+        "assignment",
+        {
+          actionUrl: `/activities/${activity._id}`,
+          metadata: {
+            activityId: activity._id.toString(),
+            activityType: activity.type,
+            activitySubject: activity.subject,
+            assignedBy: assignedBy.toString(),
+            dueDate: activity.dueDate,
+            event: "activity_assigned",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Activity assignment notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating activity assignment notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create activity assignment notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when an activity is completed
+   */
+  static async notifyActivityCompleted(
+    activity: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Activity Completed ✅",
+        `${activity.type.charAt(0).toUpperCase() + activity.type.slice(1)} "${activity.subject}" has been marked as completed.`,
+        "success",
+        {
+          actionUrl: `/activities/${activity._id}`,
+          metadata: {
+            activityId: activity._id.toString(),
+            activityType: activity.type,
+            activitySubject: activity.subject,
+            completedAt: activity.completedAt || new Date().toISOString(),
+            event: "activity_completed",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Activity completion notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating activity completion notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create activity completion notification: ${error.message}`,
+      );
+    }
+  }
+
+  // ============ EVENT NOTIFICATIONS ============
+
+  /**
+   * Notify when an event is created
+   */
+  static async notifyEventCreated(
+    event: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        `New Event: ${event.title} 📅`,
+        `${event.type.charAt(0).toUpperCase() + event.type.slice(1)} scheduled for ${new Date(event.startDateTime).toLocaleString()}`,
+        "info",
+        {
+          actionUrl: `/calendar/events/${event._id}`,
+          metadata: {
+            eventId: event._id.toString(),
+            eventTitle: event.title,
+            eventType: event.type,
+            startDateTime: event.startDateTime,
+            endDateTime: event.endDateTime,
+            location: event.location,
+            isVirtual: event.isVirtual,
+            event: "event_created",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Event creation notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating event creation notification:", error);
+      throw new Error(`Failed to create event notification: ${error.message}`);
+    }
+  }
+
+  /**
+   * Notify when an event invitation is sent
+   */
+  static async notifyEventInvitation(
+    event: any,
+    attendeeId: string | mongoose.Types.ObjectId,
+    invitedBy: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        attendeeId,
+        "Event Invitation 📧",
+        `You are invited to: ${event.title} on ${new Date(event.startDateTime).toLocaleString()}`,
+        "info",
+        {
+          actionUrl: `/calendar/events/${event._id}`,
+          metadata: {
+            eventId: event._id.toString(),
+            eventTitle: event.title,
+            eventType: event.type,
+            startDateTime: event.startDateTime,
+            location: event.location || "Virtual Meeting",
+            invitedBy: invitedBy.toString(),
+            event: "event_invitation",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Event invitation notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating event invitation notification:", error);
+      throw new Error(
+        `Failed to create event invitation notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when an event is starting soon
+   */
+  static async notifyEventStartingSoon(
+    event: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      if (!event.startDateTime) return null;
+
+      const startTime = new Date(event.startDateTime);
+      const now = new Date();
+      const minutesUntilStart = Math.ceil(
+        (startTime.getTime() - now.getTime()) / (1000 * 60),
+      );
+
+      if (minutesUntilStart > 30 || minutesUntilStart < 0) return null; // Only notify within 30 minutes
+
+      const notificationData = this.createNotificationData(
+        userId,
+        "Event Starting Soon ⏰",
+        `${event.title} starts in ${minutesUntilStart} minute${minutesUntilStart !== 1 ? "s" : ""}`,
+        minutesUntilStart <= 5 ? "warning" : "info",
+        {
+          actionUrl: `/calendar/events/${event._id}`,
+          metadata: {
+            eventId: event._id.toString(),
+            eventTitle: event.title,
+            startDateTime: event.startDateTime,
+            minutesUntilStart,
+            meetingLink: event.meetingLink,
+            event: "event_starting_soon",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Event starting soon notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating event starting soon notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create event starting soon notification: ${error.message}`,
+      );
+    }
+  }
+
+  // ============ COMPANY & TEAM NOTIFICATIONS ============
+
+  /**
+   * Notify when a company is created
+   */
+  static async notifyCompanyCreated(
+    company: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Company Created 🏢",
+        `${company.name} has been created successfully.`,
+        "success",
+        {
+          actionUrl: `/settings/company`,
+          metadata: {
+            companyId: company._id.toString(),
+            companyName: company.name,
+            companyEmail: company.email,
+            industry: company.industry,
+            subscription: company.subscription?.plan,
+            event: "company_created",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Company creation notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating company creation notification:", error);
+      throw new Error(
+        `Failed to create company notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a user is invited to company
+   */
+  static async notifyUserInvited(
+    user: any,
+    company: any,
+    invitedBy: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        user._id,
+        "Invitation to Join Company 📧",
+        `You have been invited to join ${company.name}. Click to accept or decline.`,
+        "info",
+        {
+          actionUrl: `/user-companies/invitations`,
+          priority: "high",
+          metadata: {
+            companyId: company._id.toString(),
+            companyName: company.name,
+            invitedBy: invitedBy.toString(),
+            invitationStatus: "pending",
+            event: "user_invited",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ User invitation notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating user invitation notification:", error);
+      throw new Error(
+        `Failed to create user invitation notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a user joins company
+   */
+  static async notifyUserJoined(
+    user: any,
+    company: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "New Team Member Joined 👋",
+        `${user.name} has joined ${company.name}.`,
+        "success",
+        {
+          actionUrl: `/team/members/${user._id}`,
+          metadata: {
+            userId: user._id.toString(),
+            userName: user.name,
+            userEmail: user.email,
+            companyId: company._id.toString(),
+            companyName: company.name,
+            joinedAt: new Date().toISOString(),
+            event: "user_joined",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ User joined notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating user joined notification:", error);
+      throw new Error(
+        `Failed to create user joined notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when subscription status changes
+   */
+  static async notifySubscriptionStatusChanged(
+    company: any,
+    oldStatus: string,
+    newStatus: string,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const statusEmoji: Record<string, string> = {
+        trial: "🔹",
+        active: "✅",
+        inactive: "⭕",
+        expired: "⚠️",
+        cancelled: "❌",
+      };
+
+      const notificationData = this.createNotificationData(
+        userId,
+        `Subscription ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)} ${statusEmoji[newStatus] || "🔄"}`,
+        `Your subscription has ${newStatus === "active" ? "been activated" : `changed from ${oldStatus} to ${newStatus}`}.`,
+        newStatus === "active"
+          ? "success"
+          : newStatus === "expired" || newStatus === "cancelled"
+            ? "warning"
+            : "info",
+        {
+          actionUrl: `/settings/billing`,
+          metadata: {
+            companyId: company._id.toString(),
+            companyName: company.name,
+            oldStatus,
+            newStatus,
+            plan: company.subscription?.plan,
+            endDate: company.subscription?.endDate,
+            event: "subscription_status_changed",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Subscription status notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating subscription status notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create subscription status notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when subscription is about to expire
+   */
+  static async notifySubscriptionExpiringSoon(
+    company: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      if (!company.subscription?.endDate) return null;
+
+      const endDate = new Date(company.subscription.endDate);
+      const now = new Date();
+      const daysUntilExpiry = Math.ceil(
+        (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      if (daysUntilExpiry > 7 || daysUntilExpiry < 0) return null; // Only notify within 7 days
+
+      const notificationData = this.createNotificationData(
+        userId,
+        "Subscription Expiring Soon ⏳",
+        `Your ${company.subscription.plan} subscription will expire in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? "s" : ""}. Renew now to avoid interruption.`,
+        "warning",
+        {
+          actionUrl: `/settings/billing`,
+          priority: "high",
+          metadata: {
+            companyId: company._id.toString(),
+            companyName: company.name,
+            plan: company.subscription?.plan,
+            daysUntilExpiry,
+            expiryDate: company.subscription?.endDate,
+            event: "subscription_expiring_soon",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Subscription expiring soon notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating subscription expiring notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create subscription expiring notification: ${error.message}`,
+      );
+    }
+  }
+
+  // ============ ORDER NOTIFICATIONS ============
+
+  /**
+   * Notify when an order is created
+   */
+  static async notifyOrderCreated(
+    order: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "New Order Created 📦",
+        `Order #${order.orderNumber} worth ${order.currency || "USD"} ${order.grandTotal?.toLocaleString()} has been created.`,
+        "success",
+        {
+          actionUrl: `/orders/${order._id}`,
+          metadata: {
+            orderId: order._id.toString(),
+            orderNumber: order.orderNumber,
+            customerName: order.customerName,
+            grandTotal: order.grandTotal,
+            currency: order.currency || "USD",
+            status: order.status,
+            itemsCount: order.items?.length,
+            event: "order_created",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Order creation notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating order creation notification:", error);
+      throw new Error(`Failed to create order notification: ${error.message}`);
+    }
+  }
+
+  /**
+   * Notify when order status changes
+   */
+  static async notifyOrderStatusChanged(
+    order: any,
+    oldStatus: string,
+    newStatus: string,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const statusEmoji: Record<string, string> = {
+        draft: "📝",
+        confirmed: "✅",
+        processing: "⚙️",
+        shipped: "🚚",
+        delivered: "📬",
+        cancelled: "❌",
+        returned: "↩️",
+        refunded: "💰",
+      };
+
+      const notificationData = this.createNotificationData(
+        userId,
+        `Order Status Updated ${statusEmoji[newStatus] || "🔄"}`,
+        `Order #${order.orderNumber} status changed from ${oldStatus} to ${newStatus}.`,
+        newStatus === "delivered"
+          ? "success"
+          : newStatus === "cancelled" || newStatus === "returned"
+            ? "warning"
+            : "info",
+        {
+          actionUrl: `/orders/${order._id}`,
+          metadata: {
+            orderId: order._id.toString(),
+            orderNumber: order.orderNumber,
+            oldStatus,
+            newStatus,
+            trackingNumber: order.trackingNumber,
+            updatedAt: new Date().toISOString(),
+            event: "order_status_changed",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Order status update notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating order status update notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create order status update notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when order is shipped
+   */
+  static async notifyOrderShipped(
+    order: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Order Shipped! 🚚",
+        `Order #${order.orderNumber} has been shipped${order.trackingNumber ? ` with tracking #${order.trackingNumber}` : ""}.`,
+        "success",
+        {
+          actionUrl: `/orders/${order._id}`,
+          metadata: {
+            orderId: order._id.toString(),
+            orderNumber: order.orderNumber,
+            trackingNumber: order.trackingNumber,
+            carrier: order.carrier,
+            estimatedDelivery: order.estimatedDelivery,
+            shippedAt: new Date().toISOString(),
+            event: "order_shipped",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Order shipped notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating order shipped notification:", error);
+      throw new Error(
+        `Failed to create order shipped notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when order is delivered
+   */
+  static async notifyOrderDelivered(
+    order: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Order Delivered! 📬",
+        `Order #${order.orderNumber} has been delivered successfully.`,
+        "success",
+        {
+          actionUrl: `/orders/${order._id}`,
+          metadata: {
+            orderId: order._id.toString(),
+            orderNumber: order.orderNumber,
+            deliveredAt: order.deliveredAt || new Date().toISOString(),
+            event: "order_delivered",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Order delivered notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating order delivered notification:", error);
+      throw new Error(
+        `Failed to create order delivered notification: ${error.message}`,
+      );
+    }
+  }
+
+  // ============ NOTE & MENTION NOTIFICATIONS ============
+
+  /**
+   * Notify when a user is mentioned in a note
+   */
+  static async notifyUserMentioned(
+    note: any,
+    mentionedUserId: string | mongoose.Types.ObjectId,
+    mentionedBy: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        mentionedUserId,
+        "You Were Mentioned 📢",
+        `${note.createdByName || "Someone"} mentioned you in a note${note.entityName ? ` about ${note.entityName}` : ""}.`,
+        "mention",
+        {
+          actionUrl: `/${note.entityType?.toLowerCase()}s/${note.entityId}`,
+          priority: "high",
+          metadata: {
+            noteId: note._id.toString(),
+            noteTitle: note.title || "Untitled",
+            noteContent: note.content.substring(0, 100),
+            entityType: note.entityType,
+            entityId: note.entityId?.toString(),
+            entityName: note.entityName,
+            mentionedBy: mentionedBy.toString(),
+            event: "user_mentioned",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ User mention notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating user mention notification:", error);
+      throw new Error(
+        `Failed to create user mention notification: ${error.message}`,
+      );
+    }
+  }
+
+  // ============ EMPLOYEE NOTIFICATIONS ============
+
+  /**
+   * Notify when a new employee is onboarded
+   */
+  static async notifyEmployeeOnboarded(
+    employee: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "New Employee Onboarded 👋",
+        `${employee.fullName} has joined as ${employee.designation} in ${employee.department}.`,
+        "success",
+        {
+          actionUrl: `/employees/${employee._id}`,
+          metadata: {
+            employeeId: employee._id.toString(),
+            employeeName: employee.fullName,
+            employeeEmail: employee.email,
+            designation: employee.designation,
+            department: employee.department,
+            joiningDate: employee.joiningDate,
+            event: "employee_onboarded",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Employee onboarded notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating employee onboarded notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create employee onboarded notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when employee status changes
+   */
+  static async notifyEmployeeStatusChanged(
+    employee: any,
+    oldStatus: string,
+    newStatus: string,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const statusEmoji: Record<string, string> = {
+        active: "✅",
+        inactive: "⭕",
+        on_leave: "🏖️",
+        terminated: "🚫",
+        resigned: "📤",
+      };
+
+      const notificationData = this.createNotificationData(
+        userId,
+        `Employee Status Updated ${statusEmoji[newStatus] || "🔄"}`,
+        `${employee.fullName}'s status changed from ${oldStatus.replace("_", " ")} to ${newStatus.replace("_", " ")}.`,
+        newStatus === "active"
+          ? "success"
+          : newStatus === "on_leave"
+            ? "info"
+            : "warning",
+        {
+          actionUrl: `/employees/${employee._id}`,
+          metadata: {
+            employeeId: employee._id.toString(),
+            employeeName: employee.fullName,
+            oldStatus,
+            newStatus,
+            updatedAt: new Date().toISOString(),
+            event: "employee_status_changed",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Employee status update notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating employee status update notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create employee status update notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when employee leave is requested
+   */
+  static async notifyLeaveRequested(
+    employee: any,
+    leaveRequest: any,
+    managerId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        managerId,
+        "Leave Requested 📅",
+        `${employee.fullName} has requested ${leaveRequest.days} days of leave from ${new Date(leaveRequest.startDate).toLocaleDateString()}.`,
+        "info",
+        {
+          actionUrl: `/employees/${employee._id}/leave`,
+          priority: "high",
+          metadata: {
+            employeeId: employee._id.toString(),
+            employeeName: employee.fullName,
+            leaveRequestId: leaveRequest._id?.toString(),
+            leaveType: leaveRequest.type,
+            days: leaveRequest.days,
+            startDate: leaveRequest.startDate,
+            endDate: leaveRequest.endDate,
+            reason: leaveRequest.reason,
+            event: "leave_requested",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Leave request notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating leave request notification:", error);
+      throw new Error(
+        `Failed to create leave request notification: ${error.message}`,
+      );
+    }
+  }
+
+  // ============ DASHBOARD & ANALYTICS NOTIFICATIONS ============
+
+  /**
+   * Notify when monthly report is ready
+   */
+  static async notifyMonthlyReportReady(
+    companyId: string | mongoose.Types.ObjectId,
+    userId: string | mongoose.Types.ObjectId,
+    reportData: any,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Monthly Report Ready 📊",
+        `Your ${reportData.month} ${reportData.year} report is ready. Deals: ${reportData.totalDeals || 0}, Revenue: ${reportData.revenue || 0}`,
+        "info",
+        {
+          actionUrl: `/dashboard/reports/monthly`,
+          metadata: {
+            companyId: companyId.toString(),
+            month: reportData.month,
+            year: reportData.year,
+            totalDeals: reportData.totalDeals,
+            wonDeals: reportData.wonDeals,
+            revenue: reportData.revenue,
+            conversionRate: reportData.conversionRate,
+            reportUrl: reportData.reportUrl,
+            event: "monthly_report_ready",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Monthly report notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating monthly report notification:", error);
+      throw new Error(
+        `Failed to create monthly report notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when milestone is achieved
+   */
+  static async notifyMilestoneAchieved(
+    milestone: string,
+    value: number,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Milestone Achieved! 🎯",
+        `Congratulations! You've reached ${milestone}: ${value.toLocaleString()}`,
+        "success",
+        {
+          metadata: {
+            milestone,
+            value,
+            achievedAt: new Date().toISOString(),
+            event: "milestone_achieved",
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Milestone achievement notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating milestone achievement notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create milestone achievement notification: ${error.message}`,
+      );
+    }
+  }
+
   /**
    * Clear all notifications for a user
    */

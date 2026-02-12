@@ -7,7 +7,8 @@ import {
   Avatar,
   useTheme,
   useMediaQuery,
-  alpha
+  alpha,
+  Tooltip // Add this import
 } from '@mui/material'
 import {
   ShoppingBag as ProductsIcon,
@@ -71,6 +72,20 @@ const StatsCards: React.FC<StatsCardsProps> = ({
   const actualSales = calculateActualSales();
   const actualRevenue = calculateActualRevenue();
 
+  // Format large numbers with K/L/Cr suffixes
+  const formatCompactNumber = (num: number) => {
+    if (num >= 10000000) {
+      return `₹${(num / 10000000).toFixed(1)}Cr`;
+    }
+    if (num >= 100000) {
+      return `₹${(num / 100000).toFixed(1)}L`;
+    }
+    if (num >= 1000) {
+      return `₹${(num / 1000).toFixed(1)}K`;
+    }
+    return `₹${num}`;
+  };
+
   const statCards = [
     {
       title: 'Products',
@@ -102,7 +117,8 @@ const StatsCards: React.FC<StatsCardsProps> = ({
     },
     {
       title: 'Revenue',
-      value: `₹${actualRevenue.toLocaleString()}`,
+      value: formatCompactNumber(actualRevenue), // Apply compact formatting
+      fullValue: `₹${actualRevenue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, // Full value for tooltip
       icon: <RevenueIcon />,
       color: '#ea4335',
       bgColor: darkMode ? alpha('#ea4335', 0.15) : alpha('#ea4335', 0.08),
@@ -293,25 +309,54 @@ const StatsCards: React.FC<StatsCardsProps> = ({
               {card.title}
             </Typography>
             
-            {/* Value */}
-            <Typography 
-              variant="h5" 
-              component="div" 
-              fontWeight={600}
-              sx={{ 
-                fontSize: { 
-                  xs: '1.1rem', 
-                  sm: '1.25rem', 
-                  md: '1.5rem' 
-                },
-                lineHeight: 1.1,
-                color: darkMode ? '#e8eaed' : '#202124',
-                mb: 1,
-                letterSpacing: '-0.5px'
-              }}
-            >
-              {card.value}
-            </Typography>
+            {/* Value - Add Tooltip for Revenue */}
+            {card.title === 'Revenue' ? (
+              <Tooltip title={card.fullValue || `₹${actualRevenue.toLocaleString('en-IN')}`} arrow>
+                <Typography 
+                  variant="h5" 
+                  component="div" 
+                  fontWeight={600}
+                  sx={{ 
+                    fontSize: { 
+                      xs: '1.1rem', 
+                      sm: '1.25rem', 
+                      md: '1.5rem' 
+                    },
+                    lineHeight: 1.1,
+                    color: darkMode ? '#e8eaed' : '#202124',
+                    mb: 1,
+                    letterSpacing: '-0.5px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {card.value}
+                </Typography>
+              </Tooltip>
+            ) : (
+              <Typography 
+                variant="h5" 
+                component="div" 
+                fontWeight={600}
+                sx={{ 
+                  fontSize: { 
+                    xs: '1.1rem', 
+                    sm: '1.25rem', 
+                    md: '1.5rem' 
+                  },
+                  lineHeight: 1.1,
+                  color: darkMode ? '#e8eaed' : '#202124',
+                  mb: 1,
+                  letterSpacing: '-0.5px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {card.title === 'Total Sales' ? card.value : card.value}
+              </Typography>
+            )}
             
             {/* Status Messages */}
             <Box sx={{ mt: 'auto', minHeight: 20 }}>
