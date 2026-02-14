@@ -9,21 +9,24 @@ export interface IAccount extends Document {
   
   // Basic Info
   name: string;
-  legalName?: string;
-  taxId?: string;
-  registrationNumber?: string;
+  email?: string;
+  phone?: string;
+  fax?: string;
+  website?: string;
   
   // Type & Industry
   type: 'customer' | 'partner' | 'vendor' | 'competitor' | 'other';
   industry?: string;
-  size?: string;
+  subIndustry?: string;
   
-  // Contact Info
-  email?: string;
-  phone?: string;
-  website?: string;
+  // Size & Financials
+  employeeCount?: string;
+  annualRevenue?: number;
+  fiscalYearEnd?: string;
+  tickerSymbol?: string;
+  ownership?: 'public' | 'private' | 'nonprofit' | 'government';
   
-  // Addresses
+  // Address
   billingAddress: {
     street?: string;
     city?: string;
@@ -31,6 +34,7 @@ export interface IAccount extends Document {
     country?: string;
     zipCode?: string;
   };
+  
   shippingAddress: {
     street?: string;
     city?: string;
@@ -38,50 +42,47 @@ export interface IAccount extends Document {
     country?: string;
     zipCode?: string;
   };
-  sameAsBilling: boolean;
   
-  // Social
+  // Social Media
   linkedin?: string;
   twitter?: string;
   facebook?: string;
+  instagram?: string;
   
-  // Financial
-  annualRevenue?: number;
-  employeeCount?: number;
-  foundedYear?: number;
-  creditLimit?: number;
-  paymentTerms?: number; // Days
+  // Parent Account
+  parentAccountId?: mongoose.Types.ObjectId;
+  parentAccountName?: string;
   
-  // Status
-  status: 'active' | 'inactive' | 'lead' | 'prospect' | 'churned';
-  rating: 'hot' | 'warm' | 'cold';
-  
-  // Relationships
+  // Key Contacts
   primaryContactId?: mongoose.Types.ObjectId;
   primaryContactName?: string;
+  
+  // Account Score & Tier
+  accountScore: number; // 0-100
+  tier: 'platinum' | 'gold' | 'silver' | 'bronze';
+  
+  // Assignment
   ownerName?: string;
   
-  // Statistics
-  stats: {
-    totalDeals: number;
-    wonDeals: number;
-    lostDeals: number;
-    totalDealValue: number;
-    averageDealSize: number;
-    lastDealDate?: Date;
-    totalContacts: number;
-    totalOpenDeals: number;
-    totalOrders: number;
-    totalRevenue: number;
-  };
+  // Activity Tracking
+  lastActivityAt?: Date;
+  lastDealAt?: Date;
+  lastContactedAt?: Date;
+  
+  // Financials
+  lifetimeValue?: number;
+  outstandingBalance?: number;
+  creditLimit?: number;
+  paymentTerms?: string;
   
   // Metadata
+  description?: string;
+  notes?: string;
   tags: string[];
   customFields: Map<string, any>;
   
-  // Activity
-  lastActivityAt?: Date;
-  nextActivityDate?: Date;
+  // Status
+  isActive: boolean;
   
   // Audit
   createdBy: mongoose.Types.ObjectId;
@@ -102,6 +103,7 @@ export interface IAccount extends Document {
   
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }
 
 const AccountSchema = new Schema<IAccount>({
@@ -114,13 +116,13 @@ const AccountSchema = new Schema<IAccount>({
   },
   userId: {
     type: Schema.Types.ObjectId,
-    ref: 'User', // References your EXISTING User model
+    ref: 'User',
     required: [true, 'User ID is required'],
     index: true
   },
   ownerId: {
     type: Schema.Types.ObjectId,
-    ref: 'User', // References your EXISTING User model
+    ref: 'User',
     index: true,
     sparse: true
   },
@@ -132,19 +134,23 @@ const AccountSchema = new Schema<IAccount>({
     trim: true,
     index: true
   },
-  legalName: {
+  email: {
+    type: String,
+    lowercase: true,
+    trim: true,
+    sparse: true
+  },
+  phone: {
     type: String,
     trim: true
   },
-  taxId: {
+  fax: {
     type: String,
-    trim: true,
-    sparse: true
+    trim: true
   },
-  registrationNumber: {
+  website: {
     type: String,
-    trim: true,
-    sparse: true
+    trim: true
   },
   
   // Type & Industry
@@ -156,93 +162,85 @@ const AccountSchema = new Schema<IAccount>({
   },
   industry: {
     type: String,
-    trim: true
-  },
-  size: {
-    type: String,
-    trim: true
-  },
-  
-  // Contact Info
-  email: {
-    type: String,
-    lowercase: true,
     trim: true,
-    sparse: true
+    index: true
   },
-  phone: {
-    type: String,
-    trim: true
-  },
-  website: {
+  subIndustry: {
     type: String,
     trim: true
   },
   
-  // Addresses
-  billingAddress: {
-    street: { type: String, trim: true },
-    city: { type: String, trim: true },
-    state: { type: String, trim: true },
-    country: { type: String, trim: true, default: 'USA' },
-    zipCode: { type: String, trim: true }
+  // Size & Financials
+  employeeCount: {
+    type: String,
+    trim: true
   },
-  shippingAddress: {
-    street: { type: String, trim: true },
-    city: { type: String, trim: true },
-    state: { type: String, trim: true },
-    country: { type: String, trim: true, default: 'USA' },
-    zipCode: { type: String, trim: true }
-  },
-  sameAsBilling: {
-    type: Boolean,
-    default: false
-  },
-  
-  // Social
-  linkedin: { type: String, trim: true },
-  twitter: { type: String, trim: true },
-  facebook: { type: String, trim: true },
-  
-  // Financial
   annualRevenue: {
     type: Number,
     min: 0
   },
-  employeeCount: {
-    type: Number,
-    min: 0
+  fiscalYearEnd: {
+    type: String,
+    trim: true
   },
-  foundedYear: {
-    type: Number,
-    min: 1800,
-    max: new Date().getFullYear()
+  tickerSymbol: {
+    type: String,
+    trim: true,
+    uppercase: true
   },
-  creditLimit: {
-    type: Number,
-    min: 0,
-    default: 0
-  },
-  paymentTerms: {
-    type: Number,
-    min: 0,
-    default: 30
+  ownership: {
+    type: String,
+    enum: ['public', 'private', 'nonprofit', 'government']
   },
   
-  // Status
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'lead', 'prospect', 'churned'],
-    default: 'active',
-    index: true
-  },
-  rating: {
-    type: String,
-    enum: ['hot', 'warm', 'cold'],
-    default: 'warm'
+  // Address
+  billingAddress: {
+    street: { type: String, trim: true },
+    city: { type: String, trim: true },
+    state: { type: String, trim: true },
+    country: { type: String, trim: true, default: 'India' },
+    zipCode: { type: String, trim: true }
   },
   
-  // Relationships
+  shippingAddress: {
+    street: { type: String, trim: true },
+    city: { type: String, trim: true },
+    state: { type: String, trim: true },
+    country: { type: String, trim: true, default: 'India' },
+    zipCode: { type: String, trim: true }
+  },
+  
+  // Social Media
+  linkedin: {
+    type: String,
+    trim: true
+  },
+  twitter: {
+    type: String,
+    trim: true
+  },
+  facebook: {
+    type: String,
+    trim: true
+  },
+  instagram: {
+    type: String,
+    trim: true
+  },
+  
+  // Parent Account
+  parentAccountId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Account',
+    index: true,
+    sparse: true
+  },
+  parentAccountName: {
+    type: String,
+    trim: true
+  },
+  
+  // Key Contacts
   primaryContactId: {
     type: Schema.Types.ObjectId,
     ref: 'Contact',
@@ -252,26 +250,59 @@ const AccountSchema = new Schema<IAccount>({
     type: String,
     trim: true
   },
+  
+  // Account Score & Tier
+  accountScore: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
+  tier: {
+    type: String,
+    enum: ['platinum', 'gold', 'silver', 'bronze'],
+    default: 'bronze',
+    index: true
+  },
+  
+  // Assignment
   ownerName: {
     type: String,
     trim: true
   },
   
-  // Statistics
-  stats: {
-    totalDeals: { type: Number, default: 0 },
-    wonDeals: { type: Number, default: 0 },
-    lostDeals: { type: Number, default: 0 },
-    totalDealValue: { type: Number, default: 0 },
-    averageDealSize: { type: Number, default: 0 },
-    lastDealDate: Date,
-    totalContacts: { type: Number, default: 0 },
-    totalOpenDeals: { type: Number, default: 0 },
-    totalOrders: { type: Number, default: 0 },
-    totalRevenue: { type: Number, default: 0 }
+  // Activity Tracking
+  lastActivityAt: Date,
+  lastDealAt: Date,
+  lastContactedAt: Date,
+  
+  // Financials
+  lifetimeValue: {
+    type: Number,
+    default: 0
+  },
+  outstandingBalance: {
+    type: Number,
+    default: 0
+  },
+  creditLimit: {
+    type: Number,
+    default: 0
+  },
+  paymentTerms: {
+    type: String,
+    trim: true
   },
   
   // Metadata
+  description: {
+    type: String,
+    trim: true
+  },
+  notes: {
+    type: String,
+    trim: true
+  },
   tags: [{
     type: String,
     trim: true
@@ -282,14 +313,17 @@ const AccountSchema = new Schema<IAccount>({
     default: {}
   },
   
-  // Activity
-  lastActivityAt: Date,
-  nextActivityDate: Date,
+  // Status
+  isActive: {
+    type: Boolean,
+    default: true,
+    index: true
+  },
   
   // Audit
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User', // References your EXISTING User model
+    ref: 'User',
     required: true
   },
   createdByName: {
@@ -315,14 +349,18 @@ const AccountSchema = new Schema<IAccount>({
     },
     userName: { 
       type: String, 
-      required: true 
+      required: true,
+      trim: true 
     },
     permissions: {
       read: { type: Boolean, default: true },
       write: { type: Boolean, default: false }
     },
     sharedAt: { type: Date, default: Date.now }
-  }]
+  }],
+  
+  // Soft delete
+  deletedAt: Date
 }, {
   timestamps: true,
   collection: 'accounts'
@@ -331,16 +369,9 @@ const AccountSchema = new Schema<IAccount>({
 // 🔐 CRITICAL SECURITY INDEXES
 AccountSchema.index({ companyId: 1, userId: 1 });
 AccountSchema.index({ companyId: 1, ownerId: 1 });
-AccountSchema.index({ companyId: 1, status: 1, type: 1 });
-AccountSchema.index({ companyId: 1, name: 1 }, { unique: true });
-
-// Pre-save middleware
-AccountSchema.pre('save', function(this: IAccount, next) {
-  // Copy billing to shipping if sameAsBilling is true
-  if (this.sameAsBilling && this.billingAddress) {
-    this.shippingAddress = { ...this.billingAddress };
-  }
-  next();
-});
+AccountSchema.index({ companyId: 1, name: 1 });
+AccountSchema.index({ companyId: 1, type: 1, tier: 1 });
+AccountSchema.index({ companyId: 1, industry: 1 });
+AccountSchema.index({ email: 1, companyId: 1 }, { unique: true, sparse: true });
 
 export default mongoose.models.Account || mongoose.model<IAccount>('Account', AccountSchema);

@@ -1,4 +1,4 @@
-// app/api/activities/route.ts
+// app/api/activitiess/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { verifyToken } from '@/lib/jwt';
