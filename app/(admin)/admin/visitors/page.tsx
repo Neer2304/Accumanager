@@ -11,7 +11,6 @@ import {
   CircularProgress,
   Button,
   Snackbar,
-  Grid,
   Paper,
   Chip,
   Avatar,
@@ -403,13 +402,13 @@ export default function AdminVisitorsPage() {
             <Skeleton variant="rectangular" width={100} height={36} sx={{ borderRadius: 2 }} />
           </Box>
         </Box>
-        <Grid container spacing={3}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
           {[1, 2, 3, 4].map(i => (
-            <Grid item xs={12} sm={6} md={3} key={i}>
+            <Box key={i} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 24px)', md: '1 1 calc(25% - 24px)' } }}>
               <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 3 }} />
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       </Container>
     )
   }
@@ -485,8 +484,8 @@ export default function AdminVisitorsPage() {
       </Box>
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 24px)', md: '1 1 calc(25% - 24px)' } }}>
           <Paper
             elevation={0}
             sx={{
@@ -517,9 +516,9 @@ export default function AdminVisitorsPage() {
               />
             </Box>
           </Paper>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 24px)', md: '1 1 calc(25% - 24px)' } }}>
           <Paper
             elevation={0}
             sx={{
@@ -551,9 +550,9 @@ export default function AdminVisitorsPage() {
               />
             </Box>
           </Paper>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 24px)', md: '1 1 calc(25% - 24px)' } }}>
           <Paper
             elevation={0}
             sx={{
@@ -584,9 +583,9 @@ export default function AdminVisitorsPage() {
               />
             </Box>
           </Paper>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 24px)', md: '1 1 calc(25% - 24px)' } }}>
           <Paper
             elevation={0}
             sx={{
@@ -622,8 +621,8 @@ export default function AdminVisitorsPage() {
               />
             </Box>
           </Paper>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* Filters */}
       <Paper
@@ -699,137 +698,141 @@ export default function AdminVisitorsPage() {
           {/* Overview Tab */}
           {selectedTab === 0 && stats && (
             <Fade in>
-              <Grid container spacing={3}>
-                <Grid item xs={12} lg={8}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      borderRadius: 2,
-                      border: `1px solid ${isDark ? '#3c4043' : '#dadce0'}`,
-                      height: 400
-                    }}
-                  >
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      Hourly Activity
-                    </Typography>
-                    <Box sx={{ height: 320 }}>
-                      <Line data={hourlyChartData} options={chartOptions} />
-                    </Box>
-                  </Paper>
-                </Grid>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                  <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.666% - 24px)' } }}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        borderRadius: 2,
+                        border: `1px solid ${isDark ? '#3c4043' : '#dadce0'}`,
+                        height: 400
+                      }}
+                    >
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        Hourly Activity
+                      </Typography>
+                      <Box sx={{ height: 320 }}>
+                        <Line data={hourlyChartData} options={chartOptions} />
+                      </Box>
+                    </Paper>
+                  </Box>
 
-                <Grid item xs={12} lg={4}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      borderRadius: 2,
-                      border: `1px solid ${isDark ? '#3c4043' : '#dadce0'}`,
-                      height: 400
-                    }}
-                  >
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      Device Distribution
-                    </Typography>
-                    <Box sx={{ height: 280 }}>
-                      <Doughnut 
-                        data={deviceChartData} 
-                        options={{
-                          cutout: '70%',
-                          plugins: {
-                            legend: {
-                              display: true,
-                              position: 'bottom',
-                              labels: { color: isDark ? '#e8eaed' : '#202124' }
+                  <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.333% - 24px)' } }}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        borderRadius: 2,
+                        border: `1px solid ${isDark ? '#3c4043' : '#dadce0'}`,
+                        height: 400
+                      }}
+                    >
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        Device Distribution
+                      </Typography>
+                      <Box sx={{ height: 280 }}>
+                        <Doughnut 
+                          data={deviceChartData} 
+                          options={{
+                            cutout: '70%',
+                            plugins: {
+                              legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: { color: isDark ? '#e8eaed' : '#202124' }
+                              }
                             }
-                          }
-                        }} 
-                      />
-                    </Box>
-                  </Paper>
-                </Grid>
+                          }} 
+                        />
+                      </Box>
+                    </Paper>
+                  </Box>
+                </Box>
 
-                <Grid item xs={12} md={6}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      borderRadius: 2,
-                      border: `1px solid ${isDark ? '#3c4043' : '#dadce0'}`,
-                    }}
-                  >
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      Top Countries
-                    </Typography>
-                    <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-                      {stats.byCountry.slice(0, 5).map((country, i) => (
-                        <Box
-                          key={i}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            py: 1.5,
-                            borderBottom: i < 4 ? `1px solid ${isDark ? '#3c4043' : '#dadce0'}` : 'none'
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Public sx={{ fontSize: 20, color: isDark ? '#9aa0a6' : '#5f6368' }} />
-                            <Typography>{country.country}</Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                  <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 24px)' } }}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        borderRadius: 2,
+                        border: `1px solid ${isDark ? '#3c4043' : '#dadce0'}`,
+                      }}
+                    >
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        Top Countries
+                      </Typography>
+                      <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                        {stats.byCountry.slice(0, 5).map((country, i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              py: 1.5,
+                              borderBottom: i < 4 ? `1px solid ${isDark ? '#3c4043' : '#dadce0'}` : 'none'
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Public sx={{ fontSize: 20, color: isDark ? '#9aa0a6' : '#5f6368' }} />
+                              <Typography>{country.country}</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Typography fontWeight="bold">{country.visitors}</Typography>
+                              <Chip
+                                size="small"
+                                label={`${((country.visitors / stats.totalVisitors) * 100).toFixed(1)}%`}
+                                sx={{ bgcolor: alpha('#4285F4', 0.1), color: '#4285F4' }}
+                              />
+                            </Box>
                           </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Typography fontWeight="bold">{country.visitors}</Typography>
+                        ))}
+                      </Box>
+                    </Paper>
+                  </Box>
+
+                  <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 24px)' } }}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        borderRadius: 2,
+                        border: `1px solid ${isDark ? '#3c4043' : '#dadce0'}`,
+                      }}
+                    >
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        Top Pages
+                      </Typography>
+                      <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                        {stats.topPages.slice(0, 5).map((page, i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              py: 1.5,
+                              borderBottom: i < 4 ? `1px solid ${isDark ? '#3c4043' : '#dadce0'}` : 'none'
+                            }}
+                          >
+                            <Typography noWrap sx={{ maxWidth: 250 }}>
+                              {page.url}
+                            </Typography>
                             <Chip
                               size="small"
-                              label={`${((country.visitors / stats.totalVisitors) * 100).toFixed(1)}%`}
+                              label={page.visits}
                               sx={{ bgcolor: alpha('#4285F4', 0.1), color: '#4285F4' }}
                             />
                           </Box>
-                        </Box>
-                      ))}
-                    </Box>
-                  </Paper>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      borderRadius: 2,
-                      border: `1px solid ${isDark ? '#3c4043' : '#dadce0'}`,
-                    }}
-                  >
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      Top Pages
-                    </Typography>
-                    <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-                      {stats.topPages.slice(0, 5).map((page, i) => (
-                        <Box
-                          key={i}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            py: 1.5,
-                            borderBottom: i < 4 ? `1px solid ${isDark ? '#3c4043' : '#dadce0'}` : 'none'
-                          }}
-                        >
-                          <Typography noWrap sx={{ maxWidth: 250 }}>
-                            {page.url}
-                          </Typography>
-                          <Chip
-                            size="small"
-                            label={page.visits}
-                            sx={{ bgcolor: alpha('#4285F4', 0.1), color: '#4285F4' }}
-                          />
-                        </Box>
-                      ))}
-                    </Box>
-                  </Paper>
-                </Grid>
-              </Grid>
+                        ))}
+                      </Box>
+                    </Paper>
+                  </Box>
+                </Box>
+              </Box>
             </Fade>
           )}
 
@@ -957,8 +960,8 @@ export default function AdminVisitorsPage() {
           {/* Devices Tab */}
           {selectedTab === 3 && stats && (
             <Fade in>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 24px)' } }}>
                   <Paper
                     elevation={0}
                     sx={{
@@ -985,8 +988,8 @@ export default function AdminVisitorsPage() {
                       />
                     </Box>
                   </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
+                </Box>
+                <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 24px)' } }}>
                   <Paper
                     elevation={0}
                     sx={{
@@ -1013,8 +1016,8 @@ export default function AdminVisitorsPage() {
                       />
                     </Box>
                   </Paper>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </Fade>
           )}
 
