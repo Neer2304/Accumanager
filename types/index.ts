@@ -1,5 +1,5 @@
 // types/index.ts
-
+import { VisitorsState } from "./visitor.types";
 // Auth Types
 export interface User {
   id: string;
@@ -222,6 +222,7 @@ export interface RootState {
   customers: CustomersState;
   billing: BillingState;
   attendance: AttendanceState;
+  visitors: VisitorsState; // Add this line
 }
 
 // Offline Storage Types

@@ -6,7 +6,7 @@ import productsSlice from './slices/productsSlice'
 import customersSlice from './slices/customersSlice'
 import billingSlice from './slices/billingSlice'
 import attendanceSlice from './slices/attendanceSlice'
-import { RootState } from '@/types'
+import visitorsSlice from './slices/visitorsSlice'
 
 export const store = configureStore({
   reducer: {
@@ -15,6 +15,7 @@ export const store = configureStore({
     customers: customersSlice,
     billing: billingSlice,
     attendance: attendanceSlice,
+    visitors: visitorsSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -24,6 +25,7 @@ export const store = configureStore({
     }),
 })
 
+export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 
 export const useAppDispatch = () => useDispatch<AppDispatch>()
