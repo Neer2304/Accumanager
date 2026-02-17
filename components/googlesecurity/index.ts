@@ -1,0 +1,10 @@
+// components/googlesecurity/index.ts
+export { default as GoogleSecuritySkeleton } from './GoogleSecuritySkeleton'
+export { default as GoogleSecurityHeader } from './GoogleSecurityHeader'
+export { default as GoogleSecurityStats } from './GoogleSecurityStats'
+export { default as GoogleSecurityFeatures } from './GoogleSecurityFeatures'
+export { default as GoogleSecurityCompliance } from './GoogleSecurityCompliance'
+export { default as GoogleSecurityCommitment } from './GoogleSecurityCommitment'
+export { default as GoogleSecurityFooter } from './GoogleSecurityFooter'
+export * from './types'
+export * from './icons'
