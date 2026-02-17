@@ -2,7 +2,7 @@
 'use client'
 
 import { Box, Typography, Button, Card, CardContent, Chip, alpha } from '@mui/material'
-import { Rocket, Palette, TrendingUp, People, AutoAwesome } from '@mui/icons-material'
+import { Rocket, Palette, TrendingUp, People, AutoAwesome, Construction } from '@mui/icons-material'
 import { useAdvanceThemeContext } from '@/contexts/AdvanceThemeContexts'
 
 interface Feature {
@@ -109,6 +109,49 @@ export default function AdvancePage() {
       transition: 'background-color 0.3s ease'
     }}>
       <Box sx={{ p: 3 }}>
+        {/* Under Development Banner */}
+        <Card
+          sx={{
+            mb: 4,
+            background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.15)} 0%, ${alpha(googleColors.yellow, 0.05)} 100%)`,
+            border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+            borderRadius: '16px',
+            backgroundColor: currentColors.card,
+            transition: 'all 0.3s ease',
+            boxShadow: mode === 'dark' 
+              ? '0 2px 4px rgba(0,0,0,0.4)' 
+              : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+          }}
+        >
+          <CardContent>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.2)} 0%, ${alpha(googleColors.yellow, 0.1)} 100%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+                }}
+              >
+                <Construction sx={{ fontSize: 28, color: googleColors.yellow }} />
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight={600} color={googleColors.yellow} gutterBottom>
+                  🚧 Under Development
+                </Typography>
+                <Typography variant="body1" color={currentColors.textSecondary}>
+                  This page and all its features are currently under development. 
+                  Some features may not be available yet. We're working hard to bring you an amazing experience!
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
         {/* Hero Section */}
         <Card
           sx={{
@@ -121,6 +164,7 @@ export default function AdvancePage() {
             boxShadow: mode === 'dark' 
               ? '0 2px 4px rgba(0,0,0,0.4)' 
               : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+            opacity: 0.7,
           }}
         >
           <CardContent>
@@ -135,6 +179,7 @@ export default function AdvancePage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   boxShadow: '0 2px 8px rgba(66,133,244,0.4)',
+                  opacity: 0.7,
                 }}
               >
                 <Rocket sx={{ fontSize: 32, color: 'white' }} />
@@ -163,6 +208,7 @@ export default function AdvancePage() {
             flexWrap: 'wrap',
             gap: 3,
             mb: 4,
+            opacity: 0.7,
           }}
         >
           {features.map((feature) => {
@@ -238,40 +284,29 @@ export default function AdvancePage() {
                       variant="contained"
                       fullWidth
                       href={feature.path}
-                      disabled={feature.status === 'soon'}
+                      disabled={true} // All buttons disabled
                       sx={{
-                        background: feature.status === 'soon' 
-                          ? currentColors.chipBackground
-                          : googleColors.blue,
-                        color: feature.status === 'soon' 
-                          ? currentColors.textSecondary 
-                          : 'white',
+                        background: currentColors.chipBackground,
+                        color: currentColors.textSecondary,
                         border: 'none',
                         borderRadius: '8px',
                         textTransform: 'none',
                         fontWeight: 500,
                         fontSize: '0.875rem',
                         padding: '8px 16px',
-                        boxShadow: feature.status === 'soon' 
-                          ? 'none' 
-                          : mode === 'dark'
-                            ? '0 2px 4px rgba(0,0,0,0.4)'
-                            : '0 1px 2px 0 rgba(66,133,244,0.3), 0 1px 3px 1px rgba(66,133,244,0.15)',
+                        boxShadow: 'none',
                         '&:hover': {
-                          background: feature.status === 'soon' 
-                            ? currentColors.chipBackground
-                            : '#3367D6', // Darker blue for hover
-                          boxShadow: feature.status === 'soon' 
-                            ? 'none' 
-                            : '0 2px 4px rgba(66,133,244,0.3)',
+                          background: currentColors.chipBackground,
+                          boxShadow: 'none',
                         },
                         '&:disabled': {
                           backgroundColor: currentColors.chipBackground,
                           color: currentColors.textSecondary,
+                          opacity: 0.8,
                         },
                       }}
                     >
-                      {feature.status === 'soon' ? 'Coming Soon' : 'Explore'}
+                      Under Development
                     </Button>
                   </CardContent>
                 </Card>
@@ -291,6 +326,7 @@ export default function AdvancePage() {
             boxShadow: mode === 'dark' 
               ? '0 2px 4px rgba(0,0,0,0.4)' 
               : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+            opacity: 0.7,
           }}
         >
           <CardContent>

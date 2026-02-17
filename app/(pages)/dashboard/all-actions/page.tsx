@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react'
+import React from "react";
 import {
   Box,
   Typography,
@@ -9,7 +9,7 @@ import {
   alpha,
   Breadcrumbs,
   Link as MuiLink,
-} from '@mui/material'
+} from "@mui/material";
 import {
   Home as HomeIcon,
   Search as SearchIcon,
@@ -38,145 +38,470 @@ import {
   PlayCircle,
   ContactSupport,
   Feedback,
-} from '@mui/icons-material'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+  RemoveCircleOutline,
+  PlaylistPlayOutlined,
+  Task,
+  PlayArrow,
+} from "@mui/icons-material";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // Import Google-themed components
-import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
-import { Chip } from '@/components/ui/Chip'
-import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { InfoIcon } from "@/components/common";
+import {
+  AddIcon,
+  AssessmentIcon,
+  AttachMoneyIcon,
+  CheckCircleIcon,
+  Inventory2Icon,
+  InventoryIcons,
+} from "@/assets/icons/InventoryIcons";
+import { InventoryIcon } from "@/components/inventory/InventoryIcons";
+import { ArchiveIcon, FolderIcon } from "lucide-react";
 
 // Custom icon for trending up
 const TrendingUpIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" />
   </svg>
-)
+);
 
 const AllActionsPage = () => {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
-  const darkMode = theme.palette.mode === 'dark'
-  const router = useRouter()
-  const [searchTerm, setSearchTerm] = React.useState('')
-  const [filterCategory, setFilterCategory] = React.useState('all')
-  const [showAllActions, setShowAllActions] = React.useState(false)
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
+  const darkMode = theme.palette.mode === "dark";
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [filterCategory, setFilterCategory] = React.useState("all");
+  const [showAllActions, setShowAllActions] = React.useState(false);
 
   // COMPACT ACTION CATEGORIES
   const actionCategories = [
     {
-      id: 'billing',
-      title: 'Billing',
-      color: '#1a73e8',
+      id: "billing",
+      title: "Billing",
+      color: "#1a73e8",
       icon: <InvoiceIcon fontSize="small" />,
       actions: [
-        { id: 'invoice-create', label: 'Create Invoice', icon: <InvoiceIcon />, href: '/billing/new' },
-        { id: 'invoice-view', label: 'All Invoices', icon: <BillIcon />, href: '/billing' },
-        { id: 'invoice-recurring', label: 'Recurring', icon: <TimelineIcon />, href: '/billing/recurring' },
-        { id: 'invoice-templates', label: 'Templates', icon: <NoteIcon />, href: '/billing/templates' }
-      ]
+        {
+          id: "invoice-create",
+          label: "Create Invoice",
+          icon: <InvoiceIcon />,
+          href: "/billing/new",
+        },
+        {
+          id: "invoice-view",
+          label: "All Invoices",
+          icon: <BillIcon />,
+          href: "/billing",
+        },
+        {
+          id: "invoice-recurring",
+          label: "Recurring",
+          icon: <TimelineIcon />,
+          href: "/billing/recurring",
+        },
+        {
+          id: "invoice-templates",
+          label: "Templates",
+          icon: <NoteIcon />,
+          href: "/billing/templates",
+        },
+      ],
     },
     {
-      id: 'products',
-      title: 'Products',
-      color: '#0d652d',
+      id: "products",
+      title: "Products",
+      color: "#0d652d",
       icon: <ProductIcon fontSize="small" />,
       actions: [
-        { id: 'product-add', label: 'Add Product', icon: <ProductIcon />, href: '/products/new' },
-        { id: 'product-manage', label: 'Manage', icon: <StoreIcon />, href: '/products' },
-        { id: 'product-categories', label: 'Categories', icon: <CategoryIcon />, href: '/products/categories' },
-        { id: 'stock-manage', label: 'Inventory', icon: <StockIcon />, href: '/inventory' }
-      ]
+        {
+          id: "product-add",
+          label: "Add Product",
+          icon: <ProductIcon />,
+          href: "/products/new",
+        },
+        {
+          id: "product-manage",
+          label: "Manage",
+          icon: <StoreIcon />,
+          href: "/products",
+        },
+        {
+          id: "product-categories",
+          label: "Categories",
+          icon: <CategoryIcon />,
+          href: "/products/categories",
+        },
+        {
+          id: "stock-manage",
+          label: "Inventory",
+          icon: <StockIcon />,
+          href: "/inventory",
+        },
+      ],
     },
     {
-      id: 'people',
-      title: 'People',
-      color: '#9334e6',
+      id: "people",
+      title: "People",
+      color: "#9334e6",
       icon: <People fontSize="small" />,
       actions: [
-        { id: 'customer-add', label: 'Add Customer', icon: <CustomerIcon />, href: '/customers/new' },
-        { id: 'customer-manage', label: 'Customers', icon: <People />, href: '/customers' },
-        { id: 'employee-add', label: 'Add Employee', icon: <EmployeeIcon />, href: '/employees/new' },
-        { id: 'employee-manage', label: 'Employees', icon: <People />, href: '/employees' }
-      ]
+        {
+          id: "customer-add",
+          label: "Add Customer",
+          icon: <CustomerIcon />,
+          href: "/customers/new",
+        },
+        {
+          id: "customer-manage",
+          label: "Customers",
+          icon: <People />,
+          href: "/customers",
+        },
+        {
+          id: "employee-add",
+          label: "Add Employee",
+          icon: <EmployeeIcon />,
+          href: "/employees/new",
+        },
+        {
+          id: "employee-manage",
+          label: "Employees",
+          icon: <People />,
+          href: "/employees",
+        },
+      ],
     },
     {
-      id: 'finance',
-      title: 'Finance',
-      color: '#e37400',
+      id: "finance",
+      title: "Finance",
+      color: "#e37400",
       icon: <PaymentIcon fontSize="small" />,
       actions: [
-        { id: 'payment-receive', label: 'Receive Payment', icon: <PaymentIcon />, href: '/payments/receive' },
-        { id: 'payment-history', label: 'History', icon: <TimelineIcon />, href: '/payments' },
-        { id: 'expense-track', label: 'Expenses', icon: <BankIcon />, href: '/expenses' },
-        { id: 'bank-accounts', label: 'Accounts', icon: <BankIcon />, href: '/accounts' }
-      ]
+        {
+          id: "payment-receive",
+          label: "Receive Payment",
+          icon: <PaymentIcon />,
+          href: "/payments/receive",
+        },
+        {
+          id: "payment-history",
+          label: "History",
+          icon: <TimelineIcon />,
+          href: "/payments",
+        },
+        {
+          id: "expense-track",
+          label: "Expenses",
+          icon: <BankIcon />,
+          href: "/expenses",
+        },
+        {
+          id: "bank-accounts",
+          label: "Accounts",
+          icon: <BankIcon />,
+          href: "/accounts",
+        },
+      ],
     },
     {
-      id: 'reports',
-      title: 'Reports',
-      color: '#1a73e8',
+      id: "reports",
+      title: "Reports",
+      color: "#1a73e8",
       icon: <AnalyticsIcon fontSize="small" />,
       actions: [
-        { id: 'sales-reports', label: 'Sales', icon: <AnalyticsIcon />, href: '/reports/sales' },
-        { id: 'revenue-reports', label: 'Revenue', icon: <TrendingUpIcon />, href: '/reports/revenue' },
-        { id: 'customer-reports', label: 'Customers', icon: <People />, href: '/reports/customers' },
-        { id: 'export-data', label: 'Export', icon: <ExportIcon />, href: '/reports/export' }
-      ]
+        {
+          id: "sales-reports",
+          label: "Sales",
+          icon: <AnalyticsIcon />,
+          href: "/reports/sales",
+        },
+        {
+          id: "revenue-reports",
+          label: "Revenue",
+          icon: <TrendingUpIcon />,
+          href: "/reports/revenue",
+        },
+        {
+          id: "customer-reports",
+          label: "Customers",
+          icon: <People />,
+          href: "/reports/customers",
+        },
+        {
+          id: "export-data",
+          label: "Export",
+          icon: <ExportIcon />,
+          href: "/reports/export",
+        },
+      ],
     },
     {
-      id: 'settings',
-      title: 'Settings',
-      color: '#5f6368',
+      id: "settings",
+      title: "Settings",
+      color: "#5f6368",
       icon: <SettingsIcon fontSize="small" />,
       actions: [
-        { id: 'general-settings', label: 'General', icon: <SettingsIcon />, href: '/settings' },
-        { id: 'theme-appearance', label: 'Theme', icon: <ThemeIcon />, href: '/settings/theme' },
-        { id: 'security', label: 'Security', icon: <SecurityIcon />, href: '/settings/security' },
-        { id: 'data-backup', label: 'Backup', icon: <BackupIcon />, href: '/settings/backup' }
-      ]
+        {
+          id: "general-settings",
+          label: "General",
+          icon: <SettingsIcon />,
+          href: "/settings",
+        },
+        {
+          id: "theme-appearance",
+          label: "Theme",
+          icon: <ThemeIcon />,
+          href: "/settings/theme",
+        },
+        {
+          id: "security",
+          label: "Security",
+          icon: <SecurityIcon />,
+          href: "/settings/security",
+        },
+        {
+          id: "data-backup",
+          label: "Backup",
+          icon: <BackupIcon />,
+          href: "/settings/backup",
+        },
+      ],
     },
     {
-      id: 'help',
-      title: 'Help',
-      color: '#d93025',
+      id: "help",
+      title: "Help",
+      color: "#d93025",
       icon: <HelpIcon fontSize="small" />,
       actions: [
-        { id: 'help-center', label: 'Help Center', icon: <HelpIcon />, href: '/help' },
-        { id: 'video-tutorials', label: 'Tutorials', icon: <PlayCircle />, href: '/help/tutorials' },
-        { id: 'contact-support', label: 'Support', icon: <ContactSupport />, href: '/help/support' },
-        { id: 'feedback', label: 'Feedback', icon: <Feedback />, href: '/help/feedback' }
-      ]
-    }
-  ]
+        {
+          id: "help-center",
+          label: "Help Center",
+          icon: <HelpIcon />,
+          href: "/help",
+        },
+        {
+          id: "video-tutorials",
+          label: "Tutorials",
+          icon: <PlayCircle />,
+          href: "/help/tutorials",
+        },
+        {
+          id: "contact-support",
+          label: "Support",
+          icon: <ContactSupport />,
+          href: "/help/support",
+        },
+        {
+          id: "feedback",
+          label: "Feedback",
+          icon: <Feedback />,
+          href: "/help/feedback",
+        },
+      ],
+    },
+    {
+      id: "materials",
+      title: "Materials",
+      color: "#0b8043",
+      icon: <Inventory2Icon />,
+      actions: [
+        {
+          id: "material-add",
+          label: "Add Material",
+          icon: <AddIcon />,
+          href: "/materials/new",
+        },
+        {
+          id: "material-use",
+          label: "Use Material",
+          icon: <RemoveCircleOutline />,
+          href: "/materials/use",
+        },
+        {
+          id: "material-all",
+          label: "All Materials",
+          icon: <Inventory2Icon />,
+          href: "/materials",
+        },
+        {
+          id: "material-report",
+          label: "Material Report",
+          icon: <AssessmentIcon />,
+          href: "/materials/report",
+        },
+      ],
+    },
+    {
+      id: "notes",
+      title: "Notes",
+      color: "#f9ab00", // Amber/Yellow
+      icon: <NoteIcon fontSize="small" />,
+      actions: [
+        {
+          id: "note-create",
+          label: "Create Note",
+          icon: <AddIcon />,
+          href: "/notes/new",
+        },
+        {
+          id: "note-all",
+          label: "All Notes",
+          icon: <NoteIcon />,
+          href: "/notes",
+        },
+        {
+          id: "note-categories",
+          label: "Categories",
+          icon: <CategoryIcon />,
+          href: "/notes/categories",
+        },
+        {
+          id: "note-archive",
+          label: "Archive",
+          icon: <ArchiveIcon />,
+          href: "/notes/archive",
+        },
+      ],
+    },
+    {
+      id: "projects",
+      title: "Projects",
+      color: "#9334e6", // Purple
+      icon: <FolderIcon fontSize="small" />,
+      actions: [
+        {
+          id: "project-create",
+          label: "Create Project",
+          icon: <AddIcon />,
+          href: "/projects/new",
+        },
+        {
+          id: "project-all",
+          label: "All Projects",
+          icon: <FolderIcon />,
+          href: "/projects",
+        },
+        {
+          id: "project-active",
+          label: "Active Projects",
+          icon: <PlayArrow />,
+          href: "/projects/active",
+        },
+        {
+          id: "project-completed",
+          label: "Completed",
+          icon: <CheckCircleIcon />,
+          href: "/projects/completed",
+        },
+      ],
+    },
+    {
+      id: "tasks",
+      title: "Tasks",
+      color: "#d93025", // Red
+      icon: <Task fontSize="small" />,
+      actions: [
+        {
+          id: "task-create",
+          label: "Create Task",
+          icon: <AddIcon />,
+          href: "/tasks/new",
+        },
+        {
+          id: "task-all",
+          label: "All Tasks",
+          icon: <Task />,
+          href: "/tasks",
+        },
+        {
+          id: "task-todo",
+          label: "To Do",
+          icon: <PlaylistPlayOutlined />,
+          href: "/tasks/todo",
+        },
+        {
+          id: "task-completed",
+          label: "Completed",
+          icon: <CheckCircleIcon />,
+          href: "/tasks/completed",
+        },
+      ],
+    },
+    {
+      id: "basics",
+      title: "Basics",
+      color: "#f9ab00",
+      icon: <SettingsIcon fontSize="small" />,
+      actions: [
+        {
+          id: "settings",
+          label: "Settings",
+          icon: <SettingsIcon />,
+          href: "/basics/settings",
+        },
+        {
+          id: "security",
+          label: "Security",
+          icon: <SecurityIcon />,
+          href: "/basics/security",
+        },
+        {
+          id: "about",
+          label: "About",
+          icon: <InfoIcon />,
+          href: "/basics/about",
+        },
+        {
+          id: "pricing",
+          label: "Pricing",
+          icon: <AttachMoneyIcon />,
+          href: "/basics/pricing",
+        },
+      ],
+    },
+  ];
 
   // Calculate total actions
-  const totalActions = actionCategories.reduce((total, cat) => total + cat.actions.length, 0)
+  const totalActions = actionCategories.reduce(
+    (total, cat) => total + cat.actions.length,
+    0,
+  );
 
   // Filter actions based on search and category
-  const filteredCategories = actionCategories.filter(category => {
-    if (filterCategory !== 'all' && category.id !== filterCategory) return false
-    
+  const filteredCategories = actionCategories.filter((category) => {
+    if (filterCategory !== "all" && category.id !== filterCategory)
+      return false;
+
     if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      const filteredActions = category.actions.filter(action =>
-        action.label.toLowerCase().includes(searchLower)
-      )
-      return filteredActions.length > 0
+      const searchLower = searchTerm.toLowerCase();
+      const filteredActions = category.actions.filter((action) =>
+        action.label.toLowerCase().includes(searchLower),
+      );
+      return filteredActions.length > 0;
     }
-    
-    return true
-  })
+
+    return true;
+  });
 
   // Limit displayed categories if not showing all
-  const displayedCategories = showAllActions 
-    ? filteredCategories 
-    : filteredCategories.slice(0, isMobile ? 2 : 4)
+  const displayedCategories = showAllActions
+    ? filteredCategories
+    : filteredCategories.slice(0, isMobile ? 2 : 4);
 
   return (
     <Box
@@ -196,10 +521,12 @@ const AllActionsPage = () => {
             : "linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)",
         }}
       >
-        <Box sx={{ 
-          maxWidth: 1200, 
-          margin: '0 auto' 
-        }}>
+        <Box
+          sx={{
+            maxWidth: 1200,
+            margin: "0 auto",
+          }}
+        >
           <Breadcrumbs
             sx={{
               mb: { xs: 2, sm: 3 },
@@ -234,7 +561,7 @@ const AllActionsPage = () => {
             </Typography>
           </Breadcrumbs>
 
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
+          <Box sx={{ textAlign: "center", mb: 3 }}>
             <Typography
               variant={isMobile ? "h5" : isTablet ? "h4" : "h3"}
               fontWeight={500}
@@ -263,25 +590,33 @@ const AllActionsPage = () => {
           </Box>
 
           {/* Stats */}
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            gap: 4,
-            flexWrap: 'wrap',
-          }}>
-            <Box sx={{ textAlign: 'center' }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              gap: 4,
+              flexWrap: "wrap",
+            }}
+          >
+            <Box sx={{ textAlign: "center" }}>
               <Typography variant="h4" fontWeight={700} color="#1a73e8">
                 {totalActions}
               </Typography>
-              <Typography variant="caption" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+              <Typography
+                variant="caption"
+                color={darkMode ? "#9aa0a6" : "#5f6368"}
+              >
                 Total Actions
               </Typography>
             </Box>
-            <Box sx={{ textAlign: 'center' }}>
+            <Box sx={{ textAlign: "center" }}>
               <Typography variant="h4" fontWeight={700} color="#0d652d">
                 {actionCategories.length}
               </Typography>
-              <Typography variant="caption" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+              <Typography
+                variant="caption"
+                color={darkMode ? "#9aa0a6" : "#5f6368"}
+              >
                 Categories
               </Typography>
             </Box>
@@ -290,11 +625,13 @@ const AllActionsPage = () => {
       </Box>
 
       {/* Main Content */}
-      <Box sx={{ 
-        maxWidth: 1200, 
-        margin: '0 auto', 
-        p: { xs: 2, sm: 3 } 
-      }}>
+      <Box
+        sx={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          p: { xs: 2, sm: 3 },
+        }}
+      >
         {/* Search and Filter */}
         <Card
           title="Find Actions"
@@ -302,12 +639,14 @@ const AllActionsPage = () => {
           hover
           sx={{ mb: 4 }}
         >
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: 2,
-            alignItems: { xs: 'stretch', sm: 'center' },
-          }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              gap: 2,
+              alignItems: { xs: "stretch", sm: "center" },
+            }}
+          >
             <Box sx={{ flex: 1 }}>
               <Input
                 placeholder="Search actions by name..."
@@ -318,29 +657,29 @@ const AllActionsPage = () => {
                 sx={{ flex: 1 }}
               />
             </Box>
-            
-            <Box sx={{ width: { xs: '100%', sm: 200 } }}>
+
+            <Box sx={{ width: { xs: "100%", sm: 200 } }}>
               <Select
                 size="small"
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
                 options={[
-                  { value: 'all', label: 'All Categories' },
-                  ...actionCategories.map(cat => ({
+                  { value: "all", label: "All Categories" },
+                  ...actionCategories.map((cat) => ({
                     value: cat.id,
                     label: cat.title,
-                    icon: cat.icon
-                  }))
+                    icon: cat.icon,
+                  })),
                 ]}
               />
             </Box>
-            
-            {(searchTerm || filterCategory !== 'all') && (
+
+            {(searchTerm || filterCategory !== "all") && (
               <Button
                 variant="text"
                 onClick={() => {
-                  setSearchTerm('')
-                  setFilterCategory('all')
+                  setSearchTerm("");
+                  setFilterCategory("all");
                 }}
                 size="small"
               >
@@ -355,59 +694,74 @@ const AllActionsPage = () => {
           <Card
             title="No Results Found"
             hover={false}
-            sx={{ 
-              textAlign: 'center', 
+            sx={{
+              textAlign: "center",
               p: 6,
-              bgcolor: darkMode ? '#303134' : '#f8f9fa'
+              bgcolor: darkMode ? "#303134" : "#f8f9fa",
             }}
           >
-            <Typography variant="h6" gutterBottom sx={{ color: darkMode ? "#e8eaed" : "#202124" }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{ color: darkMode ? "#e8eaed" : "#202124" }}
+            >
               No actions found
             </Typography>
-            <Typography variant="body2" color={darkMode ? "#9aa0a6" : "#5f6368"} sx={{ mb: 3 }}>
+            <Typography
+              variant="body2"
+              color={darkMode ? "#9aa0a6" : "#5f6368"}
+              sx={{ mb: 3 }}
+            >
               Try adjusting your search or filter criteria
             </Typography>
             <Button
               variant="outlined"
               onClick={() => {
-                setSearchTerm('')
-                setFilterCategory('all')
+                setSearchTerm("");
+                setFilterCategory("all");
               }}
             >
               Clear All Filters
             </Button>
           </Card>
         ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {displayedCategories.map((category) => (
               <Card key={category.id} sx={{ p: 2.5 }}>
                 {/* Category Header */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1.5,
-                  mb: 2.5 
-                }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    mb: 2.5,
+                  }}
+                >
                   <Box
                     sx={{
                       width: 32,
                       height: 32,
-                      borderRadius: '8px',
+                      borderRadius: "8px",
                       bgcolor: alpha(category.color, 0.1),
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    <Box sx={{ color: category.color }}>
-                      {category.icon}
-                    </Box>
+                    <Box sx={{ color: category.color }}>{category.icon}</Box>
                   </Box>
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600} sx={{ fontSize: '0.95rem' }}>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight={600}
+                      sx={{ fontSize: "0.95rem" }}
+                    >
                       {category.title}
                     </Typography>
-                    <Typography variant="caption" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+                    <Typography
+                      variant="caption"
+                      color={darkMode ? "#9aa0a6" : "#5f6368"}
+                    >
                       {category.actions.length} actions
                     </Typography>
                   </Box>
@@ -417,7 +771,7 @@ const AllActionsPage = () => {
                     sx={{
                       bgcolor: alpha(category.color, 0.1),
                       color: category.color,
-                      fontSize: '0.7rem',
+                      fontSize: "0.7rem",
                       height: 22,
                       px: 1,
                     }}
@@ -427,21 +781,21 @@ const AllActionsPage = () => {
                 {/* Actions Grid */}
                 <Box
                   sx={{
-                    display: 'grid',
+                    display: "grid",
                     gridTemplateColumns: {
-                      xs: '1fr',
-                      sm: 'repeat(2, 1fr)',
-                      md: 'repeat(3, 1fr)',
-                      lg: 'repeat(4, 1fr)'
+                      xs: "1fr",
+                      sm: "repeat(2, 1fr)",
+                      md: "repeat(3, 1fr)",
+                      lg: "repeat(4, 1fr)",
                     },
-                    gap: 1.5
+                    gap: 1.5,
                   }}
                 >
                   {category.actions
-                    .filter(action => {
-                      if (!searchTerm) return true
-                      const searchLower = searchTerm.toLowerCase()
-                      return action.label.toLowerCase().includes(searchLower)
+                    .filter((action) => {
+                      if (!searchTerm) return true;
+                      const searchLower = searchTerm.toLowerCase();
+                      return action.label.toLowerCase().includes(searchLower);
                     })
                     .map((action) => (
                       <Card
@@ -449,64 +803,72 @@ const AllActionsPage = () => {
                         hover
                         sx={{
                           p: 1.5,
-                          height: '100%',
+                          height: "100%",
                           minHeight: 80,
-                          bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                          border: darkMode ? '1px solid #3c4043' : '1px solid #dadce0',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            transform: 'translateY(-2px)',
-                            boxShadow: darkMode 
-                              ? '0 4px 12px rgba(0,0,0,0.2)' 
-                              : '0 4px 12px rgba(0,0,0,0.08)',
+                          bgcolor: darkMode ? "#303134" : "#f8f9fa",
+                          border: darkMode
+                            ? "1px solid #3c4043"
+                            : "1px solid #dadce0",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            transform: "translateY(-2px)",
+                            boxShadow: darkMode
+                              ? "0 4px 12px rgba(0,0,0,0.2)"
+                              : "0 4px 12px rgba(0,0,0,0.08)",
                             borderColor: category.color,
-                            bgcolor: darkMode 
+                            bgcolor: darkMode
                               ? alpha(category.color, 0.08)
-                              : alpha(category.color, 0.04)
-                          }
+                              : alpha(category.color, 0.04),
+                          },
                         }}
                         onClick={() => router.push(action.href)}
                       >
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 1.5,
+                          }}
+                        >
                           <Box
                             sx={{
                               width: 36,
                               height: 36,
-                              borderRadius: '8px',
+                              borderRadius: "8px",
                               bgcolor: alpha(category.color, 0.1),
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
                             }}
                           >
                             <Box sx={{ color: category.color, fontSize: 18 }}>
                               {action.icon}
                             </Box>
                           </Box>
-                          
+
                           <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography 
-                              variant="body2" 
+                            <Typography
+                              variant="body2"
                               fontWeight={500}
-                              sx={{ 
-                                fontSize: '0.85rem',
+                              sx={{
+                                fontSize: "0.85rem",
                                 color: darkMode ? "#e8eaed" : "#202124",
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
                               }}
                             >
                               {action.label}
                             </Typography>
-                            <Typography 
-                              variant="caption" 
+                            <Typography
+                              variant="caption"
                               color={darkMode ? "#9aa0a6" : "#5f6368"}
-                              sx={{ 
-                                fontSize: '0.7rem',
-                                display: 'block',
-                                mt: 0.5
+                              sx={{
+                                fontSize: "0.7rem",
+                                display: "block",
+                                mt: 0.5,
                               }}
                             >
                               Click to open
@@ -520,68 +882,85 @@ const AllActionsPage = () => {
             ))}
 
             {/* Show More Button */}
-            {!showAllActions && filteredCategories.length > displayedCategories.length && (
-              <Box sx={{ textAlign: 'center' }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => setShowAllActions(true)}
-                  size="small"
-                  sx={{
-                    borderColor: darkMode ? '#5f6368' : '#dadce0',
-                    color: darkMode ? '#e8eaed' : '#202124',
-                  }}
-                >
-                  Show All Categories ({filteredCategories.length - displayedCategories.length} more)
-                </Button>
-              </Box>
-            )}
+            {!showAllActions &&
+              filteredCategories.length > displayedCategories.length && (
+                <Box sx={{ textAlign: "center" }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setShowAllActions(true)}
+                    size="small"
+                    sx={{
+                      borderColor: darkMode ? "#5f6368" : "#dadce0",
+                      color: darkMode ? "#e8eaed" : "#202124",
+                    }}
+                  >
+                    Show All Categories (
+                    {filteredCategories.length - displayedCategories.length}{" "}
+                    more)
+                  </Button>
+                </Box>
+              )}
 
             {/* Show Less Button */}
-            {showAllActions && filteredCategories.length > displayedCategories.length && (
-              <Box sx={{ textAlign: 'center' }}>
-                <Button
-                  variant="text"
-                  onClick={() => setShowAllActions(false)}
-                  size="small"
-                >
-                  Show Less
-                </Button>
-              </Box>
-            )}
+            {showAllActions &&
+              filteredCategories.length > displayedCategories.length && (
+                <Box sx={{ textAlign: "center" }}>
+                  <Button
+                    variant="text"
+                    onClick={() => setShowAllActions(false)}
+                    size="small"
+                  >
+                    Show Less
+                  </Button>
+                </Box>
+              )}
           </Box>
         )}
 
         {/* Help Section */}
-        <Card sx={{ 
-          mt: 4, 
-          p: 3,
-          bgcolor: darkMode ? '#0d3064' : '#e8f0fe',
-          border: 'none'
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: { xs: 'stretch', sm: 'center' },
-            gap: 3
-          }}>
+        <Card
+          sx={{
+            mt: 4,
+            p: 3,
+            bgcolor: darkMode ? "#0d3064" : "#e8f0fe",
+            border: "none",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "stretch", sm: "center" },
+              gap: 3,
+            }}
+          >
             <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: '#1a73e8' }}>
+              <Typography
+                variant="subtitle2"
+                fontWeight={600}
+                gutterBottom
+                sx={{ color: "#1a73e8" }}
+              >
                 Need Help?
               </Typography>
-              <Typography variant="body2" color={darkMode ? "#e8eaed" : "#202124"} sx={{ mb: 2, fontSize: '0.85rem' }}>
+              <Typography
+                variant="body2"
+                color={darkMode ? "#e8eaed" : "#202124"}
+                sx={{ mb: 2, fontSize: "0.85rem" }}
+              >
                 Can't find what you're looking for?
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+              <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
                 <Button
                   variant="contained"
                   component={Link}
                   href="/help"
                   startIcon={<HelpIcon />}
                   size="small"
-                  sx={{ 
-                    bgcolor: '#1a73e8',
-                    color: 'white',
-                    fontSize: '0.8rem'
+                  sx={{
+                    bgcolor: "#1a73e8",
+                    color: "white",
+                    fontSize: "0.8rem",
                   }}
                 >
                   Help Center
@@ -592,36 +971,44 @@ const AllActionsPage = () => {
                   href="/help/support"
                   startIcon={<ContactSupport />}
                   size="small"
-                  sx={{ 
-                    borderColor: darkMode ? '#8ab4f8' : '#1a73e8',
-                    color: darkMode ? '#8ab4f8' : '#1a73e8',
-                    fontSize: '0.8rem'
+                  sx={{
+                    borderColor: darkMode ? "#8ab4f8" : "#1a73e8",
+                    color: darkMode ? "#8ab4f8" : "#1a73e8",
+                    fontSize: "0.8rem",
                   }}
                 >
                   Support
                 </Button>
               </Box>
             </Box>
-            
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              gap: 3,
-              flexWrap: 'wrap'
-            }}>
-              <Box sx={{ textAlign: 'center' }}>
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 3,
+                flexWrap: "wrap",
+              }}
+            >
+              <Box sx={{ textAlign: "center" }}>
                 <Typography variant="h6" fontWeight={700} color="#1a73e8">
                   {totalActions}
                 </Typography>
-                <Typography variant="caption" color={darkMode ? "#8ab4f8" : "#1a73e8"}>
+                <Typography
+                  variant="caption"
+                  color={darkMode ? "#8ab4f8" : "#1a73e8"}
+                >
                   Total Actions
                 </Typography>
               </Box>
-              <Box sx={{ textAlign: 'center' }}>
+              <Box sx={{ textAlign: "center" }}>
                 <Typography variant="h6" fontWeight={700} color="#0d652d">
                   {actionCategories.length}
                 </Typography>
-                <Typography variant="caption" color={darkMode ? "#8ab4f8" : "#1a73e8"}>
+                <Typography
+                  variant="caption"
+                  color={darkMode ? "#8ab4f8" : "#1a73e8"}
+                >
                   Categories
                 </Typography>
               </Box>
@@ -630,7 +1017,7 @@ const AllActionsPage = () => {
         </Card>
       </Box>
     </Box>
-  )
-}
+  );
+};
 
-export default AllActionsPage
+export default AllActionsPage;

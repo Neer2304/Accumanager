@@ -24,6 +24,7 @@ import {
   InputLabel,
   TextField,
   InputAdornment,
+  alpha,
 } from '@mui/material'
 import {
   DirectionsCar,
@@ -50,6 +51,7 @@ import {
   Pending,
   Cancel,
   Error,
+  Construction,
 } from '@mui/icons-material'
 import { useAdvanceThemeContext } from '@/contexts/AdvanceThemeContexts'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -58,12 +60,53 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { format, parseISO } from 'date-fns'
 import { useFieldService } from '@/hooks/useFieldService'
 
+// Google colors
+const googleColors = {
+  blue: '#4285F4',
+  green: '#34A853',
+  yellow: '#FBBC04',
+  red: '#EA4335',
+  
+  light: {
+    background: '#FFFFFF',
+    surface: '#F8F9FA',
+    textPrimary: '#202124',
+    textSecondary: '#5F6368',
+    border: '#DADCE0',
+    card: '#FFFFFF',
+    chipBackground: '#F1F3F4',
+    header: '#FFFFFF',
+    sidebar: '#FFFFFF',
+    hover: '#F8F9FA',
+    active: '#E8F0FE',
+  },
+  
+  dark: {
+    background: '#202124',
+    surface: '#303134',
+    textPrimary: '#E8EAED',
+    textSecondary: '#9AA0A6',
+    border: '#3C4043',
+    card: '#303134',
+    chipBackground: '#3C4043',
+    header: '#303134',
+    sidebar: '#202124',
+    hover: '#3C4043',
+    active: '#5F6368',
+  }
+};
+
 export default function FieldServicePage() {
   const { currentScheme } = useAdvanceThemeContext()
+  const { mode } = useAdvanceThemeContext()
   const [viewMode, setViewMode] = useState('map')
   const [success, setSuccess] = useState<string | null>(null)
   const [technicianSelect, setTechnicianSelect] = useState('')
   const [jobSelect, setJobSelect] = useState('')
+
+  const currentColors = mode === 'dark' ? googleColors.dark : googleColors.light;
+  const primaryColor = googleColors.blue;
+  const buttonColor = mode === 'dark' ? googleColors.red : googleColors.blue;
 
   const {
     // Data
@@ -151,17 +194,17 @@ export default function FieldServicePage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return currentScheme.colors.buttons.success
+        return googleColors.green
       case 'in-progress':
-        return currentScheme.colors.buttons.warning
+        return googleColors.yellow
       case 'scheduled':
-        return currentScheme.colors.primary
+        return googleColors.blue
       case 'pending':
-        return currentScheme.colors.text.secondary
+        return currentColors.textSecondary
       case 'cancelled':
-        return currentScheme.colors.buttons.error
+        return googleColors.red
       default:
-        return currentScheme.colors.text.secondary
+        return currentColors.textSecondary
     }
   }
 
@@ -188,13 +231,13 @@ export default function FieldServicePage() {
     switch (priority) {
       case 'urgent':
       case 'high':
-        return currentScheme.colors.buttons.error
+        return googleColors.red
       case 'medium':
-        return currentScheme.colors.buttons.warning
+        return googleColors.yellow
       case 'low':
-        return currentScheme.colors.buttons.success
+        return googleColors.green
       default:
-        return currentScheme.colors.text.secondary
+        return currentColors.textSecondary
     }
   }
 
@@ -218,38 +261,38 @@ export default function FieldServicePage() {
   const statsCards = [
     { 
       label: 'Active Technicians', 
-      value: stats.activeTechnicians.toString(), 
+      value: stats?.activeTechnicians?.toString() || '0', 
       icon: <Person />, 
       status: `${availableTechnicians.length} available`,
-      color: currentScheme.colors.primary
+      color: googleColors.blue
     },
     { 
       label: 'Jobs Today', 
-      value: stats.todaysJobs.toString(), 
+      value: stats?.todaysJobs?.toString() || '0', 
       icon: <Assignment />, 
-      status: `${statusCounts.completed || 0} completed`,
-      color: currentScheme.colors.secondary
+      status: `${statusCounts?.completed || 0} completed`,
+      color: googleColors.green
     },
     { 
       label: 'Avg Response Time', 
-      value: stats.avgResponseTime, 
+      value: stats?.avgResponseTime || '0m', 
       icon: <Timer />, 
-      status: `${stats.completionRate.toFixed(1)}% completion rate`,
-      color: currentScheme.colors.buttons.warning
+      status: `${stats?.completionRate?.toFixed(1) || 0}% completion rate`,
+      color: googleColors.yellow
     },
     { 
       label: 'Customer Rating', 
-      value: `${stats.customerRating.toFixed(1)}/5`, 
+      value: `${stats?.customerRating?.toFixed(1) || 0}/5`, 
       icon: <Star />, 
-      status: stats.totalRevenue ? `₹${stats.totalRevenue.toLocaleString()}` : 'No revenue',
-      color: currentScheme.colors.buttons.success
+      status: stats?.totalRevenue ? `₹${stats.totalRevenue.toLocaleString()}` : 'No revenue',
+      color: googleColors.red
     },
   ]
 
   if (loading && !refreshing) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress sx={{ color: currentScheme.colors.primary }} />
+        <CircularProgress sx={{ color: primaryColor }} />
       </Box>
     )
   }
@@ -257,6 +300,49 @@ export default function FieldServicePage() {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box>
+        {/* Under Development Banner */}
+        <Card
+          sx={{
+            mb: 4,
+            background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.15)} 0%, ${alpha(googleColors.yellow, 0.05)} 100%)`,
+            border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+            borderRadius: '16px',
+            backgroundColor: currentColors.card,
+            transition: 'all 0.3s ease',
+            boxShadow: mode === 'dark' 
+              ? '0 2px 4px rgba(0,0,0,0.4)' 
+              : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+          }}
+        >
+          <CardContent>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.2)} 0%, ${alpha(googleColors.yellow, 0.1)} 100%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+                }}
+              >
+                <Construction sx={{ fontSize: 28, color: googleColors.yellow }} />
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight={600} color={googleColors.yellow} gutterBottom>
+                  🚧 Under Development
+                </Typography>
+                <Typography variant="body1" color={currentColors.textSecondary}>
+                  This page and all its features are currently under development. 
+                  Some features may not be available yet. We're working hard to bring you an amazing experience!
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
@@ -266,7 +352,7 @@ export default function FieldServicePage() {
                   width: 60,
                   height: 60,
                   borderRadius: 3,
-                  background: `linear-gradient(135deg, ${currentScheme.colors.primary} 0%, ${currentScheme.colors.secondary} 100%)`,
+                  background: `linear-gradient(135deg, ${googleColors.blue} 0%, ${googleColors.green} 100%)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -278,7 +364,7 @@ export default function FieldServicePage() {
                 <Typography variant="h4" fontWeight="bold">
                   🚗 Field Service
                 </Typography>
-                <Typography variant="body1" color={currentScheme.colors.text.secondary}>
+                <Typography variant="body1" color={currentColors.textSecondary}>
                   Technician dispatch, GPS tracking & job management
                 </Typography>
               </Box>
@@ -289,10 +375,14 @@ export default function FieldServicePage() {
                 variant="outlined"
                 startIcon={<Refresh />}
                 onClick={refreshData}
-                disabled={refreshing}
+                disabled={true}
                 sx={{
-                  borderColor: currentScheme.colors.components.border,
-                  color: currentScheme.colors.text.primary,
+                  border: `1px solid ${currentColors.border}`,
+                  color: buttonColor,
+                  '&:hover': {
+                    borderColor: buttonColor,
+                    backgroundColor: alpha(buttonColor, 0.04),
+                  }
                 }}
               >
                 {refreshing ? 'Refreshing...' : 'Refresh'}
@@ -300,10 +390,21 @@ export default function FieldServicePage() {
               <Button
                 variant="contained"
                 startIcon={<Add />}
+                disabled={true}
                 sx={{
-                  background: `linear-gradient(135deg, ${currentScheme.colors.primary} 0%, ${currentScheme.colors.secondary} 100%)`,
+                  background: buttonColor,
+                  color: 'white',
+                  '&:hover': {
+                    background: buttonColor,
+                    opacity: 0.8,
+                  },
+                  '&.Mui-disabled': {
+                    background: buttonColor,
+                    color: 'white',
+                    opacity: 0.5,
+                  }
                 }}
-                onClick={() => window.location.href = '/advance/field-service/new'}
+                onClick={() => {}}
               >
                 New Job
               </Button>
@@ -316,8 +417,8 @@ export default function FieldServicePage() {
               <Box key={index} sx={{ flex: '1 1 calc(25% - 16px)', minWidth: '200px' }}>
                 <Card
                   sx={{
-                    background: currentScheme.colors.components.card,
-                    border: `1px solid ${currentScheme.colors.components.border}`,
+                    background: currentColors.card,
+                    border: `1px solid ${currentColors.border}`,
                     height: '100%',
                   }}
                 >
@@ -327,7 +428,7 @@ export default function FieldServicePage() {
                         <Typography variant="h4" fontWeight="bold">
                           {stat.value}
                         </Typography>
-                        <Typography variant="body2" color={currentScheme.colors.text.secondary}>
+                        <Typography variant="body2" color={currentColors.textSecondary}>
                           {stat.label}
                         </Typography>
                       </Box>
@@ -357,7 +458,7 @@ export default function FieldServicePage() {
         </Box>
 
         {/* Controls */}
-        <Card sx={{ mb: 3, background: currentScheme.colors.components.card }}>
+        <Card sx={{ mb: 3, background: currentColors.card }}>
           <CardContent>
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, alignItems: 'center' }}>
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', flex: 1 }}>
@@ -365,11 +466,13 @@ export default function FieldServicePage() {
                   value={viewMode}
                   onChange={(e) => setViewMode(e.target.value)}
                   size="small"
+                  disabled
                   sx={{
-                    background: currentScheme.colors.components.input,
-                    borderColor: currentScheme.colors.components.border,
-                    color: currentScheme.colors.text.primary,
+                    background: currentColors.chipBackground,
+                    borderColor: currentColors.border,
+                    color: currentColors.textPrimary,
                     minWidth: 120,
+                    opacity: 0.7,
                   }}
                 >
                   <MenuItem value="map">Map View</MenuItem>
@@ -381,11 +484,13 @@ export default function FieldServicePage() {
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   size="small"
+                  disabled
                   sx={{
-                    background: currentScheme.colors.components.input,
-                    borderColor: currentScheme.colors.components.border,
-                    color: currentScheme.colors.text.primary,
+                    background: currentColors.chipBackground,
+                    borderColor: currentColors.border,
+                    color: currentColors.textPrimary,
                     minWidth: 120,
+                    opacity: 0.7,
                   }}
                 >
                   <MenuItem value="all">All Status</MenuItem>
@@ -400,11 +505,13 @@ export default function FieldServicePage() {
                   value={priorityFilter}
                   onChange={(e) => setPriorityFilter(e.target.value)}
                   size="small"
+                  disabled
                   sx={{
-                    background: currentScheme.colors.components.input,
-                    borderColor: currentScheme.colors.components.border,
-                    color: currentScheme.colors.text.primary,
+                    background: currentColors.chipBackground,
+                    borderColor: currentColors.border,
+                    color: currentColors.textPrimary,
                     minWidth: 120,
+                    opacity: 0.7,
                   }}
                 >
                   <MenuItem value="all">All Priority</MenuItem>
@@ -418,18 +525,20 @@ export default function FieldServicePage() {
                   label="Select Date"
                   value={dateFilter}
                   onChange={setDateFilter}
+                  disabled
                   slotProps={{
                     textField: {
                       size: 'small',
                       sx: {
-                        background: currentScheme.colors.components.input,
+                        background: currentColors.chipBackground,
                         '& .MuiOutlinedInput-root': {
-                          color: currentScheme.colors.text.primary,
+                          color: currentColors.textPrimary,
                           '& fieldset': {
-                            borderColor: currentScheme.colors.components.border,
+                            borderColor: currentColors.border,
                           },
                         },
                         minWidth: 150,
+                        opacity: 0.7,
                       }
                     }
                   }}
@@ -440,15 +549,17 @@ export default function FieldServicePage() {
                   placeholder="Search jobs..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  disabled
                   sx={{
-                    background: currentScheme.colors.components.input,
+                    background: currentColors.chipBackground,
                     '& .MuiOutlinedInput-root': {
-                      color: currentScheme.colors.text.primary,
+                      color: currentColors.textPrimary,
                       '& fieldset': {
-                        borderColor: currentScheme.colors.components.border,
+                        borderColor: currentColors.border,
                       },
                     },
                     minWidth: 150,
+                    opacity: 0.7,
                   }}
                   InputProps={{
                     startAdornment: (
@@ -464,9 +575,14 @@ export default function FieldServicePage() {
                 <Button
                   variant="outlined"
                   startIcon={<Map />}
+                  disabled
                   sx={{
-                    borderColor: currentScheme.colors.components.border,
-                    color: currentScheme.colors.text.primary,
+                    borderColor: currentColors.border,
+                    color: buttonColor,
+                    '&:hover': {
+                      borderColor: buttonColor,
+                      backgroundColor: alpha(buttonColor, 0.04),
+                    }
                   }}
                 >
                   Live Map
@@ -474,9 +590,14 @@ export default function FieldServicePage() {
                 <Button
                   variant="outlined"
                   startIcon={<FilterList />}
+                  disabled
                   sx={{
-                    borderColor: currentScheme.colors.components.border,
-                    color: currentScheme.colors.text.primary,
+                    borderColor: currentColors.border,
+                    color: buttonColor,
+                    '&:hover': {
+                      borderColor: buttonColor,
+                      backgroundColor: alpha(buttonColor, 0.04),
+                    }
                   }}
                 >
                   Filters
@@ -487,13 +608,13 @@ export default function FieldServicePage() {
         </Card>
 
         {/* Main Content using flexbox */}
-        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', opacity: 0.8 }}>
           {/* Left Column - Technicians */}
           <Box sx={{ flex: 1, minWidth: '300px' }}>
             <Card
               sx={{
-                background: currentScheme.colors.components.card,
-                border: `1px solid ${currentScheme.colors.components.border}`,
+                background: currentColors.card,
+                border: `1px solid ${currentColors.border}`,
                 mb: 3,
               }}
             >
@@ -507,8 +628,8 @@ export default function FieldServicePage() {
                     size="small"
                     icon={<GpsFixed />}
                     sx={{
-                      background: `${currentScheme.colors.primary}20`,
-                      color: currentScheme.colors.primary,
+                      background: `${googleColors.blue}20`,
+                      color: googleColors.blue,
                     }}
                   />
                 </Box>
@@ -521,8 +642,8 @@ export default function FieldServicePage() {
                         key={tech._id}
                         sx={{
                           p: 2,
-                          background: currentScheme.colors.background,
-                          border: `1px solid ${currentScheme.colors.components.border}`,
+                          background: currentColors.background,
+                          border: `1px solid ${currentColors.border}`,
                           borderRadius: 2,
                         }}
                       >
@@ -538,7 +659,7 @@ export default function FieldServicePage() {
                               overlap="circular"
                               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                             >
-                              <Avatar sx={{ bgcolor: currentScheme.colors.primary }}>
+                              <Avatar sx={{ bgcolor: googleColors.blue }}>
                                 {tech.name?.split(' ').map((n: string) => n[0]).join('') || '?'}
                               </Avatar>
                             </Badge>
@@ -546,7 +667,7 @@ export default function FieldServicePage() {
                               <Typography variant="body1" fontWeight="medium">
                                 {tech.name || 'Unknown Technician'}
                               </Typography>
-                              <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                              <Typography variant="caption" color={currentColors.textSecondary}>
                                 {tech.specialization?.slice(0, 2).join(', ') || tech.department || 'General'}
                               </Typography>
                             </Box>
@@ -557,7 +678,7 @@ export default function FieldServicePage() {
                               <Typography variant="h6" fontWeight="bold">
                                 {tech.totalJobsCompleted || 0}
                               </Typography>
-                              <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                              <Typography variant="caption" color={currentColors.textSecondary}>
                                 Jobs
                               </Typography>
                             </Box>
@@ -566,12 +687,12 @@ export default function FieldServicePage() {
                               <Typography variant="h6" fontWeight="bold">
                                 {tech.rating?.toFixed(1) || 'N/A'}
                               </Typography>
-                              <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                              <Typography variant="caption" color={currentColors.textSecondary}>
                                 Rating
                               </Typography>
                             </Box>
                             
-                            <IconButton size="small">
+                            <IconButton size="small" disabled>
                               <MoreVert />
                             </IconButton>
                           </Box>
@@ -580,7 +701,7 @@ export default function FieldServicePage() {
                         {/* Status Bar */}
                         <Box sx={{ mt: 2 }}>
                           <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
-                            <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                            <Typography variant="caption" color={currentColors.textSecondary}>
                               Status
                             </Typography>
                             <Chip
@@ -588,19 +709,19 @@ export default function FieldServicePage() {
                               size="small"
                               sx={{
                                 background: tech.status === 'available'
-                                  ? `${currentScheme.colors.buttons.success}20`
+                                  ? `${googleColors.green}20`
                                   : tech.status === 'busy'
-                                  ? `${currentScheme.colors.buttons.warning}20`
+                                  ? `${googleColors.yellow}20`
                                   : tech.status === 'on-break'
-                                  ? `${currentScheme.colors.text.secondary}20`
-                                  : `${currentScheme.colors.buttons.error}20`,
+                                  ? `${currentColors.textSecondary}20`
+                                  : `${googleColors.red}20`,
                                 color: tech.status === 'available'
-                                  ? currentScheme.colors.buttons.success
+                                  ? googleColors.green
                                   : tech.status === 'busy'
-                                  ? currentScheme.colors.buttons.warning
+                                  ? googleColors.yellow
                                   : tech.status === 'on-break'
-                                  ? currentScheme.colors.text.secondary
-                                  : currentScheme.colors.buttons.error,
+                                  ? currentColors.textSecondary
+                                  : googleColors.red,
                               }}
                             />
                           </Box>
@@ -614,15 +735,15 @@ export default function FieldServicePage() {
                             sx={{
                               height: 6,
                               borderRadius: 3,
-                              background: currentScheme.colors.components.border,
+                              background: currentColors.border,
                               '& .MuiLinearProgress-bar': {
                                 background: tech.status === 'available'
-                                  ? currentScheme.colors.buttons.success
+                                  ? googleColors.green
                                   : tech.status === 'busy'
-                                  ? currentScheme.colors.buttons.warning
+                                  ? googleColors.yellow
                                   : tech.status === 'on-break'
-                                  ? currentScheme.colors.text.secondary
-                                  : currentScheme.colors.buttons.error,
+                                  ? currentColors.textSecondary
+                                  : googleColors.red,
                               },
                             }}
                           />
@@ -630,7 +751,7 @@ export default function FieldServicePage() {
                       </Paper>
                     ))
                   ) : (
-                    <Typography color={currentScheme.colors.text.secondary} textAlign="center" py={4}>
+                    <Typography color={currentColors.textSecondary} textAlign="center" py={4}>
                       No technicians available
                     </Typography>
                   )}
@@ -643,8 +764,8 @@ export default function FieldServicePage() {
           <Box sx={{ flex: 1, minWidth: '300px' }}>
             <Card
               sx={{
-                background: currentScheme.colors.components.card,
-                border: `1px solid ${currentScheme.colors.components.border}`,
+                background: currentColors.card,
+                border: `1px solid ${currentColors.border}`,
                 mb: 3,
               }}
             >
@@ -653,7 +774,7 @@ export default function FieldServicePage() {
                   <Typography variant="h6" fontWeight="bold">
                     Job Queue
                   </Typography>
-                  <Typography variant="body2" color={currentScheme.colors.text.secondary}>
+                  <Typography variant="body2" color={currentColors.textSecondary}>
                     {filteredVisitsArray.length} jobs filtered
                   </Typography>
                 </Box>
@@ -666,22 +787,21 @@ export default function FieldServicePage() {
                         key={job._id}
                         sx={{
                           p: 2,
-                          background: currentScheme.colors.background,
-                          border: `1px solid ${currentScheme.colors.components.border}`,
+                          background: currentColors.background,
+                          border: `1px solid ${currentColors.border}`,
                           borderRadius: 2,
-                          cursor: 'pointer',
+                          cursor: 'default',
                           '&:hover': {
-                            borderColor: currentScheme.colors.primary,
+                            borderColor: googleColors.blue,
                           },
                         }}
-                        onClick={() => window.location.href = `/advance/field-service/${job._id}`}
                       >
                         <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
                           <Box>
                             <Typography variant="body1" fontWeight="bold">
                               {job.title}
                             </Typography>
-                            <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                            <Typography variant="caption" color={currentColors.textSecondary}>
                               {job.customerName}
                             </Typography>
                           </Box>
@@ -708,19 +828,19 @@ export default function FieldServicePage() {
                                 color: getStatusColor(job.status),
                               }}
                             />
-                            <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                            <Typography variant="caption" color={currentColors.textSecondary}>
                               {format(parseISO(job.scheduledDate), 'MMM d, h:mm a')}
                             </Typography>
                           </Box>
                           
-                          <IconButton size="small">
+                          <IconButton size="small" disabled>
                             <NavigateNext />
                           </IconButton>
                         </Box>
                       </Paper>
                     ))
                   ) : (
-                    <Typography color={currentScheme.colors.text.secondary} textAlign="center" py={4}>
+                    <Typography color={currentColors.textSecondary} textAlign="center" py={4}>
                       No jobs found
                     </Typography>
                   )}
@@ -729,7 +849,7 @@ export default function FieldServicePage() {
             </Card>
 
             {/* Quick Dispatch */}
-            <Card sx={{ background: currentScheme.colors.components.card }}>
+            <Card sx={{ background: currentColors.card }}>
               <CardContent>
                 <Typography variant="h6" fontWeight="bold" mb={3}>
                   Quick Dispatch
@@ -742,9 +862,11 @@ export default function FieldServicePage() {
                       label="Select Technician"
                       value={technicianSelect}
                       onChange={(e) => setTechnicianSelect(e.target.value)}
+                      disabled
                       sx={{
-                        background: currentScheme.colors.components.input,
-                        color: currentScheme.colors.text.primary,
+                        background: currentColors.chipBackground,
+                        color: currentColors.textPrimary,
+                        opacity: 0.7,
                       }}
                     >
                       <MenuItem value="" disabled>Select Technician</MenuItem>
@@ -762,9 +884,11 @@ export default function FieldServicePage() {
                       label="Select Job"
                       value={jobSelect}
                       onChange={(e) => setJobSelect(e.target.value)}
+                      disabled
                       sx={{
-                        background: currentScheme.colors.components.input,
-                        color: currentScheme.colors.text.primary,
+                        background: currentColors.chipBackground,
+                        color: currentColors.textPrimary,
+                        opacity: 0.7,
                       }}
                     >
                       <MenuItem value="" disabled>Select Job</MenuItem>
@@ -780,11 +904,21 @@ export default function FieldServicePage() {
                     variant="contained"
                     fullWidth
                     startIcon={<Assignment />}
+                    disabled={true}
                     sx={{
-                      background: `linear-gradient(135deg, ${currentScheme.colors.primary} 0%, ${currentScheme.colors.secondary} 100%)`,
+                      background: buttonColor,
+                      color: 'white',
+                      '&:hover': {
+                        background: buttonColor,
+                        opacity: 0.8,
+                      },
+                      '&.Mui-disabled': {
+                        background: buttonColor,
+                        color: 'white',
+                        opacity: 0.5,
+                      }
                     }}
                     onClick={handleDispatch}
-                    disabled={!technicianSelect || !jobSelect}
                   >
                     Dispatch Now
                   </Button>
@@ -797,8 +931,8 @@ export default function FieldServicePage() {
           <Box sx={{ flex: 1, minWidth: '300px' }}>
             <Card
               sx={{
-                background: currentScheme.colors.components.card,
-                border: `1px solid ${currentScheme.colors.components.border}`,
+                background: currentColors.card,
+                border: `1px solid ${currentColors.border}`,
                 mb: 3,
               }}
             >
@@ -814,15 +948,15 @@ export default function FieldServicePage() {
                         sx={{
                           p: 2,
                           textAlign: 'center',
-                          background: `${currentScheme.colors.primary}10`,
-                          border: `1px solid ${currentScheme.colors.primary}30`,
+                          background: `${googleColors.blue}10`,
+                          border: `1px solid ${googleColors.blue}30`,
                           borderRadius: 2,
                         }}
                       >
-                        <Typography variant="h4" fontWeight="bold" color={currentScheme.colors.primary}>
+                        <Typography variant="h4" fontWeight="bold" color={googleColors.blue}>
                           {analytics.summary.completionRate}%
                         </Typography>
-                        <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                        <Typography variant="caption" color={currentColors.textSecondary}>
                           Completion Rate
                         </Typography>
                       </Paper>
@@ -833,15 +967,15 @@ export default function FieldServicePage() {
                         sx={{
                           p: 2,
                           textAlign: 'center',
-                          background: `${currentScheme.colors.secondary}10`,
-                          border: `1px solid ${currentScheme.colors.secondary}30`,
+                          background: `${googleColors.green}10`,
+                          border: `1px solid ${googleColors.green}30`,
                           borderRadius: 2,
                         }}
                       >
-                        <Typography variant="h4" fontWeight="bold" color={currentScheme.colors.secondary}>
+                        <Typography variant="h4" fontWeight="bold" color={googleColors.green}>
                           {analytics.summary.averageDuration.toFixed(1)}h
                         </Typography>
-                        <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                        <Typography variant="caption" color={currentColors.textSecondary}>
                           Avg Duration
                         </Typography>
                       </Paper>
@@ -852,15 +986,15 @@ export default function FieldServicePage() {
                         sx={{
                           p: 2,
                           textAlign: 'center',
-                          background: `${currentScheme.colors.buttons.success}10`,
-                          border: `1px solid ${currentScheme.colors.buttons.success}30`,
+                          background: `${googleColors.yellow}10`,
+                          border: `1px solid ${googleColors.yellow}30`,
                           borderRadius: 2,
                         }}
                       >
-                        <Typography variant="h4" fontWeight="bold" color={currentScheme.colors.buttons.success}>
+                        <Typography variant="h4" fontWeight="bold" color={googleColors.yellow}>
                           {analytics.summary.revenue ? `₹${analytics.summary.revenue.toLocaleString()}` : '₹0'}
                         </Typography>
-                        <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                        <Typography variant="caption" color={currentColors.textSecondary}>
                           Revenue
                         </Typography>
                       </Paper>
@@ -871,22 +1005,22 @@ export default function FieldServicePage() {
                         sx={{
                           p: 2,
                           textAlign: 'center',
-                          background: `${currentScheme.colors.buttons.warning}10`,
-                          border: `1px solid ${currentScheme.colors.buttons.warning}30`,
+                          background: `${googleColors.red}10`,
+                          border: `1px solid ${googleColors.red}30`,
                           borderRadius: 2,
                         }}
                       >
-                        <Typography variant="h4" fontWeight="bold" color={currentScheme.colors.buttons.warning}>
+                        <Typography variant="h4" fontWeight="bold" color={googleColors.red}>
                           {analytics.summary.averageRating.toFixed(1)}
                         </Typography>
-                        <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                        <Typography variant="caption" color={currentColors.textSecondary}>
                           Avg Rating
                         </Typography>
                       </Paper>
                     </Box>
                   </Box>
                 ) : (
-                  <Typography color={currentScheme.colors.text.secondary} textAlign="center" py={4}>
+                  <Typography color={currentColors.textSecondary} textAlign="center" py={4}>
                     Loading analytics...
                   </Typography>
                 )}
@@ -907,8 +1041,8 @@ export default function FieldServicePage() {
                         key={job._id}
                         sx={{
                           p: 2,
-                          background: currentScheme.colors.background,
-                          border: `1px solid ${currentScheme.colors.components.border}`,
+                          background: currentColors.background,
+                          border: `1px solid ${currentColors.border}`,
                           borderRadius: 2,
                           mb: 3,
                         }}
@@ -918,7 +1052,7 @@ export default function FieldServicePage() {
                             <Typography variant="body1" fontWeight="bold">
                               {job.title}
                             </Typography>
-                            <Typography variant="caption" color={currentScheme.colors.text.secondary}>
+                            <Typography variant="caption" color={currentColors.textSecondary}>
                               {job.customerName}
                             </Typography>
                           </Box>
@@ -926,18 +1060,18 @@ export default function FieldServicePage() {
                             label="In Progress"
                             size="small"
                             sx={{
-                              background: `${currentScheme.colors.buttons.warning}20`,
-                              color: currentScheme.colors.buttons.warning,
+                              background: `${googleColors.yellow}20`,
+                              color: googleColors.yellow,
                             }}
                           />
                         </Box>
                         
                         <Box sx={{ mb: 2 }}>
-                          <Typography variant="caption" color={currentScheme.colors.text.secondary} display="block">
+                          <Typography variant="caption" color={currentColors.textSecondary} display="block">
                             Technician
                           </Typography>
                           <Box display="flex" alignItems="center" gap={1} mt={0.5}>
-                            <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
+                            <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: googleColors.blue }}>
                               {job.employeeName?.split(' ').map(n => n[0]).join('') || 'NA'}
                             </Avatar>
                             <Typography variant="body2">{job.employeeName || 'Not assigned'}</Typography>
@@ -945,7 +1079,7 @@ export default function FieldServicePage() {
                         </Box>
                         
                         <Box sx={{ mb: 2 }}>
-                          <Typography variant="caption" color={currentScheme.colors.text.secondary} display="block">
+                          <Typography variant="caption" color={currentColors.textSecondary} display="block">
                             Location
                           </Typography>
                           <Typography variant="body2">
@@ -954,7 +1088,7 @@ export default function FieldServicePage() {
                         </Box>
                         
                         <Box sx={{ mb: 2 }}>
-                          <Typography variant="caption" color={currentScheme.colors.text.secondary} display="block">
+                          <Typography variant="caption" color={currentColors.textSecondary} display="block">
                             Type
                           </Typography>
                           <Box display="flex" alignItems="center" gap={1}>
@@ -973,9 +1107,9 @@ export default function FieldServicePage() {
                           sx={{
                             height: 8,
                             borderRadius: 4,
-                            background: currentScheme.colors.components.border,
+                            background: currentColors.border,
                             '& .MuiLinearProgress-bar': {
-                              background: currentScheme.colors.primary,
+                              background: googleColors.blue,
                             },
                           }}
                         />

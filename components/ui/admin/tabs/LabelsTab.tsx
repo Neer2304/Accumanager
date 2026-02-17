@@ -9,7 +9,7 @@ interface LabelsTabProps {
   saving: boolean
 }
 
-export default function LabelsTab({ data, onSave, saving }: ContactTabProps) {
+export default function LabelsTab({ data, onSave, saving }: LabelsTabProps) {
   const [formData, setFormData] = useState({
     // General Labels
     appName: data.appName || '',

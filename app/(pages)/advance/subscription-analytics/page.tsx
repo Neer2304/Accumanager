@@ -1,3 +1,4 @@
+// app/(pages)/advance/subscription-analytics/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -52,6 +53,7 @@ import {
   Payment,
   CalendarToday,
   Category,
+  Construction,
 } from '@mui/icons-material'
 import { useAdvanceThemeContext } from '@/contexts/AdvanceThemeContexts'
 import Link from 'next/link'
@@ -228,6 +230,7 @@ export default function SubscriptionAnalyticsPage() {
 
   const currentColors = mode === 'dark' ? googleColors.dark : googleColors.light;
   const primaryColor = googleColors.blue;
+  const buttonColor = mode === 'dark' ? googleColors.red : googleColors.blue;
 
   useEffect(() => {
     fetchAllData();
@@ -397,7 +400,7 @@ export default function SubscriptionAnalyticsPage() {
 
   const calculateActualCustomers = () => {
     if (customerMetrics?.totalCustomers > 0) return customerMetrics.totalCustomers;
-    if (revenueData?.totalCustomers) return revenueData.totalCustomers;
+    // if (revenueData?.totalCustomers) return revenueData.totalCustomers;
     return 800;
   };
 
@@ -443,14 +446,21 @@ export default function SubscriptionAnalyticsPage() {
           variant="contained" 
           onClick={fetchAllData}
           startIcon={<Refresh />}
+          disabled={true}
           sx={{
-            background: primaryColor,
+            background: buttonColor,
             color: 'white',
             borderRadius: '8px',
             textTransform: 'none',
             fontWeight: 500,
             '&:hover': {
-              background: '#3367D6',
+              background: buttonColor,
+              opacity: 0.8,
+            },
+            '&.Mui-disabled': {
+              background: buttonColor,
+              color: 'white',
+              opacity: 0.5,
             }
           }}
         >
@@ -487,6 +497,49 @@ export default function SubscriptionAnalyticsPage() {
       transition: 'background-color 0.3s ease',
       p: isMobile ? 1 : 2,
     }}>
+      {/* Under Development Banner */}
+      <Card
+        sx={{
+          mb: 4,
+          background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.15)} 0%, ${alpha(googleColors.yellow, 0.05)} 100%)`,
+          border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+          borderRadius: '16px',
+          backgroundColor: currentColors.card,
+          transition: 'all 0.3s ease',
+          boxShadow: mode === 'dark' 
+            ? '0 2px 4px rgba(0,0,0,0.4)' 
+            : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+        }}
+      >
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.2)} 0%, ${alpha(googleColors.yellow, 0.1)} 100%)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+              }}
+            >
+              <Construction sx={{ fontSize: 28, color: googleColors.yellow }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" fontWeight={600} color={googleColors.yellow} gutterBottom>
+                🚧 Under Development
+              </Typography>
+              <Typography variant="body1" color={currentColors.textSecondary}>
+                This page and all its features are currently under development. 
+                Some features may not be available yet. We're working hard to bring you an amazing experience!
+              </Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <Box sx={{ mb: isMobile ? 2 : 4 }}>
         <Breadcrumbs sx={{ 
@@ -568,17 +621,16 @@ export default function SubscriptionAnalyticsPage() {
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
               size={isMobile ? "small" : "medium"}
+              disabled
               sx={{
-                background: currentColors.surface,
+                background: currentColors.chipBackground,
                 color: currentColors.textPrimary,
                 borderRadius: '8px',
                 minWidth: isMobile ? 100 : 120,
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: currentColors.border,
                 },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: primaryColor,
-                },
+                opacity: 0.7,
               }}
             >
               <MenuItem value="weekly">Weekly</MenuItem>
@@ -591,18 +643,18 @@ export default function SubscriptionAnalyticsPage() {
               variant="outlined"
               startIcon={<Refresh />}
               onClick={handleRefresh}
-              disabled={loading}
+              disabled={true}
               sx={{
                 border: `1px solid ${currentColors.border}`,
-                color: currentColors.textPrimary,
+                color: buttonColor,
                 borderRadius: '8px',
                 textTransform: 'none',
                 fontWeight: 500,
                 fontSize: isMobile ? '0.875rem' : '1rem',
                 minWidth: 'auto',
                 '&:hover': {
-                  borderColor: primaryColor,
-                  backgroundColor: alpha(primaryColor, 0.04),
+                  borderColor: buttonColor,
+                  backgroundColor: alpha(buttonColor, 0.04),
                 }
               }}
             >
@@ -613,17 +665,17 @@ export default function SubscriptionAnalyticsPage() {
               <Button
                 variant="outlined"
                 startIcon={<Download />}
-                disabled={!subscriptionData}
+                disabled={true}
                 sx={{
                   border: `1px solid ${currentColors.border}`,
-                  color: currentColors.textPrimary,
+                  color: buttonColor,
                   borderRadius: '8px',
                   textTransform: 'none',
                   fontWeight: 500,
                   fontSize: '0.875rem',
                   '&:hover': {
-                    borderColor: primaryColor,
-                    backgroundColor: alpha(primaryColor, 0.04),
+                    borderColor: buttonColor,
+                    backgroundColor: alpha(buttonColor, 0.04),
                   }
                 }}
               >
@@ -641,6 +693,7 @@ export default function SubscriptionAnalyticsPage() {
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
                 size="small"
+                disabled
                 sx={{
                   color: primaryColor,
                   '&.Mui-checked': {

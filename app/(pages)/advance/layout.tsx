@@ -100,22 +100,44 @@ function AdvanceSidebar({
       icon: <ColorLens />,
       text: "Theme Customizer",
       path: "/advance/theme-customizer",
-      badge: "New",
+      badge: "Beta",
     },
     {
       icon: <AutoAwesome />,
       text: "AI Analytics",
       path: "/advance/ai-analytics",
-      badge: "Beta",
+      badge: "Soon",
     },
-    { icon: <TrendingUp />, text: "Marketing", path: "/advance/marketing" },
+    {
+      icon: <TrendingUp />,
+      text: "Marketing-Automation",
+      path: "/advance/marketing",
+      badge: "Soon",
+    },
     {
       icon: <Business />,
       text: "Field Service",
       path: "/advance/field-service",
+      badge: "Soon",
     },
-    { icon: <People />, text: "Customer 360", path: "/advance/customer-360" },
-    { icon: <Timeline />, text: "Subscription", path: "/advance/subscription" },
+    {
+      icon: <People />,
+      text: "Customer 360",
+      path: "/advance/customer-360",
+      badge: "Beta",
+    },
+    {
+      icon: <Timeline />,
+      text: "Subscription-Analytics",
+      path: "/advance/subscription-analytics",
+      badge: "Soon",
+    },
+    {
+      icon: <Timeline />,
+      text: "Subscription-Billing",
+      path: "/advance/subscription-billing",
+      badge: "Soon",
+    },
     { icon: <Settings />, text: "Settings", path: "/advance/settings" },
   ];
 
@@ -250,9 +272,11 @@ function AdvanceSidebar({
                       fontSize: "0.7rem",
                       fontWeight: 600,
                       background:
-                        item.badge === "New"
+                        item.badge === "Beta"
                           ? googleColors.green
-                          : googleColors.yellow,
+                          : item.badge === "Soon"
+                            ? googleColors.red
+                            : googleColors.yellow,
                       color: "white",
                     }}
                   >

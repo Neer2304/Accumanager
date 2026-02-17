@@ -23,6 +23,7 @@ import {
   Home,
   Add,
   Refresh,
+  Construction,
 } from '@mui/icons-material'
 import { useAdvanceThemeContext } from '@/contexts/AdvanceThemeContexts'
 import Link from 'next/link'
@@ -402,6 +403,49 @@ export default function MarketingAutomationPage() {
       transition: 'background-color 0.3s ease',
       p: isMobile ? 1 : 2,
     }}>
+      {/* Under Development Banner */}
+      <Card
+        sx={{
+          mb: 4,
+          background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.15)} 0%, ${alpha(googleColors.yellow, 0.05)} 100%)`,
+          border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+          borderRadius: '16px',
+          backgroundColor: currentColors.card,
+          transition: 'all 0.3s ease',
+          boxShadow: mode === 'dark' 
+            ? '0 2px 4px rgba(0,0,0,0.4)' 
+            : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+        }}
+      >
+        <Card sx={{ p: 2, background: 'transparent', boxShadow: 'none' }}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.2)} 0%, ${alpha(googleColors.yellow, 0.1)} 100%)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+              }}
+            >
+              <Construction sx={{ fontSize: 28, color: googleColors.yellow }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" fontWeight={600} color={googleColors.yellow} gutterBottom>
+                🚧 Under Development
+              </Typography>
+              <Typography variant="body1" color={currentColors.textSecondary}>
+                This page and all its features are currently under development. 
+                Some features may not be available yet. We're working hard to bring you an amazing experience!
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
+      </Card>
+
       {/* Header */}
       <Box sx={{ mb: isMobile ? 2 : 4 }}>
         <Breadcrumbs sx={{ 
@@ -483,18 +527,18 @@ export default function MarketingAutomationPage() {
               variant="outlined"
               startIcon={<Refresh />}
               onClick={fetchMarketingData}
-              disabled={loading}
+              disabled={true}
               sx={{
                 border: `1px solid ${currentColors.border}`,
-                color: currentColors.textPrimary,
+                color: currentColors.textSecondary,
                 borderRadius: '8px',
                 textTransform: 'none',
                 fontWeight: 500,
                 fontSize: isMobile ? '0.875rem' : '1rem',
                 minWidth: 'auto',
                 '&:hover': {
-                  borderColor: primaryColor,
-                  backgroundColor: alpha(primaryColor, 0.04),
+                  borderColor: currentColors.border,
+                  backgroundColor: 'transparent',
                 }
               }}
             >
@@ -505,16 +549,19 @@ export default function MarketingAutomationPage() {
               variant="contained"
               startIcon={<Add />}
               onClick={() => setNewCampaignDialog(true)}
+              disabled={true}
               sx={{
-                background: primaryColor,
-                color: 'white',
+                background: currentColors.chipBackground,
+                color: currentColors.textSecondary,
                 borderRadius: '8px',
                 textTransform: 'none',
                 fontWeight: 500,
                 fontSize: isMobile ? '0.875rem' : '1rem',
                 minWidth: 'auto',
+                boxShadow: 'none',
                 '&:hover': {
-                  background: '#3367D6',
+                  background: currentColors.chipBackground,
+                  boxShadow: 'none',
                 }
               }}
             >

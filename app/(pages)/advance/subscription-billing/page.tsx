@@ -21,6 +21,7 @@ import {
   Home,
   Download,
   Add,
+  Construction,
 } from '@mui/icons-material'
 import { useAdvanceThemeContext } from '@/contexts/AdvanceThemeContexts'
 import Link from 'next/link'
@@ -80,6 +81,7 @@ export default function SubscriptionBillingPage() {
 
   const currentColors = mode === 'dark' ? googleColors.dark : googleColors.light;
   const primaryColor = googleColors.blue;
+  const buttonColor = mode === 'dark' ? googleColors.red : googleColors.blue;
 
   return (
     <Box sx={{ 
@@ -89,6 +91,49 @@ export default function SubscriptionBillingPage() {
       transition: 'background-color 0.3s ease',
       p: isMobile ? 1 : 2,
     }}>
+      {/* Under Development Banner */}
+      <Card
+        sx={{
+          mb: 4,
+          background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.15)} 0%, ${alpha(googleColors.yellow, 0.05)} 100%)`,
+          border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+          borderRadius: '16px',
+          backgroundColor: currentColors.card,
+          transition: 'all 0.3s ease',
+          boxShadow: mode === 'dark' 
+            ? '0 2px 4px rgba(0,0,0,0.4)' 
+            : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+        }}
+      >
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.2)} 0%, ${alpha(googleColors.yellow, 0.1)} 100%)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+              }}
+            >
+              <Construction sx={{ fontSize: 28, color: googleColors.yellow }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" fontWeight={600} color={googleColors.yellow} gutterBottom>
+                🚧 Under Development
+              </Typography>
+              <Typography variant="body1" color={currentColors.textSecondary}>
+                This page and all its features are currently under development. 
+                Some features may not be available yet. We're working hard to bring you an amazing experience!
+              </Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <Box sx={{ mb: isMobile ? 2 : 4 }}>
         <Breadcrumbs sx={{ 
@@ -170,17 +215,16 @@ export default function SubscriptionBillingPage() {
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
               size={isMobile ? "small" : "medium"}
+              disabled
               sx={{
-                background: currentColors.surface,
+                background: currentColors.chipBackground,
                 color: currentColors.textPrimary,
                 borderRadius: '8px',
                 minWidth: isMobile ? 100 : 120,
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: currentColors.border,
                 },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: primaryColor,
-                },
+                opacity: 0.7,
               }}
             >
               <MenuItem value="all">All Time</MenuItem>
@@ -192,17 +236,18 @@ export default function SubscriptionBillingPage() {
             <Button
               variant="outlined"
               startIcon={<Download />}
+              disabled
               sx={{
                 border: `1px solid ${currentColors.border}`,
-                color: currentColors.textPrimary,
+                color: buttonColor,
                 borderRadius: '8px',
                 textTransform: 'none',
                 fontWeight: 500,
                 fontSize: isMobile ? '0.875rem' : '1rem',
                 minWidth: 'auto',
                 '&:hover': {
-                  borderColor: primaryColor,
-                  backgroundColor: alpha(primaryColor, 0.04),
+                  borderColor: buttonColor,
+                  backgroundColor: alpha(buttonColor, 0.04),
                 }
               }}
             >
@@ -213,8 +258,9 @@ export default function SubscriptionBillingPage() {
               variant="contained"
               startIcon={<Add />}
               onClick={() => setShowUpgradeDialog(true)}
+              disabled
               sx={{
-                background: primaryColor,
+                background: buttonColor,
                 color: 'white',
                 borderRadius: '8px',
                 textTransform: 'none',
@@ -222,7 +268,13 @@ export default function SubscriptionBillingPage() {
                 fontSize: isMobile ? '0.875rem' : '1rem',
                 minWidth: 'auto',
                 '&:hover': {
-                  background: '#3367D6',
+                  background: buttonColor,
+                  opacity: 0.8,
+                },
+                '&.Mui-disabled': {
+                  background: buttonColor,
+                  color: 'white',
+                  opacity: 0.5,
                 }
               }}
             >

@@ -1,0 +1,11 @@
+// components/googleadminproduct/index.ts
+export { default as GoogleProductSkeleton } from './GoogleProductSkeleton'
+export { default as GoogleProductHeader } from './GoogleProductHeader'
+export { default as GoogleProductStats } from './GoogleProductStats'
+export { default as GoogleProductOverview } from './GoogleProductOverview'
+export { default as GoogleProductVariations } from './GoogleProductVariations'
+export { default as GoogleProductBatches } from './GoogleProductBatches'
+export { default as GoogleProductGST } from './GoogleProductGST'
+export { default as GoogleProductTabs } from './GoogleProductTabs'
+export { default as GoogleProductActions } from './GoogleProductActions'
+export * from './types'
