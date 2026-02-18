@@ -58,6 +58,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCompany } from '@/lib/companyContext';
 import { companyService } from '@/services/companyService';
+import { MainLayout } from '@/components/Layout/MainLayout';
 
 // Google Material Design 3 Colors
 const GOOGLE_COLORS = {
@@ -96,7 +97,7 @@ interface Company {
   };
 }
 
-export default function CompaniesPage() {
+function CompaniesPageContent() {
   const theme = useTheme();
   const darkMode = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -166,26 +167,24 @@ export default function CompaniesPage() {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 8 }}>
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column',
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: '60vh',
-          gap: 3
-        }}>
-          <CircularProgress size={56} thickness={4} sx={{ color: GOOGLE_COLORS.blue }} />
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h5" fontWeight="500" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-              Loading Companies
-            </Typography>
-            <Typography variant="body1" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-              Please wait while we fetch your organizations...
-            </Typography>
-          </Box>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '60vh',
+        gap: 3
+      }}>
+        <CircularProgress size={56} thickness={4} sx={{ color: GOOGLE_COLORS.blue }} />
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h5" fontWeight="500" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+            Loading Companies
+          </Typography>
+          <Typography variant="body1" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+            Please wait while we fetch your organizations...
+          </Typography>
         </Box>
-      </Container>
+      </Box>
     );
   }
 
@@ -1225,5 +1224,14 @@ export default function CompaniesPage() {
         </MenuItem>
       </Menu>
     </Box>
+  );
+}
+
+// Main exported component with layout wrapper
+export default function CompaniesPage() {
+  return (
+    <MainLayout title="Companies">
+      <CompaniesPageContent />
+    </MainLayout>
   );
 }
