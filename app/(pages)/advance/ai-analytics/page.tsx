@@ -61,6 +61,7 @@ import {
   Leaderboard,
   RocketLaunch,
   Info,
+  Construction,
 } from '@mui/icons-material'
 import { useAdvanceThemeContext } from '@/contexts/AdvanceThemeContexts'
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Legend } from 'recharts'
@@ -140,6 +141,7 @@ export default function AIAnalyticsPage() {
 
   const currentColors = mode === 'dark' ? googleColors.dark : googleColors.light;
   const primaryColor = googleColors.blue;
+  const buttonColor = mode === 'dark' ? googleColors.red : googleColors.blue;
 
   // Chart data
   const [chartData] = useState([
@@ -295,6 +297,49 @@ export default function AIAnalyticsPage() {
       color: currentColors.textPrimary,
       transition: 'background-color 0.3s ease'
     }}>
+      {/* Under Development Banner */}
+      <Card
+        sx={{
+          mb: 4,
+          background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.15)} 0%, ${alpha(googleColors.yellow, 0.05)} 100%)`,
+          border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+          borderRadius: '16px',
+          backgroundColor: currentColors.card,
+          transition: 'all 0.3s ease',
+          boxShadow: mode === 'dark' 
+            ? '0 2px 4px rgba(0,0,0,0.4)' 
+            : '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+        }}
+      >
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, ${alpha(googleColors.yellow, 0.2)} 0%, ${alpha(googleColors.yellow, 0.1)} 100%)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: `1px solid ${alpha(googleColors.yellow, 0.3)}`,
+              }}
+            >
+              <Construction sx={{ fontSize: 28, color: googleColors.yellow }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" fontWeight={600} color={googleColors.yellow} gutterBottom>
+                🚧 Under Development
+              </Typography>
+              <Typography variant="body1" color={currentColors.textSecondary}>
+                This page and all its features are currently under development. 
+                Some features may not be available yet. We're working hard to bring you an amazing experience!
+              </Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <Box sx={{ mb: isMobile ? 2 : 4 }}>
         <Box display="flex" alignItems="center" gap={isMobile ? 1 : 3} mb={2}>
@@ -460,6 +505,7 @@ export default function AIAnalyticsPage() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAIQuery()}
               size={isMobile ? "small" : "medium"}
+              disabled
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -482,17 +528,23 @@ export default function AIAnalyticsPage() {
             <Button
               variant="contained"
               onClick={handleAIQuery}
-              disabled={isAnalyzing}
+              disabled={true}
               sx={{
-                background: primaryColor,
+                background: buttonColor,
                 color: 'white',
                 borderRadius: '8px',
                 textTransform: 'none',
                 fontWeight: 500,
                 minWidth: isMobile ? '100%' : 120,
                 '&:hover': {
-                  background: '#3367D6',
+                  background: buttonColor,
+                  opacity: 0.8,
                 },
+                '&.Mui-disabled': {
+                  background: buttonColor,
+                  color: 'white',
+                  opacity: 0.5,
+                }
               }}
             >
               {isAnalyzing ? <CircularProgress size={24} /> : 'Ask AI'}
@@ -522,6 +574,7 @@ export default function AIAnalyticsPage() {
               label="Revenue trends"
               size="small"
               onClick={() => setQuery("Show revenue trends")}
+              disabled
               sx={{
                 border: `1px solid ${currentColors.border}`,
               }}
@@ -530,6 +583,7 @@ export default function AIAnalyticsPage() {
               label="Customer analysis"
               size="small"
               onClick={() => setQuery("Analyze customer behavior")}
+              disabled
               sx={{
                 border: `1px solid ${currentColors.border}`,
               }}
@@ -538,6 +592,7 @@ export default function AIAnalyticsPage() {
               label="Sales predictions"
               size="small"
               onClick={() => setQuery("Predict next month sales")}
+              disabled
               sx={{
                 border: `1px solid ${currentColors.border}`,
               }}
@@ -567,6 +622,7 @@ export default function AIAnalyticsPage() {
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
               size={isMobile ? "small" : "medium"}
+              disabled
               sx={{ 
                 minWidth: isMobile ? 120 : 140,
                 '& .MuiOutlinedInput-notchedOutline': {
@@ -586,6 +642,7 @@ export default function AIAnalyticsPage() {
                   checked={autoRefresh}
                   onChange={(e) => setAutoRefresh(e.target.checked)}
                   color="primary"
+                  disabled
                 />
               }
               label={isMobile ? "Auto" : "Auto-refresh"}
@@ -596,17 +653,17 @@ export default function AIAnalyticsPage() {
               variant="outlined"
               startIcon={<Refresh />}
               onClick={fetchData}
-              disabled={loading}
+              disabled={true}
               sx={{
                 border: `1px solid ${currentColors.border}`,
-                color: currentColors.textPrimary,
+                color: buttonColor,
                 borderRadius: '8px',
                 textTransform: 'none',
                 fontWeight: 500,
                 fontSize: isMobile ? '0.875rem' : '1rem',
                 '&:hover': {
-                  borderColor: primaryColor,
-                  backgroundColor: alpha(primaryColor, 0.04),
+                  borderColor: buttonColor,
+                  backgroundColor: alpha(buttonColor, 0.04),
                 }
               }}
             >
@@ -617,16 +674,17 @@ export default function AIAnalyticsPage() {
               variant="outlined"
               startIcon={<ModelTraining />}
               onClick={() => console.log('Training AI models...')}
+              disabled={true}
               sx={{
                 border: `1px solid ${currentColors.border}`,
-                color: currentColors.textPrimary,
+                color: buttonColor,
                 borderRadius: '8px',
                 textTransform: 'none',
                 fontWeight: 500,
                 fontSize: isMobile ? '0.875rem' : '1rem',
                 '&:hover': {
-                  borderColor: primaryColor,
-                  backgroundColor: alpha(primaryColor, 0.04),
+                  borderColor: buttonColor,
+                  backgroundColor: alpha(buttonColor, 0.04),
                 }
               }}
             >
@@ -860,6 +918,7 @@ export default function AIAnalyticsPage() {
                       <Chip 
                         label={insight.category} 
                         size="small" 
+                        disabled
                         sx={{
                           backgroundColor: alpha(primaryColor, 0.1),
                           color: primaryColor,
@@ -871,6 +930,7 @@ export default function AIAnalyticsPage() {
                         label={`${insight.confidence}% confidence`} 
                         size="small" 
                         variant="outlined"
+                        disabled
                         sx={{
                           border: `1px solid ${currentColors.border}`,
                           fontSize: isMobile ? '0.75rem' : '0.875rem',
@@ -920,16 +980,17 @@ export default function AIAnalyticsPage() {
                       <Button 
                         size="small" 
                         variant="outlined"
+                        disabled
                         sx={{
                           border: `1px solid ${currentColors.border}`,
-                          color: currentColors.textPrimary,
+                          color: buttonColor,
                           borderRadius: '6px',
                           textTransform: 'none',
                           fontWeight: 500,
                           fontSize: isMobile ? '0.75rem' : '0.875rem',
                           '&:hover': {
-                            borderColor: primaryColor,
-                            backgroundColor: alpha(primaryColor, 0.04),
+                            borderColor: buttonColor,
+                            backgroundColor: alpha(buttonColor, 0.04),
                           }
                         }}
                       >
@@ -978,6 +1039,7 @@ export default function AIAnalyticsPage() {
                   { value: 75, label: '75%' },
                   { value: 95, label: '95%' },
                 ]}
+                disabled
                 sx={{
                   color: primaryColor,
                 }}
