@@ -9,7 +9,7 @@ const PUBLIC_AUTH_PATHS = [
   '/admin/login', '/admin/setup/init'
 ];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('auth_token')?.value;
 
