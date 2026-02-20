@@ -1,4 +1,4 @@
-// components/ui/Chip/index.tsx
+// components/ui/Chip/index.tsx (FIXED)
 "use client";
 
 import React from 'react';
@@ -7,17 +7,18 @@ import {
   ChipProps as MuiChipProps,
   alpha,
   useTheme,
+  Avatar,
 } from '@mui/material';
 
-interface ChipProps extends MuiChipProps {
+interface ChipProps extends Omit<MuiChipProps, 'avatar' | 'icon'> {
   variant?: 'filled' | 'outlined';
   color?: 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success' | 'default';
   size?: 'small' | 'medium';
   clickable?: boolean;
   deletable?: boolean;
   onDelete?: () => void;
-  avatar?: React.ReactNode;
-  icon?: React.ReactNode;
+  avatar?: React.ReactElement;
+  icon?: React.ReactElement;
 }
 
 export const Chip: React.FC<ChipProps> = ({
@@ -64,6 +65,10 @@ export const Chip: React.FC<ChipProps> = ({
             color: alpha(colorValue, 0.8),
           },
         },
+        '& .MuiChip-avatar': {
+          backgroundColor: alpha(colorValue, 0.2),
+          color: colorValue,
+        },
       };
     }
 
@@ -81,6 +86,10 @@ export const Chip: React.FC<ChipProps> = ({
         '&:hover': {
           color: colorValue,
         },
+      },
+      '& .MuiChip-avatar': {
+        backgroundColor: alpha(colorValue, 0.1),
+        color: colorValue,
       },
     };
   };
