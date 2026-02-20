@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 const legalDocumentSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['privacy_policy', 'terms_of_service', 'cookie_policy'],
+    enum: ['privacy_policy', 'terms_of_service', 'cookie_policy','refund_policy','shipping_policy'],
     required: [true, 'Document type is required'],
     unique: true,
     index: true
