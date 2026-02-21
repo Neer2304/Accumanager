@@ -45,6 +45,256 @@ export class NotificationService {
     };
   }
 
+  // Add these methods to your NotificationService class in services/notificationService.ts
+
+  // ============ PRODUCT NOTIFICATIONS ============
+
+  /**
+   * Notify when a product is created
+   */
+  static async notifyProductCreated(
+    product: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "New Product Created 📦",
+        `Product "${product.name}" has been created successfully.`,
+        "success",
+        {
+          actionUrl: `/products/${product._id}`,
+          metadata: {
+            productId: product._id.toString(),
+            productName: product.name,
+            category: product.category,
+            price: product.basePrice,
+            event: "product_created",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Product creation notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating product creation notification:", error);
+      throw new Error(
+        `Failed to create product notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a product is updated
+   */
+  static async notifyProductUpdated(
+    product: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Product Updated ✏️",
+        `Product "${product.name}" has been updated.`,
+        "info",
+        {
+          actionUrl: `/products/${product._id}`,
+          metadata: {
+            productId: product._id.toString(),
+            productName: product.name,
+            event: "product_updated",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Product update notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating product update notification:", error);
+      throw new Error(
+        `Failed to create product update notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a product is deleted
+   */
+  static async notifyProductDeleted(
+    product: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Product Deleted 🗑️",
+        `Product "${product.name}" has been deleted.`,
+        "info",
+        {
+          metadata: {
+            productId: product._id?.toString(),
+            productName: product.name,
+            event: "product_deleted",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Product deletion notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating product deletion notification:", error);
+      throw new Error(
+        `Failed to create product deletion notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when product stock is low
+   */
+  static async notifyProductLowStock(
+    product: any,
+    stockLevel: number,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Low Stock Alert ⚠️",
+        `Product "${product.name}" is running low on stock. Current stock: ${stockLevel} units.`,
+        "warning",
+        {
+          actionUrl: `/products/${product._id}`,
+          priority: "high",
+          metadata: {
+            productId: product._id.toString(),
+            productName: product.name,
+            stockLevel,
+            event: "product_low_stock",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Product low stock notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating product low stock notification:", error);
+      throw new Error(
+        `Failed to create product low stock notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when product is out of stock
+   */
+  static async notifyProductOutOfStock(
+    product: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Out of Stock Alert ❌",
+        `Product "${product.name}" is now out of stock.`,
+        "error",
+        {
+          actionUrl: `/products/${product._id}`,
+          priority: "high",
+          metadata: {
+            productId: product._id.toString(),
+            productName: product.name,
+            event: "product_out_of_stock",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Product out of stock notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating product out of stock notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create product out of stock notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when product price changes
+   */
+  static async notifyProductPriceChanged(
+    product: any,
+    oldPrice: number,
+    newPrice: number,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const priceChange = newPrice - oldPrice;
+      const direction = priceChange > 0 ? "increased" : "decreased";
+      const emoji = priceChange > 0 ? "📈" : "📉";
+
+      const notificationData = this.createNotificationData(
+        userId,
+        `Product Price ${direction === "increased" ? "Increased" : "Decreased"} ${emoji}`,
+        `Product "${product.name}" price has ${direction} from ₹${oldPrice} to ₹${newPrice}.`,
+        priceChange > 0 ? "info" : "warning",
+        {
+          actionUrl: `/products/${product._id}`,
+          metadata: {
+            productId: product._id.toString(),
+            productName: product.name,
+            oldPrice,
+            newPrice,
+            priceChange: Math.abs(priceChange),
+            direction,
+            event: "product_price_changed",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log(
+        "✅ Product price change notification created:",
+        notification._id,
+      );
+      return notification;
+    } catch (error: any) {
+      console.error(
+        "❌ Error creating product price change notification:",
+        error,
+      );
+      throw new Error(
+        `Failed to create product price change notification: ${error.message}`,
+      );
+    }
+  }
+
   // ============ PROJECT NOTIFICATIONS ============
 
   /**
@@ -1692,6 +1942,111 @@ export class NotificationService {
       );
       throw new Error(
         `Failed to create activity completion notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a note is created
+   */
+  static async notifyNoteCreated(
+    note: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "New Note Created 📝",
+        `Your note "${note.title}" has been created successfully.`,
+        "success",
+        {
+          actionUrl: `/notes/${note._id}`,
+          metadata: {
+            noteId: note._id.toString(),
+            noteTitle: note.title,
+            category: note.category,
+            priority: note.priority,
+            wordCount: note.wordCount,
+            readTime: note.readTime,
+            event: "note_created",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Note creation notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating note creation notification:", error);
+      throw new Error(`Failed to create note notification: ${error.message}`);
+    }
+  }
+
+  /**
+   * Notify when a note is updated
+   */
+  static async notifyNoteUpdated(
+    note: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Note Updated ✏️",
+        `Your note "${note.title}" has been updated.`,
+        "info",
+        {
+          actionUrl: `/notes/${note._id}`,
+          metadata: {
+            noteId: note._id.toString(),
+            noteTitle: note.title,
+            event: "note_updated",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Note update notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating note update notification:", error);
+      throw new Error(
+        `Failed to create note update notification: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Notify when a note is deleted
+   */
+  static async notifyNoteDeleted(
+    note: any,
+    userId: string | mongoose.Types.ObjectId,
+  ): Promise<any> {
+    try {
+      const notificationData = this.createNotificationData(
+        userId,
+        "Note Deleted 🗑️",
+        `Your note "${note.title}" has been deleted.`,
+        "info",
+        {
+          metadata: {
+            noteTitle: note.title,
+            event: "note_deleted",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      );
+
+      const notification = await Notification.create(notificationData);
+      console.log("✅ Note deletion notification created:", notification._id);
+      return notification;
+    } catch (error: any) {
+      console.error("❌ Error creating note deletion notification:", error);
+      throw new Error(
+        `Failed to create note deletion notification: ${error.message}`,
       );
     }
   }

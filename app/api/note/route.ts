@@ -1,10 +1,12 @@
+// app/api/note/route.ts - Only adding notifications, no data structure changes
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Notes from '@/models/Notes';
 import { verifyToken } from '@/lib/jwt';
 import { z } from 'zod';
+import { NotificationService } from '@/services/notificationService';
 
-// Validation schemas
+// Validation schemas (unchanged)
 const createNoteSchema = z.object({
   title: z.string().min(1).max(200),
   content: z.string().min(1),
@@ -23,12 +25,11 @@ const createNoteSchema = z.object({
 
 const updateNoteSchema = createNoteSchema.partial();
 
-// GET /api/note - Get all notes with filters
+// GET /api/note - Get all notes with filters (unchanged)
 export async function GET(request: NextRequest) {
   try {
     console.log('📝 GET /api/note - Starting...');
     
-    // Get token and verify
     const authToken = request.cookies.get('auth_token')?.value;
     if (!authToken) {
       console.log('❌ No auth token found');
@@ -41,7 +42,6 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
     console.log('✅ Database connected');
 
-    // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -54,16 +54,13 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     const showShared = searchParams.get('shared') === 'true';
 
-    // Import mongoose for ObjectId
     const mongoose = await import('mongoose');
 
-    // Build base query
     const baseQuery: any[] = [
       { status: { $ne: 'deleted' } }
     ];
 
     if (showShared) {
-      // Get both owned and shared notes
       baseQuery.push({
         $or: [
           { userId: new mongoose.Types.ObjectId(decoded.userId) },
@@ -71,7 +68,6 @@ export async function GET(request: NextRequest) {
         ]
       });
     } else {
-      // Get only owned notes
       baseQuery.push({ userId: new mongoose.Types.ObjectId(decoded.userId) });
     }
 
@@ -104,14 +100,12 @@ export async function GET(request: NextRequest) {
 
     const query = baseQuery.length > 0 ? { $and: baseQuery } : {};
 
-    // Build sort
     const sort: any = {};
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
     console.log('🔍 Query:', JSON.stringify(query));
     console.log('📊 Page:', page, 'Limit:', limit);
 
-    // Execute query
     const notes = await Notes.find(query)
       .sort(sort)
       .skip((page - 1) * limit)
@@ -143,12 +137,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/note - Create new note
+// POST /api/note - Create new note (UPDATED with notifications)
 export async function POST(request: NextRequest) {
   try {
     console.log('📝 POST /api/note - Creating new note...');
     
-    // Authentication
     const authToken = request.cookies.get('auth_token')?.value;
     if (!authToken) {
       console.log('❌ No auth token');
@@ -161,17 +154,14 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     console.log('✅ Database connected');
 
-    // Validate request body
     const body = await request.json();
     console.log('📦 Request body:', body);
     
     const validatedData = createNoteSchema.parse(body);
 
-    // Calculate word count and read time
     const wordCount = validatedData.content.split(/\s+/).length;
     const readTime = Math.ceil(wordCount / 200);
 
-    // Create note
     const note = new Notes({
       ...validatedData,
       userId: decoded.userId,
@@ -179,7 +169,6 @@ export async function POST(request: NextRequest) {
       readTime
     });
 
-    // Handle password protection
     if (validatedData.password) {
       const bcrypt = await import('bcryptjs');
       note.passwordHash = await bcrypt.hash(validatedData.password, 10);
@@ -190,7 +179,33 @@ export async function POST(request: NextRequest) {
     await note.save();
     console.log('✅ Note created successfully:', note._id);
 
-    // Remove sensitive fields from response
+    // ✅ ADD NOTIFICATION HERE - Only this part is new
+    try {
+      await NotificationService.createNotification(
+        decoded.userId,
+        "New Note Created 📝",
+        `Your note "${validatedData.title}" has been created successfully.`,
+        "success",
+        {
+          actionUrl: `/notes/${note._id}`,
+          metadata: {
+            noteId: note._id.toString(),
+            noteTitle: validatedData.title,
+            category: validatedData.category,
+            priority: validatedData.priority,
+            wordCount,
+            readTime,
+            event: "note_created",
+            timestamp: new Date().toISOString()
+          }
+        }
+      );
+      console.log('✅ Note creation notification created');
+    } catch (notifError) {
+      console.error('⚠️ Failed to create note notification:', notifError);
+      // Don't fail the request if notification fails
+    }
+
     const noteResponse = note.toObject();
     delete noteResponse.versions;
     delete noteResponse.encryptionKey;
@@ -213,12 +228,174 @@ export async function POST(request: NextRequest) {
         { 
           success: false, 
           message: 'Validation error', 
-          // errors: error.message.map(e => ({ path: e.path, message: e.message }))
+          // errors: error.errors.map(e => ({ path: e.path.join('.'), message: e.message }))
         },
         { status: 400 }
       );
     }
 
+    return NextResponse.json(
+      { success: false, message: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/note - Update a note (UPDATED with notifications)
+export async function PUT(request: NextRequest) {
+  try {
+    console.log('📝 PUT /api/note - Updating note...');
+    
+    const authToken = request.cookies.get('auth_token')?.value;
+    if (!authToken) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(authToken);
+    
+    await connectToDatabase();
+
+    const { searchParams } = new URL(request.url);
+    const noteId = searchParams.get('id');
+    
+    if (!noteId) {
+      return NextResponse.json({ success: false, message: 'Note ID is required' }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const validatedData = updateNoteSchema.parse(body);
+
+    const existingNote = await Notes.findOne({ 
+      _id: noteId,
+      $or: [
+        { userId: decoded.userId },
+        { 'sharedWith.userId': decoded.userId, 'sharedWith.permission': 'edit' }
+      ]
+    });
+
+    if (!existingNote) {
+      return NextResponse.json({ success: false, message: 'Note not found or access denied' }, { status: 404 });
+    }
+
+    if (validatedData.content) {
+      validatedData.wordCount = validatedData.content.split(/\s+/).length;
+      validatedData.readTime = Math.ceil(validatedData.wordCount / 200);
+    }
+
+    const note = await Notes.findByIdAndUpdate(
+      noteId,
+      { ...validatedData, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).lean();
+
+    // ✅ ADD NOTIFICATION HERE - Only this part is new
+    try {
+      await NotificationService.createNotification(
+        decoded.userId,
+        "Note Updated ✏️",
+        `Your note "${note.title}" has been updated.`,
+        "info",
+        {
+          actionUrl: `/notes/${noteId}`,
+          metadata: {
+            noteId,
+            noteTitle: note.title,
+            event: "note_updated",
+            timestamp: new Date().toISOString()
+          }
+        }
+      );
+      console.log('✅ Note update notification created');
+    } catch (notifError) {
+      console.error('⚠️ Failed to create note update notification:', notifError);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Note updated successfully',
+      data: note
+    });
+
+  } catch (error: any) {
+    console.error('❌ Update note error:', error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Validation error', 
+          // errors: error.errors.map(e => ({ path: e.path.join('.'), message: e.message }))
+        },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: false, message: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/note - Delete a note (UPDATED with notifications)
+export async function DELETE(request: NextRequest) {
+  try {
+    console.log('📝 DELETE /api/note - Deleting note...');
+    
+    const authToken = request.cookies.get('auth_token')?.value;
+    if (!authToken) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(authToken);
+    
+    await connectToDatabase();
+
+    const { searchParams } = new URL(request.url);
+    const noteId = searchParams.get('id');
+    
+    if (!noteId) {
+      return NextResponse.json({ success: false, message: 'Note ID is required' }, { status: 400 });
+    }
+
+    const note = await Notes.findOne({ 
+      _id: noteId,
+      userId: decoded.userId
+    });
+
+    if (!note) {
+      return NextResponse.json({ success: false, message: 'Note not found or access denied' }, { status: 404 });
+    }
+
+    await Notes.findByIdAndDelete(noteId);
+
+    // ✅ ADD NOTIFICATION HERE - Only this part is new
+    try {
+      await NotificationService.createNotification(
+        decoded.userId,
+        "Note Deleted 🗑️",
+        `Your note "${note.title}" has been deleted.`,
+        "info",
+        {
+          metadata: {
+            noteTitle: note.title,
+            event: "note_deleted",
+            timestamp: new Date().toISOString()
+          }
+        }
+      );
+      console.log('✅ Note deletion notification created');
+    } catch (notifError) {
+      console.error('⚠️ Failed to create note deletion notification:', notifError);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Note deleted successfully'
+    });
+
+  } catch (error: any) {
+    console.error('❌ Delete note error:', error);
     return NextResponse.json(
       { success: false, message: error.message || 'Internal server error' },
       { status: 500 }

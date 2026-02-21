@@ -4,6 +4,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Product from '@/models/Product';
 import { verifyToken } from '@/lib/jwt';
 import { PaymentService } from '@/services/paymentService';
+import { NotificationService } from '@/services/notificationService'; // Add this import
 
 // Helper function to verify auth and subscription
 async function verifyAuthAndSubscription(request: NextRequest) {
@@ -203,6 +204,31 @@ export async function POST(request: NextRequest) {
     // Create product
     const product = new Product(cleanProductData);
     await product.save();
+
+    // ✅ ADD NOTIFICATION HERE
+    try {
+      await NotificationService.createNotification(
+        userId,
+        "New Product Created 📦",
+        `Product "${product.name}" has been created successfully.`,
+        "success",
+        {
+          actionUrl: `/products/${product._id}`,
+          metadata: {
+            productId: product._id.toString(),
+            productName: product.name,
+            category: product.category,
+            price: product.basePrice,
+            event: "product_created",
+            timestamp: new Date().toISOString()
+          }
+        }
+      );
+      console.log('✅ Product creation notification created');
+    } catch (notifError) {
+      console.error('⚠️ Failed to create product notification:', notifError);
+      // Don't fail the request if notification fails
+    }
 
     console.log('✅ Product created successfully:', product._id);
 
