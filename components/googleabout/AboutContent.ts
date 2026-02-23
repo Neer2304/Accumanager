@@ -1,4 +1,4 @@
-// components/googleabout/AboutContent.ts
+// components/googleabout/constants/aboutContent.ts
 export const ABOUT_CONTENT = {
   hero: {
     tagline: "Empowering Businesses Worldwide",
@@ -84,5 +84,44 @@ export const ABOUT_CONTENT = {
       disclaimer: "No credit card required • 14-day free trial • Cancel anytime"
     },
     secondaryButton: "Explore Features"
+  },
+
+  // Footer content
+  footer: {
+    company: {
+      name: "AccuManage",
+      description: "Streamline your business operations with our all-in-one management platform.",
+      logo: "🚀"
+    },
+    sections: [
+      {
+        title: "Product",
+        links: [
+          { label: "Features", href: "/features" },
+          { label: "Pricing", href: "/pricing" },
+          { label: "API", href: "/api-docs" },
+          { label: "Documentation", href: "/docs" }
+        ]
+      },
+      {
+        title: "Company",
+        links: [
+          { label: "About", href: "/about" },
+          { label: "Blog", href: "/blog" },
+          { label: "Careers", href: "/careers" },
+          { label: "Contact", href: "/contact" }
+        ]
+      },
+      {
+        title: "Support",
+        links: [
+          { label: "Help Center", href: "/help" },
+          { label: "Community", href: "/community" },
+          { label: "Status", href: "/status" },
+          { label: "Security", href: "/security" }
+        ]
+      }
+    ],
+    copyright: "© {year} AccuManage. All rights reserved."
   }
 }

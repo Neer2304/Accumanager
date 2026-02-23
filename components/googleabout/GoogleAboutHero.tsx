@@ -25,7 +25,7 @@ export default function GoogleAboutHero({
   darkMode, 
   getResponsiveTypography 
 }: GoogleAboutHeroProps) {
-  const features = ["Trusted by 10,000+ businesses", "24/7 Customer Support", "99.9% Uptime", "Enterprise Security"]
+  const features = ["Trusted by businesses", "24/7 Customer Support", "99.9% Uptime", "Enterprise Security"]
 
   return (
     <Box
