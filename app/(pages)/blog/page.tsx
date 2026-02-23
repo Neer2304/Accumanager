@@ -1,450 +1,403 @@
 // app/blog/page.tsx
-'use client'
+'use client';
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
   Typography,
-  Paper,
+  Grid,
   Card,
   CardContent,
+  CardMedia,
   Chip,
-  Avatar,
+  Button,
   TextField,
   InputAdornment,
-  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
   Pagination,
+  Skeleton,
   useTheme,
   alpha,
-  Grid,
-  Stack,
-  CircularProgress,
-  Alert,
-} from '@mui/material'
+  Avatar,
+  Divider,
+  Paper
+} from '@mui/material';
 import {
   Search,
   CalendarToday,
-  AccessTime,
   Person,
   ArrowForward,
-} from '@mui/icons-material'
-import { MainLayout } from '@/components/Layout/MainLayout'
-
-interface BlogAuthor {
-  name: string
-  avatar?: string
-  role: string
-}
-
-interface BlogPost {
-  id: string
-  title: string
-  excerpt: string
-  slug: string
-  author: BlogAuthor
-  category: string
-  tags: string[]
-  coverImage?: string
-  readTime: number
-  publishedAt: string
-  featured: boolean
-}
-
-interface BlogCategory {
-  id: string
-  name: string
-  count: number
-}
+  Category as CategoryIcon,
+  TrendingUp,
+  Visibility
+} from '@mui/icons-material';
+import Link from 'next/link';
+import { format } from 'date-fns';
 
 export default function BlogPage() {
-  const theme = useTheme()
-  const darkMode = theme.palette.mode === 'dark'
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const [page, setPage] = useState(1)
-  const [posts, setPosts] = useState<BlogPost[]>([])
-  const [categories, setCategories] = useState<BlogCategory[]>([])
-  const [totalPages, setTotalPages] = useState(1)
-
-  const POSTS_PER_PAGE = 6
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
+  
+  const [posts, setPosts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 9,
+    total: 0,
+    totalPages: 1
+  });
+  
+  const [filters, setFilters] = useState({
+    search: '',
+    category: 'all',
+    page: 1
+  });
 
   useEffect(() => {
-    fetchPosts()
-    fetchCategories()
-  }, [page, selectedCategory, searchQuery])
+    fetchCategories();
+  }, []);
 
-  const fetchPosts = async () => {
-    try {
-      setLoading(true)
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: POSTS_PER_PAGE.toString(),
-        ...(selectedCategory !== 'all' && { category: selectedCategory }),
-        ...(searchQuery && { search: searchQuery }),
-      })
-
-      const response = await fetch(`/api/blog/posts?${params}`)
-      const data = await response.json()
-      
-      if (!response.ok) throw new Error(data.message)
-      
-      setPosts(data.posts)
-      setTotalPages(data.totalPages)
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    fetchPosts();
+  }, [filters.page, filters.category, filters.search]);
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/blog/categories')
-      const data = await response.json()
-      
-      if (!response.ok) throw new Error(data.message)
-      
-      setCategories(data.categories)
-    } catch (err: any) {
-      console.error('Failed to fetch categories:', err)
+      const res = await fetch('/api/blog/category');
+      const data = await res.json();
+      if (data.success) {
+        setCategories(data.data.categories || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
     }
-  }
+  };
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
-    setPage(1)
-  }
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      
+      const params = new URLSearchParams({
+        page: filters.page.toString(),
+        limit: pagination.limit.toString()
+      });
+      
+      if (filters.category !== 'all') params.append('category', filters.category);
+      if (filters.search) params.append('search', filters.search);
 
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category)
-    setPage(1)
-  }
+      const res = await fetch(`/api/blog/posts?${params}`);
+      const data = await res.json();
 
-  const featuredPosts = posts.filter(post => post.featured)
-  const regularPosts = posts.filter(post => !post.featured)
+      if (data.success) {
+        setPosts(data.data.posts);
+        setPagination(data.data.pagination);
+      }
+    } catch (error) {
+      console.error('Failed to fetch posts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (loading && posts.length === 0) {
-    return (
-      <MainLayout title="Blog">
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-          <CircularProgress />
-        </Box>
-      </MainLayout>
-    )
-  }
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFilters({ ...filters, page: 1 });
+  };
 
   return (
-    <MainLayout title="Blog">
-      <Box sx={{ 
-        minHeight: '100vh',
-        backgroundColor: darkMode ? '#202124' : '#f8f9fa',
-        py: 4
-      }}>
-        <Container maxWidth="lg">
-          {/* Header */}
-          <Box sx={{ textAlign: 'center', mb: 6 }}>
-            <Typography 
-              variant="h2" 
-              fontWeight={500} 
-              gutterBottom
-              sx={{ 
-                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
-                color: darkMode ? '#e8eaed' : '#202124'
-              }}
-            >
-              AccuManage Blog
-            </Typography>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                color: darkMode ? '#9aa0a6' : '#5f6368',
-                mb: 4,
-                maxWidth: 600,
-                mx: 'auto'
-              }}
-            >
-              Insights, updates, and stories from the AccuManage team
-            </Typography>
+    <Box sx={{ 
+      minHeight: '100vh',
+      backgroundColor: darkMode ? '#202124' : '#ffffff',
+      py: 6
+    }}>
+      <Container maxWidth="lg">
+        {/* Header */}
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Typography 
+            variant="h2" 
+            fontWeight="bold" 
+            gutterBottom
+            sx={{ 
+              fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+              background: 'linear-gradient(45deg, #4285f4, #34a853)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}
+          >
+            AccuManage Blog
+          </Typography>
+          <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
+            Insights, tutorials, and updates to help you manage your business better
+          </Typography>
+        </Box>
 
-            {/* Search */}
-            <Paper 
-              elevation={0}
-              sx={{ 
-                maxWidth: 500, 
-                mx: 'auto',
-                mb: 3,
-                backgroundColor: darkMode ? '#303134' : '#ffffff',
-                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                borderRadius: '12px',
-              }}
-            >
+        {/* Search and Filter */}
+        <Paper 
+          elevation={0}
+          sx={{ 
+            p: 3, 
+            mb: 4, 
+            borderRadius: '16px',
+            backgroundColor: darkMode ? '#303134' : '#f8f9fa',
+            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`
+          }}
+        >
+          <form onSubmit={handleSearch}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <TextField
                 fullWidth
                 placeholder="Search articles..."
-                value={searchQuery}
-                onChange={handleSearch}
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Search sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                      <Search />
                     </InputAdornment>
-                  ),
+                  )
                 }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': { border: 'none' },
-                  },
-                }}
+                sx={{ flex: 2 }}
               />
-            </Paper>
+              
+              <FormControl sx={{ minWidth: 200 }}>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={filters.category}
+                  label="Category"
+                  onChange={(e) => setFilters({ ...filters, category: e.target.value, page: 1 })}
+                >
+                  <MenuItem value="all">All Categories</MenuItem>
+                  {categories.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.slug}>
+                      {cat.name} ({cat.count})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
-
-            {/* Categories */}
-            <Stack 
-              direction="row" 
-              spacing={1} 
-              justifyContent="center" 
-              flexWrap="wrap"
-              sx={{ gap: 1 }}
-            >
-              <Chip
-                label="All Posts"
-                onClick={() => handleCategoryChange('all')}
-                sx={{
-                  backgroundColor: selectedCategory === 'all' 
-                    ? '#4285f4' 
-                    : darkMode ? '#303134' : '#ffffff',
-                  color: selectedCategory === 'all' 
-                    ? '#ffffff' 
-                    : darkMode ? '#e8eaed' : '#202124',
-                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                  '&:hover': {
-                    backgroundColor: selectedCategory === 'all' 
-                      ? '#4285f4' 
-                      : darkMode ? '#3c4043' : '#f1f3f4',
-                  },
-                }}
-              />
-              {categories.map((category) => (
-                <Chip
-                  key={category.id}
-                  label={`${category.name} (${category.count})`}
-                  onClick={() => handleCategoryChange(category.id)}
-                  sx={{
-                    backgroundColor: selectedCategory === category.id 
-                      ? '#4285f4' 
-                      : darkMode ? '#303134' : '#ffffff',
-                    color: selectedCategory === category.id 
-                      ? '#ffffff' 
-                      : darkMode ? '#e8eaed' : '#202124',
-                    border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                    '&:hover': {
-                      backgroundColor: selectedCategory === category.id 
-                        ? '#4285f4' 
-                        : darkMode ? '#3c4043' : '#f1f3f4',
-                    },
-                  }}
-                />
-              ))}
+              <Button
+                type="submit"
+                variant="contained"
+                startIcon={<Search />}
+                sx={{ px: 4 }}
+              >
+                Search
+              </Button>
             </Stack>
-          </Box>
+          </form>
+        </Paper>
 
-          {/* Featured Posts */}
-          {featuredPosts.length > 0 && (
-            <Box sx={{ mb: 6 }}>
-              <Typography variant="h5" fontWeight={500} sx={{ mb: 3 }}>
-                Featured Posts
-              </Typography>
-              <Grid container spacing={3}>
-                {featuredPosts.slice(0, 2).map((post) => (
-                  <Grid item xs={12} md={6} key={post.id}>
-                    <Card 
-                      elevation={0}
-                      sx={{ 
-                        borderRadius: '16px',
-                        backgroundColor: darkMode ? '#303134' : '#ffffff',
-                        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                        transition: 'all 0.2s',
-                        height: '100%',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-                        }
-                      }}
-                      onClick={() => window.location.href = `/blog/${post.slug}`}
-                    >
-                      {post.coverImage && (
-                        <Box
+        {/* Featured Post */}
+        {!loading && posts.length > 0 && posts[0]?.featured && (
+          <Card 
+            elevation={0}
+            sx={{ 
+              mb: 4, 
+              borderRadius: '16px',
+              backgroundColor: darkMode ? '#303134' : '#ffffff',
+              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+              overflow: 'hidden',
+              position: 'relative'
+            }}
+          >
+            <Grid container>
+              <Grid item xs={12} md={6}>
+                <CardMedia
+                  component="img"
+                  height="300"
+                  image={posts[0].coverImage || '/images/blog-placeholder.jpg'}
+                  alt={posts[0].title}
+                  sx={{ objectFit: 'cover', height: '100%' }}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <CardContent sx={{ p: 4 }}>
+                  <Chip
+                    label="Featured"
+                    size="small"
+                    sx={{
+                      backgroundColor: alpha('#fbbc04', 0.1),
+                      color: '#fbbc04',
+                      mb: 2
+                    }}
+                  />
+                  <Typography variant="h4" fontWeight="bold" gutterBottom>
+                    {posts[0].title}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" paragraph>
+                    {posts[0].excerpt}
+                  </Typography>
+                  <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <CalendarToday fontSize="small" sx={{ color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {format(new Date(posts[0].publishedAt), 'MMM dd, yyyy')}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Person fontSize="small" sx={{ color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {posts[0].author?.name}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Visibility fontSize="small" sx={{ color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {posts[0].views} views
+                      </Typography>
+                    </Box>
+                  </Stack>
+                  <Button
+                    component={Link}
+                    href={`/blog/${posts[0].slug}`}
+                    endIcon={<ArrowForward />}
+                    variant="contained"
+                  >
+                    Read More
+                  </Button>
+                </CardContent>
+              </Grid>
+            </Grid>
+          </Card>
+        )}
+
+        {/* Blog Posts Grid */}
+        <Grid container spacing={3}>
+          {loading ? (
+            // Loading Skeletons
+            [...Array(6)].map((_, i) => (
+              <Grid item xs={12} sm={6} md={4} key={i}>
+                <Card sx={{ borderRadius: '12px' }}>
+                  <Skeleton variant="rectangular" height={200} />
+                  <CardContent>
+                    <Skeleton width="60%" />
+                    <Skeleton width="40%" />
+                    <Skeleton width="80%" />
+                    <Skeleton width="100%" />
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))
+          ) : posts.length === 0 ? (
+            <Grid item xs={12}>
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Typography variant="h5" color="text.secondary" gutterBottom>
+                  No posts found
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Try adjusting your search or filter criteria
+                </Typography>
+              </Box>
+            </Grid>
+          ) : (
+            posts.map((post, index) => (
+              <Grid item xs={12} sm={6} md={4} key={post.id}>
+                <Card 
+                  elevation={0}
+                  sx={{ 
+                    borderRadius: '12px',
+                    backgroundColor: darkMode ? '#303134' : '#ffffff',
+                    border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 24px rgba(0,0,0,0.1)'
+                    }
+                  }}
+                >
+                  {post.coverImage && (
+                    <CardMedia
+                      component="img"
+                      height="180"
+                      image={post.coverImage}
+                      alt={post.title}
+                      sx={{ objectFit: 'cover' }}
+                    />
+                  )}
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Chip
+                        label={post.category?.name}
+                        size="small"
+                        sx={{
+                          backgroundColor: alpha('#4285f4', 0.1),
+                          color: '#4285f4'
+                        }}
+                      />
+                      {post.featured && (
+                        <Chip
+                          label="Featured"
+                          size="small"
                           sx={{
-                            height: 200,
-                            backgroundImage: `url(${post.coverImage})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
+                            backgroundColor: alpha('#fbbc04', 0.1),
+                            color: '#fbbc04'
                           }}
                         />
                       )}
-                      <CardContent sx={{ p: 3 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                          <Chip 
-                            label={post.category}
-                            size="small"
-                            sx={{
-                              backgroundColor: alpha('#4285f4', 0.1),
-                              color: '#4285f4',
-                            }}
-                          />
-                        </Box>
+                    </Box>
+                    
+                    <Typography variant="h6" fontWeight="bold" gutterBottom>
+                      {post.title}
+                    </Typography>
+                    
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                      {post.excerpt?.substring(0, 100)}...
+                    </Typography>
 
-                        <Typography variant="h5" fontWeight={500} gutterBottom>
-                          {post.title}
-                        </Typography>
+                    <Divider sx={{ my: 2 }} />
 
-                        <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mb: 2 }}>
-                          {post.excerpt}
-                        </Typography>
-
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#4285f4' }}>
-                            {post.author.name.charAt(0)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body2" fontWeight={500}>
-                              {post.author.name}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                              {post.author.role}
-                            </Typography>
-                          </Box>
-                        </Box>
-
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <CalendarToday sx={{ fontSize: 16, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                            <Typography variant="caption">
-                              {new Date(post.publishedAt).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric', 
-                                year: 'numeric' 
-                              })}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <AccessTime sx={{ fontSize: 16, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                            <Typography variant="caption">{post.readTime} min read</Typography>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          )}
-
-          {/* Regular Posts */}
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h5" fontWeight={500} sx={{ mb: 3 }}>
-              Latest Articles
-            </Typography>
-            <Grid container spacing={3}>
-              {regularPosts.map((post) => (
-                <Grid item xs={12} sm={6} md={4} key={post.id}>
-                  <Card 
-                    elevation={0}
-                    sx={{ 
-                      borderRadius: '16px',
-                      backgroundColor: darkMode ? '#303134' : '#ffffff',
-                      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                      transition: 'all 0.2s',
-                      height: '100%',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-                      }
-                    }}
-                    onClick={() => window.location.href = `/blog/${post.slug}`}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Chip 
-                          label={post.category}
-                          size="small"
-                          sx={{
-                            backgroundColor: alpha('#4285f4', 0.1),
-                            color: '#4285f4',
-                          }}
-                        />
-                      </Box>
-
-                      <Typography variant="h6" fontWeight={500} gutterBottom>
-                        {post.title}
-                      </Typography>
-
-                      <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mb: 2 }}>
-                        {post.excerpt}
-                      </Typography>
-
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <Avatar sx={{ width: 24, height: 24, fontSize: '0.875rem', bgcolor: '#4285f4' }}>
-                          {post.author.name.charAt(0)}
-                        </Avatar>
-                        <Typography variant="caption">
-                          {post.author.name}
-                        </Typography>
-                      </Box>
-
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CalendarToday sx={{ fontSize: 14, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                          <Typography variant="caption">
-                            {new Date(post.publishedAt).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
-                          </Typography>
-                        </Box>
-                        <Button 
-                          size="small" 
-                          endIcon={<ArrowForward />}
-                          sx={{ 
-                            color: '#4285f4',
-                            fontSize: '0.75rem',
-                          }}
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar
+                          src={post.author?.avatar}
+                          sx={{ width: 24, height: 24 }}
                         >
-                          Read More
-                        </Button>
+                          {post.author?.name?.charAt(0)}
+                        </Avatar>
+                        <Typography variant="caption" color="text.secondary">
+                          {post.author?.name}
+                        </Typography>
                       </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-              <Pagination 
-                count={totalPages} 
-                page={page}
-                onChange={(e, value) => setPage(value)}
-                color="primary"
-                shape="rounded"
-              />
-            </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {post.readTime} min read
+                      </Typography>
+                    </Stack>
+                  </CardContent>
+                  <Button
+                    component={Link}
+                    href={`/blog/${post.slug}`}
+                    sx={{ m: 2, mt: 0 }}
+                  >
+                    Read More
+                  </Button>
+                </Card>
+              </Grid>
+            ))
           )}
-        </Container>
-      </Box>
-    </MainLayout>
-  )
+        </Grid>
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
+            <Pagination
+              count={pagination.totalPages}
+              page={filters.page}
+              onChange={(e, page) => setFilters({ ...filters, page })}
+              color="primary"
+              size="large"
+            />
+          </Box>
+        )}
+      </Container>
+    </Box>
+  );
 }
