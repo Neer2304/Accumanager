@@ -6,7 +6,6 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   CardMedia,
@@ -33,7 +32,6 @@ import {
   Person,
   ArrowForward,
   Category as CategoryIcon,
-  TrendingUp,
   Visibility
 } from '@mui/icons-material';
 import Link from 'next/link';
@@ -206,8 +204,11 @@ export default function BlogPage() {
               position: 'relative'
             }}
           >
-            <Grid container>
-              <Grid item xs={12} md={6}>
+            <Box sx={{ 
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' }
+            }}>
+              <Box sx={{ flex: { md: 1 } }}>
                 <CardMedia
                   component="img"
                   height="300"
@@ -215,8 +216,8 @@ export default function BlogPage() {
                   alt={posts[0].title}
                   sx={{ objectFit: 'cover', height: '100%' }}
                 />
-              </Grid>
-              <Grid item xs={12} md={6}>
+              </Box>
+              <Box sx={{ flex: { md: 1 } }}>
                 <CardContent sx={{ p: 4 }}>
                   <Chip
                     label="Featured"
@@ -233,7 +234,7 @@ export default function BlogPage() {
                   <Typography variant="body1" color="text.secondary" paragraph>
                     {posts[0].excerpt}
                   </Typography>
-                  <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+                  <Stack direction="row" spacing={2} sx={{ mb: 3, flexWrap: 'wrap' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <CalendarToday fontSize="small" sx={{ color: 'text.secondary' }} />
                       <Typography variant="body2" color="text.secondary">
@@ -262,17 +263,25 @@ export default function BlogPage() {
                     Read More
                   </Button>
                 </CardContent>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Card>
         )}
 
-        {/* Blog Posts Grid */}
-        <Grid container spacing={3}>
+        {/* Blog Posts Grid - Replaced with Flexbox */}
+        <Box sx={{ 
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 3,
+          mx: -1.5 // Offset for padding
+        }}>
           {loading ? (
             // Loading Skeletons
             [...Array(6)].map((_, i) => (
-              <Grid item xs={12} sm={6} md={4} key={i}>
+              <Box key={i} sx={{ 
+                width: { xs: '100%', sm: 'calc(50% - 24px)', md: 'calc(33.333% - 24px)' },
+                mx: 1.5
+              }}>
                 <Card sx={{ borderRadius: '12px' }}>
                   <Skeleton variant="rectangular" height={200} />
                   <CardContent>
@@ -282,22 +291,23 @@ export default function BlogPage() {
                     <Skeleton width="100%" />
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))
           ) : posts.length === 0 ? (
-            <Grid item xs={12}>
-              <Box sx={{ textAlign: 'center', py: 8 }}>
-                <Typography variant="h5" color="text.secondary" gutterBottom>
-                  No posts found
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Try adjusting your search or filter criteria
-                </Typography>
-              </Box>
-            </Grid>
+            <Box sx={{ width: '100%', textAlign: 'center', py: 8 }}>
+              <Typography variant="h5" color="text.secondary" gutterBottom>
+                No posts found
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Try adjusting your search or filter criteria
+              </Typography>
+            </Box>
           ) : (
             posts.map((post, index) => (
-              <Grid item xs={12} sm={6} md={4} key={post.id}>
+              <Box key={post.id} sx={{ 
+                width: { xs: '100%', sm: 'calc(50% - 24px)', md: 'calc(33.333% - 24px)' },
+                mx: 1.5
+              }}>
                 <Card 
                   elevation={0}
                   sx={{ 
@@ -380,10 +390,10 @@ export default function BlogPage() {
                     Read More
                   </Button>
                 </Card>
-              </Grid>
+              </Box>
             ))
           )}
-        </Grid>
+        </Box>
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (

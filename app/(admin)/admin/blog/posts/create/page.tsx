@@ -1,8 +1,9 @@
-// app/admin/blog/posts/create/page.tsx
+// app/admin/blog/posts/create/page.tsx (FIXED)
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
   Box,
   Container,
@@ -17,8 +18,6 @@ import {
   Select,
   MenuItem,
   Chip,
-  Autocomplete,
-  Grid,
   Alert,
   CircularProgress,
   useTheme,
@@ -26,7 +25,8 @@ import {
   FormControlLabel,
   Divider,
   IconButton,
-  InputAdornment
+  InputAdornment,
+  Paper
 } from '@mui/material';
 import {
   ArrowBack,
@@ -37,11 +37,28 @@ import {
   Add,
   Close
 } from '@mui/icons-material';
-import dynamic from 'next/dynamic';
+import { alpha } from '@mui/material/styles';
 
-// Import Rich Text Editor dynamically (no SSR)
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
-import 'react-quill/dist/quill.snow.css';
+// Dynamically import the rich text editor with no SSR
+const RichTextEditor = dynamic(
+  () => import('@/components/admin/blog/RichTextEditor'),
+  { 
+    ssr: false,
+    loading: () => (
+      <Box sx={{ 
+        height: 400, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: '8px'
+      }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+);
 
 export default function CreatePostPage() {
   const router = useRouter();
@@ -159,16 +176,6 @@ export default function CreatePostPage() {
     }
   };
 
-  const quillModules = {
-    toolbar: [
-      [{ header: [1, 2, 3, 4, 5, 6, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link', 'image', 'code-block'],
-      ['clean']
-    ]
-  };
-
   return (
     <Box sx={{ 
       minHeight: '100vh',
@@ -204,8 +211,9 @@ export default function CreatePostPage() {
                 startIcon={<Save />}
                 onClick={() => handleSave(false)}
                 disabled={saving}
+                sx={{ backgroundColor: '#5f6368', '&:hover': { backgroundColor: '#4a4d52' } }}
               >
-                Save Draft
+                {saving ? 'Saving...' : 'Save Draft'}
               </Button>
               <Button
                 variant="contained"
@@ -214,7 +222,7 @@ export default function CreatePostPage() {
                 disabled={saving}
                 sx={{ backgroundColor: '#34a853', '&:hover': { backgroundColor: '#2d9248' } }}
               >
-                Publish
+                {saving ? 'Publishing...' : 'Publish'}
               </Button>
             </Stack>
           </Box>
@@ -226,9 +234,14 @@ export default function CreatePostPage() {
           </Alert>
         )}
 
-        <Grid container spacing={3}>
-          {/* Main Content */}
-          <Grid item xs={12} md={8}>
+        {/* Main Content - Flexbox layout instead of Grid */}
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 3
+        }}>
+          {/* Left Column - Main Content */}
+          <Box sx={{ flex: { md: 2 } }}>
             <Stack spacing={3}>
               {/* Title */}
               <Card sx={{ borderRadius: '12px' }}>
@@ -288,41 +301,18 @@ export default function CreatePostPage() {
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                     Content *
                   </Typography>
-                  <Box sx={{ 
-                    '.quill': { 
-                      backgroundColor: darkMode ? '#303134' : '#fff',
-                      borderRadius: '8px',
-                      '& .ql-toolbar': {
-                        borderColor: darkMode ? '#3c4043' : '#dadce0',
-                        borderRadius: '8px 8px 0 0'
-                      },
-                      '& .ql-container': {
-                        borderColor: darkMode ? '#3c4043' : '#dadce0',
-                        borderRadius: '0 0 8px 8px',
-                        minHeight: '400px',
-                        fontSize: '16px'
-                      },
-                      '& .ql-editor': {
-                        minHeight: '400px',
-                        color: darkMode ? '#e8eaed' : '#202124'
-                      }
-                    }
-                  }}>
-                    <ReactQuill
-                      theme="snow"
-                      value={formData.content}
-                      onChange={(content) => setFormData({ ...formData, content })}
-                      modules={quillModules}
-                      placeholder="Write your blog post here..."
-                    />
-                  </Box>
+                  <RichTextEditor 
+                    content={formData.content}
+                    onChange={(content: string) => setFormData({ ...formData, content })}
+                    darkMode={darkMode}
+                  />
                 </CardContent>
               </Card>
             </Stack>
-          </Grid>
+          </Box>
 
-          {/* Sidebar */}
-          <Grid item xs={12} md={4}>
+          {/* Right Column - Sidebar */}
+          <Box sx={{ flex: { md: 1 } }}>
             <Stack spacing={3}>
               {/* Publish Settings */}
               <Card sx={{ borderRadius: '12px' }}>
@@ -387,7 +377,7 @@ export default function CreatePostPage() {
                       onClick={handleAddTag}
                       disabled={!tagInput.trim()}
                     >
-                      Add
+                      <Add />
                     </Button>
                   </Stack>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -436,7 +426,7 @@ export default function CreatePostPage() {
                       </IconButton>
                     </Box>
                   ) : (
-                    <Box
+                    <Paper
                       sx={{
                         border: `2px dashed ${darkMode ? '#3c4043' : '#dadce0'}`,
                         borderRadius: '8px',
@@ -444,11 +434,10 @@ export default function CreatePostPage() {
                         textAlign: 'center',
                         cursor: 'pointer',
                         '&:hover': {
-                          backgroundColor: darkMode ? '#303134' : '#f8f9fa'
+                          backgroundColor: darkMode ? alpha('#fff', 0.05) : alpha('#000', 0.02)
                         }
                       }}
                       onClick={() => {
-                        // Implement image upload
                         const url = prompt('Enter image URL:');
                         if (url) {
                           setFormData({ ...formData, coverImage: url });
@@ -459,7 +448,7 @@ export default function CreatePostPage() {
                       <Typography variant="body2" color="text.secondary">
                         Click to add cover image
                       </Typography>
-                    </Box>
+                    </Paper>
                   )}
                 </CardContent>
               </Card>
@@ -472,6 +461,7 @@ export default function CreatePostPage() {
                   </Typography>
                   <TextField
                     type="number"
+                    fullWidth
                     value={formData.readTime}
                     onChange={(e) => setFormData({ ...formData, readTime: parseInt(e.target.value) || 5 })}
                     InputProps={{
@@ -481,8 +471,8 @@ export default function CreatePostPage() {
                 </CardContent>
               </Card>
             </Stack>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Container>
     </Box>
   );

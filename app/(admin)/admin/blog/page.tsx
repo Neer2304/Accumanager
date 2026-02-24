@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import {
   Box,
   Container,
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -209,10 +208,23 @@ export default function AdminBlogDashboard() {
           </Alert>
         )}
 
-        {/* Stats Grid */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+        {/* Stats Grid - Replaced with Flexbox */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexWrap: 'wrap',
+          gap: 3,
+          mb: 4,
+          mx: -1.5 // Offset for padding
+        }}>
           {statCards.map((stat, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
+            <Box key={index} sx={{ 
+              width: {
+                xs: '100%',
+                sm: 'calc(50% - 24px)',
+                md: 'calc(33.333% - 24px)'
+              },
+              mx: 1.5 // Padding to create gaps
+            }}>
               <Card sx={{ 
                 borderRadius: '16px',
                 backgroundColor: darkMode ? '#303134' : '#ffffff',
@@ -244,13 +256,18 @@ export default function AdminBlogDashboard() {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
 
-        {/* Recent Posts */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
+        {/* Main Content - Replaced Grid with Flexbox */}
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 3
+        }}>
+          {/* Recent Posts - Left Column */}
+          <Box sx={{ flex: { md: 2 } }}>
             <Card sx={{ 
               borderRadius: '16px',
               backgroundColor: darkMode ? '#303134' : '#ffffff',
@@ -337,10 +354,10 @@ export default function AdminBlogDashboard() {
                 </TableContainer>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          {/* Quick Actions */}
-          <Grid item xs={12} md={4}>
+          {/* Quick Actions - Right Column */}
+          <Box sx={{ flex: { md: 1 } }}>
             <Stack spacing={3}>
               <Card sx={{ 
                 borderRadius: '16px',
@@ -433,8 +450,8 @@ export default function AdminBlogDashboard() {
                 </CardContent>
               </Card>
             </Stack>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Container>
     </Box>
   );

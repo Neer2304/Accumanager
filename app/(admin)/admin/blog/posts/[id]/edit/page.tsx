@@ -17,7 +17,6 @@ import {
   Select,
   MenuItem,
   Chip,
-  Grid,
   Alert,
   CircularProgress,
   useTheme,
@@ -26,7 +25,10 @@ import {
   Divider,
   IconButton,
   InputAdornment,
-  Paper
+  Paper,
+  ToggleButton,
+  ToggleButtonGroup,
+  alpha
 } from '@mui/material';
 import {
   ArrowBack,
@@ -34,12 +36,193 @@ import {
   Preview,
   Image as ImageIcon,
   Delete,
-  Close
+  Close,
+  Link as LinkIcon,
+  FormatBold,
+  FormatItalic,
+  FormatUnderlined,
+  FormatListBulleted,
+  FormatListNumbered,
+  Title,
+  Code,
+  Undo,
+  Redo
 } from '@mui/icons-material';
-import dynamic from 'next/dynamic';
-import 'react-quill/dist/quill.snow.css';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import Color from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+// Rich Text Editor Component
+const RichTextEditor = ({ content, onChange, darkMode }: any) => {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'editor-link',
+        },
+      }),
+      Image.configure({
+        HTMLAttributes: {
+          class: 'editor-image',
+        },
+      }),
+      TextStyle,
+      Color,
+    ],
+    content: content,
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none',
+        style: 'min-height: 400px; padding: 1rem;',
+      },
+    },
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+  });
+
+  if (!editor) {
+    return null;
+  }
+
+  const MenuBar = () => {
+    const [linkUrl, setLinkUrl] = useState('');
+
+    const addLink = () => {
+      const url = window.prompt('Enter URL:');
+      if (url) {
+        editor.chain().focus().setLink({ href: url }).run();
+      }
+    };
+
+    const addImage = () => {
+      const url = window.prompt('Enter image URL:');
+      if (url) {
+        editor.chain().focus().setImage({ src: url }).run();
+      }
+    };
+
+    return (
+      <Box sx={{ 
+        borderBottom: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+        pb: 1,
+        mb: 2,
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 0.5
+      }}>
+        <ToggleButtonGroup size="small">
+          <ToggleButton 
+            value="bold" 
+            selected={editor.isActive('bold')}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+          >
+            <FormatBold fontSize="small" />
+          </ToggleButton>
+          <ToggleButton 
+            value="italic"
+            selected={editor.isActive('italic')}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          >
+            <FormatItalic fontSize="small" />
+          </ToggleButton>
+          <ToggleButton 
+            value="underline"
+            selected={editor.isActive('underline')}
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+          >
+            <FormatUnderlined fontSize="small" />
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        <ToggleButtonGroup size="small">
+          <ToggleButton 
+            value="bulletList"
+            selected={editor.isActive('bulletList')}
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+          >
+            <FormatListBulleted fontSize="small" />
+          </ToggleButton>
+          <ToggleButton 
+            value="orderedList"
+            selected={editor.isActive('orderedList')}
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          >
+            <FormatListNumbered fontSize="small" />
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        <ToggleButtonGroup size="small">
+          <ToggleButton 
+            value="h1"
+            selected={editor.isActive('heading', { level: 1 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          >
+            <Title fontSize="small" />
+            <Typography variant="caption" sx={{ ml: 0.5 }}>1</Typography>
+          </ToggleButton>
+          <ToggleButton 
+            value="h2"
+            selected={editor.isActive('heading', { level: 2 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          >
+            <Title fontSize="small" />
+            <Typography variant="caption" sx={{ ml: 0.5 }}>2</Typography>
+          </ToggleButton>
+          <ToggleButton 
+            value="h3"
+            selected={editor.isActive('heading', { level: 3 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          >
+            <Title fontSize="small" />
+            <Typography variant="caption" sx={{ ml: 0.5 }}>3</Typography>
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        <ToggleButtonGroup size="small">
+          <ToggleButton value="link" onClick={addLink}>
+            <LinkIcon fontSize="small" />
+          </ToggleButton>
+          <ToggleButton value="image" onClick={addImage}>
+            <ImageIcon fontSize="small" />
+          </ToggleButton>
+          <ToggleButton value="codeBlock" 
+            selected={editor.isActive('codeBlock')}
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          >
+            <Code fontSize="small" />
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        <ToggleButtonGroup size="small" sx={{ ml: 'auto' }}>
+          <ToggleButton value="undo" onClick={() => editor.chain().focus().undo().run()}>
+            <Undo fontSize="small" />
+          </ToggleButton>
+          <ToggleButton value="redo" onClick={() => editor.chain().focus().redo().run()}>
+            <Redo fontSize="small" />
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+    );
+  };
+
+  return (
+    <Box sx={{ 
+      border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      borderRadius: '8px',
+      backgroundColor: darkMode ? '#303134' : '#fff',
+      p: 2
+    }}>
+      <MenuBar />
+      <EditorContent editor={editor} />
+    </Box>
+  );
+};
 
 export default function EditPostPage() {
   const router = useRouter();
@@ -195,16 +378,6 @@ export default function EditPostPage() {
     }
   };
 
-  const quillModules = {
-    toolbar: [
-      [{ header: [1, 2, 3, 4, 5, 6, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link', 'image', 'code-block'],
-      ['clean']
-    ]
-  };
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -270,9 +443,14 @@ export default function EditPostPage() {
           </Alert>
         )}
 
-        <Grid container spacing={3}>
-          {/* Main Content */}
-          <Grid item xs={12} md={8}>
+        {/* Main Content - Flexbox layout instead of Grid */}
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 3
+        }}>
+          {/* Left Column - Main Content */}
+          <Box sx={{ flex: { md: 2 } }}>
             <Stack spacing={3}>
               {/* Title */}
               <Card sx={{ borderRadius: '12px' }}>
@@ -329,33 +507,18 @@ export default function EditPostPage() {
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                     Content *
                   </Typography>
-                  <Box sx={{ 
-                    '.quill': { 
-                      backgroundColor: darkMode ? '#303134' : '#fff',
-                      borderRadius: '8px',
-                      '& .ql-toolbar': {
-                        borderColor: darkMode ? '#3c4043' : '#dadce0'
-                      },
-                      '& .ql-container': {
-                        borderColor: darkMode ? '#3c4043' : '#dadce0',
-                        minHeight: '400px'
-                      }
-                    }
-                  }}>
-                    <ReactQuill
-                      theme="snow"
-                      value={formData.content}
-                      onChange={(content) => setFormData({ ...formData, content })}
-                      modules={quillModules}
-                    />
-                  </Box>
+                  <RichTextEditor 
+                    content={formData.content}
+                    onChange={(content: string) => setFormData({ ...formData, content })}
+                    darkMode={darkMode}
+                  />
                 </CardContent>
               </Card>
             </Stack>
-          </Grid>
+          </Box>
 
-          {/* Sidebar */}
-          <Grid item xs={12} md={4}>
+          {/* Right Column - Sidebar */}
+          <Box sx={{ flex: { md: 1 } }}>
             <Stack spacing={3}>
               {/* Publish Settings */}
               <Card sx={{ borderRadius: '12px' }}>
@@ -466,7 +629,10 @@ export default function EditPostPage() {
                           top: 8,
                           right: 8,
                           backgroundColor: 'rgba(0,0,0,0.5)',
-                          color: 'white'
+                          color: 'white',
+                          '&:hover': {
+                            backgroundColor: 'rgba(0,0,0,0.7)'
+                          }
                         }}
                         onClick={() => setFormData({ ...formData, coverImage: '' })}
                       >
@@ -480,7 +646,11 @@ export default function EditPostPage() {
                         borderRadius: '8px',
                         p: 3,
                         textAlign: 'center',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                        '&:hover': {
+                          backgroundColor: darkMode ? alpha('#fff', 0.05) : alpha('#000', 0.02)
+                        }
                       }}
                       onClick={() => {
                         const url = prompt('Enter image URL:');
@@ -514,8 +684,8 @@ export default function EditPostPage() {
                 </CardContent>
               </Card>
             </Stack>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Container>
     </Box>
   );

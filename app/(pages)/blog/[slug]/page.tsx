@@ -18,7 +18,6 @@ import {
   Tooltip,
   useTheme,
   alpha,
-  Grid,
   Card,
   CardContent,
   CardMedia
@@ -343,9 +342,17 @@ export default function SingleBlogPostPage() {
             <Typography variant="h5" fontWeight="bold" gutterBottom>
               Related Articles
             </Typography>
-            <Grid container spacing={3}>
+            <Box sx={{ 
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 3,
+              mx: -1.5
+            }}>
               {post.relatedPosts.map((related: any) => (
-                <Grid item xs={12} sm={6} md={4} key={related.id}>
+                <Box key={related.id} sx={{ 
+                  width: { xs: '100%', sm: 'calc(50% - 24px)', md: 'calc(33.333% - 24px)' },
+                  mx: 1.5
+                }}>
                   <Card 
                     elevation={0}
                     sx={{ 
@@ -385,9 +392,9 @@ export default function SingleBlogPostPage() {
                       </Button>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
               ))}
-            </Grid>
+            </Box>
           </Box>
         )}
       </Container>

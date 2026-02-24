@@ -7,7 +7,6 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   CardMedia,
@@ -114,11 +113,20 @@ export default function CategoryPage() {
           </Typography>
         </Box>
 
-        {/* Posts Grid */}
-        <Grid container spacing={3}>
+        {/* Posts Grid - Replaced Grid with Flexbox */}
+        <Box sx={{ 
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 3,
+          mx: -1.5 // Offset for padding to create proper gaps
+        }}>
           {loading ? (
+            // Loading Skeletons
             [...Array(6)].map((_, i) => (
-              <Grid item xs={12} sm={6} md={4} key={i}>
+              <Box key={i} sx={{ 
+                width: { xs: '100%', sm: 'calc(50% - 24px)', md: 'calc(33.333% - 24px)' },
+                mx: 1.5
+              }}>
                 <Card sx={{ borderRadius: '12px' }}>
                   <Skeleton variant="rectangular" height={200} />
                   <CardContent>
@@ -128,10 +136,10 @@ export default function CategoryPage() {
                     <Skeleton width="100%" />
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))
           ) : posts.length === 0 ? (
-            <Grid item xs={12}>
+            <Box sx={{ width: '100%', mx: 1.5 }}>
               <Paper sx={{ p: 6, textAlign: 'center' }}>
                 <CategoryIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                 <Typography variant="h5" color="text.secondary" gutterBottom>
@@ -146,10 +154,14 @@ export default function CategoryPage() {
                   Browse All Posts
                 </Button>
               </Paper>
-            </Grid>
+            </Box>
           ) : (
+            // Actual Posts
             posts.map((post) => (
-              <Grid item xs={12} sm={6} md={4} key={post.id}>
+              <Box key={post.id} sx={{ 
+                width: { xs: '100%', sm: 'calc(50% - 24px)', md: 'calc(33.333% - 24px)' },
+                mx: 1.5
+              }}>
                 <Card 
                   elevation={0}
                   sx={{ 
@@ -223,10 +235,10 @@ export default function CategoryPage() {
                     Read More
                   </Button>
                 </Card>
-              </Grid>
+              </Box>
             ))
           )}
-        </Grid>
+        </Box>
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
