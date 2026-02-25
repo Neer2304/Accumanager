@@ -113,14 +113,13 @@ const BlogIcon = ({ name, size = 'medium', color }: { name: string; size?: 'smal
   return icons[name] || <MenuBook sx={{ fontSize: iconSize, color }} />;
 };
 
-// Blog post card component
+// Blog post card component - WITHOUT IMAGES
 function BlogPostCard({ post, viewMode, darkMode, onBookmark }: { 
   post: any; 
   viewMode: 'grid' | 'list'; 
   darkMode: boolean;
   onBookmark: (id: string) => void;
 }) {
-  const [isHovered, setIsHovered] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   const handleBookmark = (e: React.MouseEvent) => {
@@ -195,23 +194,6 @@ function BlogPostCard({ post, viewMode, darkMode, onBookmark }: {
             }}
           />
         )}
-
-        {/* Image */}
-        <Box sx={{ position: 'relative', overflow: 'hidden', borderRadius: '12px 12px 0 0' }}>
-          <img
-            src={post.coverImage || '/images/blog-placeholder.jpg'}
-            alt={post.title}
-            style={{
-              width: '100%',
-              height: 180,
-              objectFit: 'cover',
-              transition: 'transform 0.3s',
-              transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-            }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          />
-        </Box>
 
         <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           {/* Category */}
@@ -334,7 +316,7 @@ function BlogPostCard({ post, viewMode, darkMode, onBookmark }: {
     );
   }
 
-  // List View
+  // List View - WITHOUT IMAGES
   return (
     <Card
       hover
@@ -352,60 +334,11 @@ function BlogPostCard({ post, viewMode, darkMode, onBookmark }: {
         }
       }}
     >
-      {/* Image section */}
+      {/* Left side - no image, just a subtle gradient background */}
       <Box sx={{ 
-        position: 'relative', 
-        width: { xs: '100%', sm: 200 },
-        flexShrink: 0
-      }}>
-        <img
-          src={post.coverImage || '/images/blog-placeholder.jpg'}
-          alt={post.title}
-          style={{
-            width: '100%',
-            // height: { xs: 150, sm: '100%' },
-            objectFit: 'cover',
-          }}
-        />
-        {post.featured && (
-          <Chip
-            icon={<AutoAwesome sx={{ fontSize: 12 }} />}
-            label="Featured"
-            size="small"
-            sx={{
-              position: 'absolute',
-              top: 8,
-              left: 8,
-              backgroundColor: google.yellow,
-              color: google.black,
-              fontWeight: 500,
-              fontSize: '0.65rem',
-              height: 20,
-            }}
-          />
-        )}
-        <IconButton
-          onClick={handleBookmark}
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            backgroundColor: alpha(google.white, 0.9),
-            backdropFilter: 'blur(4px)',
-            width: 28,
-            height: 28,
-            '&:hover': {
-              backgroundColor: google.white,
-            }
-          }}
-          size="small"
-        >
-          {isBookmarked ? 
-            <Bookmark sx={{ color: google.blue, fontSize: 16 }} /> : 
-            <BookmarkBorder sx={{ color: google.grey, fontSize: 16 }} />
-          }
-        </IconButton>
-      </Box>
+        width: { xs: '100%', sm: 8 },
+        background: `linear-gradient(135deg, ${google.blue}, ${google.green})`,
+      }} />
 
       {/* Content */}
       <Box sx={{ p: 2, flex: 1 }}>
@@ -421,11 +354,31 @@ function BlogPostCard({ post, viewMode, darkMode, onBookmark }: {
               height: 24,
             }}
           />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Visibility sx={{ fontSize: 14, color: google.grey }} />
-            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-              {post.views?.toLocaleString()} views
-            </Typography>
+          {post.featured && (
+            <Chip
+              icon={<AutoAwesome sx={{ fontSize: 12 }} />}
+              label="Featured"
+              size="small"
+              sx={{
+                backgroundColor: google.yellow,
+                color: google.black,
+                fontWeight: 500,
+                height: 20,
+                fontSize: '0.65rem',
+              }}
+            />
+          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
+            <IconButton
+              onClick={handleBookmark}
+              size="small"
+              sx={{ p: 0.5 }}
+            >
+              {isBookmarked ? 
+                <Bookmark sx={{ color: google.blue, fontSize: 18 }} /> : 
+                <BookmarkBorder sx={{ color: google.grey, fontSize: 18 }} />
+              }
+            </IconButton>
           </Box>
         </Box>
 
@@ -478,6 +431,12 @@ function BlogPostCard({ post, viewMode, darkMode, onBookmark }: {
             <AccessTime sx={{ fontSize: 14, color: google.green }} />
             <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
               {post.readTime} min read
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Visibility sx={{ fontSize: 14, color: google.yellow }} />
+            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+              {post.views?.toLocaleString()} views
             </Typography>
           </Box>
         </Box>
@@ -609,8 +568,6 @@ function BlogContent() {
     fetchPosts();
     setSnackbar({ open: true, message: 'Posts refreshed', severity: 'success' });
   };
-
-  const categories_list = Array.from(new Set(posts.map(p => p.category?.slug))).filter(Boolean);
 
   // Filter posts client-side for instant UI updates
   const filteredPosts = posts.filter(post => {
@@ -1078,7 +1035,7 @@ function BlogContent() {
                     backgroundColor: darkMode ? '#303134' : '#ffffff',
                     border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
                   }}>
-                    <Skeleton variant="rectangular" height={viewMode === 'grid' ? 180 : 200} animation="wave" />
+                    <Skeleton variant="rectangular" height={viewMode === 'grid' ? 100 : 120} animation="wave" />
                     <Box sx={{ p: 2 }}>
                       <Skeleton width="60%" animation="wave" />
                       <Skeleton width="40%" animation="wave" />
@@ -1114,7 +1071,7 @@ function BlogContent() {
                 </Button>
               </Box>
             ) : (
-              filteredPosts.map((post, index) => (
+              filteredPosts.map((post) => (
                 <Box key={post.id} sx={{ 
                   width: viewMode === 'grid' 
                     ? { xs: '100%', sm: 'calc(50% - 24px)', md: 'calc(33.333% - 24px)' }
