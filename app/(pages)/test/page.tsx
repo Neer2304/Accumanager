@@ -1,53 +1,73 @@
-// app/test/page.tsx
 'use client'
+import { useState } from 'react';
+import { Button, Stack } from '@mui/material';
+import { LogoutDialog } from '@/components/dialogs/LogoutDialog';
+import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
+import { DeleteDialog } from '@/components/dialogs/DeleteDialog';
+import { SuccessDialog } from '@/components/dialogs/SuccessDialog';
 
-import { useState, useEffect } from 'react'
-
-export default function TestPage() {
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  const testAPI = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const res = await fetch('/api/admin/about')
-      const result = await res.json()
-      console.log('API Response:', result)
-      if (result.success) {
-        setData(result.data)
-      } else {
-        setError(result.message)
-      }
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    testAPI()
-  }, [])
+// Change from named export to default export
+export default function DialogTestPage() {
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>API Test</h1>
-      <button onClick={testAPI} disabled={loading}>
-        {loading ? 'Testing...' : 'Test API'}
-      </button>
-      
-      {error && <div style={{ color: 'red', marginTop: '10px' }}>Error: {error}</div>}
-      
-      {data && (
-        <div style={{ marginTop: '20px' }}>
-          <h3>Company Name: {data.companyName}</h3>
-          <pre style={{ background: '#f5f5f5', padding: '10px', borderRadius: '5px' }}>
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </div>
-      )}
-    </div>
-  )
+    <>
+      <Stack direction="row" spacing={2} p={3}>
+        <Button variant="outlined" onClick={() => setLogoutOpen(true)}>
+          Show Logout
+        </Button>
+        <Button variant="outlined" onClick={() => setConfirmOpen(true)}>
+          Show Confirm
+        </Button>
+        <Button variant="outlined" color="error" onClick={() => setDeleteOpen(true)}>
+          Show Delete
+        </Button>
+        <Button variant="outlined" color="success" onClick={() => setSuccessOpen(true)}>
+          Show Success
+        </Button>
+      </Stack>
+
+      <LogoutDialog
+        open={logoutOpen}
+        onClose={() => setLogoutOpen(false)}
+        onConfirm={() => {
+          console.log('Logging out...');
+          setLogoutOpen(false);
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          console.log('Confirmed!');
+          setConfirmOpen(false);
+        }}
+        title="Confirm Action"
+        message="Are you sure you want to proceed with this action?"
+        severity="info"
+      />
+
+      <DeleteDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => {
+          console.log('Deleting...');
+          setDeleteOpen(false);
+        }}
+        itemName="Product X"
+        itemType="product"
+      />
+
+      <SuccessDialog
+        open={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Product Deleted"
+        message="The product has been successfully removed from your inventory."
+      />
+    </>
+  );
 }
