@@ -5,11 +5,13 @@ export interface IStatusService extends Document {
   name: string
   description: string
   status: 'operational' | 'degraded' | 'outage' | 'maintenance'
-  uptime: number
-  latency: number
-  group: 'api' | 'database' | 'storage' | 'auth' | 'payment' | 'email'
+  statusMessage?: string
+  group: 'api' | 'database' | 'auth' | 'storage' | 'payment' | 'email' | 'other'
   order: number
+  endpoint?: string
   lastIncident?: Date
+  lastChecked?: Date
+  createdBy?: mongoose.Types.ObjectId
   createdAt: Date
   updatedAt: Date
 }
@@ -17,7 +19,9 @@ export interface IStatusService extends Document {
 const StatusServiceSchema = new Schema({
   name: { 
     type: String, 
-    required: [true, 'Service name is required'] 
+    required: [true, 'Service name is required'],
+    unique: true,
+    trim: true
   },
   description: { 
     type: String, 
@@ -25,40 +29,37 @@ const StatusServiceSchema = new Schema({
   },
   status: { 
     type: String, 
-    enum: {
-      values: ['operational', 'degraded', 'outage', 'maintenance'],
-      message: '{VALUE} is not a valid status'
-    },
+    enum: ['operational', 'degraded', 'outage', 'maintenance'],
     default: 'operational'
   },
-  uptime: { 
-    type: Number, 
-    default: 99.99,
-    min: [0, 'Uptime cannot be negative'],
-    max: [100, 'Uptime cannot exceed 100']
-  },
-  latency: { 
-    type: Number, 
-    default: 0,
-    min: [0, 'Latency cannot be negative']
+  statusMessage: { 
+    type: String 
   },
   group: { 
     type: String, 
-    enum: {
-      values: ['api', 'database', 'storage', 'auth', 'payment', 'email'],
-      message: '{VALUE} is not a valid group'
-    },
-    required: [true, 'Service group is required'] 
+    enum: ['api', 'database', 'auth', 'storage', 'payment', 'email', 'other'],
+    default: 'other'
   },
   order: { 
     type: Number, 
     default: 0 
   },
+  endpoint: { 
+    type: String 
+  },
   lastIncident: { 
     type: Date 
+  },
+  lastChecked: { 
+    type: Date 
+  },
+  createdBy: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'User' 
   }
 }, { 
   timestamps: true 
 })
 
-export default mongoose.models.StatusService || mongoose.model<IStatusService>('StatusService', StatusServiceSchema)
+export default mongoose.models.StatusService || 
+  mongoose.model<IStatusService>('StatusService', StatusServiceSchema)
