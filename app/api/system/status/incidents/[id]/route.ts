@@ -14,7 +14,7 @@ export async function GET(
     
     await connectToDatabase();
 
-    const incident = await StatusIncident.findById(params.id);
+    const incident = await StatusIncident.findById(params.id).lean();
 
     if (!incident) {
       return NextResponse.json(
@@ -148,6 +148,70 @@ export async function POST(
 
   } catch (error: any) {
     console.error('❌ Update incident error:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: error.message || 'Internal server error' 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/system/status/incident/[id] - Admin only - Delete incident
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    console.log(`🗑️ DELETE /api/system/status/incident/${params.id} - Deleting incident`);
+    
+    // Verify authentication
+    const authToken = request.cookies.get('auth_token')?.value;
+    if (!authToken) {
+      return NextResponse.json(
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify token and get user info
+    let decoded;
+    try {
+      decoded = verifyToken(authToken);
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user is admin
+    if (!decoded.role || !['admin', 'superadmin'].includes(decoded.role)) {
+      return NextResponse.json(
+        { success: false, message: 'Admin privileges required' },
+        { status: 403 }
+      );
+    }
+
+    await connectToDatabase();
+
+    const incident = await StatusIncident.findByIdAndDelete(params.id);
+
+    if (!incident) {
+      return NextResponse.json(
+        { success: false, message: 'Incident not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Incident deleted successfully'
+    });
+
+  } catch (error: any) {
+    console.error('❌ Delete incident error:', error);
     return NextResponse.json(
       { 
         success: false, 

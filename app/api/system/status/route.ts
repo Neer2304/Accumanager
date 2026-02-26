@@ -4,16 +4,33 @@ import { connectToDatabase } from '@/lib/mongodb';
 import StatusService from '@/models/StatusService';
 import StatusIncident from '@/models/StatusIncident';
 import { verifyToken } from '@/lib/jwt';
+import mongoose from 'mongoose';
 
-// GET /api/system/status - Public endpoint
+// GET /api/system/status - Public endpoint (with optional user-specific data)
 export async function GET(request: NextRequest) {
   try {
     console.log('📋 GET /api/system/status - Fetching system status');
     
     await connectToDatabase();
 
+    // Check if user is authenticated for user-specific data
+    const authToken = request.cookies.get('auth_token')?.value;
+    let userId = null;
+    let isAdmin = false;
+
+    if (authToken) {
+      try {
+        const decoded = verifyToken(authToken) as any;
+        userId = decoded.userId;
+        isAdmin = decoded.role === 'admin' || decoded.role === 'superadmin';
+      } catch (error) {
+        // Token invalid, but that's fine - just don't include user-specific data
+        console.log('Invalid token, proceeding with public data only');
+      }
+    }
+
     // Get all services sorted by order
-    let services = await StatusService.find().sort({ order: 1 });
+    let services = await StatusService.find().sort({ order: 1 }).lean();
 
     // If no services exist, create default ones
     if (services.length === 0) {
@@ -21,13 +38,69 @@ export async function GET(request: NextRequest) {
       services = await createDefaultServices();
     }
 
+    // Get real uptime data from service metrics
+    const servicesWithRealData = await Promise.all(
+      services.map(async (service) => {
+        // Calculate real uptime based on incidents in the last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const incidents = await StatusIncident.find({
+          services: service.name,
+          createdAt: { $gte: thirtyDaysAgo }
+        });
+
+        // Calculate uptime percentage (100% - downtime percentage)
+        let totalDowntimeMinutes = 0;
+        incidents.forEach(incident => {
+          if (incident.status === 'resolved' && incident.resolvedAt) {
+            const downtime = incident.resolvedAt.getTime() - incident.createdAt.getTime();
+            totalDowntimeMinutes += downtime / (1000 * 60);
+          } else if (incident.status !== 'resolved') {
+            // Ongoing incident
+            const downtime = Date.now() - incident.createdAt.getTime();
+            totalDowntimeMinutes += downtime / (1000 * 60);
+          }
+        });
+
+        const totalMinutesIn30Days = 30 * 24 * 60;
+        const uptime = Math.max(0, 100 - (totalDowntimeMinutes / totalMinutesIn30Days * 100));
+        
+        // Get real latency from database (simulate with ping time)
+        const latency = await measureLatency();
+
+        // Get last incident date
+        const lastIncident = incidents.length > 0 
+          ? incidents.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0].createdAt
+          : null;
+
+        return {
+          id: service._id,
+          name: service.name,
+          description: service.description,
+          status: service.status,
+          uptime: Math.round(uptime * 100) / 100, // Round to 2 decimal places
+          latency,
+          group: service.group,
+          lastIncident,
+          ...(isAdmin && { // Include admin-only data
+            incidents: incidents.slice(0, 5),
+            totalIncidents: incidents.length
+          })
+        };
+      })
+    );
+
     // Get recent incidents (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const incidents = await StatusIncident.find({
       createdAt: { $gte: thirtyDaysAgo }
-    }).sort({ createdAt: -1 }).limit(10);
+    })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
 
     // Calculate overall status
     const hasOutage = services.some(s => s.status === 'outage');
@@ -39,6 +112,9 @@ export async function GET(request: NextRequest) {
     else if (hasDegraded) overallStatus = 'degraded';
     else if (hasMaintenance) overallStatus = 'maintenance';
 
+    // Calculate 30-day uptime for all services
+    const averageUptime = servicesWithRealData.reduce((sum, s) => sum + s.uptime, 0) / servicesWithRealData.length;
+
     return NextResponse.json({
       success: true,
       data: {
@@ -46,18 +122,11 @@ export async function GET(request: NextRequest) {
           status: overallStatus,
           operationalCount: services.filter(s => s.status === 'operational').length,
           totalCount: services.length,
-          message: getOverallStatusMessage(overallStatus)
+          message: getOverallStatusMessage(overallStatus),
+          uptime: Math.round(averageUptime * 100) / 100,
+          lastUpdated: new Date().toISOString()
         },
-        services: services.map(service => ({
-          id: service._id,
-          name: service.name,
-          description: service.description,
-          status: service.status,
-          uptime: service.uptime,
-          latency: service.latency,
-          group: service.group,
-          lastIncident: service.lastIncident
-        })),
+        services: servicesWithRealData,
         incidents: incidents.map(incident => ({
           id: incident._id,
           title: incident.title,
@@ -67,7 +136,14 @@ export async function GET(request: NextRequest) {
           updates: incident.updates,
           resolvedAt: incident.resolvedAt,
           createdAt: incident.createdAt
-        }))
+        })),
+        ...(userId && { // Include user-specific data if authenticated
+          user: {
+            id: userId,
+            isAdmin,
+            notifications: await getUserNotifications(userId)
+          }
+        })
       }
     });
 
@@ -118,7 +194,7 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase();
     const body = await request.json();
-    const { serviceId, status, message } = body;
+    const { serviceId, status, message, severity } = body;
 
     // Validate required fields
     if (!serviceId || !status) {
@@ -153,29 +229,64 @@ export async function POST(request: NextRequest) {
     }
 
     const oldStatus = service.status;
-    service.status = status;
+    const oldStatusMessage = service.statusMessage;
     
-    if (status === 'operational' && oldStatus !== 'operational') {
+    service.status = status;
+    if (message) {
+      service.statusMessage = message;
+    }
+    
+    // Update last incident timestamp if status changed to non-operational
+    if (status !== 'operational' && oldStatus === 'operational') {
       service.lastIncident = new Date();
     }
 
     await service.save();
 
-    // Create incident record if status is not operational
-    if (status !== 'operational') {
-      const incident = new StatusIncident({
-        title: `${service.name} is ${status}`,
-        status: status === 'outage' ? 'critical' : status === 'degraded' ? 'high' : 'medium',
-        severity: status === 'outage' ? 'critical' : status === 'degraded' ? 'high' : 'medium',
+    // Create incident record if status is not operational and it's a significant change
+    let incident = null;
+    if (status !== 'operational' && oldStatus === 'operational') {
+      const incidentSeverity = severity || getSeverityFromStatus(status);
+      
+      incident = new StatusIncident({
+        title: message || `${service.name} is ${status}`,
+        description: message || `${service.name} is currently experiencing ${status} issues.`,
+        status: 'investigating',
+        severity: incidentSeverity,
         services: [service.name],
         updates: [{
           message: message || `${service.name} is currently ${status}. We are investigating.`,
           timestamp: new Date(),
           status: 'investigating'
-        }]
+        }],
+        createdBy: decoded.userId
       });
 
       await incident.save();
+
+      // Log the status change
+      console.log(`📝 Status change: ${service.name} changed from ${oldStatus} to ${status} by user ${decoded.userId}`);
+    } 
+    // If status improved from degraded/outage to operational
+    else if (status === 'operational' && oldStatus !== 'operational') {
+      // Find and resolve any open incidents for this service
+      await StatusIncident.updateMany(
+        {
+          services: service.name,
+          status: { $ne: 'resolved' }
+        },
+        {
+          status: 'resolved',
+          resolvedAt: new Date(),
+          $push: {
+            updates: {
+              message: message || `${service.name} has recovered and is now operational.`,
+              timestamp: new Date(),
+              status: 'resolved'
+            }
+          }
+        }
+      );
     }
 
     return NextResponse.json({
@@ -185,12 +296,65 @@ export async function POST(request: NextRequest) {
         id: service._id,
         name: service.name,
         status: service.status,
-        lastIncident: service.lastIncident
+        statusMessage: service.statusMessage,
+        lastIncident: service.lastIncident,
+        incident: incident ? {
+          id: incident._id,
+          title: incident.title
+        } : null
       }
     });
 
   } catch (error: any) {
     console.error('❌ Update service status error:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: error.message || 'Internal server error' 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// GET /api/system/status/history - Public - Get status history
+export async function GET_HISTORY(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const days = parseInt(searchParams.get('days') || '30');
+    const service = searchParams.get('service');
+
+    await connectToDatabase();
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const query: any = {
+      createdAt: { $gte: startDate }
+    };
+
+    if (service) {
+      query.services = service;
+    }
+
+    const incidents = await StatusIncident.find(query)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Group incidents by day for the chart
+    const dailyStatus = await generateDailyStatus(startDate, new Date(), incidents);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        period: `${days} days`,
+        incidents,
+        dailyStatus
+      }
+    });
+
+  } catch (error: any) {
+    console.error('❌ Status history error:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -208,6 +372,7 @@ async function createDefaultServices() {
       name: 'API Server',
       description: 'Handles all API requests',
       status: 'operational',
+      statusMessage: 'All systems operational',
       uptime: 99.99,
       latency: 45,
       group: 'api',
@@ -217,6 +382,7 @@ async function createDefaultServices() {
       name: 'Database',
       description: 'Primary database cluster',
       status: 'operational',
+      statusMessage: 'All systems operational',
       uptime: 99.95,
       latency: 12,
       group: 'database',
@@ -226,6 +392,7 @@ async function createDefaultServices() {
       name: 'Authentication',
       description: 'User authentication service',
       status: 'operational',
+      statusMessage: 'All systems operational',
       uptime: 99.98,
       latency: 23,
       group: 'auth',
@@ -235,6 +402,7 @@ async function createDefaultServices() {
       name: 'Storage',
       description: 'File and media storage',
       status: 'operational',
+      statusMessage: 'All systems operational',
       uptime: 99.92,
       latency: 67,
       group: 'storage',
@@ -244,6 +412,7 @@ async function createDefaultServices() {
       name: 'Payment Gateway',
       description: 'Payment processing service',
       status: 'operational',
+      statusMessage: 'All systems operational',
       uptime: 99.97,
       latency: 89,
       group: 'payment',
@@ -253,6 +422,7 @@ async function createDefaultServices() {
       name: 'Email Service',
       description: 'Email delivery service',
       status: 'operational',
+      statusMessage: 'All systems operational',
       uptime: 99.88,
       latency: 34,
       group: 'email',
@@ -277,4 +447,84 @@ function getOverallStatusMessage(status: string): string {
     default:
       return 'System status unknown';
   }
+}
+
+// Helper function to get severity from status
+function getSeverityFromStatus(status: string): string {
+  switch (status) {
+    case 'outage':
+      return 'critical';
+    case 'degraded':
+      return 'high';
+    case 'maintenance':
+      return 'medium';
+    default:
+      return 'low';
+  }
+}
+
+// Helper function to measure latency
+async function measureLatency(): Promise<number> {
+  const start = Date.now();
+  try {
+    await mongoose.connection.db?.admin().ping();
+    return Date.now() - start;
+  } catch (error) {
+    return 999;
+  }
+}
+
+// Helper function to get user notifications
+async function getUserNotifications(userId: string) {
+  // Get incidents from the last 7 days that might affect the user
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const recentIncidents = await StatusIncident.find({
+    createdAt: { $gte: sevenDaysAgo }
+  })
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .lean();
+
+  return recentIncidents.map(incident => ({
+    id: incident._id,
+    title: incident.title,
+    severity: incident.severity,
+    status: incident.status,
+    createdAt: incident.createdAt,
+    read: false // You could track this in a user notifications collection
+  }));
+}
+
+// Helper function to generate daily status for charts
+async function generateDailyStatus(startDate: Date, endDate: Date, incidents: any[]) {
+  const dailyStatus = [];
+  const currentDate = new Date(startDate);
+
+  while (currentDate <= endDate) {
+    const dayStr = currentDate.toISOString().split('T')[0];
+    const dayIncidents = incidents.filter(i => 
+      i.createdAt.toISOString().split('T')[0] === dayStr
+    );
+
+    let dayStatus = 'operational';
+    if (dayIncidents.some(i => i.severity === 'critical')) {
+      dayStatus = 'outage';
+    } else if (dayIncidents.some(i => i.severity === 'high')) {
+      dayStatus = 'degraded';
+    } else if (dayIncidents.some(i => i.severity === 'medium')) {
+      dayStatus = 'maintenance';
+    }
+
+    dailyStatus.push({
+      date: dayStr,
+      status: dayStatus,
+      incidents: dayIncidents.length
+    });
+
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return dailyStatus;
 }
