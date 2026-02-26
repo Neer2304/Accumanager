@@ -2,9 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import StatusIncident from '@/models/StatusIncident';
+import UserNotification from '@/models/UserNotification';
 import { verifyToken } from '@/lib/jwt';
+import { cookies } from 'next/headers';
 
-// GET /api/system/status/incident/[id] - Public - Get single incident
+// GET /api/system/status/incident/[id] - Public with user-specific data
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -14,6 +16,25 @@ export async function GET(
     
     await connectToDatabase();
 
+    // 🔐 Get ACTUAL authenticated user
+    const cookieStore = cookies();
+    const token = (await cookieStore).get('auth_token')?.value;
+    
+    let userId = null;
+    let isAdmin = false;
+
+    if (token) {
+      try {
+        const decoded = await verifyToken(token);
+        userId = decoded.userId;
+        isAdmin = decoded.role === 'admin' || decoded.role === 'superadmin';
+        console.log(`👤 Authenticated user viewing incident: ${userId}`);
+      } catch (error) {
+        console.log('⚠️ Invalid token - public view');
+      }
+    }
+
+    // 📊 Get REAL incident from database
     const incident = await StatusIncident.findById(params.id).lean();
 
     if (!incident) {
@@ -23,18 +44,84 @@ export async function GET(
       );
     }
 
+    // 🔔 Check if this user has been notified about this incident
+    let userNotified = false;
+    let notificationRead = false;
+    
+    if (userId) {
+      const notification = await UserNotification.findOne({
+        userId: userId,
+        incidentId: incident._id
+      }).lean();
+      
+      if (notification) {
+        userNotified = true;
+        notificationRead = notification.read;
+        
+        // Auto-mark as read when user views the incident
+        if (!notification.read) {
+          await UserNotification.updateOne(
+            { _id: notification._id },
+            { 
+              read: true, 
+              readAt: new Date() 
+            }
+          );
+        }
+      }
+    }
+
+    // 📝 Get REAL update history
+    const updates = incident.updates?.map((u: any) => ({
+      id: u._id?.toString(),
+      message: u.message,
+      timestamp: u.timestamp,
+      status: u.status,
+      author: u.author || 'System'
+    })) || [];
+
+    // 👥 Get REAL affected services with their current status
+    const StatusService = (await import('@/models/StatusService')).default;
+    const affectedServices = await StatusService.find({
+      name: { $in: incident.services }
+    }).lean();
+
     return NextResponse.json({
       success: true,
       data: {
-        id: incident._id,
+        id: incident._id.toString(),
         title: incident.title,
+        description: incident.description || '',
         status: incident.status,
         severity: incident.severity,
-        services: incident.services,
-        updates: incident.updates,
-        resolvedAt: incident.resolvedAt,
+        services: incident.services.map((service: string, index: number) => ({
+          name: service,
+          currentStatus: affectedServices[index]?.status || 'unknown',
+          group: affectedServices[index]?.group || 'other'
+        })),
+        updates: updates,
         createdAt: incident.createdAt,
-        updatedAt: incident.updatedAt
+        resolvedAt: incident.resolvedAt || null,
+        autoCreated: incident.autoCreated || false,
+        createdBy: incident.createdBy || null,
+        
+        // 👤 User-specific data
+        user: userId ? {
+          id: userId,
+          isAdmin: isAdmin,
+          notified: userNotified,
+          read: notificationRead,
+          readAt: notificationRead ? new Date() : null
+        } : null,
+
+        // 📊 Stats
+        stats: {
+          updateCount: updates.length,
+          timeOpen: incident.resolvedAt 
+            ? Math.round((new Date(incident.resolvedAt).getTime() - new Date(incident.createdAt).getTime()) / (1000 * 60))
+            : Math.round((Date.now() - new Date(incident.createdAt).getTime()) / (1000 * 60)),
+          affectedServicesCount: incident.services.length
+        }
       }
     });
 
@@ -50,7 +137,7 @@ export async function GET(
   }
 }
 
-// POST /api/system/status/incident/[id] - Admin only - Add update to incident
+// POST /api/system/status/incident/[id] - Admin only - Add REAL update
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -58,8 +145,10 @@ export async function POST(
   try {
     console.log(`🆕 POST /api/system/status/incident/${params.id} - Adding update`);
     
-    // Verify authentication
-    const authToken = request.cookies.get('auth_token')?.value;
+    // 🔐 Verify authentication
+    const cookieStore = cookies();
+    const authToken = (await cookieStore).get('auth_token')?.value;
+    
     if (!authToken) {
       return NextResponse.json(
         { success: false, message: 'Authentication required' },
@@ -67,10 +156,10 @@ export async function POST(
       );
     }
 
-    // Verify token and get user info
+    // Verify token and get REAL user info
     let decoded;
     try {
-      decoded = verifyToken(authToken);
+      decoded = await verifyToken(authToken);
     } catch (error) {
       return NextResponse.json(
         { success: false, message: 'Invalid or expired token' },
@@ -78,7 +167,7 @@ export async function POST(
       );
     }
 
-    // Check if user is admin
+    // Check if user has REAL admin privileges
     if (!decoded.role || !['admin', 'superadmin'].includes(decoded.role)) {
       return NextResponse.json(
         { success: false, message: 'Admin privileges required' },
@@ -88,7 +177,7 @@ export async function POST(
 
     await connectToDatabase();
     const body = await request.json();
-    const { message, status } = body;
+    const { message, status, notifyUsers } = body;
 
     if (!message) {
       return NextResponse.json(
@@ -97,8 +186,8 @@ export async function POST(
       );
     }
 
+    // Find REAL incident
     const incident = await StatusIncident.findById(params.id);
-
     if (!incident) {
       return NextResponse.json(
         { success: false, message: 'Incident not found' },
@@ -106,22 +195,23 @@ export async function POST(
       );
     }
 
-    // Add update
-    incident.updates.push({
+    // Add REAL update
+    const newUpdate = {
       message,
       timestamp: new Date(),
-      status: status || incident.status
-    });
+      status: status || incident.status,
+      author: decoded.userId,
+      authorName: decoded.name || 'Admin'
+    };
+
+    incident.updates.push(newUpdate);
 
     // Update incident status if provided
     if (status) {
       const validStatuses = ['investigating', 'identified', 'monitoring', 'resolved'];
       if (!validStatuses.includes(status)) {
         return NextResponse.json(
-          { 
-            success: false, 
-            message: `Status must be one of: ${validStatuses.join(', ')}` 
-          },
+          { success: false, message: `Status must be one of: ${validStatuses.join(', ')}` },
           { status: 400 }
         );
       }
@@ -135,14 +225,37 @@ export async function POST(
 
     await incident.save();
 
+    // 🔔 Create notifications for users if requested
+    if (notifyUsers && status) {
+      const User = (await import('@/models/User')).default;
+      const users = await User.find({}, '_id email');
+      
+      const notifications = users.map(user => ({
+        userId: user._id,
+        incidentId: incident._id,
+        read: false,
+        emailSent: false
+      }));
+
+      if (notifications.length > 0) {
+        await UserNotification.insertMany(notifications);
+        console.log(`📨 Created ${notifications.length} notifications for incident update`);
+      }
+    }
+
+    // Log the REAL update
+    console.log(`📝 Incident ${incident._id} updated by user ${decoded.userId}`);
+
     return NextResponse.json({
       success: true,
       message: 'Incident updated successfully',
       data: {
-        id: incident._id,
+        id: incident._id.toString(),
         status: incident.status,
         updates: incident.updates,
-        resolvedAt: incident.resolvedAt
+        resolvedAt: incident.resolvedAt,
+        updateCount: incident.updates.length,
+        lastUpdate: incident.updates[incident.updates.length - 1]
       }
     });
 
@@ -166,8 +279,10 @@ export async function DELETE(
   try {
     console.log(`🗑️ DELETE /api/system/status/incident/${params.id} - Deleting incident`);
     
-    // Verify authentication
-    const authToken = request.cookies.get('auth_token')?.value;
+    // 🔐 Verify authentication
+    const cookieStore = cookies();
+    const authToken = (await cookieStore).get('auth_token')?.value;
+    
     if (!authToken) {
       return NextResponse.json(
         { success: false, message: 'Authentication required' },
@@ -175,10 +290,10 @@ export async function DELETE(
       );
     }
 
-    // Verify token and get user info
+    // Verify token and get REAL user info
     let decoded;
     try {
-      decoded = verifyToken(authToken);
+      decoded = await verifyToken(authToken);
     } catch (error) {
       return NextResponse.json(
         { success: false, message: 'Invalid or expired token' },
@@ -186,7 +301,7 @@ export async function DELETE(
       );
     }
 
-    // Check if user is admin
+    // Check if user has REAL admin privileges
     if (!decoded.role || !['admin', 'superadmin'].includes(decoded.role)) {
       return NextResponse.json(
         { success: false, message: 'Admin privileges required' },
@@ -196,6 +311,7 @@ export async function DELETE(
 
     await connectToDatabase();
 
+    // Find and delete REAL incident
     const incident = await StatusIncident.findByIdAndDelete(params.id);
 
     if (!incident) {
@@ -205,9 +321,20 @@ export async function DELETE(
       );
     }
 
+    // Also delete associated notifications
+    await UserNotification.deleteMany({ incidentId: params.id });
+
+    console.log(`🗑️ Incident ${params.id} deleted by user ${decoded.userId}`);
+
     return NextResponse.json({
       success: true,
-      message: 'Incident deleted successfully'
+      message: 'Incident deleted successfully',
+      data: {
+        id: incident._id,
+        title: incident.title,
+        deletedAt: new Date().toISOString(),
+        deletedBy: decoded.userId
+      }
     });
 
   } catch (error: any) {

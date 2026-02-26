@@ -19,6 +19,7 @@ import {
   Divider,
   Tooltip,
   Skeleton,
+  Snackbar,
 } from '@mui/material'
 import {
   CheckCircle,
@@ -49,8 +50,14 @@ interface ServiceStatus {
   status: 'operational' | 'degraded' | 'outage' | 'maintenance'
   uptime: number
   latency: number
+  responseTime?: number
+  lastCheckTime?: string | null
   group?: string
   lastIncident?: string | null
+  totalChecks?: number
+  successfulChecks?: number
+  failureCount?: number
+  lastChecked?: string | null
 }
 
 interface Incident {
@@ -65,7 +72,8 @@ interface Incident {
     status: string
   }>
   createdAt: string
-  resolvedAt?: string
+  resolvedAt?: string | null
+  autoCreated?: boolean
 }
 
 interface StatusData {
@@ -75,18 +83,33 @@ interface StatusData {
     totalCount: number
     message: string
     uptime: number
+    successRate?: number
+    totalChecks?: number
     lastUpdated: string
   }
   services: ServiceStatus[]
   incidents: Incident[]
   user?: {
     id: string
+    role?: string
     isAdmin: boolean
-    notifications: any[]
+    notifications: Array<{
+      id: string
+      incidentId: string
+      title: string
+      severity: string
+      createdAt: string
+      read: boolean
+    }>
+    unreadCount?: number
+  } | null
+  meta?: {
+    period: string
+    timestamp: string
+    authenticated: boolean
   }
 }
 
-// Google colors matching other pages
 const google = {
   blue: '#4285f4',
   blueLight: '#e8f0fe',
@@ -113,6 +136,7 @@ export default function StatusPage() {
   const [lastUpdated, setLastUpdated] = useState(new Date())
   const [statusData, setStatusData] = useState<StatusData | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [snackbar, setSnackbar] = useState({ open: false, message: '' })
 
   const fetchStatusData = async () => {
     try {
@@ -120,13 +144,16 @@ export default function StatusPage() {
       const response = await fetch('/api/system/status')
       const result = await response.json()
       
-      if (!response.ok) throw new Error(result.message)
+      if (!response.ok) {
+        setError(result.message || 'Failed to fetch status')
+        return
+      }
       
       setStatusData(result.data)
       setLastUpdated(new Date())
       setError(null)
     } catch (err: any) {
-      setError(err.message)
+      setError(err?.message || 'Network error occurred')
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -141,7 +168,7 @@ export default function StatusPage() {
   }, [])
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'operational': return google.green
       case 'degraded': return google.yellow
       case 'outage': return google.red
@@ -155,7 +182,7 @@ export default function StatusPage() {
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'operational': return <CheckCircle sx={{ color: google.green }} />
       case 'degraded': return <Warning sx={{ color: google.yellow }} />
       case 'outage': return <Error sx={{ color: google.red }} />
@@ -165,12 +192,26 @@ export default function StatusPage() {
   }
 
   const getStatusBgColor = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'operational': return alpha(google.green, 0.1)
       case 'degraded': return alpha(google.yellow, 0.1)
       case 'outage': return alpha(google.red, 0.1)
       case 'maintenance': return alpha(google.blue, 0.1)
       default: return alpha(google.grey, 0.1)
+    }
+  }
+
+  const markNotificationAsRead = async (notificationId: string) => {
+    try {
+      const response = await fetch(`/api/user/notifications/${notificationId}/read`, {
+        method: 'POST',
+      })
+      if (response.ok) {
+        fetchStatusData()
+        setSnackbar({ open: true, message: 'Notification marked as read' })
+      }
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error)
     }
   }
 
@@ -208,11 +249,13 @@ export default function StatusPage() {
     )
   }
 
-  const overallStatus = statusData?.overall.status || 'operational'
+  const overallStatus = statusData?.overall?.status || 'operational'
   const services = statusData?.services || []
   const incidents = statusData?.incidents || []
-  const operationalCount = statusData?.overall.operationalCount || 0
-  const averageUptime = statusData?.overall.uptime || 99.9
+  const operationalCount = statusData?.overall?.operationalCount || 0
+  const averageUptime = statusData?.overall?.uptime || 99.9
+  const userNotifications = statusData?.user?.notifications || []
+  const isAdmin = statusData?.user?.isAdmin || false
 
   return (
     <MainLayout title="System Status">
@@ -282,7 +325,7 @@ export default function StatusPage() {
                 maxWidth: 600,
               }}
             >
-              {statusData?.overall.message || 'Real-time status of all AccuManage services'}
+              {statusData?.overall?.message || 'Real-time status of all AccuManage services'}
             </Typography>
 
             <Box sx={{ 
@@ -324,6 +367,45 @@ export default function StatusPage() {
                 }}
               />
             </Box>
+
+            {/* User Notifications */}
+            {userNotifications.length > 0 && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, color: darkMode ? '#e8eaed' : google.black }}>
+                  Notifications ({userNotifications.length})
+                </Typography>
+                <Stack spacing={1}>
+                  {userNotifications.map((notification) => (
+                    <Paper
+                      key={notification.id}
+                      sx={{
+                        p: 1.5,
+                        backgroundColor: alpha(google.blue, 0.05),
+                        border: `1px solid ${alpha(google.blue, 0.2)}`,
+                        borderRadius: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <NotificationsActive sx={{ fontSize: 16, color: google.blue }} />
+                        <Typography variant="body2">
+                          {notification.title}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() => markNotificationAsRead(notification.id)}
+                        sx={{ fontSize: '0.75rem' }}
+                      >
+                        Mark Read
+                      </Button>
+                    </Paper>
+                  ))}
+                </Stack>
+              </Box>
+            )}
           </Box>
         </Box>
 
@@ -515,6 +597,16 @@ export default function StatusPage() {
                           {service.latency}ms
                         </Typography>
                       </Box>
+                      {service.lastCheckTime && (
+                        <Box>
+                          <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey, display: 'block' }}>
+                            Last Check
+                          </Typography>
+                          <Typography variant="caption" fontWeight={500}>
+                            {new Date(service.lastCheckTime).toLocaleTimeString()}
+                          </Typography>
+                        </Box>
+                      )}
                     </Box>
 
                     <Box sx={{ mt: 2 }}>
@@ -614,9 +706,31 @@ export default function StatusPage() {
                       backgroundColor: darkMode ? google.greyDark : google.white,
                       border: `1px solid ${darkMode ? google.greyDark : google.greyBorder}`,
                       cursor: 'pointer',
+                      position: 'relative',
+                      ...(incident.autoCreated && {
+                        borderLeft: `4px solid ${google.yellow}`,
+                      }),
                     }}
                     onClick={() => window.location.href = `/status/incident/${incident.id}`}
                   >
+                    {incident.autoCreated && (
+                      <Tooltip title="Automatically detected">
+                        <Chip
+                          label="Auto-detected"
+                          size="small"
+                          sx={{
+                            position: 'absolute',
+                            top: 12,
+                            right: 12,
+                            backgroundColor: alpha(google.yellow, 0.1),
+                            color: google.yellow,
+                            fontSize: '0.65rem',
+                            height: 20,
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
                       <Chip 
                         label={incident.status}
@@ -656,8 +770,10 @@ export default function StatusPage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <NotificationsActive sx={{ fontSize: 16, color: google.blue }} />
                       <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
-                        {incident.updates.length} update{incident.updates.length !== 1 ? 's' : ''} · Last update:{' '}
-                        {new Date(incident.updates[incident.updates.length - 1].timestamp).toLocaleTimeString()}
+                        {incident.updates?.length || 0} update{incident.updates?.length !== 1 ? 's' : ''} · Last update:{' '}
+                        {incident.updates?.length > 0 
+                          ? new Date(incident.updates[incident.updates.length - 1].timestamp).toLocaleTimeString()
+                          : 'N/A'}
                       </Typography>
                     </Box>
                   </Card>
@@ -699,9 +815,20 @@ export default function StatusPage() {
             </Button>
           </Card>
 
-          {/* Admin Actions - Only visible to admins */}
-          {statusData?.user?.isAdmin && (
-            <Box sx={{ mt: 4, textAlign: 'right' }}>
+          {/* Admin Actions */}
+          {isAdmin && (
+            <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+              <Button
+                variant="outlined"
+                startIcon={<History />}
+                href="/admin/status/history"
+                sx={{
+                  borderColor: darkMode ? google.greyDark : google.greyBorder,
+                  color: darkMode ? '#e8eaed' : google.black,
+                }}
+              >
+                View History
+              </Button>
               <Button
                 variant="contained"
                 startIcon={<NotificationsActive />}
@@ -718,6 +845,23 @@ export default function StatusPage() {
             </Box>
           )}
         </Container>
+
+        {/* Snackbar */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          message={snackbar.message}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          ContentProps={{
+            sx: {
+              backgroundColor: darkMode ? google.greyDark : google.white,
+              color: darkMode ? '#e8eaed' : google.black,
+              border: `1px solid ${darkMode ? google.greyDark : google.greyBorder}`,
+              borderRadius: 2,
+            }
+          }}
+        />
       </Box>
     </MainLayout>
   )
