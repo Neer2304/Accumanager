@@ -1,7 +1,7 @@
-// app/hub/page.tsx
+// app/hub/page.tsx - FIXED INFINITE LOOP
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Box,
   Container,
@@ -36,6 +36,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Tab,
+  Tabs,
 } from '@mui/material'
 import {
   // Core Icons
@@ -111,12 +113,30 @@ import {
   PersonSearch,
   TrendingUp as RevenueGrowth,
   TrendingDown as RevenueDecline,
+  FilterAlt as FilterAltIcon,
 } from '@mui/icons-material'
 import Link from 'next/link'
 import { MainLayout } from '@/components/Layout/MainLayout'
 import { Card } from '@/components/ui/Card'
 import { useTheme as useMuiTheme } from '@mui/material/styles'
 import { useInventoryData } from '@/hooks/useInventoryData'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Legend,
+  Area,
+  BarChart as RechartsBarChart,
+  Bar,
+  ComposedChart,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 // ===== GOOGLE COLORS =====
 const google = {
@@ -171,8 +191,10 @@ interface DashboardStats {
 interface SalesDataPoint {
   date: string
   sales: number
+  orders: number
   revenue: number
   totalItems: number
+  avgOrderValue?: number
 }
 
 interface Customer {
@@ -217,8 +239,11 @@ export default function BusinessHubPage() {
   const [salesData, setSalesData] = useState<SalesDataPoint[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [customerSummary, setCustomerSummary] = useState<any>(null)
-  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month')
+  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month')
+  const [includeDrafts, setIncludeDrafts] = useState(false)
   const [snackbar, setSnackbar] = useState({ open: false, message: '' })
+  const [activeTab, setActiveTab] = useState(0)
+  const [chartType, setChartType] = useState<'line' | 'bar' | 'area'>('line')
 
   // Use inventory hook for product data
   const {
@@ -234,8 +259,49 @@ export default function BusinessHubPage() {
     getCategoryColor,
   } = useInventoryData()
 
-  // Fetch all dashboard data
-  const fetchAllData = async () => {
+// Fetch sales data using useCallback to prevent recreation
+const fetchSalesData = useCallback(async (range: string, drafts: boolean) => {
+  try {
+    const url = `/api/dashboard/sales?range=${range}&includeDrafts=${drafts}`;
+    console.log("📊 Fetching sales data from:", url);
+
+    const response = await fetch(url, {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("📦 Raw sales data from API:", data);
+      
+      if (data && Array.isArray(data)) {
+        // ✅ CORRECT TRANSFORMATION
+        const transformedData = data.map((item: any) => ({
+          date: item.date,
+          sales: item.sales || 0,
+          orders: item.sales || 0, // Keep for backward compatibility
+          revenue: item.revenue || 0,
+          totalItems: item.totalItems || 0,
+          avgOrderValue: item.sales > 0 ? Math.round(item.revenue / item.sales) : 0
+        }));
+        
+        console.log("✅ Transformed sales data:", transformedData);
+        setSalesData(transformedData);
+      }
+    } else {
+      console.error("❌ Failed to fetch sales data:", response.status);
+      const errorText = await response.text();
+      console.error("❌ Error response:", errorText);
+    }
+  } catch (error) {
+    console.error("❌ Error fetching sales data:", error);
+  }
+}, []);
+
+  // Fetch all dashboard data - wrapped in useCallback
+  const fetchAllData = useCallback(async () => {
     setLoading(true)
     setError(null)
     
@@ -245,22 +311,13 @@ export default function BusinessHubPage() {
         credentials: 'include',
       })
       
-      if (!statsRes.ok) {
-        // throw new Error('Failed to fetch dashboard stats')
+      if (statsRes.ok) {
+        const statsData = await statsRes.json()
+        setDashboardStats(statsData)
       }
-      
-      const statsData = await statsRes.json()
-      setDashboardStats(statsData)
 
-      // Fetch sales data
-      const salesRes = await fetch(`/api/dashboard/sales?range=${selectedPeriod}`, {
-        credentials: 'include',
-      })
-      
-      if (salesRes.ok) {
-        const salesData = await salesRes.json()
-        setSalesData(salesData)
-      }
+      // Fetch sales data using the SAME logic as SalesChart
+      await fetchSalesData(selectedPeriod, includeDrafts)
 
       // Fetch customers
       const customersRes = await fetch('/api/customers?limit=5', {
@@ -281,11 +338,12 @@ export default function BusinessHubPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedPeriod, includeDrafts, fetchSalesData]) // Only re-run when these change
 
+  // Run fetchAllData when dependencies change
   useEffect(() => {
     fetchAllData()
-  }, [selectedPeriod])
+  }, [fetchAllData]) // Only depends on fetchAllData which is stable due to useCallback
 
   // Refresh data
   const handleRefresh = () => {
@@ -302,6 +360,20 @@ export default function BusinessHubPage() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value)
+  }
+
+  // Format compact number (K/L/Cr)
+  const formatCompactNumber = (num: number) => {
+    if (num >= 10000000) {
+      return `₹${(num / 10000000).toFixed(1)}Cr`;
+    }
+    if (num >= 100000) {
+      return `₹${(num / 100000).toFixed(1)}L`;
+    }
+    if (num >= 1000) {
+      return `₹${(num / 1000).toFixed(1)}K`;
+    }
+    return `₹${num}`;
   }
 
   // Format number
@@ -321,6 +393,64 @@ export default function BusinessHubPage() {
     if (value < 0) return { icon: <TrendingDown sx={{ fontSize: 16 }} />, color: google.red }
     return { icon: <TrendingFlat sx={{ fontSize: 16 }} />, color: google.grey }
   }
+
+  // Calculate statistics from sales data
+  const totalRevenue = salesData.reduce((sum, item) => sum + (item.revenue || 0), 0);
+  const totalOrders = salesData.reduce((sum, item) => sum + (item.orders || 0), 0);
+  const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+  const totalItems = salesData.reduce((sum, item) => sum + (item.totalItems || 0), 0);
+
+  // Calculate growth
+  const calculateRevenueGrowth = () => {
+    if (salesData.length < 2) return 0;
+    const firstHalf = salesData.slice(0, Math.floor(salesData.length / 2));
+    const secondHalf = salesData.slice(Math.floor(salesData.length / 2));
+    const firstAvg = firstHalf.reduce((sum, item) => sum + item.revenue, 0) / Math.max(firstHalf.length, 1);
+    const secondAvg = secondHalf.reduce((sum, item) => sum + item.revenue, 0) / Math.max(secondHalf.length, 1);
+    return firstAvg > 0 ? ((secondAvg - firstAvg) / firstAvg) * 100 : 0;
+  };
+
+  const revenueGrowth = calculateRevenueGrowth();
+  const revenueTrend = getTrend(revenueGrowth);
+
+  // Custom tooltip for charts
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const date = new Date(label);
+      const formattedDate = date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+
+      return (
+        <Paper
+          elevation={3}
+          sx={{
+            p: 1.5,
+            backgroundColor: darkMode ? alpha("#303134", 0.95) : alpha("#ffffff", 0.95),
+            backdropFilter: "blur(10px)",
+            border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
+            minWidth: 180,
+          }}
+        >
+          <Typography variant="subtitle2" fontWeight={600} gutterBottom color={darkMode ? "#e8eaed" : "#202124"}>
+            {formattedDate}
+          </Typography>
+          {payload.map((entry: any, index: number) => (
+            <Box key={index} sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+              <Typography variant="body2" color={darkMode ? "#9aa0a6" : "#5f6368"}>
+                {entry.name}:
+              </Typography>
+              <Typography variant="body2" fontWeight={600} color={darkMode ? "#e8eaed" : "#202124"}>
+                {entry.name === "Revenue" ? formatCompactNumber(entry.value) : entry.value?.toLocaleString()}
+              </Typography>
+            </Box>
+          ))}
+        </Paper>
+      );
+    }
+    return null;
+  };
 
   if (loading && !dashboardStats) {
     return (
@@ -352,20 +482,13 @@ export default function BusinessHubPage() {
     )
   }
 
-  const totalRevenue = dashboardStats?.totalRevenue || 0
+  const totalRevenue_dash = dashboardStats?.totalRevenue || 0
   const monthlyRevenue = dashboardStats?.monthlyRevenue || 0
   const totalSales = dashboardStats?.totalSales || 0
   const totalCustomers = dashboardStats?.totalCustomers || 0
   const totalProducts = dashboardStats?.totalProducts || 0
   const lowStockCount = dashboardStats?.lowStockProducts || inventoryMetrics.lowStock || 0
   const pendingBills = dashboardStats?.pendingBills || 0
-
-  // Calculate revenue growth (mock for now, can be calculated from sales data)
-  const revenueGrowth = salesData.length > 1 
-    ? calculateGrowth(salesData[salesData.length - 1]?.revenue || 0, salesData[0]?.revenue || 0)
-    : 12.5
-
-  const revenueTrend = getTrend(revenueGrowth)
 
   return (
     <MainLayout title="Business Hub - Your Command Center">
@@ -413,7 +536,7 @@ export default function BusinessHubPage() {
               </Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <FormControl size="small" sx={{ minWidth: 120 }}>
                 <Select
                   value={selectedPeriod}
@@ -421,10 +544,25 @@ export default function BusinessHubPage() {
                   sx={{ borderRadius: 2 }}
                 >
                   <MenuItem value="week">Last 7 Days</MenuItem>
-                  <MenuItem value="month">This Month</MenuItem>
-                  <MenuItem value="year">This Year</MenuItem>
+                  <MenuItem value="month">Last 30 Days</MenuItem>
+                  <MenuItem value="quarter">Last 90 Days</MenuItem>
+                  <MenuItem value="year">Last 12 Months</MenuItem>
                 </Select>
               </FormControl>
+
+              <Chip
+                icon={<FilterAltIcon fontSize="small" />}
+                label={includeDrafts ? "With Drafts" : "Confirmed Only"}
+                size="small"
+                onClick={() => setIncludeDrafts(!includeDrafts)}
+                color={includeDrafts ? "default" : "primary"}
+                variant={includeDrafts ? "outlined" : "filled"}
+                sx={{
+                  bgcolor: includeDrafts ? 'transparent' : alpha(google.blue, 0.1),
+                  color: includeDrafts ? (darkMode ? '#9aa0a6' : google.grey) : google.blue,
+                  borderColor: darkMode ? '#3c4043' : google.greyBorder,
+                }}
+              />
 
               <Tooltip title="Refresh Data">
                 <IconButton onClick={handleRefresh} sx={{ color: google.blue }}>
@@ -491,7 +629,7 @@ export default function BusinessHubPage() {
                     Total Revenue
                   </Typography>
                   <Typography variant="h4" fontWeight={700} sx={{ color: google.green, mt: 1 }}>
-                    {formatCurrency(totalRevenue)}
+                    {formatCurrency(totalRevenue_dash)}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
                     {revenueTrend.icon}
@@ -524,7 +662,7 @@ export default function BusinessHubPage() {
                     </Typography>
                   </Box>
                   <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey, display: 'block', mt: 1 }}>
-                    Avg order: {totalSales > 0 ? formatCurrency(totalRevenue / totalSales) : formatCurrency(0)}
+                    Avg order: {totalSales > 0 ? formatCurrency(totalRevenue_dash / totalSales) : formatCurrency(0)}
                   </Typography>
                 </Card>
               </Box>
@@ -593,53 +731,148 @@ export default function BusinessHubPage() {
             gap: 3,
             mb: 6,
           }}>
-            {/* Sales Chart */}
+            {/* Sales Chart - Using SAME LOGIC as SalesChart */}
             <Box sx={{ width: { xs: '100%', md: 'calc(60% - 12px)' } }}>
               <Card sx={{ p: 3, height: '100%' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
                   <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <ShowChart sx={{ color: google.blue }} />
                     Sales Overview
                   </Typography>
-                  <Button size="small" endIcon={<ArrowForward />} href="/reports/sales">
-                    View Details
-                  </Button>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button size="small" variant="outlined" onClick={() => setChartType('line')} sx={{ minWidth: 40 }}>
+                      <ShowChart fontSize="small" />
+                    </Button>
+                    <Button size="small" variant="outlined" onClick={() => setChartType('bar')} sx={{ minWidth: 40 }}>
+                      <BarChart fontSize="small" />
+                    </Button>
+                    <Button size="small" variant="outlined" onClick={() => setChartType('area')} sx={{ minWidth: 40 }}>
+                      <DonutLarge fontSize="small" />
+                    </Button>
+                    <Button size="small" endIcon={<ArrowForward />} href="/reports/sales">
+                      Details
+                    </Button>
+                  </Box>
                 </Box>
 
                 {salesData.length > 0 ? (
-                  <Box sx={{ height: 250, display: 'flex', alignItems: 'flex-end', gap: 1 }}>
-                    {salesData.map((item, index) => {
-                      const maxRevenue = Math.max(...salesData.map(d => d.revenue))
-                      const height = maxRevenue > 0 ? (item.revenue / maxRevenue) * 100 : 0
-                      
-                      return (
-                        <Tooltip key={index} title={`${item.date}: ${formatCurrency(item.revenue)} (${item.sales} orders)`}>
-                          <Box sx={{ 
-                            flex: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 1,
-                          }}>
-                            <Box 
-                              sx={{ 
-                                width: '100%',
-                                height: `${height}%`,
-                                minHeight: 4,
-                                bgcolor: google.blue,
-                                borderRadius: '4px 4px 0 0',
-                                transition: 'height 0.3s',
-                                '&:hover': { bgcolor: google.blueDark },
-                              }} 
+                  <>
+                    {/* Chart */}
+                    <Box sx={{ height: 250, width: '100%' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        {chartType === 'line' && (
+                          <LineChart data={salesData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? alpha("#3c4043", 0.5) : alpha("#dadce0", 0.5)} />
+                            <XAxis 
+                              dataKey="date" 
+                              tick={{ fontSize: 10, fill: darkMode ? '#9aa0a6' : '#5f6368' }}
+                              tickFormatter={(date) => {
+                                const d = new Date(date);
+                                return `${d.getDate()}/${d.getMonth() + 1}`;
+                              }}
                             />
-                            <Typography variant="caption" sx={{ transform: 'rotate(-45deg)', mt: 2 }}>
-                              {new Date(item.date).getDate()}
-                            </Typography>
-                          </Box>
-                        </Tooltip>
-                      )
-                    })}
-                  </Box>
+                            <YAxis 
+                              yAxisId="left"
+                              tick={{ fontSize: 10, fill: darkMode ? '#9aa0a6' : '#5f6368' }}
+                              tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+                            />
+                            <YAxis 
+                              yAxisId="right"
+                              orientation="right"
+                              tick={{ fontSize: 10, fill: darkMode ? '#9aa0a6' : '#5f6368' }}
+                            />
+                            <RechartsTooltip content={<CustomTooltip />} />
+                            <Line yAxisId="left" type="monotone" dataKey="revenue" name="Revenue" stroke={google.blue} strokeWidth={2} dot={false} />
+                            <Line yAxisId="right" type="monotone" dataKey="orders" name="Orders" stroke={google.green} strokeWidth={2} dot={false} />
+                          </LineChart>
+                        )}
+                        {chartType === 'bar' && (
+                          <RechartsBarChart data={salesData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? alpha("#3c4043", 0.5) : alpha("#dadce0", 0.5)} />
+                            <XAxis 
+                              dataKey="date" 
+                              tick={{ fontSize: 10, fill: darkMode ? '#9aa0a6' : '#5f6368' }}
+                              tickFormatter={(date) => {
+                                const d = new Date(date);
+                                return `${d.getDate()}/${d.getMonth() + 1}`;
+                              }}
+                            />
+                            <YAxis tick={{ fontSize: 10, fill: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                            <RechartsTooltip content={<CustomTooltip />} />
+                            <Bar dataKey="revenue" name="Revenue" fill={google.blue} radius={[4, 4, 0, 0]} />
+                          </RechartsBarChart>
+                        )}
+                        {chartType === 'area' && (
+                          <ComposedChart data={salesData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                            <defs>
+                              <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor={google.blue} stopOpacity={0.3} />
+                                <stop offset="95%" stopColor={google.blue} stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? alpha("#3c4043", 0.5) : alpha("#dadce0", 0.5)} />
+                            <XAxis 
+                              dataKey="date" 
+                              tick={{ fontSize: 10, fill: darkMode ? '#9aa0a6' : '#5f6368' }}
+                              tickFormatter={(date) => {
+                                const d = new Date(date);
+                                return `${d.getDate()}/${d.getMonth() + 1}`;
+                              }}
+                            />
+                            <YAxis tick={{ fontSize: 10, fill: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                            <RechartsTooltip content={<CustomTooltip />} />
+                            <Area type="monotone" dataKey="revenue" name="Revenue" stroke={google.blue} fill="url(#revenueGradient)" />
+                          </ComposedChart>
+                        )}
+                      </ResponsiveContainer>
+                    </Box>
+
+                    {/* Stats */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, flexWrap: 'wrap', gap: 2 }}>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
+                          Total Orders
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600}>
+                          {totalOrders.toLocaleString()}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
+                          Total Revenue
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600}>
+                          {formatCompactNumber(totalRevenue)}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
+                          Items Sold
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600}>
+                          {totalItems.toLocaleString()}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
+                          Avg Order
+                        </Typography>
+                        <Typography variant="h6" fontWeight={600}>
+                          {formatCompactNumber(avgOrderValue)}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {/* Period Info */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, pt: 1, borderTop: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}` }}>
+                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
+                        Showing {salesData.length} {selectedPeriod === 'week' ? 'days' : selectedPeriod === 'month' ? 'days' : selectedPeriod === 'quarter' ? 'days' : 'months'}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
+                        {includeDrafts ? 'Including drafts' : 'Confirmed orders only'}
+                      </Typography>
+                    </Box>
+                  </>
                 ) : (
                   <Box sx={{ height: 250, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
@@ -647,33 +880,6 @@ export default function BusinessHubPage() {
                     </Typography>
                   </Box>
                 )}
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
-                      Total Orders
-                    </Typography>
-                    <Typography variant="h6" fontWeight={600}>
-                      {salesData.reduce((sum, item) => sum + item.sales, 0)}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
-                      Total Revenue
-                    </Typography>
-                    <Typography variant="h6" fontWeight={600}>
-                      {formatCurrency(salesData.reduce((sum, item) => sum + item.revenue, 0))}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : google.grey }}>
-                      Items Sold
-                    </Typography>
-                    <Typography variant="h6" fontWeight={600}>
-                      {salesData.reduce((sum, item) => sum + item.totalItems, 0)}
-                    </Typography>
-                  </Box>
-                </Box>
               </Card>
             </Box>
 
