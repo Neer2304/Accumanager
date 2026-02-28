@@ -1,7 +1,9 @@
+// app/api/admin/support/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import SupportTicket from '@/models/SupportTicket';
 import { verifyToken } from '@/lib/jwt';
+import mongoose from 'mongoose';
 
 async function verifyAdmin(request: NextRequest) {
   const authToken = request.cookies.get('auth_token')?.value;
@@ -18,18 +20,33 @@ async function verifyAdmin(request: NextRequest) {
 
   return decoded;
 }
-
 // GET: Get specific ticket details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Change to Promise
 ) {
   try {
-    const decoded = await verifyAdmin(request);
-    
-    await connectToDatabase();
+    // 1. ALWAYS await params in Next.js 15+
+    const resolvedParams = await params;
+    const rawId = resolvedParams.id;
 
-    const ticket = await SupportTicket.findById(params.id);
+    // 2. Trim the ID to remove hidden spaces or newlines
+    const id = rawId.trim();
+
+    console.log('🔍 Processing ID:', id);
+
+    await connectToDatabase();
+    
+    // Check validity
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ 
+        message: 'Invalid ID format',
+        received: id,
+        length: id.length 
+      }, { status: 400 });
+    }
+
+    const ticket = await SupportTicket.findById(id).lean();
     
     if (!ticket) {
       return NextResponse.json({ message: 'Ticket not found' }, { status: 404 });
@@ -38,76 +55,56 @@ export async function GET(
     return NextResponse.json({ ticket });
     
   } catch (error: any) {
-    console.error('Get ticket error:', error);
-    
-    if (error.message === 'Unauthorized') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-    
-    if (error.message === 'Admin access required') {
-      return NextResponse.json({ message: 'Admin access required' }, { status: 403 });
-    }
-    
-    return NextResponse.json(
-      { message: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
-// PUT: Update ticket status
+
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // 1. Define as Promise
 ) {
   try {
-    const decoded = await verifyAdmin(request);
-    const { status, priority, assignedTo } = await request.json();
+    // 2. Await the params to get the actual ID
+    const { id: rawId } = await params;
+    const id = rawId.trim();
+
+    const body = await request.json();
+    const { status, priority } = body;
+
+    // Verify admin session
+    await verifyAdmin(request);
     
     await connectToDatabase();
 
-    const ticket = await SupportTicket.findById(params.id);
+    // 3. Validate the ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ message: 'Invalid ID format' }, { status: 400 });
+    }
+
+    // 4. Update the ticket
+    const updateData: any = {};
+    if (status) updateData.status = status;
+    if (priority) updateData.priority = priority;
+    updateData.updatedAt = new Date();
+
+    const ticket = await SupportTicket.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).lean();
+
     if (!ticket) {
       return NextResponse.json({ message: 'Ticket not found' }, { status: 404 });
     }
 
-    const updateData: any = { updatedAt: new Date() };
-    
-    if (status && ['open', 'in-progress', 'resolved', 'closed'].includes(status)) {
-      updateData.status = status;
-    }
-    
-    if (priority && ['low', 'medium', 'high', 'urgent'].includes(priority)) {
-      updateData.priority = priority;
-    }
-    
-    if (assignedTo) {
-      updateData.assignedTo = assignedTo;
-    }
-
-    const updatedTicket = await SupportTicket.findByIdAndUpdate(
-      params.id,
-      updateData,
-      { new: true }
-    );
-
-    return NextResponse.json({
-      success: true,
-      message: 'Ticket updated successfully',
-      ticket: updatedTicket
+    return NextResponse.json({ 
+      message: 'Ticket updated successfully', 
+      ticket 
     });
-    
+
   } catch (error: any) {
-    console.error('Update ticket error:', error);
-    
-    if (error.message === 'Unauthorized') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-    
-    if (error.message === 'Admin access required') {
-      return NextResponse.json({ message: 'Admin access required' }, { status: 403 });
-    }
-    
+    console.error('❌ PUT Error:', error);
     return NextResponse.json(
       { message: error.message || 'Internal server error' },
       { status: 500 }
@@ -115,22 +112,36 @@ export async function PUT(
   }
 }
 
-// DELETE: Delete ticket (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // 1. Define params as a Promise
 ) {
   try {
+    // 2. Await the params to get the actual ID string
+    const { id: rawId } = await params;
+    const id = rawId.trim();
+
+    console.log(`🗑️ Admin deleting ticket: ${id}`);
+    
+    // Verify admin (ensure this helper is imported)
     const decoded = await verifyAdmin(request);
     
     await connectToDatabase();
 
-    const ticket = await SupportTicket.findById(params.id);
-    if (!ticket) {
-      return NextResponse.json({ message: 'Ticket not found' }, { status: 404 });
+    // 3. Validate the unwrapped ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ 
+        message: 'Invalid ticket ID format',
+        received: id
+      }, { status: 400 });
     }
 
-    await SupportTicket.findByIdAndDelete(params.id);
+    // 4. Perform the delete
+    const deletedTicket = await SupportTicket.findByIdAndDelete(id);
+
+    if (!deletedTicket) {
+      return NextResponse.json({ message: 'Ticket not found' }, { status: 404 });
+    }
 
     return NextResponse.json({
       success: true,
@@ -140,10 +151,10 @@ export async function DELETE(
   } catch (error: any) {
     console.error('Delete ticket error:', error);
     
+    // Auth error handling
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
-    
     if (error.message === 'Admin access required') {
       return NextResponse.json({ message: 'Admin access required' }, { status: 403 });
     }
