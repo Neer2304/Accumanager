@@ -9,10 +9,13 @@ import {
   BarChart,
   AnalyticsSharp,
   Home,
+  SupportAgent,
+  Report,
 } from '@mui/icons-material';
 import { ProductIcon } from '@/components/common';
 import { Support } from '@/assets/icons/HelpSupportIcons';
 import { NavItem } from './types';
+import { BusinessCenterIcon, TextsmsIcon } from '@/assets/icons/icons';
 
 export const menuItems: NavItem[] = [
   { 
@@ -50,6 +53,30 @@ export const menuItems: NavItem[] = [
     icon: <ProductIcon />,
     path: '/admin/products',
     mobileText: 'Products'
+  },
+  {
+    text: 'Reports',
+    icon: <Report />,
+    path: '/admin/reports',
+    mobileText: 'Reports'
+  },
+  {
+    text: 'Support',
+    icon: <SupportAgent />,
+    path: '/admin/support',
+    mobileText: 'Support'
+  },
+  {
+    text: 'Advance-ads',
+    icon: <BusinessCenterIcon />,
+    path: '/admin/advance',
+    mobileText: 'Ads'
+  },
+  {
+    text: 'Blog',
+    icon: <TextsmsIcon />,
+    path: '/admin/blog',
+    mobileText: 'Blog'
   },
   {
     text: 'Support',
