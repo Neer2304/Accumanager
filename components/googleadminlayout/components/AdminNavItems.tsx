@@ -11,11 +11,17 @@ import {
   Home,
   SupportAgent,
   Report,
+  Article,
+  Campaign,
+  Assessment,
+  Feed,
+  Newspaper,
+  TrendingUp,
+  BusinessCenter,
 } from '@mui/icons-material';
 import { ProductIcon } from '@/components/common';
 import { Support } from '@/assets/icons/HelpSupportIcons';
 import { NavItem } from './types';
-import { BusinessCenterIcon, TextsmsIcon } from '@/assets/icons/icons';
 
 export const menuItems: NavItem[] = [
   { 
@@ -55,28 +61,22 @@ export const menuItems: NavItem[] = [
     mobileText: 'Products'
   },
   {
-    text: 'Reports',
-    icon: <Report />,
-    path: '/admin/reports',
-    mobileText: 'Reports'
-  },
-  {
-    text: 'Support',
-    icon: <SupportAgent />,
-    path: '/admin/support',
-    mobileText: 'Support'
-  },
-  {
-    text: 'Advance-ads',
-    icon: <BusinessCenterIcon />,
-    path: '/admin/advance',
-    mobileText: 'Ads'
-  },
-  {
-    text: 'Blog',
-    icon: <TextsmsIcon />,
+    text: 'Blogs',
+    icon: <Article />,
     path: '/admin/blog',
-    mobileText: 'Blog'
+    mobileText: 'Blogs',
+  },
+  {
+    text: 'Reports',
+    icon: <Assessment />,
+    path: '/admin/reports',
+    mobileText: 'Reports',
+  },
+  {
+    text: 'Advance Ads',
+    icon: <Campaign />,
+    path: '/admin/advance',
+    mobileText: 'Ads',
   },
   {
     text: 'Support',
@@ -98,5 +98,25 @@ export const quickLinks: NavItem[] = [
     icon: <Home />,
     path: '/dashboard',
     mobileText: 'Home'
+  },
+  {
+    text: 'Recent Blogs',
+    icon: <Feed />,
+    path: '/admin/blogs/recent',
+    mobileText: 'Recent Blogs'
+  },
+  {
+    text: 'Ad Performance',
+    icon: <TrendingUp />,
+    path: '/admin/ads/performance',
+    mobileText: 'Ad Performance'
   }
 ];
+
+// Optional: Grouped menu items for better organization
+export const menuGroups = {
+  main: menuItems.slice(0, 5), // First 5 items
+  content: menuItems.slice(5, 8), // Products, Blogs, Reports
+  marketing: menuItems.slice(8, 9), // Ads
+  system: menuItems.slice(9), // Support, Settings
+};
