@@ -141,7 +141,7 @@ export default function CreatePostPage() {
   };
 
   // ── Design tokens ────────────────────────────────────────────────────────
-  const pageBg   = darkMode ? '#13151a' : '#f0f4f8'
+  const pageBg   = darkMode ? '#202124' : '#f0f4f8'
   const cardBg   = darkMode ? '#1c1f26' : '#ffffff'
   const cardBorder = darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'
   const labelColor = darkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)'

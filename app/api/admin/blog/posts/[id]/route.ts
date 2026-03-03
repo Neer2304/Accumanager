@@ -1,4 +1,4 @@
-// app/api/admin/blog/posts/[id]/route.ts - GET, PUT, DELETE single post
+// app/api/admin/blog/posts/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import BlogPost from '@/models/BlogPost'
@@ -7,22 +7,32 @@ import { verifyToken } from '@/lib/jwt'
 // GET /api/admin/blog/posts/[id] - Get single post
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const authToken = request.cookies.get('auth_token')?.value
     if (!authToken) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
     const decoded = verifyToken(authToken)
     if (!['admin', 'superadmin'].includes(decoded.role)) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
+    }
+
+    // Await the params in Next.js 15
+    const { id } = await context.params
+    
+    if (!id) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Post ID is required' 
+      }, { status: 400 })
     }
 
     await connectToDatabase()
 
-    const post = await BlogPost.findById(params.id)
+    const post = await BlogPost.findById(id)
       .populate('categoryId', 'name slug')
 
     if (!post) {
@@ -38,9 +48,10 @@ export async function GET(
     })
 
   } catch (error: any) {
+    console.error('❌ GET admin post error:', error)
     return NextResponse.json({ 
       success: false, 
-      message: error.message 
+      message: error.message || 'Internal server error'
     }, { status: 500 })
   }
 }
@@ -48,17 +59,27 @@ export async function GET(
 // PUT /api/admin/blog/posts/[id] - Update post
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const authToken = request.cookies.get('auth_token')?.value
     if (!authToken) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
     const decoded = verifyToken(authToken)
     if (!['admin', 'superadmin'].includes(decoded.role)) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
+    }
+
+    // Await the params in Next.js 15
+    const { id } = await context.params
+    
+    if (!id) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Post ID is required' 
+      }, { status: 400 })
     }
 
     await connectToDatabase()
@@ -68,7 +89,7 @@ export async function PUT(
     if (data.slug) {
       const existing = await BlogPost.findOne({
         slug: data.slug,
-        _id: { $ne: params.id }
+        _id: { $ne: id }
       })
       if (existing) {
         return NextResponse.json({
@@ -79,7 +100,7 @@ export async function PUT(
     }
 
     const post = await BlogPost.findByIdAndUpdate(
-      params.id,
+      id,
       { $set: data },
       { new: true, runValidators: true }
     ).populate('categoryId', 'name slug')
@@ -98,9 +119,10 @@ export async function PUT(
     })
 
   } catch (error: any) {
+    console.error('❌ PUT admin post error:', error)
     return NextResponse.json({ 
       success: false, 
-      message: error.message 
+      message: error.message || 'Internal server error'
     }, { status: 500 })
   }
 }
@@ -108,22 +130,32 @@ export async function PUT(
 // DELETE /api/admin/blog/posts/[id] - Delete post
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const authToken = request.cookies.get('auth_token')?.value
     if (!authToken) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
     const decoded = verifyToken(authToken)
     if (!['admin', 'superadmin'].includes(decoded.role)) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
+    }
+
+    // Await the params in Next.js 15
+    const { id } = await context.params
+    
+    if (!id) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Post ID is required' 
+      }, { status: 400 })
     }
 
     await connectToDatabase()
 
-    const post = await BlogPost.findByIdAndDelete(params.id)
+    const post = await BlogPost.findByIdAndDelete(id)
 
     if (!post) {
       return NextResponse.json({
@@ -138,34 +170,35 @@ export async function DELETE(
     })
 
   } catch (error: any) {
+    console.error('❌ DELETE admin post error:', error)
     return NextResponse.json({ 
       success: false, 
-      message: error.message 
+      message: error.message || 'Internal server error'
     }, { status: 500 })
   }
 }
 
 function formatBlogPost(post: any) {
   return {
-    id: post._id,
+    id: post._id?.toString(),
     title: post.title,
     slug: post.slug,
     excerpt: post.excerpt,
     content: post.content,
-    author: post.author,
+    author: post.author || { name: 'Anonymous', role: 'Author' },
     category: {
-      id: post.categoryId?._id || post.categoryId,
+      id: post.categoryId?._id?.toString() || post.categoryId?.toString() || 'uncategorized',
       name: post.categoryId?.name || 'Uncategorized',
       slug: post.categoryId?.slug || 'uncategorized'
     },
-    tags: post.tags,
-    coverImage: post.coverImage,
-    readTime: post.readTime,
-    featured: post.featured,
-    published: post.published,
-    publishedAt: post.publishedAt,
-    views: post.views,
-    likes: post.likes,
+    tags: post.tags || [],
+    coverImage: post.coverImage || '',
+    readTime: post.readTime || 5,
+    featured: post.featured || false,
+    published: post.published || false,
+    publishedAt: post.publishedAt || post.createdAt,
+    views: post.views || 0,
+    likes: post.likes || 0,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt
   }
