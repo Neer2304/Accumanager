@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import User from '@/models/User';
 import { connectToDatabase } from '@/lib/mongodb';
 import { createOTP } from '@/lib/otp';
-import { sendPasswordResetOTP } from '@/lib/email';
+import { sendPasswordResetOTP } from '@/lib/emails';
 
 export async function POST(request: NextRequest) {
   try {

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import User from '@/models/User';
 import { connectToDatabase } from '@/lib/mongodb';
 import { verifyToken } from '@/lib/jwt';
-import { sendPasswordChangedConfirmation } from '@/lib/email';
+import { sendPasswordChangedConfirmation } from '@/lib/emails';
 
 export async function POST(request: NextRequest) {
   try {
