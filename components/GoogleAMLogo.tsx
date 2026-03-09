@@ -1,3 +1,4 @@
+// components/GoogleAMLogo.tsx
 import React from 'react';
 import { Box } from '@mui/material';
 
