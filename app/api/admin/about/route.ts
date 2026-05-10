@@ -1,9 +1,10 @@
+// app/api/admin/about/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import About from '@/models/About'
 import { verifyToken } from '@/lib/jwt'
 
-// GET - Get all about data (public or admin)
+// GET - Get all about data
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase()
@@ -12,136 +13,36 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const section = searchParams.get('section')
     
-    // Get about data
-    const aboutData = await About.findOne().lean()
+    let aboutData = await About.findOne().lean()
     
     if (!aboutData) {
-      // Create default about data
-      const defaultAbout = new About({
-        companyName: 'Admin Dashboard',
-        createdBy: 'system',
-        updatedBy: 'system',
-        
-        // Add default values for all required fields
-        contact: {
-          email: 'contact@company.com',
-          phone: '+1 (555) 123-4567',
-          address: '123 Main Street, City, Country',
-          workingHours: 'Mon-Fri, 9AM-6PM',
-          supportHours: '24/7'
-        },
-        
-        socialMedia: {
-          facebook: '',
-          twitter: '',
-          instagram: '',
-          linkedin: '',
-          youtube: '',
-          github: ''
-        },
-        
-        labels: {
-          appName: 'Admin Dashboard',
-          dashboard: 'Dashboard',
-          profile: 'Profile',
-          settings: 'Settings',
-          logout: 'Logout',
-          login: 'Login',
-          register: 'Register',
-          save: 'Save',
-          cancel: 'Cancel',
-          delete: 'Delete',
-          edit: 'Edit',
-          view: 'View',
-          welcomeMessage: 'Welcome back!',
-          totalUsers: 'Total Users',
-          totalRevenue: 'Total Revenue',
-          activeSubscriptions: 'Active Subscriptions',
-          recentActivities: 'Recent Activities',
-          createNew: 'Create New',
-          viewDetails: 'View Details',
-          downloadReport: 'Download Report',
-          exportData: 'Export Data',
-          importData: 'Import Data',
-          name: 'Name',
-          email: 'Email',
-          password: 'Password',
-          confirmPassword: 'Confirm Password',
-          phone: 'Phone',
-          address: 'Address',
-          active: 'Active',
-          inactive: 'Inactive',
-          pending: 'Pending',
-          completed: 'Completed',
-          draft: 'Draft'
-        },
-        
-        seo: {
-          metaTitle: 'Admin Dashboard',
-          metaDescription: 'Manage your application with our admin dashboard',
-          metaKeywords: ['admin', 'dashboard', 'management'],
-          ogTitle: 'Admin Dashboard',
-          ogDescription: 'Manage your application with our admin dashboard',
-          ogImage: '/og-image.png'
-        },
-        
-        theme: {
-          primaryColor: '#4285f4',
-          secondaryColor: '#34a853',
-          accentColor: '#ea4335',
-          backgroundColor: '#ffffff',
-          textColor: '#333333',
-          fontFamily: 'Inter, sans-serif',
-          borderRadius: '8px'
-        },
-        
-        system: {
-          timezone: 'UTC',
-          dateFormat: 'MM/DD/YYYY',
-          timeFormat: 'hh:mm A',
-          currency: 'USD',
-          currencySymbol: '$',
-          language: 'en',
-          defaultRole: 'user',
-          defaultPlan: 'trial',
-          trialDays: 14,
-          sessionTimeout: 30,
-          itemsPerPage: 10,
-          enableRegistration: true,
-          enableEmailVerification: false,
-          enablePhoneVerification: false,
-          enableTwoFactor: false,
-          enableCaptcha: false,
-          maintenanceMode: false
-        }
-      })
-      
+      const defaultAbout = new About()
       await defaultAbout.save()
-      
-      return NextResponse.json({
-        success: true,
-        data: defaultAbout.toObject(),
-        message: 'Default about data created'
-      })
+      aboutData = defaultAbout.toObject()
     }
     
-    // If user is authenticated as admin, return all data
+    // Check if admin
+    let isAdmin = false
     if (authToken) {
       try {
         const decoded = verifyToken(authToken)
         if (decoded.role && ['admin', 'superadmin'].includes(decoded.role)) {
-          return NextResponse.json({
-            success: true,
-            data: section ? aboutData[section as keyof typeof aboutData] : aboutData,
-            isAdmin: true
-          })
+          isAdmin = true
         }
       } catch {
-        // Token invalid, return public data
+        // Invalid token, continue as public
       }
     }
     
-    // Return public data only
+    if (isAdmin) {
+      return NextResponse.json({
+        success: true,
+        data: section ? aboutData[section as keyof typeof aboutData] : aboutData,
+        isAdmin: true
+      })
+    }
+    
+    // Return public data
     const publicData = {
       companyName: aboutData.companyName,
       companyDescription: aboutData.companyDescription,
@@ -167,13 +68,13 @@ export async function GET(request: NextRequest) {
       isAdmin: false
     })
     
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Get about error:', error)
     return NextResponse.json(
       {
         success: false,
         message: 'Failed to fetch about data',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
       },
       { status: 500 }
     )
@@ -197,76 +98,61 @@ export async function POST(request: NextRequest) {
       decoded = verifyToken(authToken)
       if (!decoded.role || !['admin', 'superadmin'].includes(decoded.role)) {
         return NextResponse.json(
-          { success: false, message: 'Forbidden - Insufficient permissions' },
+          { success: false, message: 'Forbidden' },
           { status: 403 }
         )
       }
-    } catch (authError: any) {
+    } catch {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized - Invalid token' },
+        { success: false, message: 'Invalid token' },
         { status: 401 }
       )
     }
     
     await connectToDatabase()
-    const data = await request.json()
-    const { section, updates } = data
+    const body = await request.json()
+    const { section, updates } = body
     
-    if (!section) {
+    if (!section || !updates) {
       return NextResponse.json(
-        { success: false, message: 'Missing section parameter' },
+        { success: false, message: 'Missing section or updates' },
         { status: 400 }
       )
     }
     
-    // Find or create about data
     let aboutData = await About.findOne()
-    
     if (!aboutData) {
-      aboutData = new About({
-        createdBy: decoded.id,
-        updatedBy: decoded.id
-      })
+      aboutData = new About()
     }
     
     // Update the specific section
     if (section === 'company') {
-      // Handle company fields at root level
-      aboutData.set(updates)
+      Object.assign(aboutData, updates)
     } else if (section === 'labels') {
-      // Merge labels
-      aboutData.labels = {
-        ...aboutData.labels.toObject(),
+      aboutData.labels = { ...aboutData.labels.toObject(), ...updates }
+    } else {
+      aboutData[section as keyof typeof aboutData] = {
+        ...(aboutData[section as keyof typeof aboutData] as object),
         ...updates
       }
-    } else {
-      // For nested sections
-      aboutData.set({
-        [section]: {
-          ...aboutData[section as keyof typeof aboutData],
-          ...updates
-        }
-      })
     }
     
     aboutData.updatedBy = decoded.id
-    aboutData.updatedAt = new Date()
-    
     await aboutData.save()
     
     return NextResponse.json({
       success: true,
-      message: 'About data updated successfully',
-      data: section === 'company' ? aboutData.toObject() : aboutData[section as keyof typeof aboutData]
+      message: `${section} updated successfully`,
+      data: aboutData[section as keyof typeof aboutData]
     })
     
-  } catch (error: any) {
-    console.error('❌ Update about error:', error)
+  } catch (error) {
+    console.error('❌ Update error:', error)
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to update about data',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        message: 'Failed to update',
+        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
       },
       { status: 500 }
     )
@@ -290,13 +176,13 @@ export async function PUT(request: NextRequest) {
       decoded = verifyToken(authToken)
       if (!decoded.role || !['admin', 'superadmin'].includes(decoded.role)) {
         return NextResponse.json(
-          { success: false, message: 'Forbidden - Insufficient permissions' },
+          { success: false, message: 'Forbidden' },
           { status: 403 }
         )
       }
-    } catch (authError: any) {
+    } catch {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized - Invalid token' },
+        { success: false, message: 'Invalid token' },
         { status: 401 }
       )
     }
@@ -305,36 +191,27 @@ export async function PUT(request: NextRequest) {
     const data = await request.json()
     
     let aboutData = await About.findOne()
-    
     if (!aboutData) {
-      aboutData = new About({
-        ...data,
-        createdBy: decoded.id,
-        updatedBy: decoded.id
-      })
-    } else {
-      aboutData.set({
-        ...data,
-        updatedBy: decoded.id,
-        updatedAt: new Date()
-      })
+      aboutData = new About()
     }
     
+    Object.assign(aboutData, data)
+    aboutData.updatedBy = decoded.id
     await aboutData.save()
     
     return NextResponse.json({
       success: true,
-      message: 'About data updated successfully',
+      message: 'All settings updated successfully',
       data: aboutData.toObject()
     })
     
-  } catch (error: any) {
-    console.error('❌ Bulk update about error:', error)
+  } catch (error) {
+    console.error('❌ Bulk update error:', error)
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to update about data',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        message: 'Failed to update',
+        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
       },
       { status: 500 }
     )
@@ -358,13 +235,13 @@ export async function DELETE(request: NextRequest) {
       decoded = verifyToken(authToken)
       if (!decoded.role || !['admin', 'superadmin'].includes(decoded.role)) {
         return NextResponse.json(
-          { success: false, message: 'Forbidden - Insufficient permissions' },
+          { success: false, message: 'Forbidden' },
           { status: 403 }
         )
       }
-    } catch (authError: any) {
+    } catch {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized - Invalid token' },
+        { success: false, message: 'Invalid token' },
         { status: 401 }
       )
     }
@@ -372,28 +249,25 @@ export async function DELETE(request: NextRequest) {
     await connectToDatabase()
     await About.deleteMany({})
     
-    // Create fresh default
     const defaultAbout = new About({
-      companyName: 'Admin Dashboard',
       createdBy: decoded.id,
       updatedBy: decoded.id
     })
-    
     await defaultAbout.save()
     
     return NextResponse.json({
       success: true,
-      message: 'About data reset to defaults',
+      message: 'Reset to defaults successfully',
       data: defaultAbout.toObject()
     })
     
-  } catch (error: any) {
-    console.error('❌ Reset about error:', error)
+  } catch (error) {
+    console.error('❌ Reset error:', error)
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to reset about data',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        message: 'Failed to reset',
+        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
       },
       { status: 500 }
     )

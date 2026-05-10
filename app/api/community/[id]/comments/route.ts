@@ -1,20 +1,18 @@
-// app/api/community/[id]/comments/route.ts - FIXED VERSION
+// app/api/community/[id]/comments/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Community from '@/models/Community';
+import CommunityUser from '@/models/CommunityUser';
+import User from '@/models/User';
 import { verifyToken } from '@/lib/jwt';
 import mongoose from 'mongoose';
-import { error } from 'console';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log('💬 COMMENT API - FIXED VERSION');
-  
   try {
     const { id: postId } = await params;
-    console.log('Post ID for comment:', postId);
     
     if (!postId) {
       return NextResponse.json(
@@ -27,33 +25,16 @@ export async function POST(
     
     // Find post
     let post = null;
-    
-    // Method 1: Direct find
-    try {
+    if (mongoose.Types.ObjectId.isValid(postId)) {
       post = await Community.findById(postId);
-    } catch (e) {
-      console.log('Method 1 failed:', error.name);
-    }
-    
-    // Method 2: With ObjectId
-    if (!post && mongoose.Types.ObjectId.isValid(postId)) {
-      try {
-        const objectId = new mongoose.Types.ObjectId(postId);
-        post = await Community.findById(objectId);
-      } catch (e) {
-        console.log('Method 2 failed:', error.name);
-      }
     }
     
     if (!post) {
-      console.log('❌ Post not found for comment');
       return NextResponse.json(
         { success: false, message: 'Post not found' },
         { status: 404 }
       );
     }
-    
-    console.log(`✅ Post found: ${post.title}`);
     
     // Authentication
     const cookies = request.headers.get('cookie');
@@ -74,7 +55,7 @@ export async function POST(
       );
     }
     
-    const userId = new mongoose.Types.ObjectId(decoded.userId);
+    const userId = decoded.userId;
     const body = await request.json();
     
     if (!body.content?.trim()) {
@@ -84,24 +65,19 @@ export async function POST(
       );
     }
     
-    // Check if post is locked
-    if (post.isLocked && !['moderator', 'admin'].includes(decoded.role || 'user')) {
-      return NextResponse.json(
-        { success: false, message: 'This post is locked for new comments' },
-        { status: 403 }
-      );
-    }
+    // Get REAL user name from database
+    const user = await User.findById(userId).select('name email');
+    const communityUser = await CommunityUser.findOne({ userId: new mongoose.Types.ObjectId(userId) });
     
-    // Get user details from token or fetch from DB
-    const userName = decoded.name || 'User';
+    const realUserName = user?.name || communityUser?.username || 'Community Member';
+    const realUserAvatar = communityUser?.avatar || '';
     const userRole = decoded.role || 'user';
-    const userAvatar = decoded.avatar || '';
     
     // Create comment object
     const comment = {
-      user: userId,
-      userName: userName,
-      userAvatar: userAvatar,
+      user: new mongoose.Types.ObjectId(userId),
+      userName: realUserName,
+      userAvatar: realUserAvatar,
       userRole: userRole,
       content: body.content.trim(),
       likes: [],
@@ -118,15 +94,30 @@ export async function POST(
     
     await post.save();
     
-    // Get the added comment
+    // ✅ FIX: Safely get the added comment with proper error handling
     const savedComment = post.comments[post.comments.length - 1];
-    const commentWithId = {
-      ...savedComment.toObject(),
-      _id: savedComment._id.toString()
-    };
     
-    console.log(`✅ Comment added by ${userName}`);
-    console.log(`New comment count: ${post.commentCount}`);
+    // Check if savedComment exists and has _id
+    if (!savedComment || !savedComment._id) {
+      return NextResponse.json(
+        { success: false, message: 'Failed to retrieve saved comment' },
+        { status: 500 }
+      );
+    }
+    
+    const commentWithId = {
+      _id: savedComment._id.toString(),
+      user: savedComment.user.toString(),
+      userName: savedComment.userName,
+      userAvatar: savedComment.userAvatar,
+      userRole: savedComment.userRole,
+      content: savedComment.content,
+      likes: savedComment.likes || [],
+      likeCount: savedComment.likeCount || 0,
+      replies: savedComment.replies || [],
+      isSolution: savedComment.isSolution || false,
+      createdAt: savedComment.createdAt,
+    };
     
     return NextResponse.json({
       success: true,

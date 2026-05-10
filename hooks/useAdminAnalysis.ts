@@ -2,7 +2,7 @@
 import { useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AdminAnalysisService } from '@/services/adminAnalysisService';
-import { TIME_RANGE_OPTIONS } from '@/types/analysis';
+import { TIME_RANGE_OPTIONS, TimeRangeOption } from '@/types/analysis';
 import {
   setAnalysisData,
   clearAnalysisData,
@@ -13,9 +13,92 @@ import {
   clearError,
 } from '@/store/slices/adminAnalysisSlice';
 
+// Define interfaces
+interface AnalysisData {
+  systemOverview?: {
+    databaseStats?: {
+      totalUsers: number;
+      activeUsers: number;
+      totalNotes: number;
+      recentNotes: number;
+      recentUsers: number;
+      userGrowthRate: number;
+    };
+  };
+  summary?: {
+    activeUserPercentage: number;
+    notesPerActiveUser: string;
+    engagementScore: number;
+  };
+  userAnalysis?: {
+    usersByRole: Array<{ _id: string | null; count: number }>;
+    usersByStatus: Array<{ _id: string | null; count: number }>;
+    newUsersByDay: Array<{ _id: string; count: number }>;
+    topActiveUsers: Array<{ userId: string; name: string; activityCount: number }>;
+  };
+  notesAnalysis?: {
+    notesByCategory: Array<{ _id: string | null; count: number }>;
+    notesByDay: Array<{ _id: string; count: number }>;
+    topUsersByNotes: Array<{ userId: string; name: string; noteCount: number }>;
+  };
+}
+
+interface UserRoleItem {
+  role: string;
+  count: number;
+}
+
+interface UserStatusItem {
+  status: string;
+  count: number;
+}
+
+interface NoteCategoryItem {
+  category: string;
+  count: number;
+}
+
+interface NewUserItem {
+  date: string;
+  count: number;
+}
+
+interface NoteDayItem {
+  date: string;
+  count: number;
+}
+
+interface TopActiveUserItem {
+  userId: string;
+  name: string;
+  activityCount: number;
+}
+
+interface TopUserNoteItem {
+  userId: string;
+  name: string;
+  noteCount: number;
+}
+
+interface ChartDataItem {
+  name: string;
+  value: number;
+}
+
+interface RootState {
+  adminAnalysis: {
+    data: AnalysisData | null;
+    loading: boolean;
+    refreshing: boolean;
+    error: string | null;
+    timeframe: number;
+    lastUpdated: string | null;
+  };
+}
+
 interface UseAdminAnalysisReturn {
   // State
-  data: any;
+  data: AnalysisData | null;
   loading: boolean;
   refreshing: boolean;
   error: string | null;
@@ -24,7 +107,7 @@ interface UseAdminAnalysisReturn {
 
   // Time range options
   timeRangeOptions: typeof TIME_RANGE_OPTIONS;
-  currentTimeRangeOption: typeof TIME_RANGE_OPTIONS[0] | undefined;
+  currentTimeRangeOption: TimeRangeOption | undefined;
 
   // Actions
   loadAnalysis: (timeframe?: number, forceRefresh?: boolean) => Promise<void>;
@@ -42,32 +125,32 @@ interface UseAdminAnalysisReturn {
   getActiveUserPercentage: () => number;
   getNotesPerActiveUser: () => number;
   getEngagementScore: () => number;
-  getUsersByRole: () => Array<{ role: string; count: number }>;
-  getUsersByStatus: () => Array<{ status: string; count: number }>;
-  getNotesByCategory: () => Array<{ category: string; count: number }>;
-  getNewUsersByDay: () => Array<{ date: string; count: number }>;
-  getNotesByDay: () => Array<{ date: string; count: number }>;
-  getTopActiveUsers: () => any[];
-  getTopUsersByNotes: () => any[];
+  getUsersByRole: () => UserRoleItem[];
+  getUsersByStatus: () => UserStatusItem[];
+  getNotesByCategory: () => NoteCategoryItem[];
+  getNewUsersByDay: () => NewUserItem[];
+  getNotesByDay: () => NoteDayItem[];
+  getTopActiveUsers: () => TopActiveUserItem[];
+  getTopUsersByNotes: () => TopUserNoteItem[];
 
   // Chart data formatters
-  getUsersByRoleChartData: () => Array<{ name: string; value: number }>;
-  getNotesByCategoryChartData: () => Array<{ name: string; value: number }>;
-  getUsersByStatusChartData: () => Array<{ name: string; value: number }>;
-  getNewUsersChartData: () => Array<{ name: string; value: number }>;
-  getNotesChartData: () => Array<{ name: string; value: number }>;
+  getUsersByRoleChartData: () => ChartDataItem[];
+  getNotesByCategoryChartData: () => ChartDataItem[];
+  getUsersByStatusChartData: () => ChartDataItem[];
+  getNewUsersChartData: () => ChartDataItem[];
+  getNotesChartData: () => ChartDataItem[];
 }
 
 export const useAdminAnalysis = (autoLoad: boolean = true): UseAdminAnalysisReturn => {
   const dispatch = useDispatch();
 
-  // Selectors
-  const data = useSelector((state: any) => state.adminAnalysis.data);
-  const loading = useSelector((state: any) => state.adminAnalysis.loading);
-  const refreshing = useSelector((state: any) => state.adminAnalysis.refreshing);
-  const error = useSelector((state: any) => state.adminAnalysis.error);
-  const timeframe = useSelector((state: any) => state.adminAnalysis.timeframe);
-  const lastUpdated = useSelector((state: any) => state.adminAnalysis.lastUpdated);
+  // Selectors with proper typing
+  const data = useSelector((state: RootState) => state.adminAnalysis.data);
+  const loading = useSelector((state: RootState) => state.adminAnalysis.loading);
+  const refreshing = useSelector((state: RootState) => state.adminAnalysis.refreshing);
+  const error = useSelector((state: RootState) => state.adminAnalysis.error);
+  const timeframe = useSelector((state: RootState) => state.adminAnalysis.timeframe);
+  const lastUpdated = useSelector((state: RootState) => state.adminAnalysis.lastUpdated);
 
   // Current time range option
   const currentTimeRangeOption = useMemo(
@@ -93,8 +176,9 @@ export const useAdminAnalysis = (autoLoad: boolean = true): UseAdminAnalysisRetu
       if (newTimeframe !== undefined && newTimeframe !== timeframe) {
         dispatch(setTimeframe(newTimeframe));
       }
-    } catch (err: any) {
-      dispatch(setError(err.message || 'Failed to load analysis data'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load analysis data';
+      dispatch(setError(errorMessage));
     } finally {
       dispatch(setLoading(false));
     }
@@ -108,8 +192,9 @@ export const useAdminAnalysis = (autoLoad: boolean = true): UseAdminAnalysisRetu
 
       const analysisData = await AdminAnalysisService.getAnalysis(timeframe);
       dispatch(setAnalysisData(analysisData));
-    } catch (err: any) {
-      dispatch(setError(err.message || 'Failed to refresh analysis'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to refresh analysis';
+      dispatch(setError(errorMessage));
     } finally {
       dispatch(setRefreshing(false));
     }
@@ -145,79 +230,84 @@ export const useAdminAnalysis = (autoLoad: boolean = true): UseAdminAnalysisRetu
   const getNotesPerActiveUser = useCallback(() => parseFloat(data?.summary?.notesPerActiveUser || '0'), [data]);
   const getEngagementScore = useCallback(() => data?.summary?.engagementScore || 0, [data]);
 
-  const getUsersByRole = useCallback(() => {
+  const getUsersByRole = useCallback((): UserRoleItem[] => {
     if (!data?.userAnalysis?.usersByRole) return [];
-    return data.userAnalysis.usersByRole.map((item: any) => ({
+    return data.userAnalysis.usersByRole.map((item: { _id: string | null; count: number }) => ({
       role: item._id || 'Unknown',
       count: item.count
     }));
   }, [data]);
 
-  const getUsersByStatus = useCallback(() => {
+  const getUsersByStatus = useCallback((): UserStatusItem[] => {
     if (!data?.userAnalysis?.usersByStatus) return [];
-    return data.userAnalysis.usersByStatus.map((item: any) => ({
+    return data.userAnalysis.usersByStatus.map((item: { _id: string | null; count: number }) => ({
       status: item._id || 'unknown',
       count: item.count
     }));
   }, [data]);
 
-  const getNotesByCategory = useCallback(() => {
+  const getNotesByCategory = useCallback((): NoteCategoryItem[] => {
     if (!data?.notesAnalysis?.notesByCategory) return [];
-    return data.notesAnalysis.notesByCategory.map((item: any) => ({
+    return data.notesAnalysis.notesByCategory.map((item: { _id: string | null; count: number }) => ({
       category: item._id || 'Uncategorized',
       count: item.count
     }));
   }, [data]);
 
-  const getNewUsersByDay = useCallback(() => {
+  const getNewUsersByDay = useCallback((): NewUserItem[] => {
     if (!data?.userAnalysis?.newUsersByDay) return [];
-    return data.userAnalysis.newUsersByDay.map((item: any) => ({
+    return data.userAnalysis.newUsersByDay.map((item: { _id: string; count: number }) => ({
       date: item._id,
       count: item.count
     }));
   }, [data]);
 
-  const getNotesByDay = useCallback(() => {
+  const getNotesByDay = useCallback((): NoteDayItem[] => {
     if (!data?.notesAnalysis?.notesByDay) return [];
-    return data.notesAnalysis.notesByDay.map((item: any) => ({
+    return data.notesAnalysis.notesByDay.map((item: { _id: string; count: number }) => ({
       date: item._id,
       count: item.count
     }));
   }, [data]);
 
-  const getTopActiveUsers = useCallback(() => data?.userAnalysis?.topActiveUsers || [], [data]);
-  const getTopUsersByNotes = useCallback(() => data?.notesAnalysis?.topUsersByNotes || [], [data]);
+  const getTopActiveUsers = useCallback((): TopActiveUserItem[] => {
+    return data?.userAnalysis?.topActiveUsers || [];
+  }, [data]);
+
+  const getTopUsersByNotes = useCallback((): TopUserNoteItem[] => {
+    return data?.notesAnalysis?.topUsersByNotes || [];
+  }, [data]);
 
   // Chart data formatters
-  const getUsersByRoleChartData = useCallback(() => {
+  const getUsersByRoleChartData = useCallback((): ChartDataItem[] => {
     return getUsersByRole().map(item => ({
       name: item.role.charAt(0).toUpperCase() + item.role.slice(1),
       value: item.count
     }));
   }, [getUsersByRole]);
 
-  const getNotesByCategoryChartData = useCallback(() => {
+  const getNotesByCategoryChartData = useCallback((): ChartDataItem[] => {
     return getNotesByCategory().map(item => ({
       name: item.category,
       value: item.count
     }));
   }, [getNotesByCategory]);
 
-  const getUsersByStatusChartData = useCallback(() => {
+  const getUsersByStatusChartData = useCallback((): ChartDataItem[] => {
     return getUsersByStatus().map(item => ({
       name: item.status.charAt(0).toUpperCase() + item.status.slice(1),
       value: item.count
     }));
   }, [getUsersByStatus]);
 
-  const getNewUsersChartData = useCallback(() => {
+  const getNewUsersChartData = useCallback((): ChartDataItem[] => {
     return getNewUsersByDay().map(item => ({
       name: item.date,
       value: item.count
     }));
   }, [getNewUsersByDay]);
 
-  const getNotesChartData = useCallback(() => {
+  const getNotesChartData = useCallback((): ChartDataItem[] => {
     return getNotesByDay().map(item => ({
       name: item.date,
       value: item.count

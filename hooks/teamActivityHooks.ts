@@ -1,8 +1,42 @@
 import { TeamActivityService } from '@/services/teamActivityService';
 
+// Define interfaces for better type safety
+interface TeamTask {
+  _id: string;
+  title: string;
+  assignedToId?: string;
+  teamProjectId?: string;
+  teamProjectName?: string;
+  priority?: string;
+  status?: string;
+}
+
+interface TeamProject {
+  _id: string;
+  name: string;
+  description?: string;
+}
+
+interface TeamMember {
+  _id: string;
+  name: string;
+  role?: string;
+  department?: string;
+  performance?: number;
+}
+
+interface TeamMemberUpdateData {
+  name?: string;
+  role?: string;
+  department?: string;
+  email?: string;
+  phone?: string;
+  [key: string]: unknown;
+}
+
 export class TeamActivityHooks {
   // Hook for team task operations
-  static async onTeamTaskCreated(teamTask: any, userId: string) {
+  static async onTeamTaskCreated(teamTask: TeamTask, userId: string) {
     await TeamActivityService.logActivity({
       userId,
       teamMemberId: teamTask.assignedToId,
@@ -19,7 +53,7 @@ export class TeamActivityHooks {
     });
   }
 
-  static async onTeamTaskUpdated(teamTask: any, oldStatus: string, newStatus: string, userId: string) {
+  static async onTeamTaskUpdated(teamTask: TeamTask, oldStatus: string, newStatus: string, userId: string) {
     const action = newStatus === 'completed' ? 'completed' : 'updated';
     
     await TeamActivityService.logActivity({
@@ -44,7 +78,7 @@ export class TeamActivityHooks {
     }
   }
 
-  static async onTeamTaskAssigned(teamTask: any, teamMember: any, userId: string) {
+  static async onTeamTaskAssigned(teamTask: TeamTask, teamMember: TeamMember, userId: string) {
     await TeamActivityService.logActivity({
       userId,
       teamMemberId: teamMember._id,
@@ -62,7 +96,7 @@ export class TeamActivityHooks {
   }
 
   // Hook for team project operations
-  static async onTeamProjectCreated(teamProject: any, userId: string) {
+  static async onTeamProjectCreated(teamProject: TeamProject, userId: string) {
     await TeamActivityService.logActivity({
       userId,
       type: 'team_project',
@@ -76,7 +110,7 @@ export class TeamActivityHooks {
     });
   }
 
-  static async onTeamProjectUpdated(teamProject: any, userId: string) {
+  static async onTeamProjectUpdated(teamProject: TeamProject, userId: string) {
     await TeamActivityService.logActivity({
       userId,
       type: 'team_project',
@@ -90,7 +124,7 @@ export class TeamActivityHooks {
     });
   }
 
-  static async onTeamProjectAssigned(teamProject: any, teamMember: any, userId: string) {
+  static async onTeamProjectAssigned(teamProject: TeamProject, teamMember: TeamMember, userId: string) {
     await TeamActivityService.logActivity({
       userId,
       teamMemberId: teamMember._id,
@@ -107,7 +141,7 @@ export class TeamActivityHooks {
   }
 
   // Hook for team member operations
-  static async onTeamMemberAdded(teamMember: any, userId: string) {
+  static async onTeamMemberAdded(teamMember: TeamMember, userId: string) {
     await TeamActivityService.logActivity({
       userId,
       teamMemberId: teamMember._id,
@@ -123,7 +157,7 @@ export class TeamActivityHooks {
     });
   }
 
-  static async onTeamMemberUpdated(teamMember: any, oldData: any, userId: string) {
+  static async onTeamMemberUpdated(teamMember: TeamMember, oldData: TeamMemberUpdateData, userId: string) {
     await TeamActivityService.logActivity({
       userId,
       teamMemberId: teamMember._id,
@@ -138,7 +172,7 @@ export class TeamActivityHooks {
     });
   }
 
-  static async onTeamMemberPerformanceUpdate(teamMember: any, oldPerformance: number, newPerformance: number, userId: string) {
+  static async onTeamMemberPerformanceUpdate(teamMember: TeamMember, oldPerformance: number, newPerformance: number, userId: string) {
     const change = newPerformance - oldPerformance;
     const direction = change > 0 ? 'increased' : 'decreased';
     

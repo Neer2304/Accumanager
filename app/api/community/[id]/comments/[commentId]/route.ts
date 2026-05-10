@@ -1,18 +1,19 @@
+// app/api/community/[id]/comments/[commentId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Community from '@/models/Community';
 import { verifyToken } from '@/lib/jwt';
+import mongoose from 'mongoose';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; commentId: string } }
+  { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   try {
+    const { id: postId, commentId } = await params;
+    
     await connectToDatabase();
     
-    const { id: postId, commentId } = params;
-    
-    // Check authentication
     const cookies = request.headers.get('cookie');
     const authToken = cookies?.match(/auth_token=([^;]+)/)?.[1];
     
@@ -23,7 +24,7 @@ export async function PUT(
       );
     }
     
-    const decoded = verifyToken(authToken);
+    const decoded = verifyToken(authToken) as any;
     const userId = decoded.userId;
     
     const body = await request.json();
@@ -36,7 +37,6 @@ export async function PUT(
       );
     }
     
-    // Find post
     const post = await Community.findById(postId);
     if (!post) {
       return NextResponse.json(
@@ -45,7 +45,6 @@ export async function PUT(
       );
     }
     
-    // Find comment
     const comment = post.comments.id(commentId);
     if (!comment) {
       return NextResponse.json(
@@ -54,32 +53,38 @@ export async function PUT(
       );
     }
     
-    // Check permissions
-    const isCommentAuthor = comment.user.toString() === userId.toString();
-    const isModerator = ['moderator', 'admin'].includes(decoded.role);
-    
-    if (!isCommentAuthor && !isModerator) {
+    if (comment.user.toString() !== userId) {
       return NextResponse.json(
         { success: false, message: 'Not authorized to edit this comment' },
         { status: 403 }
       );
     }
     
-    // Update comment
     comment.content = content.trim();
     comment.editedAt = new Date();
     post.lastActivityAt = new Date();
     
     await post.save();
     
+    // Safe access with null check
+    const commentIdStr = comment._id ? comment._id.toString() : '';
+    
     return NextResponse.json({
       success: true,
       message: 'Comment updated successfully',
-      data: comment
+      data: {
+        _id: commentIdStr,
+        content: comment.content,
+        editedAt: comment.editedAt,
+        user: comment.user.toString(),
+        userName: comment.userName,
+        userAvatar: comment.userAvatar,
+        createdAt: comment.createdAt,
+      }
     });
     
   } catch (error: any) {
-    console.error('PUT /api/community/[id]/comments/[commentId] error:', error);
+    console.error('PUT error:', error);
     return NextResponse.json(
       { success: false, message: error.message || 'Failed to update comment' },
       { status: 500 }
@@ -89,14 +94,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; commentId: string } }
+  { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   try {
+    const { id: postId, commentId } = await params;
+    
     await connectToDatabase();
     
-    const { id: postId, commentId } = params;
-    
-    // Check authentication
     const cookies = request.headers.get('cookie');
     const authToken = cookies?.match(/auth_token=([^;]+)/)?.[1];
     
@@ -107,10 +111,9 @@ export async function DELETE(
       );
     }
     
-    const decoded = verifyToken(authToken);
+    const decoded = verifyToken(authToken) as any;
     const userId = decoded.userId;
     
-    // Find post
     const post = await Community.findById(postId);
     if (!post) {
       return NextResponse.json(
@@ -119,7 +122,6 @@ export async function DELETE(
       );
     }
     
-    // Find comment
     const comment = post.comments.id(commentId);
     if (!comment) {
       return NextResponse.json(
@@ -128,22 +130,18 @@ export async function DELETE(
       );
     }
     
-    // Check permissions
-    const isCommentAuthor = comment.user.toString() === userId.toString();
-    const isModerator = ['moderator', 'admin'].includes(decoded.role);
-    const isPostAuthor = post.author.toString() === userId.toString();
+    const isCommentAuthor = comment.user.toString() === userId;
+    const isPostAuthor = post.author.toString() === userId;
     
-    if (!isCommentAuthor && !isModerator && !isPostAuthor) {
+    if (!isCommentAuthor && !isPostAuthor) {
       return NextResponse.json(
         { success: false, message: 'Not authorized to delete this comment' },
         { status: 403 }
       );
     }
     
-    // Remove comment
     post.comments.pull(commentId);
     
-    // If this was a solution, unmark it
     if (post.solutionCommentId?.toString() === commentId) {
       post.isSolved = false;
       post.solutionCommentId = undefined;
@@ -160,7 +158,7 @@ export async function DELETE(
     });
     
   } catch (error: any) {
-    console.error('DELETE /api/community/[id]/comments/[commentId] error:', error);
+    console.error('DELETE error:', error);
     return NextResponse.json(
       { success: false, message: error.message || 'Failed to delete comment' },
       { status: 500 }

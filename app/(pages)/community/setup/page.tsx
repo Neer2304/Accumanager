@@ -1,4 +1,4 @@
-// app/(pages)/community/setup/page.tsx - UPDATED WITH GOOGLE DESIGN
+// app/community/setup/page.tsx - REDESIGNED VERSION
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -22,6 +22,7 @@ import {
   Link as MuiLink,
   IconButton,
   Tooltip,
+  InputAdornment,
 } from '@mui/material';
 import {
   AccountCircle,
@@ -35,16 +36,38 @@ import {
   Business as BusinessIcon,
   Description as DescriptionIcon,
   AutoFixHigh as AutoFixHighIcon,
+  People as PeopleIcon,
+  Forum as ForumIcon,
+  ThumbUp as ThumbUpIcon,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from '@mui/material/styles';
-import { CheckCircleIcon } from 'lucide-react';
+
+// Theme colors (matching Facebook-style)
+const useColors = () => {
+  const theme = useTheme();
+  const dark = theme.palette.mode === "dark";
+  return {
+    dark,
+    bg: dark ? "#18191a" : "#f0f2f5",
+    surface: dark ? "#242526" : "#ffffff",
+    surface2: dark ? "#3a3b3c" : "#f0f2f5",
+    border: dark ? "#3e4042" : "#e4e6ea",
+    ink: dark ? "#e4e6eb" : "#050505",
+    inkSub: dark ? "#b0b3b8" : "#65676b",
+    inkMuted: dark ? "#6a6d73" : "#8a8d91",
+    blue: "#1877f2",
+    blueSoft: dark ? "rgba(24,119,242,0.15)" : "rgba(24,119,242,0.08)",
+    green: dark ? "#45bd62" : "#31a24c",
+    red: dark ? "#f28b82" : "#e41e3f",
+    purple: dark ? "#b39ddb" : "#7b1fa2",
+  };
+};
 
 export default function CommunitySetupPage() {
   const router = useRouter();
-  const theme = useTheme();
-  const darkMode = theme.palette.mode === 'dark';
+  const c = useColors();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,27 +76,21 @@ export default function CommunitySetupPage() {
   const [communityProfile, setCommunityProfile] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  // Form fields
   const [formData, setFormData] = useState({
     username: '',
     bio: '',
   });
 
-  // Check authentication and fetch user data
   useEffect(() => {
     fetchUserData();
   }, []);
 
-  // Fetch user data from YOUR API
   const fetchUserData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/community/me', {
-        credentials: 'include',
-      });
-      
+      const response = await fetch('/api/community/me', { credentials: 'include' });
       const data = await response.json();
       
       if (data.success && data.isAuthenticated) {
@@ -87,7 +104,6 @@ export default function CommunitySetupPage() {
             bio: data.data.communityProfile.bio || '',
           });
         } else {
-          // Set default username from email
           const defaultUsername = data.data.user?.username || 
                                  data.data.user?.email?.split('@')[0] || 
                                  'user';
@@ -109,7 +125,6 @@ export default function CommunitySetupPage() {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -125,9 +140,7 @@ export default function CommunitySetupPage() {
     try {
       const response = await fetch('/api/community/setup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(formData),
       });
@@ -137,11 +150,7 @@ export default function CommunitySetupPage() {
       if (data.success) {
         setSuccess('Community profile created successfully!');
         setCommunityProfile(data.data);
-        
-        // Redirect to community page after 2 seconds
-        setTimeout(() => {
-          router.push('/community');
-        }, 2000);
+        setTimeout(() => router.push('/community'), 2000);
       } else {
         setError(data.message || 'Failed to create profile');
       }
@@ -152,7 +161,6 @@ export default function CommunitySetupPage() {
     }
   };
 
-  // Quick auto-create profile
   const handleAutoCreate = async () => {
     setLoading(true);
     setError(null);
@@ -167,9 +175,7 @@ export default function CommunitySetupPage() {
       
       if (data.success) {
         setSuccess('Profile created automatically! Redirecting...');
-        setTimeout(() => {
-          router.push('/community');
-        }, 1000);
+        setTimeout(() => router.push('/community'), 1000);
       } else {
         setError(data.message || 'Failed to auto-create profile');
       }
@@ -182,46 +188,25 @@ export default function CommunitySetupPage() {
 
   if (loading) {
     return (
-      <Box sx={{ 
-        backgroundColor: darkMode ? '#202124' : '#ffffff', 
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <CircularProgress sx={{ color: '#4285f4' }} />
+      <Box sx={{ bgcolor: c.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <CircularProgress sx={{ color: c.blue }} />
       </Box>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <Box sx={{ 
-        backgroundColor: darkMode ? '#202124' : '#ffffff', 
-        minHeight: '100vh',
-        py: 4,
-      }}>
+      <Box sx={{ bgcolor: c.bg, minHeight: "100vh", py: 4 }}>
         <Container maxWidth="md">
           <Alert 
             severity="warning" 
-            sx={{ 
-              mb: 3,
-              borderRadius: 2,
-              bgcolor: darkMode ? '#303134' : '#f8f9fa',
-            }}
+            sx={{ borderRadius: "12px" }}
             action={
               <Button
                 variant="outlined"
                 size="small"
                 onClick={() => router.push('/auth/login')}
-                sx={{
-                  color: '#4285f4',
-                  borderColor: '#4285f4',
-                  '&:hover': {
-                    backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                    borderColor: '#4285f4',
-                  },
-                }}
+                sx={{ color: c.blue, borderColor: c.blue }}
               >
                 Sign In
               </Button>
@@ -235,400 +220,209 @@ export default function CommunitySetupPage() {
   }
 
   return (
-    <Box sx={{ 
-      backgroundColor: darkMode ? '#202124' : '#ffffff', 
-      minHeight: '100vh',
-      py: 4,
-    }}>
-      <Container maxWidth="md">
-        {/* Breadcrumbs */}
-        <Breadcrumbs sx={{ mb: 3 }}>
-          <MuiLink
-            component={Link}
-            href="/dashboard"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              textDecoration: 'none',
-              color: darkMode ? '#9aa0a6' : '#5f6368',
-              '&:hover': { color: darkMode ? '#8ab4f8' : '#4285f4' },
-            }}
-          >
-            <HomeIcon sx={{ mr: 0.5, fontSize: 16 }} />
-            Dashboard
-          </MuiLink>
-          <MuiLink
-            component={Link}
-            href="/community"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              textDecoration: 'none',
-              color: darkMode ? '#9aa0a6' : '#5f6368',
-              '&:hover': { color: darkMode ? '#8ab4f8' : '#4285f4' },
-            }}
-          >
-            Community
-          </MuiLink>
-          <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-            Setup Profile
-          </Typography>
-        </Breadcrumbs>
-
-        {/* Back Button */}
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={() => router.back()}
-          sx={{ 
-            mb: 3,
-            color: '#4285f4',
-            '&:hover': {
-              backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-            },
-          }}
-        >
-          Back
-        </Button>
-
-        <Paper sx={{ 
-          p: 4, 
-          borderRadius: 2,
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-        }}>
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Typography variant="h4" gutterBottom fontWeight={700} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-              {communityProfile ? 'Update Community Profile' : 'Create Your Community Profile'}
-            </Typography>
-            
-            <Typography variant="body1" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mb: 4 }}>
-              Join our community to connect with other business owners
+    <Box sx={{ bgcolor: c.bg, minHeight: "100vh" }}>
+      {/* Sticky Header */}
+      <Box sx={{ 
+        position: "sticky", top: 0, zIndex: 100,
+        bgcolor: alpha(c.surface, 0.95), borderBottom: `1px solid ${c.border}`,
+        backdropFilter: "blur(10px)"
+      }}>
+        <Container maxWidth="lg" sx={{ px: { xs: 1.5, sm: 2 } }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.25 }}>
+            <IconButton size="small" onClick={() => router.back()}
+              sx={{ bgcolor: c.surface2, color: c.ink, "&:hover": { bgcolor: c.border } }}>
+              <ArrowBack sx={{ fontSize: 19 }} />
+            </IconButton>
+            <Typography sx={{ fontWeight: 600, fontSize: "0.9rem", color: c.ink }}>
+              Setup Profile
             </Typography>
           </Box>
+        </Container>
+      </Box>
 
-          {/* User Info Card */}
-          <Card sx={{ 
-            mb: 4, 
-            bgcolor: darkMode ? '#303134' : '#f8f9fa',
-            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-            borderRadius: 2,
-          }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
-                <Box sx={{ position: 'relative' }}>
-                  <Avatar
-                    sx={{ 
-                      width: 80, 
-                      height: 80, 
-                      bgcolor: '#4285f4',
-                      fontSize: 32,
-                      border: `3px solid ${darkMode ? '#202124' : '#ffffff'}`,
-                    }}
-                  >
-                    {userData?.user?.name?.charAt(0) || 'U'}
-                  </Avatar>
-                  {communityProfile && (
-                    <CheckCircleIcon 
-                      // sx={{ 
-                      //   position: 'absolute',
-                      //   bottom: 0,
-                      //   right: 0,
-                      //   color: '#4285f4',
-                      //   bgcolor: darkMode ? '#202124' : '#ffffff',
-                      //   borderRadius: '50%',
-                      //   fontSize: 20,
-                      // }} 
-                    />
-                  )}
-                </Box>
-                <Box>
-                  <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {userData?.user?.name || 'User'}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    {userData?.user?.email || 'No email'}
-                  </Typography>
-                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                    <Chip
-                      size="small"
-                      label={`User ID: ${userData?.user?._id?.substring(0, 8)}...`}
-                      variant="outlined"
-                      sx={{
-                        bgcolor: darkMode ? '#303134' : '#f1f3f4',
-                        color: darkMode ? '#e8eaed' : '#202124',
-                        borderColor: darkMode ? '#5f6368' : '#dadce0',
-                      }}
-                    />
-                    {communityProfile && (
-                      <Chip
-                        size="small"
-                        label={`Username: ${communityProfile.username}`}
-                        sx={{
-                          bgcolor: '#34a853',
-                          color: 'white',
-                          fontWeight: 500,
-                        }}
-                        icon={<CheckCircleIcon />}
-                      />
-                    )}
-                  </Stack>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+      <Container maxWidth="md" sx={{ py: 4, px: { xs: 2, sm: 3 } }}>
+        {/* Welcome Header */}
+        <Paper sx={{ borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, p: 3, mb: 3 }}>
+          <Box sx={{ textAlign: "center" }}>
+            <Box sx={{ 
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              width: 64, height: 64, borderRadius: "50%", bgcolor: alpha(c.blue, 0.1), mb: 2
+            }}>
+              <PeopleIcon sx={{ fontSize: 32, color: c.blue }} />
+            </Box>
+            <Typography variant="h5" fontWeight={700} sx={{ color: c.ink, mb: 1 }}>
+              {communityProfile ? 'Update Your Profile' : 'Join the Community'}
+            </Typography>
+            <Typography sx={{ color: c.inkSub, fontSize: "0.85rem" }}>
+              {communityProfile 
+                ? 'Update your community profile information'
+                : 'Create your profile to connect with other members'}
+            </Typography>
+          </Box>
+        </Paper>
 
-          {/* Error/Success Messages */}
-          {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
-                mb: 3,
-                borderRadius: 2,
-                bgcolor: darkMode ? '#3c1e1e' : '#fdecea',
-              }} 
-              onClose={() => setError(null)}
-            >
-              {error}
-            </Alert>
-          )}
-          
-          {success && (
-            <Alert 
-              severity="success" 
-              sx={{ 
-                mb: 3,
-                borderRadius: 2,
-                bgcolor: darkMode ? '#1c351e' : '#e8f5e9',
-              }}
-            >
-              {success}
-            </Alert>
-          )}
+        {/* User Info Card */}
+        <Paper sx={{ borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, p: 3, mb: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+            <Avatar src={userData?.user?.avatar} sx={{ width: 64, height: 64, bgcolor: c.blue }}>
+              {userData?.user?.name?.charAt(0) || 'U'}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: "1rem", color: c.ink }}>
+                {userData?.user?.name || 'User'}
+              </Typography>
+              <Typography sx={{ fontSize: "0.75rem", color: c.inkMuted }}>
+                {userData?.user?.email || 'No email'}
+              </Typography>
+              {communityProfile && (
+                <Chip 
+                  label={`@${communityProfile.username}`} 
+                  size="small" 
+                  sx={{ mt: 0.5, bgcolor: c.green, color: "#fff" }} 
+                />
+              )}
+            </Box>
+          </Box>
+        </Paper>
 
-          {/* Quick Setup Button */}
-          {!communityProfile && (
-            <Box sx={{ mb: 4, textAlign: 'center' }}>
-              <Tooltip title="We'll create a profile with your email as username">
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={handleAutoCreate}
-                  disabled={loading}
-                  startIcon={<AutoFixHighIcon />}
-                  sx={{ 
-                    py: 1.5, 
-                    px: 4,
-                    backgroundColor: '#fbbc04',
-                    color: '#202124',
-                    '&:hover': {
-                      backgroundColor: '#f57c00',
-                    },
-                    '&.Mui-disabled': {
-                      backgroundColor: darkMode ? '#303134' : '#f1f3f4',
-                      color: darkMode ? '#5f6368' : '#bdc1c6',
-                    },
-                  }}
-                >
-                  Quick Setup (Auto-create)
-                </Button>
-              </Tooltip>
-              <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mt: 1 }}>
+        {/* Error/Success Messages */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3, borderRadius: "12px" }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+        {success && (
+          <Alert severity="success" sx={{ mb: 3, borderRadius: "12px" }} onClose={() => setSuccess(null)}>
+            {success}
+          </Alert>
+        )}
+
+        {/* Quick Setup Button */}
+        {!communityProfile && (
+          <Paper sx={{ borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, p: 3, mb: 3 }}>
+            <Box sx={{ textAlign: "center" }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={handleAutoCreate}
+                disabled={loading}
+                startIcon={<AutoFixHighIcon />}
+                sx={{ 
+                  borderRadius: "40px", textTransform: "none", px: 4, py: 1.5,
+                  bgcolor: "#fbbc04", color: "#202124",
+                  "&:hover": { bgcolor: "#f57c00" }
+                }}
+              >
+                Quick Setup (Auto-create)
+              </Button>
+              <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted, mt: 1 }}>
                 We'll create a profile with your email as username
               </Typography>
             </Box>
-          )}
+          </Paper>
+        )}
 
-          {/* OR Divider */}
-          {!communityProfile && (
-            <Divider sx={{ 
-              my: 4, 
-              '&::before, &::after': {
-                borderColor: darkMode ? '#3c4043' : '#dadce0',
-              },
-            }}>
-              <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', px: 2 }}>
-                OR
-              </Typography>
-            </Divider>
-          )}
+        {/* Setup Form */}
+        <Paper sx={{ borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, p: 3 }}>
+          <Typography sx={{ fontWeight: 600, color: c.ink, mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+            <DescriptionIcon sx={{ fontSize: 20, color: c.blue }} /> Customize Your Profile
+          </Typography>
 
-          {/* Setup Form */}
-          <Box component="form" onSubmit={handleSubmit}>
-            <Typography variant="h6" gutterBottom sx={{ 
-              mt: 3, 
-              color: darkMode ? '#e8eaed' : '#202124',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-            }}>
-              <DescriptionIcon sx={{ color: '#4285f4' }} />
-              Customize Your Profile
-            </Typography>
-
-            {/* Username */}
+          <Stack spacing={2.5}>
             <TextField
               fullWidth
               label="Username"
-              name="username"
               value={formData.username}
-              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              onChange={(e) => setFormData({...formData, username: e.target.value.toLowerCase()})}
               required
               helperText="Choose a unique username (3-20 characters)"
               InputProps={{
-                startAdornment: (
-                  <AccountCircle sx={{ mr: 1, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                ),
-                sx: { color: darkMode ? '#e8eaed' : '#202124' }
+                startAdornment: <InputAdornment position="start"><AccountCircle sx={{ color: c.inkMuted }} /></InputAdornment>,
               }}
-              InputLabelProps={{
-                sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
-              }}
-              sx={{ 
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: darkMode ? '#3c4043' : '#dadce0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#4285f4',
-                  },
-                },
+              sx={{
+                "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: c.surface2, "& fieldset": { borderColor: "transparent" }, "&:hover fieldset": { borderColor: c.border } }
               }}
             />
 
-            {/* Bio */}
             <TextField
               fullWidth
               label="Bio"
-              name="bio"
               value={formData.bio}
               onChange={(e) => setFormData({...formData, bio: e.target.value})}
               multiline
               rows={3}
               helperText="Tell the community about yourself"
-              InputProps={{
-                sx: { color: darkMode ? '#e8eaed' : '#202124' }
-              }}
-              InputLabelProps={{
-                sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
-              }}
-              sx={{ 
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: darkMode ? '#3c4043' : '#dadce0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#4285f4',
-                  },
-                },
+              sx={{
+                "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: c.surface2, "& fieldset": { borderColor: "transparent" }, "&:hover fieldset": { borderColor: c.border } }
               }}
             />
+          </Stack>
 
-            {/* Action Buttons */}
-            <Box sx={{ 
-              display: 'flex', 
-              gap: 2, 
-              justifyContent: 'space-between', 
-              mt: 4,
-              flexDirection: { xs: 'column', sm: 'row' }
-            }}>
+          {/* Action Buttons */}
+          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3, flexWrap: "wrap", gap: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={() => router.push('/community')}
+              disabled={loading}
+              sx={{ borderRadius: "40px", textTransform: "none", borderColor: c.border, color: c.ink }}
+            >
+              Skip for Now
+            </Button>
+            <Box sx={{ display: "flex", gap: 2 }}>
               <Button
                 variant="outlined"
-                onClick={() => router.push('/community')}
+                startIcon={<Refresh />}
+                onClick={fetchUserData}
                 disabled={loading}
-                sx={{
-                  borderColor: darkMode ? '#5f6368' : '#dadce0',
-                  color: darkMode ? '#e8eaed' : '#202124',
-                  '&:hover': {
-                    borderColor: '#4285f4',
-                    backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                  },
-                }}
+                sx={{ borderRadius: "40px", textTransform: "none", borderColor: c.border, color: c.ink }}
               >
-                Skip for Now
+                Refresh
               </Button>
-              
-              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-                <Tooltip title="Refresh user data">
-                  <Button
-                    variant="outlined"
-                    startIcon={<Refresh />}
-                    onClick={fetchUserData}
-                    disabled={loading}
-                    sx={{
-                      borderColor: darkMode ? '#5f6368' : '#dadce0',
-                      color: darkMode ? '#e8eaed' : '#202124',
-                      '&:hover': {
-                        borderColor: '#4285f4',
-                        backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                      },
-                    }}
-                  >
-                    Refresh
-                  </Button>
-                </Tooltip>
-                
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={loading ? <CircularProgress size={20} sx={{ color: '#ffffff' }} /> : <Save />}
-                  disabled={loading}
-                  sx={{
-                    backgroundColor: '#4285f4',
-                    '&:hover': {
-                      backgroundColor: '#3367d6',
-                    },
-                    '&.Mui-disabled': {
-                      backgroundColor: darkMode ? '#303134' : '#f1f3f4',
-                      color: darkMode ? '#5f6368' : '#bdc1c6',
-                    },
-                  }}
-                >
-                  {communityProfile ? 'Update Profile' : 'Create Profile'}
-                </Button>
-              </Box>
+              <Button
+                type="submit"
+                variant="contained"
+                startIcon={loading ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : <Save />}
+                onClick={handleSubmit}
+                disabled={loading}
+                sx={{ borderRadius: "40px", textTransform: "none", px: 3, bgcolor: c.blue, "&:hover": { bgcolor: "#166fe5" } }}
+              >
+                {communityProfile ? 'Update Profile' : 'Create Profile'}
+              </Button>
             </Box>
           </Box>
+        </Paper>
 
-          {/* Additional Info */}
-          <Box sx={{ 
-            mt: 6, 
-            p: 3, 
-            borderRadius: 2,
-            bgcolor: darkMode ? '#303134' : '#f8f9fa',
-            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-          }}>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-              Why create a community profile?
-            </Typography>
-            <Stack spacing={1}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CheckCircleIcon  />
-                <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  Connect with other business owners
-                </Typography>
+        {/* Benefits Card */}
+        <Paper sx={{ borderRadius: "16px", bgcolor: alpha(c.blue, 0.05), border: `1px solid ${alpha(c.blue, 0.15)}`, p: 3, mt: 3 }}>
+          <Typography sx={{ fontWeight: 600, color: c.blue, mb: 2, fontSize: "0.9rem" }}>
+            ✨ Why create a community profile?
+          </Typography>
+          <Stack spacing={1.5}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box sx={{ width: 28, height: 28, borderRadius: "50%", bgcolor: alpha(c.green, 0.1), display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <PeopleIcon sx={{ fontSize: 14, color: c.green }} />
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CheckCircleIcon  />
-                <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  Share experiences and get advice
-                </Typography>
+              <Typography sx={{ fontSize: "0.8rem", color: c.inkSub }}>Connect with other business owners</Typography>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box sx={{ width: 28, height: 28, borderRadius: "50%", bgcolor: alpha(c.blue, 0.1), display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <ForumIcon sx={{ fontSize: 14, color: c.blue }} />
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CheckCircleIcon/>
-                <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  Build your professional network
-                </Typography>
+              <Typography sx={{ fontSize: "0.8rem", color: c.inkSub }}>Share experiences and get advice</Typography>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box sx={{ width: 28, height: 28, borderRadius: "50%", bgcolor: alpha(c.purple, 0.1), display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <BusinessIcon sx={{ fontSize: 14, color: c.purple }} />
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CheckCircleIcon  />
-                <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  Participate in community discussions
-                </Typography>
+              <Typography sx={{ fontSize: "0.8rem", color: c.inkSub }}>Build your professional network</Typography>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box sx={{ width: 28, height: 28, borderRadius: "50%", bgcolor: alpha(c.red, 0.1), display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <ThumbUpIcon sx={{ fontSize: 14, color: c.red }} />
               </Box>
-            </Stack>
-          </Box>
+              <Typography sx={{ fontSize: "0.8rem", color: c.inkSub }}>Participate in community discussions</Typography>
+            </Box>
+          </Stack>
         </Paper>
       </Container>
     </Box>

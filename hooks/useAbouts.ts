@@ -1,4 +1,4 @@
-// hooks/useAbout.ts/ main use this 
+// hooks/useAbout.ts
 import { useState, useEffect, useCallback } from 'react';
 import { AboutService, AboutData, AboutReview, AboutSummary } from '@/services/aboutService';
 
@@ -19,6 +19,12 @@ interface UseAboutReturn {
   formatDate: (date: string) => string;
 }
 
+interface ErrorWithMessage {
+  message: string;
+  name?: string;
+  code?: number;
+}
+
 export const useAbout = (autoLoad: boolean = true): UseAboutReturn => {
   const [reviews, setReviews] = useState<AboutReview[]>([]);
   const [summary, setSummary] = useState<AboutSummary | null>(null);
@@ -34,8 +40,9 @@ export const useAbout = (autoLoad: boolean = true): UseAboutReturn => {
       
       setReviews(data.reviews);
       setSummary(data.summary);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load about data');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load about data';
+      setError(errorMessage);
       console.error('About data error:', err);
     } finally {
       setLoading(false);

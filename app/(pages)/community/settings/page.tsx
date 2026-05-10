@@ -1,4 +1,4 @@
-// app/community/settings/page.tsx
+// app/community/settings/page.tsx - REDESIGNED VERSION
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -30,6 +30,7 @@ import {
   IconButton,
   Breadcrumbs,
   Link as MuiLink,
+  InputAdornment,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -47,9 +48,35 @@ import {
   ArrowBack as ArrowBackIcon,
   Home as HomeIcon,
   Settings as SettingsIcon,
+  Language as LanguageIcon,
+  LocationOn as LocationIcon,
+  Info as InfoIcon,
+  CheckCircle as CheckCircleIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+// Theme colors (matching Facebook-style)
+const useColors = () => {
+  const theme = useTheme();
+  const dark = theme.palette.mode === "dark";
+  return {
+    dark,
+    bg: dark ? "#18191a" : "#f0f2f5",
+    surface: dark ? "#242526" : "#ffffff",
+    surface2: dark ? "#3a3b3c" : "#f0f2f5",
+    border: dark ? "#3e4042" : "#e4e6ea",
+    ink: dark ? "#e4e6eb" : "#050505",
+    inkSub: dark ? "#b0b3b8" : "#65676b",
+    inkMuted: dark ? "#6a6d73" : "#8a8d91",
+    blue: "#1877f2",
+    blueSoft: dark ? "rgba(24,119,242,0.15)" : "rgba(24,119,242,0.08)",
+    green: dark ? "#45bd62" : "#31a24c",
+    red: dark ? "#f28b82" : "#e41e3f",
+    purple: dark ? "#b39ddb" : "#7b1fa2",
+  };
+};
 
 interface UserProfile {
   _id: string;
@@ -68,7 +95,7 @@ interface UserProfile {
     pushNotifications: boolean;
     showOnlineStatus: boolean;
     privateProfile: boolean;
-    allowMessages: string; // 'everyone', 'followers', 'none'
+    allowMessages: string;
   };
 }
 
@@ -93,8 +120,7 @@ interface SettingsForm {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const theme = useTheme();
-  const darkMode = theme.palette.mode === 'dark';
+  const c = useColors();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -113,7 +139,6 @@ export default function SettingsPage() {
     website: '',
   });
 
-  // Fetch user profile and settings
   useEffect(() => {
     fetchProfile();
     fetchBlockedUsers();
@@ -122,14 +147,7 @@ export default function SettingsPage() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/community/profile', {
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile');
-      }
-      
+      const response = await fetch('/api/community/profile', { credentials: 'include' });
       const data = await response.json();
       if (data.success) {
         setProfile(data.data);
@@ -153,15 +171,10 @@ export default function SettingsPage() {
 
   const fetchBlockedUsers = async () => {
     try {
-      const response = await fetch('/api/community/settings/blocked-users', {
-        credentials: 'include',
-      });
-      
+      const response = await fetch('/api/community/settings/blocked-users', { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          setBlockedUsers(data.data || []);
-        }
+        if (data.success) setBlockedUsers(data.data || []);
       }
     } catch (error) {
       console.error('Failed to fetch blocked users:', error);
@@ -170,41 +183,29 @@ export default function SettingsPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSwitchChange = (name: keyof SettingsForm) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: !prev[name],
-    }));
+    setFormData(prev => ({ ...prev, [name]: !prev[name] }));
   };
 
   const handleSelectChange = (e: SelectChangeEvent) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      setSaving(true);
-      setError(null);
-      setSuccess(null);
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
 
+    try {
       const response = await fetch('/api/community/profile', {
         method: 'PUT',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bio: formData.bio,
           location: formData.location,
@@ -220,15 +221,9 @@ export default function SettingsPage() {
       });
 
       const data = await response.json();
-      
       if (data.success) {
         setSuccess('Settings saved successfully!');
-        if (profile) {
-          setProfile({
-            ...profile,
-            ...data.data,
-          });
-        }
+        if (profile) setProfile({ ...profile, ...data.data });
       } else {
         setError(data.message || 'Failed to save settings');
       }
@@ -241,11 +236,7 @@ export default function SettingsPage() {
 
   const handleUnblockUser = async (userId: string) => {
     try {
-      const response = await fetch(`/api/community/settings/blocked-users/${userId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      
+      const response = await fetch(`/api/community/settings/blocked-users/${userId}`, { method: 'DELETE', credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -260,561 +251,261 @@ export default function SettingsPage() {
   };
 
   const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        router.push('/login');
-      }
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    if (response.ok) router.push('/login');
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      return;
-    }
-    
-    try {
-      const response = await fetch('/api/community/settings/delete-account', {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          router.push('/login');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to delete account:', error);
-      setError('Failed to delete account');
-    }
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
+    const response = await fetch('/api/community/settings/delete-account', { method: 'DELETE', credentials: 'include' });
+    if (response.ok) router.push('/login');
   };
 
   if (loading) {
     return (
-      <Box sx={{ 
-        backgroundColor: darkMode ? '#202124' : '#ffffff', 
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <CircularProgress sx={{ color: '#4285f4' }} />
+      <Box sx={{ bgcolor: c.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <CircularProgress sx={{ color: c.blue }} />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ 
-      backgroundColor: darkMode ? '#202124' : '#ffffff', 
-      minHeight: '100vh',
-      py: 4,
-    }}>
-      <Container maxWidth="lg">
-        {/* Breadcrumbs */}
-        <Breadcrumbs sx={{ mb: 3 }}>
-          <MuiLink
-            component={Link}
-            href="/dashboard"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              textDecoration: 'none',
-              color: darkMode ? '#9aa0a6' : '#5f6368',
-              '&:hover': { color: darkMode ? '#8ab4f8' : '#4285f4' },
-            }}
-          >
-            <HomeIcon sx={{ mr: 0.5, fontSize: 16 }} />
-            Dashboard
-          </MuiLink>
-          <MuiLink
-            component={Link}
-            href="/community"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              textDecoration: 'none',
-              color: darkMode ? '#9aa0a6' : '#5f6368',
-              '&:hover': { color: darkMode ? '#8ab4f8' : '#4285f4' },
-            }}
-          >
-            Community
-          </MuiLink>
-          <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-            Settings
-          </Typography>
-        </Breadcrumbs>
+    <Box sx={{ bgcolor: c.bg, minHeight: "100vh" }}>
+      {/* Sticky Header */}
+      <Box sx={{ 
+        position: "sticky", top: 0, zIndex: 100,
+        bgcolor: alpha(c.surface, 0.95), borderBottom: `1px solid ${c.border}`,
+        backdropFilter: "blur(10px)"
+      }}>
+        <Container maxWidth="lg" sx={{ px: { xs: 1.5, sm: 2 } }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.25 }}>
+            <IconButton size="small" onClick={() => router.back()}
+              sx={{ bgcolor: c.surface2, color: c.ink, "&:hover": { bgcolor: c.border } }}>
+              <ArrowBackIcon sx={{ fontSize: 19 }} />
+            </IconButton>
+            <Typography sx={{ fontWeight: 600, fontSize: "0.9rem", color: c.ink }}>
+              Settings
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
 
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              bgcolor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
+      <Container maxWidth="lg" sx={{ py: 4, px: { xs: 2, sm: 3 } }}>
+        {/* Header Section */}
+        <Paper sx={{ borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, p: 3, mb: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box sx={{ 
+              display: "flex", alignItems: "center", justifyContent: "center",
+              width: 56, height: 56, borderRadius: "50%", bgcolor: alpha(c.blue, 0.1)
             }}>
-              <SettingsIcon sx={{ fontSize: 32, color: '#4285f4' }} />
+              <SettingsIcon sx={{ fontSize: 28, color: c.blue }} />
             </Box>
             <Box>
-              <Typography variant="h4" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+              <Typography variant="h5" fontWeight={700} sx={{ color: c.ink }}>
                 Community Settings
               </Typography>
-              <Typography sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+              <Typography sx={{ color: c.inkSub, fontSize: "0.85rem" }}>
                 Manage your community profile and preferences
               </Typography>
             </Box>
           </Box>
-        </Box>
+        </Paper>
 
         {/* Alerts */}
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 3,
-              borderRadius: 2,
-              bgcolor: darkMode ? '#3c1e1e' : '#fdecea',
-            }} 
-            onClose={() => setError(null)}
-          >
+          <Alert severity="error" sx={{ mb: 3, borderRadius: "12px" }} onClose={() => setError(null)}>
             {error}
           </Alert>
         )}
-        
         {success && (
-          <Alert 
-            severity="success" 
-            sx={{ 
-              mb: 3,
-              borderRadius: 2,
-              bgcolor: darkMode ? '#1c351e' : '#e8f5e9',
-            }} 
-            onClose={() => setSuccess(null)}
-          >
+          <Alert severity="success" sx={{ mb: 3, borderRadius: "12px" }} onClose={() => setSuccess(null)}>
             {success}
           </Alert>
         )}
 
-        {/* Settings Form */}
-        <Paper sx={{ 
-          p: 3, 
-          mb: 3, 
-          borderRadius: 2,
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-        }}>
-          <Typography variant="h6" gutterBottom sx={{ 
-            mb: 3, 
-            color: darkMode ? '#e8eaed' : '#202124',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-          }}>
-            <PersonIcon sx={{ color: '#4285f4' }} />
-            Profile Settings
-          </Typography>
-
-          <Box component="form" onSubmit={handleSubmit}>
-            {/* Profile Info */}
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                Profile Information
-              </Typography>
-              <Stack spacing={2} sx={{ mt: 2 }}>
+        {/* Profile Settings Card */}
+        <Paper sx={{ borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, mb: 3, overflow: "hidden" }}>
+          <Box sx={{ p: 3, borderBottom: `1px solid ${c.border}` }}>
+            <Typography sx={{ fontWeight: 600, color: c.ink, display: "flex", alignItems: "center", gap: 1 }}>
+              <PersonIcon sx={{ fontSize: 20, color: c.blue }} /> Profile Information
+            </Typography>
+          </Box>
+          <Box sx={{ p: 3 }}>
+            <Stack spacing={2.5}>
+              <TextField
+                fullWidth
+                label="Bio"
+                name="bio"
+                value={formData.bio}
+                onChange={handleInputChange}
+                multiline
+                rows={3}
+                placeholder="Tell the community about yourself..."
+                sx={{
+                  "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: c.surface2, "& fieldset": { borderColor: "transparent" }, "&:hover fieldset": { borderColor: c.border } },
+                  "& .MuiInputLabel-root": { color: c.inkMuted }
+                }}
+              />
+              <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
                 <TextField
                   fullWidth
-                  label="Bio"
-                  name="bio"
-                  value={formData.bio}
+                  label="Location"
+                  name="location"
+                  value={formData.location}
                   onChange={handleInputChange}
-                  multiline
-                  rows={3}
-                  placeholder="Tell the community about yourself..."
-                  InputProps={{
-                    sx: { color: darkMode ? '#e8eaed' : '#202124' }
-                  }}
-                  InputLabelProps={{
-                    sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: darkMode ? '#3c4043' : '#dadce0',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: '#4285f4',
-                      },
-                    },
-                  }}
+                  placeholder="City, Country"
+                  InputProps={{ startAdornment: <InputAdornment position="start"><LocationIcon sx={{ fontSize: 18, color: c.inkMuted }} /></InputAdornment> }}
+                  sx={{ flex: 1, "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: c.surface2, "& fieldset": { borderColor: "transparent" } } }}
                 />
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-                  <TextField
-                    fullWidth
-                    label="Location"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    placeholder="e.g., New York, USA"
-                    InputProps={{
-                      sx: { color: darkMode ? '#e8eaed' : '#202124' }
-                    }}
-                    InputLabelProps={{
-                      sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '& fieldset': {
-                          borderColor: darkMode ? '#3c4043' : '#dadce0',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: '#4285f4',
-                        },
-                      },
-                    }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="Website"
-                    name="website"
-                    value={formData.website}
-                    onChange={handleInputChange}
-                    placeholder="https://example.com"
-                    InputProps={{
-                      sx: { color: darkMode ? '#e8eaed' : '#202124' }
-                    }}
-                    InputLabelProps={{
-                      sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '& fieldset': {
-                          borderColor: darkMode ? '#3c4043' : '#dadce0',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: '#4285f4',
-                        },
-                      },
-                    }}
-                  />
-                </Box>
-              </Stack>
-            </Box>
+                <TextField
+                  fullWidth
+                  label="Website"
+                  name="website"
+                  value={formData.website}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com"
+                  InputProps={{ startAdornment: <InputAdornment position="start"><LanguageIcon sx={{ fontSize: 18, color: c.inkMuted }} /></InputAdornment> }}
+                  sx={{ flex: 1, "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: c.surface2, "& fieldset": { borderColor: "transparent" } } }}
+                />
+              </Box>
+            </Stack>
+          </Box>
+        </Paper>
 
-            <Divider sx={{ my: 3, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
+        {/* Notification Settings Card */}
+        <Paper sx={{ borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, mb: 3, overflow: "hidden" }}>
+          <Box sx={{ p: 3, borderBottom: `1px solid ${c.border}` }}>
+            <Typography sx={{ fontWeight: 600, color: c.ink, display: "flex", alignItems: "center", gap: 1 }}>
+              <NotificationsIcon sx={{ fontSize: 20, color: c.blue }} /> Notifications
+            </Typography>
+          </Box>
+          <Box sx={{ p: 3 }}>
+            <Stack spacing={1.5}>
+              <FormControlLabel
+                control={<Switch checked={formData.emailNotifications} onChange={() => handleSwitchChange('emailNotifications')} />}
+                label="Email notifications"
+                sx={{ color: c.ink }}
+              />
+              <FormControlLabel
+                control={<Switch checked={formData.pushNotifications} onChange={() => handleSwitchChange('pushNotifications')} />}
+                label="Push notifications"
+                sx={{ color: c.ink }}
+              />
+            </Stack>
+          </Box>
+        </Paper>
 
-            {/* Notification Settings */}
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ 
-                color: darkMode ? '#e8eaed' : '#202124',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-              }}>
-                <NotificationsIcon sx={{ color: '#4285f4' }} />
-                Notifications
-              </Typography>
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.emailNotifications}
-                      onChange={() => handleSwitchChange('emailNotifications')}
-                      sx={{
-                        '& .MuiSwitch-track': {
-                          backgroundColor: darkMode ? '#5f6368' : '#bdc1c6',
-                        },
-                      }}
-                    />
-                  }
-                  label="Email notifications"
-                  sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.pushNotifications}
-                      onChange={() => handleSwitchChange('pushNotifications')}
-                      sx={{
-                        '& .MuiSwitch-track': {
-                          backgroundColor: darkMode ? '#5f6368' : '#bdc1c6',
-                        },
-                      }}
-                    />
-                  }
-                  label="Push notifications"
-                  sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
-                />
-              </FormGroup>
-            </Box>
-
-            <Divider sx={{ my: 3, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
-
-            {/* Privacy Settings */}
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ 
-                color: darkMode ? '#e8eaed' : '#202124',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-              }}>
-                <VisibilityIcon sx={{ color: '#4285f4' }} />
-                Privacy
-              </Typography>
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.showOnlineStatus}
-                      onChange={() => handleSwitchChange('showOnlineStatus')}
-                      sx={{
-                        '& .MuiSwitch-track': {
-                          backgroundColor: darkMode ? '#5f6368' : '#bdc1c6',
-                        },
-                      }}
-                    />
-                  }
-                  label="Show online status"
-                  sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.privateProfile}
-                      onChange={() => handleSwitchChange('privateProfile')}
-                      sx={{
-                        '& .MuiSwitch-track': {
-                          backgroundColor: darkMode ? '#5f6368' : '#bdc1c6',
-                        },
-                      }}
-                    />
-                  }
-                  label="Private profile (followers only)"
-                  sx={{ color: darkMode ? '#e8eaed' : '#202124' }}
-                />
-              </FormGroup>
-              
-              <FormControl fullWidth sx={{ mt: 3 }}>
-                <InputLabel sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                  Who can message you
-                </InputLabel>
+        {/* Privacy Settings Card */}
+        <Paper sx={{ borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, mb: 3, overflow: "hidden" }}>
+          <Box sx={{ p: 3, borderBottom: `1px solid ${c.border}` }}>
+            <Typography sx={{ fontWeight: 600, color: c.ink, display: "flex", alignItems: "center", gap: 1 }}>
+              <VisibilityIcon sx={{ fontSize: 20, color: c.blue }} /> Privacy
+            </Typography>
+          </Box>
+          <Box sx={{ p: 3 }}>
+            <Stack spacing={2}>
+              <FormControlLabel
+                control={<Switch checked={formData.showOnlineStatus} onChange={() => handleSwitchChange('showOnlineStatus')} />}
+                label="Show online status"
+                sx={{ color: c.ink }}
+              />
+              <FormControlLabel
+                control={<Switch checked={formData.privateProfile} onChange={() => handleSwitchChange('privateProfile')} />}
+                label="Private profile (followers only)"
+                sx={{ color: c.ink }}
+              />
+              <FormControl fullWidth>
+                <InputLabel sx={{ color: c.inkMuted }}>Who can message you</InputLabel>
                 <Select
                   name="allowMessages"
                   value={formData.allowMessages}
                   onChange={handleSelectChange}
                   label="Who can message you"
-                  sx={{
-                    color: darkMode ? '#e8eaed' : '#202124',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: darkMode ? '#3c4043' : '#dadce0',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#4285f4',
-                    },
-                  }}
+                  sx={{ borderRadius: "12px", bgcolor: c.surface2, color: c.ink }}
                 >
                   <MenuItem value="everyone">Everyone</MenuItem>
                   <MenuItem value="followers">Followers only</MenuItem>
                   <MenuItem value="none">No one</MenuItem>
                 </Select>
               </FormControl>
-            </Box>
-
-            {/* Submit Button */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={saving ? <CircularProgress size={20} sx={{ color: '#ffffff' }} /> : <SaveIcon />}
-                disabled={saving}
-                sx={{
-                  backgroundColor: '#4285f4',
-                  '&:hover': {
-                    backgroundColor: '#3367d6',
-                  },
-                  '&.Mui-disabled': {
-                    backgroundColor: darkMode ? '#303134' : '#f1f3f4',
-                    color: darkMode ? '#5f6368' : '#bdc1c6',
-                  },
-                }}
-              >
-                {saving ? 'Saving...' : 'Save Settings'}
-              </Button>
-            </Box>
+            </Stack>
           </Box>
         </Paper>
 
-        {/* Blocked Users */}
-        <Paper sx={{ 
-          p: 3, 
-          mb: 3, 
-          borderRadius: 2,
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-        }}>
-          <Typography variant="h6" gutterBottom sx={{ 
-            mb: 3, 
-            color: darkMode ? '#e8eaed' : '#202124',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-          }}>
-            <BlockIcon sx={{ color: '#4285f4' }} />
-            Blocked Users
-          </Typography>
-          
-          {blockedUsers.length === 0 ? (
-            <Alert 
-              severity="info"
-              sx={{ 
-                borderRadius: 2,
-                bgcolor: darkMode ? '#303134' : '#f8f9fa',
-              }}
-            >
-              You haven't blocked any users.
-            </Alert>
-          ) : (
-            <Stack spacing={2}>
-              {blockedUsers.map((user) => (
-                <Card key={user._id} sx={{ 
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                  borderRadius: 2,
-                }}>
-                  <CardContent sx={{ py: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar 
-                        src={user.avatar}
-                        sx={{ 
-                          width: 40, 
-                          height: 40,
-                          bgcolor: darkMode ? '#5f6368' : '#4285f4',
-                        }}
-                      >
-                        {user.name.charAt(0)}
-                      </Avatar>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                          {user.name}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                          @{user.username}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                          Blocked on {new Date(user.blockedAt).toLocaleDateString()}
-                        </Typography>
+        {/* Blocked Users Card */}
+        <Paper sx={{ borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, mb: 3, overflow: "hidden" }}>
+          <Box sx={{ p: 3, borderBottom: `1px solid ${c.border}` }}>
+            <Typography sx={{ fontWeight: 600, color: c.ink, display: "flex", alignItems: "center", gap: 1 }}>
+              <BlockIcon sx={{ fontSize: 20, color: c.red }} /> Blocked Users
+            </Typography>
+          </Box>
+          <Box sx={{ p: 3 }}>
+            {blockedUsers.length === 0 ? (
+              <Alert severity="info" sx={{ borderRadius: "12px", bgcolor: c.surface2 }}>You haven't blocked any users.</Alert>
+            ) : (
+              <Stack spacing={2}>
+                {blockedUsers.map((user) => (
+                  <Card key={user._id} sx={{ bgcolor: c.surface2, borderRadius: "12px" }}>
+                    <CardContent sx={{ py: 2 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Avatar src={user.avatar} sx={{ width: 40, height: 40, bgcolor: c.blue }}>{user.name.charAt(0)}</Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography sx={{ fontWeight: 600, color: c.ink }}>{user.name}</Typography>
+                          <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>@{user.username}</Typography>
+                        </Box>
+                        <Button size="small" onClick={() => handleUnblockUser(user._id)} sx={{ color: c.blue }}>Unblock</Button>
                       </Box>
-                      <Button
-                        size="small"
-                        onClick={() => handleUnblockUser(user._id)}
-                        sx={{
-                          color: '#4285f4',
-                          '&:hover': {
-                            backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                          },
-                        }}
-                      >
-                        Unblock
-                      </Button>
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            )}
+          </Box>
+        </Paper>
+
+        {/* Account Actions Card */}
+        <Paper sx={{ borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, mb: 3, overflow: "hidden" }}>
+          <Box sx={{ p: 3, borderBottom: `1px solid ${c.border}` }}>
+            <Typography sx={{ fontWeight: 600, color: c.ink, display: "flex", alignItems: "center", gap: 1 }}>
+              <SecurityIcon sx={{ fontSize: 20, color: c.green }} /> Account Actions
+            </Typography>
+          </Box>
+          <Box sx={{ p: 3 }}>
+            <Stack spacing={2}>
+              <Card sx={{ bgcolor: c.surface2, borderRadius: "12px" }}>
+                <CardContent>
+                  <Typography sx={{ fontWeight: 600, color: c.ink }}>Logout</Typography>
+                  <Typography sx={{ fontSize: "0.75rem", color: c.inkMuted }}>Sign out from all devices</Typography>
+                </CardContent>
+                <CardActions>
+                  <Button startIcon={<LogoutIcon />} onClick={handleLogout} sx={{ color: c.blue }}>Logout</Button>
+                </CardActions>
+              </Card>
+              <Card sx={{ bgcolor: alpha(c.red, 0.1), borderRadius: "12px" }}>
+                <CardContent>
+                  <Typography sx={{ fontWeight: 600, color: c.red }}>Delete Account</Typography>
+                  <Typography sx={{ fontSize: "0.75rem", color: c.inkMuted }}>Permanently delete your account and all associated data. This action cannot be undone.</Typography>
+                </CardContent>
+                <CardActions>
+                  <Button startIcon={<DeleteIcon />} onClick={handleDeleteAccount} variant="outlined" sx={{ color: c.red, borderColor: c.red }}>Delete Account</Button>
+                </CardActions>
+              </Card>
             </Stack>
-          )}
+          </Box>
         </Paper>
 
-        {/* Account Actions */}
-        <Paper sx={{ 
-          p: 3, 
-          borderRadius: 2,
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-        }}>
-          <Typography variant="h6" gutterBottom sx={{ 
-            mb: 3, 
-            color: darkMode ? '#e8eaed' : '#202124',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-          }}>
-            <SecurityIcon sx={{ color: '#4285f4' }} />
-            Account Actions
-          </Typography>
-          
-          <Stack spacing={2}>
-            <Card sx={{ 
-              bgcolor: darkMode ? '#303134' : '#f8f9fa',
-              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-              borderRadius: 2,
-            }}>
-              <CardContent>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  Logout
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} paragraph>
-                  Sign out from all devices
-                </Typography>
-              </CardContent>
-              <CardActions>
-                <Button
-                  startIcon={<LogoutIcon />}
-                  onClick={handleLogout}
-                  sx={{
-                    color: '#4285f4',
-                    '&:hover': {
-                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                    },
-                  }}
-                >
-                  Logout
-                </Button>
-              </CardActions>
-            </Card>
-
-            <Card sx={{ 
-              bgcolor: darkMode ? '#3c1e1e' : '#fdecea',
-              border: `1px solid ${darkMode ? '#5d3737' : '#f5c6cb'}`,
-              borderRadius: 2,
-            }}>
-              <CardContent>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: '#ea4335' }}>
-                  Delete Account
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#e57373' : '#721c24' }} paragraph>
-                  Permanently delete your account and all associated data. This action cannot be undone.
-                </Typography>
-              </CardContent>
-              <CardActions>
-                <Button
-                  startIcon={<DeleteIcon />}
-                  onClick={handleDeleteAccount}
-                  sx={{
-                    color: '#ea4335',
-                    borderColor: '#ea4335',
-                    '&:hover': {
-                      backgroundColor: alpha('#ea4335', darkMode ? 0.1 : 0.05),
-                      borderColor: '#ea4335',
-                    },
-                  }}
-                  variant="outlined"
-                >
-                  Delete Account
-                </Button>
-              </CardActions>
-            </Card>
-          </Stack>
-        </Paper>
+        {/* Save Button */}
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={saving ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : <SaveIcon />}
+            onClick={handleSubmit}
+            disabled={saving}
+            sx={{ borderRadius: "40px", textTransform: "none", px: 4, py: 1, bgcolor: c.blue, "&:hover": { bgcolor: "#166fe5" } }}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
+        </Box>
       </Container>
     </Box>
   );

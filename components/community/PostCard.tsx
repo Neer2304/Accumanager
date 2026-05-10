@@ -1,3 +1,4 @@
+// components/community/PostCard.tsx - REDESIGNED
 "use client";
 
 import React, { useState } from 'react';
@@ -30,10 +31,37 @@ import {
   Visibility as VisibilityIcon,
   AccessTime as TimeIcon,
   Tag as TagIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/utils/formatUtils';
 import { useTheme } from '@mui/material/styles';
+
+// Theme colors
+const useColors = () => {
+  const theme = useTheme();
+  const dark = theme.palette.mode === "dark";
+  return {
+    dark,
+    bg: dark ? "#18191a" : "#f0f2f5",
+    surface: dark ? "#242526" : "#ffffff",
+    surface2: dark ? "#3a3b3c" : "#f0f2f5",
+    border: dark ? "#3e4042" : "#e4e6ea",
+    ink: dark ? "#e4e6eb" : "#050505",
+    inkSub: dark ? "#b0b3b8" : "#65676b",
+    inkMuted: dark ? "#6a6d73" : "#8a8d91",
+    blue: "#1877f2",
+    blueSoft: dark ? "rgba(24,119,242,0.15)" : "rgba(24,119,242,0.08)",
+    green: dark ? "#45bd62" : "#31a24c",
+    red: dark ? "#f28b82" : "#e41e3f",
+  };
+};
+
+// Avatar with deterministic color
+const AVATAR_COLORS = ["#1877f2", "#e91e63", "#9c27b0", "#ff9800", "#4caf50", "#00bcd4", "#ff5722", "#607d8b"];
+function avatarColor(name: string) {
+  return AVATAR_COLORS[(name || "U").charCodeAt(0) % AVATAR_COLORS.length];
+}
 
 interface PostCardProps {
   post: {
@@ -80,9 +108,8 @@ export default function PostCard({
   onDelete,
   compact = false,
 }: PostCardProps) {
+  const c = useColors();
   const router = useRouter();
-  const theme = useTheme();
-  const darkMode = theme.palette.mode === 'dark';
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
@@ -95,13 +122,11 @@ export default function PostCard({
     } else {
       setLiked(!liked);
       setLikeCount(prev => liked ? prev - 1 : prev + 1);
-      
       try {
         const response = await fetch(`/api/community/posts/${post._id}/like`, {
           method: liked ? 'DELETE' : 'POST',
           credentials: 'include',
         });
-        
         if (!response.ok) {
           setLiked(!liked);
           setLikeCount(prev => liked ? prev + 1 : prev - 1);
@@ -119,7 +144,6 @@ export default function PostCard({
       await onBookmark(post._id);
     } else {
       setBookmarked(!bookmarked);
-      
       try {
         await fetch(`/api/community/posts/${post._id}/bookmark`, {
           method: bookmarked ? 'DELETE' : 'POST',
@@ -133,458 +157,153 @@ export default function PostCard({
   };
 
   const handleViewPost = () => {
-    if (onViewPost) {
-      onViewPost(post._id);
-    } else {
-      router.push(`/community/post/${post._id}`);
-    }
-  };
-
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
+    if (onViewPost) onViewPost(post._id);
+    else router.push(`/community/post/${post._id}`);
   };
 
   const handleShare = () => {
-    handleMenuClose();
-    if (onShare) {
-      onShare(post._id);
-    } else {
-      if (navigator.share) {
-        navigator.share({
-          title: post.title,
-          text: post.excerpt || post.title,
-          url: `${window.location.origin}/community/post/${post._id}`,
-        });
-      } else {
-        navigator.clipboard.writeText(
-          `${window.location.origin}/community/post/${post._id}`
-        ).then(() => {
-          alert('Link copied to clipboard!');
-        });
-      }
+    setAnchorEl(null);
+    if (onShare) onShare(post._id);
+    else {
+      navigator.clipboard.writeText(`${window.location.origin}/community/post/${post._id}`)
+        .then(() => alert('Link copied!'));
     }
   };
 
-  const handleEdit = () => {
-    handleMenuClose();
-    if (onEdit) {
-      onEdit(post._id);
-    }
-  };
-
+  const handleEdit = () => { setAnchorEl(null); if (onEdit) onEdit(post._id); };
   const handleDelete = async () => {
-    handleMenuClose();
-    if (onDelete) {
-      onDelete(post._id);
-    } else {
-      if (confirm('Are you sure you want to delete this post?')) {
-        try {
-          const response = await fetch(`/api/community/posts/${post._id}`, {
-            method: 'DELETE',
-            credentials: 'include',
-          });
-          
-          if (response.ok) {
-            window.location.reload();
-          }
-        } catch (error) {
-          console.error('Failed to delete post:', error);
-        }
-      }
+    setAnchorEl(null);
+    if (onDelete) onDelete(post._id);
+    else if (confirm('Delete this post?')) {
+      await fetch(`/api/community/posts/${post._id}`, { method: 'DELETE', credentials: 'include' });
+      window.location.reload();
     }
   };
 
-  const handleViewAuthorProfile = () => {
-    router.push(`/community/profile/${post.author._id}`);
-  };
-
-  const getRoleColor = (role?: string) => {
-    switch (role?.toLowerCase()) {
-      case 'admin': return '#ea4335';
-      case 'moderator': return '#4285f4';
-      case 'expert': return '#34a853';
-      default: return darkMode ? '#9aa0a6' : '#5f6368';
-    }
-  };
-
-  const getRoleBgColor = (role?: string) => {
-    switch (role?.toLowerCase()) {
-      case 'admin': return alpha('#ea4335', darkMode ? 0.2 : 0.1);
-      case 'moderator': return alpha('#4285f4', darkMode ? 0.2 : 0.1);
-      case 'expert': return alpha('#34a853', darkMode ? 0.2 : 0.1);
-      default: return alpha(darkMode ? '#9aa0a6' : '#5f6368', darkMode ? 0.2 : 0.1);
-    }
-  };
+  const handleViewAuthorProfile = () => router.push(`/community/profile/${post.author._id}`);
 
   return (
-    <Card 
-      sx={{ 
-        mb: compact ? 1 : 2,
-        borderRadius: 2,
-        border: post.isPinned ? '2px solid' : '1px solid',
-        borderColor: post.isPinned ? '#fbbc04' : (darkMode ? '#3c4043' : '#dadce0'),
-        bgcolor: darkMode ? '#303134' : '#ffffff',
-        position: 'relative',
-        '&:hover': {
-          boxShadow: darkMode ? 0 : 2,
-          transform: 'translateY(-2px)',
-          transition: 'all 0.2s ease-in-out',
-        },
-      }}
-    >
-      {post.isPinned && (
-        <Chip
-          label="Pinned"
-          size="small"
-          sx={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            zIndex: 1,
-            bgcolor: '#fbbc04',
-            color: '#202124',
-            fontWeight: 500,
-          }}
-        />
-      )}
-      
-      {post.isSolved && (
-        <Chip
-          label="Solved"
-          size="small"
-          sx={{
-            position: 'absolute',
-            top: 12,
-            right: post.isPinned ? 80 : 12,
-            zIndex: 1,
-            bgcolor: '#34a853',
-            color: 'white',
-            fontWeight: 500,
-          }}
-        />
-      )}
+    <Card sx={{ 
+      borderRadius: "16px", 
+      bgcolor: c.surface, 
+      border: `1px solid ${post.isPinned ? c.red : c.border}`,
+      mb: compact ? 1 : 2,
+      overflow: "hidden",
+      transition: "all 0.2s",
+      "&:hover": { transform: "translateY(-2px)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }
+    }}>
+      {/* Colored top bar for pinned posts */}
+      {post.isPinned && <Box sx={{ height: 3, bgcolor: c.red }} />}
       
       <CardHeader
         avatar={
-          <Tooltip title={`View ${post.author.name}'s profile`}>
-            <IconButton 
-              onClick={handleViewAuthorProfile}
-              sx={{ p: 0 }}
-            >
-              <Avatar
-                src={post.author.avatar}
-                sx={{
-                  bgcolor: '#4285f4',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    transform: 'scale(1.1)',
-                    transition: 'transform 0.2s',
-                  },
-                }}
-              >
-                {post.author.name?.charAt(0).toUpperCase()}
-              </Avatar>
-            </IconButton>
-          </Tooltip>
+          <Avatar 
+            src={post.author.avatar} 
+            onClick={handleViewAuthorProfile}
+            sx={{ 
+              width: 40, height: 40, 
+              bgcolor: avatarColor(post.author.name),
+              cursor: "pointer",
+              "&:hover": { opacity: 0.9 }
+            }}
+          >
+            {post.author.name?.charAt(0).toUpperCase()}
+          </Avatar>
         }
         action={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {post.category && !compact && (
-              <Chip
-                label={post.category}
-                size="small"
-                sx={{
-                  bgcolor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
-                  color: '#4285f4',
-                  fontWeight: 500,
-                  borderColor: darkMode ? '#5f6368' : '#dadce0',
-                }}
-              />
+              <Chip label={post.category} size="small" sx={{ bgcolor: alpha(c.blue, 0.1), color: c.blue }} />
             )}
-            
-            <IconButton
-              aria-label="settings"
-              onClick={handleMenuClick}
-              size="small"
-              sx={{
-                color: darkMode ? '#9aa0a6' : '#5f6368',
-                '&:hover': {
-                  backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
-                },
-              }}
-            >
-              <MoreVertIcon />
+            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" sx={{ color: c.inkMuted }}>
+              <MoreVertIcon sx={{ fontSize: 18 }} />
             </IconButton>
-            
-            <Menu
-              anchorEl={anchorEl}
-              open={openMenu}
-              onClose={handleMenuClose}
-              PaperProps={{
-                sx: {
-                  minWidth: 150,
-                  bgcolor: darkMode ? '#303134' : '#ffffff',
-                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                },
-              }}
-            >
-              <MenuItem onClick={handleShare}>
-                <ShareIcon fontSize="small" sx={{ mr: 1, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  Share
-                </Typography>
-              </MenuItem>
-              {onEdit && (
-                <MenuItem onClick={handleEdit}>
-                  <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    Edit
-                  </Typography>
-                </MenuItem>
-              )}
-              {onDelete && (
-                <MenuItem onClick={handleDelete} sx={{ color: '#ea4335' }}>
-                  Delete
-                </MenuItem>
-              )}
+            <Menu anchorEl={anchorEl} open={openMenu} onClose={() => setAnchorEl(null)}>
+              <MenuItem onClick={handleShare}>Share</MenuItem>
+              {onEdit && <MenuItem onClick={handleEdit}>Edit</MenuItem>}
+              {onDelete && <MenuItem onClick={handleDelete} sx={{ color: c.red }}>Delete</MenuItem>}
             </Menu>
           </Box>
         }
         title={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography 
-              variant="subtitle1" 
-              fontWeight={600}
-              sx={{ 
-                cursor: 'pointer',
-                color: darkMode ? '#e8eaed' : '#202124',
-                '&:hover': {
-                  color: '#4285f4',
-                },
-              }}
-              onClick={handleViewAuthorProfile}
-            >
-              {post.author.name}
-            </Typography>
-            {post.author.role && (
-              <Chip
-                label={post.author.role}
-                size="small"
-                sx={{
-                  bgcolor: getRoleBgColor(post.author.role),
-                  color: getRoleColor(post.author.role),
-                  fontSize: '0.7rem',
-                  height: 20,
-                  borderColor: darkMode ? '#5f6368' : '#dadce0',
-                }}
-              />
-            )}
-          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: "0.9rem", color: c.ink, cursor: "pointer", "&:hover": { color: c.blue, textDecoration: "underline" } }} onClick={handleViewAuthorProfile}>
+            {post.author.name}
+          </Typography>
         }
         subheader={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5 }}>
-            <TimeIcon fontSize="inherit" sx={{ fontSize: 14, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-              {formatDate(post.createdAt)}
-            </Typography>
-            {post.updatedAt && post.updatedAt !== post.createdAt && (
-              <>
-                <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>•</Typography>
-                <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                  Updated {formatDate(post.updatedAt)}
-                </Typography>
-              </>
-            )}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
+            <TimeIcon sx={{ fontSize: 12, color: c.inkMuted }} />
+            <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>{formatDate(post.createdAt)}</Typography>
             {!compact && (
               <>
-                <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>•</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <VisibilityIcon fontSize="inherit" sx={{ fontSize: 14, color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    {post.views.toLocaleString()} views
-                  </Typography>
-                </Box>
+                <Box sx={{ width: 3, height: 3, borderRadius: "50%", bgcolor: c.inkMuted }} />
+                <VisibilityIcon sx={{ fontSize: 12, color: c.inkMuted }} />
+                <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>{post.views} views</Typography>
               </>
             )}
           </Box>
         }
-        sx={{ 
-          pb: compact ? 0 : 1,
-          '& .MuiCardHeader-content': {
-            overflow: 'hidden',
-          },
-        }}
+        sx={{ p: 2, pb: 0 }}
       />
 
-      <CardContent sx={{ pb: compact ? 1 : 2, pt: compact ? 0 : 1 }}>
+      <CardContent sx={{ p: 2, pt: 1 }}>
         <Typography 
-          variant={compact ? "subtitle1" : "h6"} 
-          fontWeight={600}
-          gutterBottom
-          sx={{
-            cursor: 'pointer',
-            color: darkMode ? '#e8eaed' : '#202124',
-            '&:hover': {
-              color: '#4285f4',
-            },
-          }}
           onClick={handleViewPost}
+          sx={{ 
+            fontWeight: 700, 
+            fontSize: "1rem", 
+            color: c.ink, 
+            mb: 1, 
+            cursor: "pointer",
+            "&:hover": { color: c.blue }
+          }}
         >
           {post.title}
         </Typography>
         
         {!compact && post.excerpt && (
-          <Typography 
-            variant="body2" 
-            sx={{
-              cursor: 'pointer',
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              color: darkMode ? '#9aa0a6' : '#5f6368',
-            }}
-            onClick={handleViewPost}
-          >
+          <Typography sx={{ fontSize: "0.8rem", color: c.inkSub, mb: 1.5, display: "-webkit-box", WebkitLineClamp: 2, overflow: "hidden" }}>
             {post.excerpt}
           </Typography>
         )}
 
         {post.tags && post.tags.length > 0 && !compact && (
-          <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'wrap', gap: 1 }}>
-            {post.tags.slice(0, 3).map((tag, index) => (
-              <Chip
-                key={index}
-                icon={<TagIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />}
-                label={tag}
-                size="small"
-                variant="outlined"
-                sx={{
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  color: darkMode ? '#e8eaed' : '#202124',
-                  borderColor: darkMode ? '#5f6368' : '#dadce0',
-                  '& .MuiChip-icon': {
-                    fontSize: 14,
-                  },
-                }}
-              />
+          <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+            {post.tags.slice(0, 3).map((tag, i) => (
+              <Chip key={i} label={`#${tag}`} size="small" variant="outlined" sx={{ height: 22, fontSize: "0.65rem" }} />
             ))}
-            {post.tags.length > 3 && (
-              <Chip
-                label={`+${post.tags.length - 3}`}
-                size="small"
-                variant="outlined"
-                sx={{
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  color: darkMode ? '#e8eaed' : '#202124',
-                  borderColor: darkMode ? '#5f6368' : '#dadce0',
-                }}
-              />
-            )}
-          </Stack>
+            {post.tags.length > 3 && <Chip label={`+${post.tags.length - 3}`} size="small" sx={{ height: 22, fontSize: "0.65rem", bgcolor: c.blueSoft, color: c.blue }} />}
+          </Box>
         )}
       </CardContent>
 
       {showActions && (
         <>
-          <Divider sx={{ borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
-          <CardActions sx={{ px: 2, py: compact ? 0.5 : 1 }}>
-            <Box sx={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-              <Tooltip title={liked ? "Unlike" : "Like"}>
-                <Button
-                  size="small"
-                  startIcon={liked ? <ThumbUpIcon /> : <ThumbUpOutlinedIcon />}
-                  onClick={handleLike}
-                  sx={{
-                    color: liked ? '#ea4335' : (darkMode ? '#9aa0a6' : '#5f6368'),
-                    minWidth: 'auto',
-                    px: 1,
-                    '&:hover': {
-                      backgroundColor: alpha('#ea4335', darkMode ? 0.1 : 0.05),
-                    },
-                  }}
-                >
-                  {likeCount > 0 && (
-                    <Typography variant="body2" sx={{ ml: 0.5, color: darkMode ? '#e8eaed' : '#202124' }}>
-                      {likeCount}
-                    </Typography>
-                  )}
+          <Divider sx={{ borderColor: c.border }} />
+          <CardActions sx={{ px: 2, py: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: "100%" }}>
+              <Tooltip title="Like">
+                <Button size="small" startIcon={liked ? <ThumbUpIcon sx={{ fontSize: 16, color: c.blue }} /> : <ThumbUpOutlinedIcon sx={{ fontSize: 16 }} />} onClick={handleLike} sx={{ color: liked ? c.blue : c.inkMuted, minWidth: "auto" }}>
+                  {likeCount > 0 && <Typography sx={{ ml: 0.5, fontSize: "0.75rem" }}>{likeCount}</Typography>}
                 </Button>
               </Tooltip>
-
               <Tooltip title="Comment">
-                <Button
-                  size="small"
-                  startIcon={<CommentIcon />}
-                  onClick={() => {
-                    if (onComment) {
-                      onComment(post._id);
-                    } else {
-                      handleViewPost();
-                    }
-                  }}
-                  sx={{
-                    color: darkMode ? '#9aa0a6' : '#5f6368',
-                    minWidth: 'auto',
-                    px: 1,
-                    '&:hover': {
-                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                    },
-                  }}
-                >
-                  {post.commentCount > 0 && (
-                    <Typography variant="body2" sx={{ ml: 0.5, color: darkMode ? '#e8eaed' : '#202124' }}>
-                      {post.commentCount}
-                    </Typography>
-                  )}
+                <Button size="small" startIcon={<CommentIcon sx={{ fontSize: 16 }} />} onClick={handleViewPost} sx={{ color: c.inkMuted, minWidth: "auto" }}>
+                  {post.commentCount > 0 && <Typography sx={{ ml: 0.5, fontSize: "0.75rem" }}>{post.commentCount}</Typography>}
                 </Button>
               </Tooltip>
-
-              <Tooltip title={bookmarked ? "Remove bookmark" : "Bookmark"}>
-                <IconButton
-                  size="small"
-                  onClick={handleBookmark}
-                  sx={{
-                    color: bookmarked ? '#4285f4' : (darkMode ? '#9aa0a6' : '#5f6368'),
-                    '&:hover': {
-                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                    },
-                  }}
-                >
-                  {bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+              <Tooltip title="Bookmark">
+                <IconButton size="small" onClick={handleBookmark} sx={{ color: bookmarked ? c.blue : c.inkMuted, p: 0.5 }}>
+                  {bookmarked ? <BookmarkIcon sx={{ fontSize: 16 }} /> : <BookmarkBorderIcon sx={{ fontSize: 16 }} />}
                 </IconButton>
               </Tooltip>
-
               <Tooltip title="Share">
-                <IconButton
-                  size="small"
-                  onClick={handleShare}
-                  sx={{ 
-                    color: darkMode ? '#9aa0a6' : '#5f6368',
-                    '&:hover': {
-                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                    },
-                  }}
-                >
-                  <ShareIcon />
+                <IconButton size="small" onClick={handleShare} sx={{ color: c.inkMuted, p: 0.5 }}>
+                  <ShareIcon sx={{ fontSize: 16 }} />
                 </IconButton>
               </Tooltip>
-
               {!compact && (
-                <Button
-                  size="small"
-                  onClick={handleViewPost}
-                  sx={{ 
-                    ml: 'auto',
-                    color: '#4285f4',
-                    '&:hover': {
-                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                    },
-                  }}
-                >
+                <Button size="small" onClick={handleViewPost} sx={{ color: c.blue, ml: "auto", textTransform: "none", fontSize: "0.75rem" }}>
                   Read More
                 </Button>
               )}

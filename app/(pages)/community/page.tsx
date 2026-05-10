@@ -1,7 +1,7 @@
 // app/community/page.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box,
   Container,
@@ -10,1007 +10,109 @@ import {
   Button,
   Chip,
   Stack,
-  Breadcrumbs,
-  Link as MuiLink,
-  TextField,
   Avatar,
-  Card,
-  CardContent,
-  CardActions,
   IconButton,
-  Divider,
-  useTheme,
-  useMediaQuery,
-  alpha,
-  Tabs,
-  Tab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
+  TextField,
   CircularProgress,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  InputAdornment,
-  Pagination,
-  Select,
-  FormControl,
-  InputLabel,
-  Tooltip,
-  LinearProgress,
-  Snackbar,
+  useTheme,
+  alpha,
+  Skeleton,
 } from "@mui/material";
 import {
-  Home as HomeIcon,
-  ArrowBack as BackIcon,
   Add as AddIcon,
   ThumbUp as LikeIcon,
   ThumbUpOutlined as LikeOutlinedIcon,
   ChatBubbleOutline as CommentIcon,
-  ChatBubble as CommentFilledIcon,
-  Visibility as ViewIcon,
-  Share as ShareIcon,
   BookmarkBorder as BookmarkOutlinedIcon,
   Bookmark as BookmarkFilledIcon,
-  TrendingUp as TrendingIcon,
-  NewReleases as NewIcon,
-  QuestionAnswer as QAIcon,
-  Lightbulb as TipIcon,
-  BugReport as BugIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon,
-  Sort as SortIcon,
-  MoreVert as MoreIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Flag as FlagIcon,
-  Lock as LockIcon,
-  PushPin as PinIcon,
-  CheckCircle as CheckIcon,
-  Send as SendIcon,
-  Category as CategoryIcon,
-  Tag as TagIcon,
-  Person as PersonIcon,
-  DateRange as DateIcon,
-  Whatshot as HotIcon,
   Forum as ForumIcon,
-  People as PeopleIcon,
-  BarChart as ChartIcon,
-  Download,
+  Whatshot as TrendingIcon,
+  NewReleases as NewIcon,
 } from "@mui/icons-material";
 import Link from "next/link";
 import { useCommunity } from "@/hooks/useCommunity";
 import { formatDate } from "@/utils/dateUtils";
 
-// Define TypeScript interfaces
-interface UserType {
-  _id: string;
-  name: string;
-  role: "user" | "moderator" | "admin" | "expert";
-}
+// Types
+type SortType = "newest" | "popular" | "trending";
 
-interface CommentType {
-  _id: string;
-  userName: string;
-  content: string;
-  isSolution: boolean;
-  createdAt: string;
-}
-
-interface CommunityPost {
-  _id: string;
-  title: string;
-  content: string;
-  excerpt: string;
-  author: UserType;
-  category: string;
-  tags: string[];
-  likes: string[];
-  likeCount: number;
-  comments: CommentType[];
-  commentCount: number;
-  views: number;
-  isPinned: boolean;
-  isSolved: boolean;
-  solutionCommentId?: string;
-  status: "active" | "closed" | "archived" | "deleted";
-  lastActivityAt: string;
-  createdAt: string;
-  bookmarks?: string[];
-  bookmarkCount?: number;
-}
-
-interface CommunityFilters {
-  page: number;
-  limit: number;
-  category: string;
-  sort:
-    | "newest"
-    | "oldest"
-    | "popular"
-    | "most_commented"
-    | "most_viewed"
-    | "trending";
-  search: string;
-  tag: string;
-  author: string;
-  status: string;
-}
-
-interface CommunityStats {
-  totalPosts: number;
-  totalComments: number;
-  totalUsers: number;
-  activeToday: number;
-  popularCategories: Array<{ _id: string; count: number }>;
-}
-
-// Categories configuration
-const CATEGORIES = [
-  { id: "all", name: "All Posts", icon: <ForumIcon />, color: "#4285f4" },
-  {
-    id: "general",
-    name: "General Discussion",
-    icon: <CommentIcon />,
-    color: "#4285f4",
-  },
-  { id: "questions", name: "Q&A", icon: <QAIcon />, color: "#34a853" },
-  { id: "tips", name: "Tips & Tricks", icon: <TipIcon />, color: "#fbbc04" },
-  { id: "bugs", name: "Bug Reports", icon: <BugIcon />, color: "#ea4335" },
-  {
-    id: "features",
-    name: "Feature Requests",
-    icon: <TipIcon />,
-    color: "#f57c00",
-  },
-  {
-    id: "announcements",
-    name: "Announcements",
-    icon: <PinIcon />,
-    color: "#9c27b0",
-  },
-];
-
-// Sort options
-const SORT_OPTIONS = [
-  { value: "newest", label: "Newest", icon: <DateIcon /> },
-  { value: "oldest", label: "Oldest", icon: <DateIcon /> },
-  { value: "popular", label: "Most Popular", icon: <LikeIcon /> },
-  { value: "most_commented", label: "Most Comments", icon: <CommentIcon /> },
-  { value: "most_viewed", label: "Most Viewed", icon: <ViewIcon /> },
-  { value: "trending", label: "Trending", icon: <TrendingIcon /> },
-];
-
-// Reusable Card Component
-const GoogleCard = ({ 
-  children, 
-  elevation = 0, 
-  sx = {}, 
-  hover = true,
-  clickable = false,
-  onClick,
-}: {
-  children: React.ReactNode;
-  elevation?: number;
-  sx?: any;
-  hover?: boolean;
-  clickable?: boolean;
-  onClick?: () => void;
-}) => {
+// Theme colors
+const useColors = () => {
   const theme = useTheme();
-  const darkMode = theme.palette.mode === "dark";
+  const dark = theme.palette.mode === "dark";
+  return {
+    dark,
+    bg: dark ? "#18191a" : "#f0f2f5",
+    surface: dark ? "#242526" : "#ffffff",
+    surface2: dark ? "#3a3b3c" : "#f0f2f5",
+    border: dark ? "#3e4042" : "#e4e6ea",
+    ink: dark ? "#e4e6eb" : "#050505",
+    inkSub: dark ? "#b0b3b8" : "#65676b",
+    inkMuted: dark ? "#6a6d73" : "#8a8d91",
+    blue: "#1877f2",
+    green: dark ? "#45bd62" : "#31a24c",
+  };
+};
 
+// Avatar with deterministic color
+const AVATAR_COLORS = ["#1877f2", "#e91e63", "#9c27b0", "#ff9800", "#4caf50", "#00bcd4", "#ff5722", "#607d8b"];
+function avatarColor(name: string) {
+  return AVATAR_COLORS[(name || "U").charCodeAt(0) % AVATAR_COLORS.length];
+}
+
+function UserAvatar({ name, src, size = 40 }: { name?: string; src?: string; size?: number }) {
+  const c = useColors();
+  const initials = (name || "U").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
   return (
-    <Paper
-      elevation={elevation}
+    <Avatar src={src || undefined}
       sx={{
-        borderRadius: 3,
-        backgroundColor: darkMode ? "#202124" : "#ffffff",
-        border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
-        transition: hover ? "all 0.2s ease" : "none",
-        "&:hover": hover
-          ? {
-              boxShadow: darkMode
-                ? "0 8px 24px rgba(0,0,0,0.3)"
-                : "0 8px 24px rgba(0,0,0,0.1)",
-              transform: "translateY(-2px)",
-              borderColor: darkMode ? "#5f6368" : "#bdc1c6",
-            }
-          : {},
-        cursor: clickable ? "pointer" : "default",
-        overflow: "hidden",
-        ...sx,
-      }}
-      onClick={onClick}
-    >
-      {children}
-    </Paper>
-  );
-};
-
-// Reusable Icon Button with active state
-interface ActionIconButtonProps {
-  icon: React.ReactNode;
-  activeIcon: React.ReactNode;
-  active: boolean;
-  count?: number;
-  onClick: (e: React.MouseEvent) => void;
-  loading?: boolean;
-  size?: "small" | "medium" | "large";
-}
-
-const ActionIconButton: React.FC<ActionIconButtonProps> = ({
-  icon,
-  activeIcon,
-  active,
-  count,
-  onClick,
-  loading = false,
-  size = "small",
-}) => {
-  const theme = useTheme();
-  const darkMode = theme.palette.mode === "dark";
-
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-      <IconButton
-        size={size}
-        onClick={onClick}
-        disabled={loading}
-        sx={{
-          color: active ? "#4285f4" : darkMode ? "#9aa0a6" : "#5f6368",
-          "&:hover": {
-            backgroundColor: alpha("#4285f4", 0.1),
-            color: "#4285f4",
-          },
-          padding: size === "small" ? "4px" : "8px",
-        }}
-      >
-        {loading ? (
-          <CircularProgress size={size === "small" ? 16 : 24} />
-        ) : active ? (
-          activeIcon
-        ) : (
-          icon
-        )}
-      </IconButton>
-      {count !== undefined && (
-        <Typography
-          variant="caption"
-          sx={{
-            color: active ? "#4285f4" : darkMode ? "#9aa0a6" : "#5f6368",
-            fontWeight: active ? 600 : 400,
-            minWidth: "1.5rem",
-            fontSize: "0.75rem",
-          }}
-        >
-          {count}
-        </Typography>
-      )}
-    </Box>
-  );
-};
-
-// Post Card Component with active state icons
-interface PostCardProps {
-  post: CommunityPost;
-  onLike: (id: string) => void;
-  onBookmark: (id: string) => void;
-  onSelect: (post: CommunityPost) => void;
-  currentUserId?: string;
-}
-
-function PostCard({ post, onLike, onBookmark, onSelect, currentUserId }: PostCardProps) {
-  const theme = useTheme();
-  const category = CATEGORIES.find((c) => c.id === post.category);
-
-  const [isLiking, setIsLiking] = useState(false);
-  const [isBookmarking, setIsBookmarking] = useState(false);
-
-  // Check if current user has liked/bookmarked this post
-  const hasLiked = useMemo(() => {
-    if (!currentUserId || !post.likes) return false;
-    return post.likes.some((likeId: string) => likeId === currentUserId);
-  }, [post.likes, currentUserId]);
-
-  const hasBookmarked = useMemo(() => {
-    if (!currentUserId || !post.bookmarks) return false;
-    return post.bookmarks.some((bookmarkId: string) => bookmarkId === currentUserId);
-  }, [post.bookmarks, currentUserId]);
-
-  const handleLikeClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isLiking) return;
-    setIsLiking(true);
-    try {
-      let actualId = "";
-      if (typeof post._id === "string") {
-        actualId = post._id;
-      } else if (post._id && post._id.toString) {
-        actualId = post._id.toString();
-      } else {
-        actualId = String(post._id);
-      }
-      await onLike(actualId);
-    } catch (error) {
-      console.error("Like error:", error);
-    } finally {
-      setIsLiking(false);
-    }
-  };
-
-  const handleBookmarkClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isBookmarking) return;
-    setIsBookmarking(true);
-    try {
-      let actualId = "";
-      if (typeof post._id === "string") {
-        actualId = post._id;
-      } else if (post._id && post._id.toString) {
-        actualId = post._id.toString();
-      } else {
-        actualId = String(post._id);
-      }
-      await onBookmark(actualId);
-    } catch (error) {
-      console.error("Bookmark error:", error);
-    } finally {
-      setIsBookmarking(false);
-    }
-  };
-
-  const handleViewClick = () => {
-    onSelect(post);
-  };
-
-  const handleEyeIconClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSelect(post);
-  };
-
-  return (
-    <GoogleCard hover clickable onClick={handleViewClick}>
-      <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            mb: 2,
-            gap: 1,
-          }}
-        >
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Chip
-              icon={category?.icon}
-              label={category?.name || post.category}
-              size="small"
-              sx={{
-                mb: 1,
-                bgcolor: alpha(category?.color || "#4285f4", 0.1),
-                color: category?.color || "#4285f4",
-                borderColor: alpha(category?.color || "#4285f4", 0.3),
-                fontSize: "0.75rem",
-                height: "24px",
-              }}
-            />
-            <Typography
-              variant="h6"
-              component="h3"
-              sx={{
-                fontWeight: 500,
-                mb: 1,
-                cursor: "pointer",
-                color: theme.palette.mode === "dark" ? "#e8eaed" : "#202124",
-                "&:hover": { color: "#4285f4" },
-                fontSize: { xs: "1rem", sm: "1.125rem" },
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect(post);
-              }}
-            >
-              {post.title}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}>
-            {post.isPinned && (
-              <PinIcon fontSize="small" sx={{ color: "#fbbc04" }} />
-            )}
-            {post.isSolved && (
-              <CheckIcon fontSize="small" sx={{ color: "#34a853" }} />
-            )}
-          </Box>
-        </Box>
-
-        {/* Excerpt */}
-        <Typography
-          variant="body2"
-          sx={{
-            mb: 2,
-            lineHeight: 1.6,
-            color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
-            fontSize: "0.875rem",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-          }}
-        >
-          {post.excerpt}
-        </Typography>
-
-        {/* Tags */}
-        {post.tags && post.tags.length > 0 && (
-          <Box sx={{ 
-            display: "flex", 
-            gap: 0.5, 
-            flexWrap: "wrap", 
-            mb: 2,
-            overflow: "hidden",
-            maxHeight: "32px"
-          }}>
-            {post.tags.slice(0, 3).map((tag, index) => (
-              <Chip
-                key={index}
-                label={tag}
-                size="small"
-                variant="outlined"
-                sx={{
-                  fontSize: "0.7rem",
-                  height: "24px",
-                  borderColor: theme.palette.mode === "dark" ? "#3c4043" : "#dadce0",
-                  color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
-                }}
-              />
-            ))}
-            {post.tags.length > 3 && (
-              <Chip
-                label={`+${post.tags.length - 3}`}
-                size="small"
-                sx={{
-                  fontSize: "0.7rem",
-                  height: "24px",
-                  bgcolor: alpha("#4285f4", 0.1),
-                  color: "#4285f4",
-                }}
-              />
-            )}
-          </Box>
-        )}
-
-        {/* Footer */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mt: 2,
-            flexWrap: { xs: "wrap", sm: "nowrap" },
-            gap: { xs: 1, sm: 0 },
-          }}
-        >
-          {/* Author info */}
-          <Box sx={{ 
-            display: "flex", 
-            alignItems: "center", 
-            gap: 1,
-            flex: { xs: "1 1 100%", sm: "0 1 auto" },
-            minWidth: 0,
-          }}>
-            <Avatar sx={{ 
-              width: { xs: 28, sm: 32 }, 
-              height: { xs: 28, sm: 32 }, 
-              fontSize: { xs: 12, sm: 14 } 
-            }}>
-              {post.author?.name?.charAt(0)?.toUpperCase() || "U"}
-            </Avatar>
-            <Box sx={{ minWidth: 0, overflow: "hidden" }}>
-              <Typography
-                variant="caption"
-                fontWeight={500}
-                sx={{ 
-                  color: theme.palette.mode === "dark" ? "#e8eaed" : "#202124",
-                  display: "block",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
-                }}
-              >
-                {post.author?.name || "Unknown User"}
-              </Typography>
-              {post.author?.role !== "user" && post.author?.role && (
-                <Chip
-                  label={post.author.role}
-                  size="small"
-                  sx={{
-                    height: 18,
-                    fontSize: "0.6rem",
-                    textTransform: "capitalize",
-                    bgcolor: alpha("#4285f4", 0.1),
-                    color: "#4285f4",
-                  }}
-                />
-              )}
-            </Box>
-            <Typography
-              variant="caption"
-              sx={{ 
-                color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
-                flexShrink: 0,
-                fontSize: "0.7rem"
-              }}
-            >
-              {formatDate(post.createdAt)}
-            </Typography>
-          </Box>
-
-          {/* Stats with active state icons */}
-          <Box sx={{ 
-            display: "flex", 
-            alignItems: "center", 
-            gap: { xs: 0.5, sm: 1 },
-            flex: { xs: "1 1 100%", sm: "0 1 auto" },
-            justifyContent: { xs: "space-between", sm: "flex-end" }
-          }}>
-            {/* Like Button - Blue when liked */}
-            <ActionIconButton
-              icon={<LikeOutlinedIcon />}
-              activeIcon={<LikeIcon sx={{ color: "#4285f4" }} />}
-              active={hasLiked}
-              count={post.likeCount || 0}
-              onClick={handleLikeClick}
-              loading={isLiking}
-              size="small"
-            />
-
-            {/* Bookmark Button - Blue when bookmarked */}
-            <ActionIconButton
-              icon={<BookmarkOutlinedIcon />}
-              activeIcon={<BookmarkFilledIcon sx={{ color: "#4285f4" }} />}
-              active={hasBookmarked}
-              count={post.bookmarkCount || 0}
-              onClick={handleBookmarkClick}
-              loading={isBookmarking}
-              size="small"
-            />
-
-            {/* Comment Button */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton
-                size="small"
-                sx={{
-                  color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
-                  padding: "4px",
-                }}
-              >
-                <CommentIcon />
-              </IconButton>
-              <Typography
-                variant="caption"
-                sx={{ 
-                  color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
-                  minWidth: "1.5rem",
-                  fontSize: "0.75rem"
-                }}
-              >
-                {post.commentCount || 0}
-              </Typography>
-            </Box>
-
-            {/* View Button - This should open the dialog */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton
-                size="small"
-                onClick={handleEyeIconClick}
-                sx={{
-                  color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
-                  padding: "4px",
-                  "&:hover": {
-                    backgroundColor: alpha("#4285f4", 0.1),
-                    color: "#4285f4",
-                  },
-                }}
-              >
-                <ViewIcon />
-              </IconButton>
-              <Typography
-                variant="caption"
-                sx={{ 
-                  color: theme.palette.mode === "dark" ? "#9aa0a6" : "#5f6368",
-                  minWidth: "1.5rem",
-                  fontSize: "0.75rem"
-                }}
-              >
-                {post.views || 0}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      </CardContent>
-    </GoogleCard>
-  );
-}
-
-// Post Detail Component - RESTORED
-function PostDetail({
-  post,
-  onClose,
-  onLike,
-  onBookmark,
-  onComment,
-  onMarkAsSolution,
-  currentUserId,
-}: {
-  post: CommunityPost;
-  onClose: () => void;
-  onLike: (id: string) => void;
-  onBookmark: (id: string) => void;
-  onComment: (id: string, content: string) => void;
-  onMarkAsSolution: (postId: string, commentId: string) => void;
-  currentUserId?: string;
-}) {
-  const theme = useTheme();
-  const darkMode = theme.palette.mode === "dark";
-  const [commentText, setCommentText] = useState("");
-  const [isLiking, setIsLiking] = useState(false);
-  const [isBookmarking, setIsBookmarking] = useState(false);
-
-  // Check if current user has liked/bookmarked this post
-  const hasLiked = useMemo(() => {
-    if (!currentUserId || !post.likes) return false;
-    return post.likes.some((likeId: string) => likeId === currentUserId);
-  }, [post.likes, currentUserId]);
-
-  const hasBookmarked = useMemo(() => {
-    if (!currentUserId || !post.bookmarks) return false;
-    return post.bookmarks.some((bookmarkId: string) => bookmarkId === currentUserId);
-  }, [post.bookmarks, currentUserId]);
-
-  const handleLikeClick = async () => {
-    if (isLiking) return;
-    setIsLiking(true);
-    try {
-      await onLike(post._id);
-    } finally {
-      setIsLiking(false);
-    }
-  };
-
-  const handleBookmarkClick = async () => {
-    if (isBookmarking) return;
-    setIsBookmarking(true);
-    try {
-      await onBookmark(post._id);
-    } finally {
-      setIsBookmarking(false);
-    }
-  };
-
-  const handleCommentSubmit = () => {
-    if (!commentText.trim()) return;
-    onComment(post._id, commentText);
-    setCommentText("");
-  };
-
-  return (
-    <Box>
-      {/* Post Content */}
-      <GoogleCard sx={{ p: { xs: 2, sm: 3 }, mb: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            mb: 3,
-            flexDirection: { xs: "column", sm: "row" },
-            gap: { xs: 2, sm: 0 },
-          }}
-        >
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h5" fontWeight={600} gutterBottom sx={{ 
-              color: darkMode ? "#e8eaed" : "#202124",
-              fontSize: { xs: "1.25rem", sm: "1.5rem" }
-            }}>
-              {post.title}
-            </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-              <Avatar sx={{ width: 40, height: 40 }}>
-                {post.author?.name?.charAt(0)?.toUpperCase() || "U"}
-              </Avatar>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={600} sx={{ 
-                  color: darkMode ? "#e8eaed" : "#202124",
-                  fontSize: { xs: "0.875rem", sm: "1rem" }
-                }}>
-                  {post.author?.name || "Unknown User"}
-                </Typography>
-                <Typography variant="caption" sx={{ 
-                  color: darkMode ? "#9aa0a6" : "#5f6368",
-                  fontSize: { xs: "0.75rem", sm: "0.875rem" }
-                }}>
-                  Posted {formatDate(post.createdAt)}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <ActionIconButton
-              icon={<LikeOutlinedIcon />}
-              activeIcon={<LikeIcon sx={{ color: "#4285f4" }} />}
-              active={hasLiked}
-              count={post.likeCount || 0}
-              onClick={handleLikeClick}
-              loading={isLiking}
-              size="medium"
-            />
-
-            <ActionIconButton
-              icon={<BookmarkOutlinedIcon />}
-              activeIcon={<BookmarkFilledIcon sx={{ color: "#4285f4" }} />}
-              active={hasBookmarked}
-              count={post.bookmarkCount || 0}
-              onClick={handleBookmarkClick}
-              loading={isBookmarking}
-              size="medium"
-            />
-
-            <IconButton
-              sx={{
-                color: darkMode ? "#9aa0a6" : "#5f6368",
-                "&:hover": {
-                  backgroundColor: alpha("#4285f4", 0.1),
-                  color: "#4285f4",
-                },
-              }}
-            >
-              <ShareIcon />
-            </IconButton>
-          </Box>
-        </Box>
-
-        {/* Post Body */}
-        <Typography
-          variant="body1"
-          sx={{ 
-            whiteSpace: "pre-wrap", 
-            lineHeight: 1.8, 
-            mb: 3,
-            color: darkMode ? "#e8eaed" : "#202124",
-            fontSize: { xs: "0.875rem", sm: "1rem" }
-          }}
-        >
-          {post.content}
-        </Typography>
-
-        {/* Tags */}
-        {post.tags && post.tags.length > 0 && (
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 3 }}>
-            {post.tags.map((tag, index) => (
-              <Chip 
-                key={index} 
-                label={tag} 
-                size="small" 
-                sx={{
-                  borderColor: darkMode ? "#3c4043" : "#dadce0",
-                  color: darkMode ? "#e8eaed" : "#202124",
-                }}
-              />
-            ))}
-          </Box>
-        )}
-
-        {/* Stats */}
-        <Box sx={{ 
-          display: "flex", 
-          gap: 3, 
-          flexWrap: "wrap",
-          color: darkMode ? "#9aa0a6" : "#5f6368",
-        }}>
-          <Typography
-            variant="caption"
-            sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-          >
-            <LikeIcon fontSize="small" /> {post.likeCount || 0} likes
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-          >
-            <BookmarkOutlinedIcon fontSize="small" /> {post.bookmarkCount || 0}{" "}
-            bookmarks
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-          >
-            <CommentIcon fontSize="small" /> {post.commentCount || 0} comments
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-          >
-            <ViewIcon fontSize="small" /> {post.views || 0} views
-          </Typography>
-        </Box>
-      </GoogleCard>
-
-      {/* Comments Section */}
-      <Typography variant="h6" gutterBottom sx={{ 
-        color: darkMode ? "#e8eaed" : "#202124",
-        fontSize: { xs: "1rem", sm: "1.25rem" }
+        width: size, height: size, bgcolor: avatarColor(name || "U"),
+        fontSize: size * 0.38, fontWeight: 700,
+        border: `2px solid ${c.surface}`,
       }}>
-        Comments ({post.comments?.length || 0})
-      </Typography>
-
-      {!post.comments || post.comments.length === 0 ? (
-        <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
-          No comments yet. Be the first to comment!
-        </Alert>
-      ) : (
-        <Stack spacing={2} sx={{ mb: 3 }}>
-          {post.comments.map((comment) => (
-            <GoogleCard key={comment._id} sx={{ p: 2 }}>
-              <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Avatar sx={{ width: 32, height: 32 }}>
-                    {comment.userName?.charAt(0)?.toUpperCase() || "U"}
-                  </Avatar>
-                  <Typography variant="subtitle2" fontWeight={600} sx={{ 
-                    color: darkMode ? "#e8eaed" : "#202124",
-                    fontSize: "0.875rem"
-                  }}>
-                    {comment.userName || "Unknown User"}
-                  </Typography>
-                  {comment.isSolution && (
-                    <Chip 
-                      label="Solution" 
-                      size="small" 
-                      sx={{
-                        backgroundColor: "#34a853",
-                        color: "#ffffff",
-                        fontSize: "0.75rem",
-                        height: "20px",
-                      }}
-                    />
-                  )}
-                </Box>
-                <Typography variant="caption" sx={{ 
-                  color: darkMode ? "#9aa0a6" : "#5f6368",
-                  fontSize: "0.75rem"
-                }}>
-                  {formatDate(comment.createdAt)}
-                </Typography>
-              </Box>
-              <Typography variant="body2" sx={{ 
-                mb: 1,
-                color: darkMode ? "#e8eaed" : "#202124",
-                fontSize: "0.875rem"
-              }}>
-                {comment.content}
-              </Typography>
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <IconButton size="small">
-                  <LikeIcon fontSize="small" />
-                </IconButton>
-                {!post.isSolved && (
-                  <Button
-                    size="small"
-                    onClick={() => onMarkAsSolution(post._id, comment._id)}
-                    sx={{
-                      color: "#4285f4",
-                      fontSize: "0.75rem",
-                    }}
-                  >
-                    Mark as Solution
-                  </Button>
-                )}
-              </Box>
-            </GoogleCard>
-          ))}
-        </Stack>
-      )}
-
-      {/* Add Comment */}
-      <Box sx={{ display: "flex", gap: 1, mt: 3 }}>
-        <TextField
-          fullWidth
-          placeholder="Add a comment..."
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          size="small"
-          sx={{
-            "& .MuiInputBase-input": {
-              color: darkMode ? "#e8eaed" : "#202124",
-              fontSize: { xs: "0.875rem", sm: "1rem" }
-            },
-          }}
-        />
-        <Button
-          variant="contained"
-          onClick={handleCommentSubmit}
-          disabled={!commentText.trim()}
-          sx={{
-            backgroundColor: "#4285f4",
-            "&:hover": { backgroundColor: "#3367d6" },
-            minWidth: "auto",
-            px: 2,
-          }}
-        >
-          <SendIcon />
-        </Button>
-      </Box>
-    </Box>
+      {!src && initials}
+    </Avatar>
   );
 }
+
+// Categories
+const CATEGORIES = [
+  { id: "all", name: "All", color: "#1877f2" },
+  { id: "general", name: "General", color: "#1877f2" },
+  { id: "questions", name: "Q&A", color: "#31a24c" },
+  { id: "tips", name: "Tips", color: "#fbbc04" },
+  { id: "announcements", name: "Announcements", color: "#7b1fa2" },
+];
 
 export default function CommunityPage() {
-  const theme = useTheme();
-  const darkMode = theme.palette.mode === "dark";
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
+  const c = useColors();
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const {
     posts,
     loading,
     error,
-    stats,
     pagination,
     fetchPosts,
-    fetchStats,
-    createPost,
     toggleLike,
-    addComment,
-    deletePost,
-    updatePost,
     toggleBookmark,
-    markAsSolution,
     setError,
   } = useCommunity();
 
-  const [filters, setFilters] = useState<CommunityFilters>({
+  const [filters, setFilters] = useState({
     page: 1,
-    limit: 20,
+    limit: 10,
     category: "all",
-    sort: "newest",
+    sort: "newest" as SortType,
     search: "",
-    tag: "",
-    author: "",
-    status: "active",
   });
-
-  const [showNewPostDialog, setShowNewPostDialog] = useState(false);
-  const [newPostData, setNewPostData] = useState({
-    title: "",
-    content: "",
-    category: "general",
-    tags: [] as string[],
-    excerpt: "",
-  });
-
-  const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState("");
 
-  // Fetch posts and stats
+  // Get current user
   useEffect(() => {
-    fetchPosts(filters);
-    fetchStats();
-    // Get current user ID
     const token = document.cookie.match(/auth_token=([^;]+)/)?.[1];
     if (token) {
       try {
@@ -1023,1041 +125,393 @@ export default function CommunityPage() {
         console.error("Failed to decode token:", e);
       }
     }
-  }, [filters, fetchPosts, fetchStats]);
+  }, []);
 
-  const handleFilterChange = (key: keyof CommunityFilters, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
-  };
+  // Fetch posts when filters change
+  const loadPosts = useCallback(async () => {
+    await fetchPosts(filters);
+  }, [filters, fetchPosts]);
 
-  const handleCreatePost = async () => {
-    try {
-      await createPost(newPostData);
-      setShowNewPostDialog(false);
-      setNewPostData({
-        title: "",
-        content: "",
-        category: "general",
-        tags: [],
-        excerpt: "",
-      });
-    } catch (error) {
-      console.error("Failed to create post:", error);
+  useEffect(() => {
+    loadPosts();
+  }, [loadPosts]);
+
+  // Infinite scroll setup
+  useEffect(() => {
+    if (loading) return;
+    
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination.hasNextPage && !loading) {
+          setFilters(prev => ({ ...prev, page: prev.page + 1 }));
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
     }
-  };
 
-  const handleLikePost = async (postId: string) => {
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [loading, pagination.hasNextPage]);
+
+  const handleLike = async (postId: string) => {
     try {
       await toggleLike(postId);
     } catch (error) {
-      console.error("Failed to like post:", error);
+      console.error("Failed to like:", error);
     }
   };
 
-  const handleBookmarkPost = async (postId: string) => {
+  const handleBookmark = async (postId: string) => {
     try {
       await toggleBookmark(postId);
     } catch (error) {
-      console.error("Failed to bookmark post:", error);
+      console.error("Failed to bookmark:", error);
     }
   };
 
-  const handleAddComment = async (postId: string, content: string) => {
-    if (!content.trim()) return;
-    try {
-      await addComment(postId, content);
-    } catch (error) {
-      console.error("Failed to add comment:", error);
+  const handleSearch = () => {
+    if (searchInput.trim() !== filters.search) {
+      setFilters(prev => ({ ...prev, search: searchInput, page: 1 }));
     }
   };
 
-  const handleMarkAsSolution = async (postId: string, commentId: string) => {
-    try {
-      await markAsSolution(postId, commentId);
-    } catch (error) {
-      console.error("Failed to mark as solution:", error);
-    }
+  const handleCategoryChange = (category: string) => {
+    setFilters(prev => ({ ...prev, category, page: 1 }));
   };
 
-  // Cast posts to CommunityPost type
-  const communityPosts = posts as unknown as CommunityPost[];
+  const handleSortChange = (sort: SortType) => {
+    setFilters(prev => ({ ...prev, sort, page: 1 }));
+  };
+
+  const communityPosts = posts as any[];
+  const hasLiked = (post: any) => {
+    if (!currentUserId || !post.likes) return false;
+    return post.likes.some((id: string) => id === currentUserId);
+  };
+  const hasBookmarked = (post: any) => {
+    if (!currentUserId || !post.bookmarks) return false;
+    return post.bookmarks.some((id: string) => id === currentUserId);
+  };
 
   return (
-    <Box sx={{ 
-      backgroundColor: darkMode ? "#202124" : "#ffffff", 
-      minHeight: "100vh",
-      width: "100%",
-      overflowX: "hidden",
-    }}>
-      {/* Header */}
-      <Box
-        sx={{
-          p: { xs: 1, sm: 2, md: 3 },
-          borderBottom: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
-          background: darkMode
-            ? "linear-gradient(135deg, #0d3064 0%, #202124 100%)"
-            : "linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)",
-          width: "100%",
-        }}
-      >
-        {/* Breadcrumbs */}
-        <Breadcrumbs sx={{ 
-          mb: { xs: 1, sm: 2 }, 
-          fontSize: { xs: "0.7rem", sm: "0.8rem", md: "0.85rem" },
-          overflow: "hidden",
-          "& .MuiBreadcrumbs-ol": {
-            flexWrap: "wrap",
-          }
-        }}>
-          <MuiLink
-            component={Link}
-            href="/dashboard"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              textDecoration: "none",
-              color: darkMode ? "#9aa0a6" : "#5f6368",
-              "&:hover": { color: darkMode ? "#8ab4f8" : "#4285f4" },
-              fontSize: { xs: "0.7rem", sm: "0.8rem" },
-            }}
-          >
-            <HomeIcon sx={{ mr: 0.5, fontSize: { xs: "12px", sm: "14px", md: "16px" } }} />
-            Dashboard
-          </MuiLink>
-          <Typography sx={{ 
-            color: darkMode ? "#e8eaed" : "#202124",
-            fontSize: { xs: "0.7rem", sm: "0.8rem" }
-          }}>
-            Community
-          </Typography>
-        </Breadcrumbs>
-
-        {/* Main Header */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: { xs: "flex-start", sm: "center" },
-            flexDirection: { xs: "column", sm: "row" },
-            gap: 2,
-            mb: 3,
-            width: "100%",
-          }}
-        >
-          <Box sx={{ maxWidth: "100%" }}>
-            <Typography
-              variant="h4"
-              fontWeight={500}
-              gutterBottom
+    <Box sx={{ bgcolor: c.bg, minHeight: "100vh" }}>
+      {/* Hero Header - Clean and Modern */}
+      <Box sx={{ 
+        bgcolor: c.blue,
+        background: `linear-gradient(135deg, ${c.blue} 0%, #0d47a1 100%)`,
+        color: "#fff",
+        pt: { xs: 4, sm: 5, md: 6 },
+        pb: { xs: 5, sm: 6, md: 7 },
+      }}>
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: "center", maxWidth: "700px", mx: "auto" }}>
+            <ForumIcon sx={{ fontSize: { xs: 40, sm: 48 }, mb: 2, opacity: 0.9 }} />
+            <Typography 
+              variant="h3" 
+              fontWeight={700} 
               sx={{ 
-                color: darkMode ? "#e8eaed" : "#202124",
-                fontSize: { xs: "1.5rem", sm: "2rem", md: "2.25rem" },
-                wordBreak: "break-word",
+                fontSize: { xs: "1.75rem", sm: "2.5rem", md: "3rem" },
+                mb: 1.5,
+                letterSpacing: "-0.02em"
               }}
             >
-              👥 Community Forum
+              Community Forum
             </Typography>
-            <Typography
-              variant="body1"
+            <Typography 
               sx={{ 
-                color: darkMode ? "#9aa0a6" : "#5f6368",
-                fontSize: { xs: "0.875rem", sm: "1rem" },
-                wordBreak: "break-word",
+                fontSize: { xs: "0.9rem", sm: "1rem" }, 
+                opacity: 0.9,
+                mb: 3
               }}
             >
-              Connect with other users, share knowledge, and get help
+              Connect, share knowledge, and grow together with fellow members
             </Typography>
-          </Box>
-
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1}
-            alignItems="center"
-            sx={{
-              width: { xs: "100%", sm: "auto" },
-              justifyContent: { xs: "stretch", sm: "flex-end" },
-              gap: 1,
-            }}
-          >
-            {/* Stats Chips - Only show on tablet/desktop */}
-            {!isMobile && stats && (
-              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexWrap: "wrap" }}>
-                <Chip
-                  icon={<ForumIcon sx={{ fontSize: "14px" }} />}
-                  label={`${stats.totalPosts}`}
-                  size="small"
-                  sx={{
-                    bgcolor: alpha("#4285f4", darkMode ? 0.2 : 0.1),
-                    color: "#4285f4",
-                    borderColor: alpha("#4285f4", 0.3),
-                    fontSize: "0.7rem",
-                    height: "24px",
-                  }}
-                />
-                <Chip
-                  icon={<PeopleIcon sx={{ fontSize: "14px" }} />}
-                  label={`${stats.totalUsers}`}
-                  size="small"
-                  sx={{
-                    bgcolor: alpha("#34a853", darkMode ? 0.2 : 0.1),
-                    color: "#34a853",
-                    borderColor: alpha("#34a853", 0.3),
-                    fontSize: "0.7rem",
-                    height: "24px",
-                  }}
-                />
-              </Stack>
-            )}
-
-            {/* Action Buttons */}
-            <Stack direction="row" spacing={1} sx={{ width: { xs: "100%", sm: "auto" } }}>
-              <Button
-                variant="outlined"
-                startIcon={<Download />}
-                onClick={() => {}}
-                size={isMobile ? "small" : "medium"}
-                sx={{
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 500,
-                  borderColor: darkMode ? "#5f6368" : "#dadce0",
-                  color: darkMode ? "#e8eaed" : "#202124",
-                  "&:hover": {
-                    borderColor: darkMode ? "#8ab4f8" : "#4285f4",
-                    backgroundColor: darkMode
-                      ? alpha("#4285f4", 0.1)
-                      : alpha("#4285f4", 0.05),
-                  },
-                  flex: { xs: 1, sm: "auto" },
-                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                }}
-              >
-                {isMobile ? "Export" : "Export Data"}
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setShowNewPostDialog(true)}
-                size={isMobile ? "small" : "medium"}
-                sx={{
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 500,
-                  backgroundColor: "#4285f4",
-                  color: "#ffffff",
-                  "&:hover": {
-                    backgroundColor: "#3367d6",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  },
-                  flex: { xs: 1, sm: "auto" },
-                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                }}
-              >
-                {isMobile ? "New" : "New Post"}
-              </Button>
-            </Stack>
-          </Stack>
-        </Box>
-
-        {/* Search & Filter Bar */}
-        <GoogleCard sx={{ p: { xs: 1, sm: 2 }, mb: 3 }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              flexDirection: { xs: "column", sm: "row" },
-              gap: 2,
-              width: "100%",
-            }}
-          >
-            {/* Search */}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                flex: 1,
-                minWidth: { xs: "100%", sm: "300px" },
-                width: "100%",
-              }}
-            >
-              <SearchIcon sx={{ 
-                mr: 1, 
-                color: darkMode ? "#9aa0a6" : "#5f6368",
-                fontSize: { xs: "18px", sm: "20px" }
-              }} />
+            
+            {/* Search Bar in Header */}
+            <Paper sx={{ 
+              display: "flex", 
+              alignItems: "center", 
+              maxWidth: "500px", 
+              mx: "auto",
+              borderRadius: "40px",
+              p: "4px 8px",
+              bgcolor: "rgba(255,255,255,0.15)",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(255,255,255,0.2)",
+            }}>
+              <SearchIcon sx={{ mx: 1, color: "rgba(255,255,255,0.7)" }} />
               <TextField
                 fullWidth
                 placeholder="Search discussions..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                 variant="standard"
-                size="small"
-                InputProps={{ 
-                  disableUnderline: true,
-                  sx: { fontSize: { xs: "0.875rem", sm: "0.9375rem" } }
-                }}
-                sx={{
-                  "& .MuiInputBase-input": {
-                    color: darkMode ? "#e8eaed" : "#202124",
-                  },
+                InputProps={{ disableUnderline: true }}
+                sx={{ 
+                  "& .MuiInputBase-input": { 
+                    py: 1.5, 
+                    color: "#fff",
+                    "&::placeholder": { color: "rgba(255,255,255,0.7)" }
+                  } 
                 }}
               />
-            </Box>
-
-            {/* Filters */}
-            <Box sx={{ 
-              display: "flex", 
-              gap: 1, 
-              width: { xs: "100%", sm: "auto" },
-              flexWrap: { xs: "wrap", sm: "nowrap" }
-            }}>
-              <FormControl size="small" sx={{ 
-                minWidth: { xs: "calc(50% - 4px)", sm: "150px" },
-                flex: { xs: 1, sm: "auto" }
-              }}>
-                <Select
-                  value={filters.category}
-                  onChange={(e) => handleFilterChange("category", e.target.value)}
-                  displayEmpty
-                  sx={{
-                    color: darkMode ? "#e8eaed" : "#202124",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: darkMode ? "#3c4043" : "#dadce0",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: darkMode ? "#5f6368" : "#bdc1c6",
-                    },
-                    fontSize: { xs: "0.8rem", sm: "0.875rem" },
-                    height: "40px",
-                  }}
-                >
-                  <MenuItem value="all">All Categories</MenuItem>
-                  {CATEGORIES.filter(c => c.id !== "all").map((cat) => (
-                    <MenuItem key={cat.id} value={cat.id}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        {cat.icon}
-                        <span style={{ fontSize: "0.875rem" }}>{cat.name}</span>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl size="small" sx={{ 
-                minWidth: { xs: "calc(50% - 4px)", sm: "150px" },
-                flex: { xs: 1, sm: "auto" }
-              }}>
-                <Select
-                  value={filters.sort}
-                  onChange={(e) => handleFilterChange("sort", e.target.value)}
-                  displayEmpty
-                  sx={{
-                    color: darkMode ? "#e8eaed" : "#202124",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: darkMode ? "#3c4043" : "#dadce0",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: darkMode ? "#5f6368" : "#bdc1c6",
-                    },
-                    fontSize: { xs: "0.8rem", sm: "0.875rem" },
-                    height: "40px",
-                  }}
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        {option.icon}
-                        <span style={{ fontSize: "0.875rem" }}>{option.label}</span>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
+              <Button 
+                onClick={handleSearch}
+                sx={{ 
+                  color: "#fff", 
+                  textTransform: "none",
+                  borderRadius: "40px",
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.1)" }
+                }}
+              >
+                Search
+              </Button>
+            </Paper>
           </Box>
-        </GoogleCard>
+        </Container>
       </Box>
 
       {/* Main Content */}
-      <Container 
-        maxWidth="xl" 
-        sx={{ 
-          py: { xs: 1, sm: 2, md: 3 }, 
-          px: { xs: 1, sm: 2, md: 3 },
-          width: "100%",
-          maxWidth: "100%!important",
-        }}
-      >
-        {/* Error Alert */}
-        {error && (
-          <Alert
-            severity="error"
+      <Container maxWidth="lg" sx={{ py: 4, px: { xs: 2, sm: 3 } }}>
+        {/* Create Post Button & Categories Row */}
+        <Box sx={{ 
+          display: "flex", 
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 2,
+          mb: 3,
+        }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            component={Link}
+            href="/community/create"
             sx={{ 
-              mb: 3, 
-              borderRadius: 2,
-              fontSize: { xs: "0.875rem", sm: "1rem" }
+              bgcolor: c.blue, 
+              textTransform: "none", 
+              borderRadius: "40px",
+              px: 3,
+              py: 1,
+              "&:hover": { bgcolor: "#166fe5" }
             }}
-            onClose={() => setError(null)}
           >
-            {error}
-          </Alert>
+            Create New Post
+          </Button>
+
+          {/* Sort Chips */}
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Chip
+              icon={<NewIcon sx={{ fontSize: 16 }} />}
+              label="Newest"
+              onClick={() => handleSortChange("newest")}
+              sx={{
+                bgcolor: filters.sort === "newest" ? c.blue : "transparent",
+                color: filters.sort === "newest" ? "#fff" : c.inkSub,
+                border: `1px solid ${filters.sort === "newest" ? c.blue : c.border}`,
+                borderRadius: "20px",
+              }}
+            />
+            <Chip
+              icon={<TrendingIcon sx={{ fontSize: 16 }} />}
+              label="Popular"
+              onClick={() => handleSortChange("popular")}
+              sx={{
+                bgcolor: filters.sort === "popular" ? c.blue : "transparent",
+                color: filters.sort === "popular" ? "#fff" : c.inkSub,
+                border: `1px solid ${filters.sort === "popular" ? c.blue : c.border}`,
+                borderRadius: "20px",
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Categories - Horizontal Scroll */}
+        <Box sx={{ 
+          display: "flex", 
+          gap: 1, 
+          overflowX: "auto", 
+          pb: 1,
+          mb: 3,
+          "&::-webkit-scrollbar": { display: "none" },
+        }}>
+          {CATEGORIES.map((cat) => (
+            <Chip
+              key={cat.id}
+              label={cat.name}
+              onClick={() => handleCategoryChange(cat.id)}
+              sx={{
+                bgcolor: filters.category === cat.id ? cat.color : "transparent",
+                color: filters.category === cat.id ? "#fff" : c.inkSub,
+                border: `1px solid ${filters.category === cat.id ? cat.color : c.border}`,
+                borderRadius: "20px",
+                px: 1,
+                "&:hover": { bgcolor: filters.category === cat.id ? cat.color : alpha(cat.color, 0.1) }
+              }}
+            />
+          ))}
+        </Box>
+
+        {/* Error */}
+        {error && (
+          <Paper sx={{ p: 2, mb: 3, borderRadius: "12px", bgcolor: alpha("#e41e3f", 0.1), border: `1px solid ${alpha("#e41e3f", 0.3)}` }}>
+            <Typography sx={{ color: "#e41e3f", fontSize: "0.85rem" }}>{error}</Typography>
+            <Button size="small" onClick={() => setError(null)} sx={{ mt: 1, color: "#e41e3f" }}>Dismiss</Button>
+          </Paper>
         )}
 
-        {/* Categories Tabs - Horizontal scroll on mobile */}
-        <Box sx={{ 
-          mb: 3, 
-          overflowX: { xs: "auto", sm: "visible" },
-          "&::-webkit-scrollbar": { display: "none" },
-          WebkitOverflowScrolling: "touch",
-        }}>
-          <Tabs
-            value={filters.category}
-            onChange={(e, newValue) => handleFilterChange("category", newValue)}
-            variant={isMobile ? "scrollable" : "standard"}
-            scrollButtons={isMobile ? "auto" : false}
-            sx={{
-              minWidth: "fit-content",
-              "& .MuiTab-root": {
-                textTransform: "none",
-                fontWeight: 500,
-                fontSize: { xs: "0.8rem", sm: "0.9rem" },
-                minHeight: "48px",
-                minWidth: "auto",
-                px: { xs: 1, sm: 2 },
-              },
-            }}
-          >
-            {CATEGORIES.map((category) => (
-              <Tab
-                key={category.id}
-                value={category.id}
-                icon={!isMobile ? category.icon : undefined}
-                iconPosition="start"
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    {isMobile && category.icon}
-                    <span>{category.name}</span>
-                    {stats?.popularCategories?.find((c) => c._id === category.id) && !isMobile && (
-                      <Chip
-                        label={
-                          stats.popularCategories.find((c) => c._id === category.id)?.count
-                        }
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: "0.7rem",
-                          backgroundColor: alpha(category.color, 0.1),
-                          color: category.color,
-                        }}
-                      />
-                    )}
-                  </Box>
-                }
-                sx={{
-                  color: filters.category === category.id ? category.color : darkMode ? "#9aa0a6" : "#5f6368",
-                }}
-              />
-            ))}
-          </Tabs>
-        </Box>
-
-        {/* Content Grid */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", lg: "row" },
-            gap: 3,
-            width: "100%",
-          }}
-        >
-          {/* Main Posts */}
-          <Box sx={{ 
-            flex: 1,
-            minWidth: 0,
-            width: "100%",
-          }}>
-            {loading ? (
-              <Box sx={{ textAlign: "center", py: 8 }}>
-                <CircularProgress />
-                <Typography
-                  sx={{ mt: 2, color: darkMode ? "#9aa0a6" : "#5f6368" }}
-                >
-                  Loading community posts...
-                </Typography>
-              </Box>
-            ) : communityPosts.length === 0 ? (
-              <GoogleCard sx={{ textAlign: "center", p: { xs: 3, sm: 6, md: 8 } }}>
-                <ForumIcon
-                  sx={{
-                    fontSize: { xs: 48, sm: 60, md: 72 },
-                    color: darkMode ? "#5f6368" : "#9aa0a6",
-                    mb: 2,
-                  }}
-                />
-                <Typography
-                  variant="h6"
+        {/* Posts List */}
+        {communityPosts.length === 0 && !loading ? (
+          <Paper sx={{ p: 6, textAlign: "center", borderRadius: "16px", bgcolor: c.surface }}>
+            <ForumIcon sx={{ fontSize: 64, color: c.inkMuted, mb: 2, opacity: 0.5 }} />
+            <Typography sx={{ fontWeight: 600, color: c.ink, mb: 1 }}>No posts yet</Typography>
+            <Typography sx={{ color: c.inkSub, mb: 3 }}>Be the first to start a discussion!</Typography>
+            <Button component={Link} href="/community/create" variant="contained" sx={{ bgcolor: c.blue }}>
+              Create First Post
+            </Button>
+          </Paper>
+        ) : (
+          <Stack spacing={2}>
+            {communityPosts.map((post, index) => {
+              const isLast = index === communityPosts.length - 1;
+              const catColor = CATEGORIES.find(c => c.id === post.category)?.color || c.blue;
+              
+              return (
+                <Paper 
+                  key={post._id} 
+                  ref={isLast ? loadMoreRef : null}
                   sx={{ 
-                    color: darkMode ? "#e8eaed" : "#202124", 
-                    mb: 1,
-                    fontSize: { xs: "1.1rem", sm: "1.25rem" }
+                    borderRadius: "16px", 
+                    bgcolor: c.surface, 
+                    border: `1px solid ${c.border}`, 
+                    overflow: "hidden",
+                    transition: "all 0.2s",
+                    "&:hover": { transform: "translateY(-2px)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }
                   }}
                 >
-                  No posts found
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ 
-                    mb: 3, 
-                    color: darkMode ? "#9aa0a6" : "#5f6368",
-                    fontSize: { xs: "0.875rem", sm: "1rem" }
-                  }}
-                >
-                  {filters.search
-                    ? "Try a different search term"
-                    : "Be the first to start a discussion!"}
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => setShowNewPostDialog(true)}
-                  sx={{
-                    backgroundColor: "#4285f4",
-                    "&:hover": { backgroundColor: "#3367d6" },
-                    fontSize: { xs: "0.875rem", sm: "1rem" }
-                  }}
-                >
-                  Create First Post
-                </Button>
-              </GoogleCard>
-            ) : (
-              <>
-                {/* Pinned Posts */}
-                {communityPosts.filter((p) => p.isPinned).length > 0 && (
-                  <Box sx={{ mb: 3 }}>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        color: darkMode ? "#e8eaed" : "#202124",
-                        mb: 2,
-                        fontSize: { xs: "1rem", sm: "1.25rem" }
-                      }}
-                    >
-                      <PinIcon />
-                      Pinned Posts
-                    </Typography>
-                    <Stack spacing={{ xs: 1.5, sm: 2 }}>
-                      {communityPosts
-                        .filter((p) => p.isPinned)
-                        .map((post) => (
-                          <PostCard
-                            key={post._id}
-                            post={post}
-                            onLike={handleLikePost}
-                            onBookmark={handleBookmarkPost}
-                            onSelect={setSelectedPost}
-                            currentUserId={currentUserId || undefined}
-                          />
-                        ))}
-                    </Stack>
-                  </Box>
-                )}
-
-                {/* All Posts */}
-                <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    mb: 2,
-                    color: darkMode ? "#e8eaed" : "#202124",
-                    fontSize: { xs: "1rem", sm: "1.25rem" }
-                  }}
-                >
-                  <NewIcon />
-                  {filters.sort === "trending" ? "Trending Now" : "Recent Discussions"}
-                </Typography>
-
-                <Stack spacing={{ xs: 1.5, sm: 2 }}>
-                  {communityPosts
-                    .filter((p) => !p.isPinned)
-                    .map((post) => (
-                      <PostCard
-                        key={post._id}
-                        post={post}
-                        onLike={handleLikePost}
-                        onBookmark={handleBookmarkPost}
-                        onSelect={setSelectedPost}
-                        currentUserId={currentUserId || undefined}
-                      />
-                    ))}
-                </Stack>
-
-                {/* Pagination */}
-                {pagination.pages > 1 && (
-                  <Box sx={{ 
-                    display: "flex", 
-                    justifyContent: "center", 
-                    mt: 4,
-                    width: "100%",
-                    overflowX: "auto"
-                  }}>
-                    <Pagination
-                      count={pagination.pages}
-                      page={pagination.page}
-                      onChange={(e, page) => handleFilterChange("page", page)}
-                      color="primary"
-                      size={isMobile ? "small" : "medium"}
-                      showFirstButton={!isMobile}
-                      showLastButton={!isMobile}
-                      sx={{
-                        "& .MuiPaginationItem-root": {
-                          color: darkMode ? "#e8eaed" : "#202124",
-                          borderColor: darkMode ? "#3c4043" : "#dadce0",
-                          fontSize: { xs: "0.75rem", sm: "0.875rem" }
-                        },
-                        "& .MuiPaginationItem-root.Mui-selected": {
-                          backgroundColor: "#4285f4",
-                          color: "#ffffff",
-                          "&:hover": {
-                            backgroundColor: "#3367d6",
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
-                )}
-              </>
-            )}
-          </Box>
-
-          {/* Sidebar - Hidden on small screens */}
-          {!isTablet && (
-            <Box sx={{ 
-              width: { xs: "100%", lg: "350px" },
-              flexShrink: 0,
-            }}>
-              {/* Community Stats */}
-              <GoogleCard sx={{ mb: 3 }}>
-                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      color: darkMode ? "#e8eaed" : "#202124",
-                      fontSize: { xs: "1rem", sm: "1.125rem" }
-                    }}
-                  >
-                    <ChartIcon />
-                    Community Stats
-                  </Typography>
-                  {stats ? (
-                    <Stack spacing={1.5}>
-                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                        <Typography variant="body2" sx={{ 
-                          color: darkMode ? "#9aa0a6" : "#5f6368",
-                          fontSize: "0.875rem"
-                        }}>
-                          Total Posts
-                        </Typography>
-                        <Typography variant="body2" fontWeight={600} sx={{ 
-                          color: darkMode ? "#e8eaed" : "#202124",
-                          fontSize: "0.875rem"
-                        }}>
-                          {stats.totalPosts}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                        <Typography variant="body2" sx={{ 
-                          color: darkMode ? "#9aa0a6" : "#5f6368",
-                          fontSize: "0.875rem"
-                        }}>
-                          Total Comments
-                        </Typography>
-                        <Typography variant="body2" fontWeight={600} sx={{ 
-                          color: darkMode ? "#e8eaed" : "#202124",
-                          fontSize: "0.875rem"
-                        }}>
-                          {stats.totalComments}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                        <Typography variant="body2" sx={{ 
-                          color: darkMode ? "#9aa0a6" : "#5f6368",
-                          fontSize: "0.875rem"
-                        }}>
-                          Total Users
-                        </Typography>
-                        <Typography variant="body2" fontWeight={600} sx={{ 
-                          color: darkMode ? "#e8eaed" : "#202124",
-                          fontSize: "0.875rem"
-                        }}>
-                          {stats.totalUsers}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                        <Typography variant="body2" sx={{ 
-                          color: darkMode ? "#9aa0a6" : "#5f6368",
-                          fontSize: "0.875rem"
-                        }}>
-                          Active Today
-                        </Typography>
-                        <Typography variant="body2" fontWeight={600} sx={{ 
-                          color: darkMode ? "#e8eaed" : "#202124",
-                          fontSize: "0.875rem"
-                        }}>
-                          {stats.activeToday}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  ) : (
-                    <CircularProgress size={20} />
-                  )}
-                </CardContent>
-              </GoogleCard>
-
-              {/* Popular Categories */}
-              <GoogleCard sx={{ mb: 3 }}>
-                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      color: darkMode ? "#e8eaed" : "#202124",
-                      fontSize: { xs: "1rem", sm: "1.125rem" }
-                    }}
-                  >
-                    <HotIcon />
-                    Popular Categories
-                  </Typography>
-                  <Stack spacing={1}>
-                    {stats?.popularCategories?.map((category) => (
-                      <Box
-                        key={category._id}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          p: 1.5,
-                          borderRadius: 1,
-                          cursor: "pointer",
-                          transition: "all 0.2s",
-                          "&:hover": {
-                            bgcolor: alpha("#4285f4", darkMode ? 0.1 : 0.05),
-                          },
-                        }}
-                        onClick={() => handleFilterChange("category", category._id)}
-                      >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                          {CATEGORIES.find((c) => c.id === category._id)?.icon}
-                          <Typography variant="body2" fontWeight={500} sx={{ 
-                            color: darkMode ? "#e8eaed" : "#202124",
-                            fontSize: "0.875rem"
-                          }}>
-                            {CATEGORIES.find((c) => c.id === category._id)?.name || category._id}
+                  <Box sx={{ height: 3, bgcolor: catColor }} />
+                  <Box sx={{ p: { xs: 2, sm: 2.5 } }}>
+                    {/* Header */}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1.5 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <UserAvatar name={post.author?.name} size={36} />
+                        <Box>
+                          <Typography sx={{ fontWeight: 600, fontSize: "0.85rem", color: c.ink }}>
+                            {post.author?.name || "Anonymous"}
+                          </Typography>
+                          <Typography sx={{ fontSize: "0.65rem", color: c.inkMuted }}>
+                            {formatDate(post.createdAt)}
                           </Typography>
                         </Box>
-                        <Chip
-                          label={category.count}
-                          size="small"
-                          sx={{
-                            backgroundColor: alpha("#4285f4", 0.1),
-                            color: "#4285f4",
-                            fontSize: "0.75rem",
-                            height: "24px",
-                          }}
+                      </Box>
+                      {post.category && post.category !== "general" && (
+                        <Chip 
+                          label={post.category} 
+                          size="small" 
+                          sx={{ height: 20, fontSize: "0.6rem", bgcolor: alpha(catColor, 0.1), color: catColor }} 
                         />
+                      )}
+                    </Box>
+
+                    {/* Title */}
+                    <Typography 
+                      component={Link} 
+                      href={`/community/post/${post._id}`}
+                      sx={{ 
+                        fontWeight: 700, 
+                        fontSize: "1rem", 
+                        color: c.ink, 
+                        mb: 1, 
+                        display: "block", 
+                        textDecoration: "none",
+                        "&:hover": { color: c.blue } 
+                      }}
+                    >
+                      {post.title}
+                    </Typography>
+
+                    {/* Excerpt */}
+                    <Typography sx={{ 
+                      fontSize: "0.8rem", 
+                      color: c.inkSub, 
+                      lineHeight: 1.5, 
+                      mb: 1.5, 
+                      display: "-webkit-box", 
+                      WebkitLineClamp: 2, 
+                      WebkitBoxOrient: "vertical", 
+                      overflow: "hidden" 
+                    }}>
+                      {post.excerpt || post.content?.substring(0, 120)}...
+                    </Typography>
+
+                    {/* Actions */}
+                    <Box sx={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      gap: 1.5, 
+                      pt: 1, 
+                      borderTop: `1px solid ${c.border}` 
+                    }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleLike(post._id)} 
+                          sx={{ p: 0.5, color: hasLiked(post) ? c.blue : c.inkMuted }}
+                        >
+                          {hasLiked(post) ? <LikeIcon sx={{ fontSize: 14 }} /> : <LikeOutlinedIcon sx={{ fontSize: 14 }} />}
+                        </IconButton>
+                        <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>{post.likeCount || 0}</Typography>
                       </Box>
-                    ))}
-                  </Stack>
-                </CardContent>
-              </GoogleCard>
-
-              {/* Community Guidelines */}
-              <GoogleCard>
-                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-                  <Typography variant="h6" gutterBottom sx={{ 
-                    color: darkMode ? "#e8eaed" : "#202124",
-                    fontSize: { xs: "1rem", sm: "1.125rem" }
-                  }}>
-                    📝 Community Guidelines
-                  </Typography>
-                  <Stack spacing={1}>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 1,
-                        color: darkMode ? "#9aa0a6" : "#5f6368",
-                        fontSize: "0.875rem"
-                      }}
-                    >
-                      <CheckIcon fontSize="small" sx={{ color: "#34a853", mt: 0.2 }} />
-                      Be respectful and professional
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 1,
-                        color: darkMode ? "#9aa0a6" : "#5f6368",
-                        fontSize: "0.875rem"
-                      }}
-                    >
-                      <CheckIcon fontSize="small" sx={{ color: "#34a853", mt: 0.2 }} />
-                      No spam or self-promotion
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 1,
-                        color: darkMode ? "#9aa0a6" : "#5f6368",
-                        fontSize: "0.875rem"
-                      }}
-                    >
-                      <CheckIcon fontSize="small" sx={{ color: "#34a853", mt: 0.2 }} />
-                      Stay on topic
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 1,
-                        color: darkMode ? "#9aa0a6" : "#5f6368",
-                        fontSize: "0.875rem"
-                      }}
-                    >
-                      <CheckIcon fontSize="small" sx={{ color: "#34a853", mt: 0.2 }} />
-                      Help others when you can
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </GoogleCard>
-            </Box>
-          )}
-        </Box>
-      </Container>
-
-      {/* New Post Dialog */}
-      <Dialog
-        open={showNewPostDialog}
-        onClose={() => setShowNewPostDialog(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            backgroundColor: darkMode ? "#202124" : "#ffffff",
-            border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
-            mx: { xs: 1, sm: 2 },
-            width: { xs: "calc(100% - 16px)", sm: "auto" },
-          },
-        }}
-      >
-        <DialogTitle sx={{ 
-          color: darkMode ? "#e8eaed" : "#202124",
-          fontSize: { xs: "1.25rem", sm: "1.5rem" }
-        }}>
-          Create New Post
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            <TextField
-              fullWidth
-              label="Title"
-              value={newPostData.title}
-              onChange={(e) =>
-                setNewPostData((prev) => ({ ...prev, title: e.target.value }))
-              }
-              placeholder="Enter a descriptive title for your post"
-              required
-              sx={{
-                "& .MuiInputBase-input": {
-                  color: darkMode ? "#e8eaed" : "#202124",
-                  fontSize: { xs: "0.875rem", sm: "1rem" }
-                },
-                "& .MuiInputLabel-root": {
-                  color: darkMode ? "#9aa0a6" : "#5f6368",
-                  fontSize: { xs: "0.875rem", sm: "1rem" }
-                },
-              }}
-            />
-
-            <TextField
-              fullWidth
-              label="Content"
-              value={newPostData.content}
-              onChange={(e) =>
-                setNewPostData((prev) => ({ ...prev, content: e.target.value }))
-              }
-              placeholder="Describe your question, issue, or discussion topic in detail"
-              multiline
-              rows={6}
-              required
-              sx={{
-                "& .MuiInputBase-input": {
-                  color: darkMode ? "#e8eaed" : "#202124",
-                  fontSize: { xs: "0.875rem", sm: "1rem" }
-                },
-                "& .MuiInputLabel-root": {
-                  color: darkMode ? "#9aa0a6" : "#5f6368",
-                  fontSize: { xs: "0.875rem", sm: "1rem" }
-                },
-              }}
-            />
-
-            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ 
-                  color: darkMode ? "#9aa0a6" : "#5f6368",
-                  fontSize: { xs: "0.875rem", sm: "1rem" }
-                }}>
-                  Category
-                </InputLabel>
-                <Select
-                  value={newPostData.category}
-                  onChange={(e) =>
-                    setNewPostData((prev) => ({
-                      ...prev,
-                      category: e.target.value,
-                    }))
-                  }
-                  label="Category"
-                  sx={{
-                    color: darkMode ? "#e8eaed" : "#202124",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: darkMode ? "#3c4043" : "#dadce0",
-                    },
-                    fontSize: { xs: "0.875rem", sm: "1rem" }
-                  }}
-                >
-                  {CATEGORIES.filter((c) => c.id !== "all").map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        {category.icon}
-                        <span style={{ fontSize: "0.875rem" }}>{category.name}</span>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <CommentIcon sx={{ fontSize: 13, color: c.inkMuted }} />
+                        <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>{post.commentCount || 0}</Typography>
                       </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <TextField
-                fullWidth
-                label="Tags (comma separated)"
-                value={newPostData.tags.join(", ")}
-                onChange={(e) =>
-                  setNewPostData((prev) => ({
-                    ...prev,
-                    tags: e.target.value
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter((t) => t),
-                  }))
-                }
-                placeholder="e.g., attendance, reports, mobile"
-                sx={{
-                  "& .MuiInputBase-input": {
-                    color: darkMode ? "#e8eaed" : "#202124",
-                    fontSize: { xs: "0.875rem", sm: "1rem" }
-                  },
-                  "& .MuiInputLabel-root": {
-                    color: darkMode ? "#9aa0a6" : "#5f6368",
-                    fontSize: { xs: "0.875rem", sm: "1rem" }
-                  },
-                }}
-              />
-            </Box>
+                      <IconButton 
+                        size="small" 
+                        onClick={() => handleBookmark(post._id)} 
+                        sx={{ p: 0.5, color: hasBookmarked(post) ? c.blue : c.inkMuted }}
+                      >
+                        {hasBookmarked(post) ? <BookmarkFilledIcon sx={{ fontSize: 14 }} /> : <BookmarkOutlinedIcon sx={{ fontSize: 14 }} />}
+                      </IconButton>
+                      <Box sx={{ flex: 1 }} />
+                      <Button 
+                        size="small" 
+                        component={Link} 
+                        href={`/community/post/${post._id}`} 
+                        sx={{ color: c.blue, textTransform: "none", fontSize: "0.7rem", minWidth: "auto" }}
+                      >
+                        Read More
+                      </Button>
+                    </Box>
+                  </Box>
+                </Paper>
+              );
+            })}
+            
+            {/* Loading indicator */}
+            {loading && (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                <CircularProgress size={28} sx={{ color: c.blue }} />
+              </Box>
+            )}
+            
+            {/* End of posts */}
+            {!pagination.hasNextPage && communityPosts.length > 0 && (
+              <Typography sx={{ textAlign: "center", py: 3, color: c.inkMuted, fontSize: "0.8rem" }}>
+                ✨ You've seen all posts ✨
+              </Typography>
+            )}
           </Stack>
-        </DialogContent>
-        <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 } }}>
-          <Button
-            onClick={() => setShowNewPostDialog(false)}
-            sx={{
-              color: darkMode ? "#e8eaed" : "#202124",
-              fontSize: { xs: "0.875rem", sm: "1rem" }
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreatePost}
-            variant="contained"
-            disabled={!newPostData.title.trim() || !newPostData.content.trim()}
-            sx={{
-              backgroundColor: "#4285f4",
-              "&:hover": { backgroundColor: "#3367d6" },
-              fontSize: { xs: "0.875rem", sm: "1rem" }
-            }}
-          >
-            Create Post
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Post Detail Dialog - RESTORED */}
-      {selectedPost && (
-        <Dialog
-          open={!!selectedPost}
-          onClose={() => setSelectedPost(null)}
-          maxWidth="lg"
-          fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 3,
-              maxHeight: "90vh",
-              backgroundColor: darkMode ? "#202124" : "#ffffff",
-              border: `1px solid ${darkMode ? "#3c4043" : "#dadce0"}`,
-              mx: { xs: 1, sm: 2 },
-              width: { xs: "calc(100% - 16px)", sm: "auto" },
-            },
-          }}
-        >
-          <DialogTitle sx={{ 
-            color: darkMode ? "#e8eaed" : "#202124",
-            fontSize: { xs: "1.25rem", sm: "1.5rem" }
-          }}>
-            {selectedPost.title}
-          </DialogTitle>
-          <DialogContent dividers sx={{ overflowY: "auto" }}>
-            <PostDetail
-              post={selectedPost}
-              onClose={() => setSelectedPost(null)}
-              onLike={handleLikePost}
-              onBookmark={handleBookmarkPost}
-              onComment={handleAddComment}
-              onMarkAsSolution={handleMarkAsSolution}
-              currentUserId={currentUserId || undefined}
-            />
-          </DialogContent>
-          <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 } }}>
-            <Button
-              onClick={() => setSelectedPost(null)}
-              sx={{
-                color: darkMode ? "#e8eaed" : "#202124",
-                fontSize: { xs: "0.875rem", sm: "1rem" }
-              }}
-            >
-              Close
-            </Button>
-          </DialogActions>
-        </Dialog>
-      )}
+        )}
+      </Container>
     </Box>
   );
 }

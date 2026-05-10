@@ -405,6 +405,38 @@ export const useCommunity = () => {
           throw new Error(data.message || "Failed to add comment");
         }
 
+        // FIXED: Get the newly added comment from the response
+        // Your API returns the entire post, so we need to get the last comment
+        let newComment = data.data;
+
+        // If the API returns the full post, extract the last comment
+        if (
+          data.data &&
+          data.data.comments &&
+          Array.isArray(data.data.comments)
+        ) {
+          // Get the last comment (newest)
+          newComment = data.data.comments[data.data.comments.length - 1];
+          console.log("Extracted new comment from post:", newComment);
+        }
+
+        // Ensure the comment has the proper structure
+        if (!newComment || !newComment.content) {
+          console.error("Invalid comment structure:", newComment);
+          // Create a fallback comment structure
+          newComment = {
+            _id: Date.now().toString(),
+            content: content,
+            userName: "Current User",
+            userAvatar: null,
+            userId: null,
+            createdAt: new Date().toISOString(),
+            isSolution: false,
+            likes: [],
+            likeCount: 0,
+          };
+        }
+
         // Update in local state
         setPosts((prev) =>
           prev.map((p) => {
@@ -413,7 +445,7 @@ export const useCommunity = () => {
               console.log("Updating comment for post:", p.title);
               return {
                 ...p,
-                comments: [...(p.comments || []), data.data],
+                comments: [...(p.comments || []), newComment],
                 commentCount: (p.commentCount || 0) + 1,
                 lastActivityAt: new Date().toISOString(),
               };
@@ -428,14 +460,14 @@ export const useCommunity = () => {
           if (currentId === cleanPostId) {
             setPost({
               ...post,
-              comments: [...(post.comments || []), data.data],
+              comments: [...(post.comments || []), newComment],
               commentCount: (post.commentCount || 0) + 1,
               lastActivityAt: new Date().toISOString(),
             });
           }
         }
 
-        return data.data;
+        return newComment;
       } catch (err) {
         console.error("❌ addComment error:", err);
         const errorMessage =

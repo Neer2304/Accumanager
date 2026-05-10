@@ -1,12 +1,12 @@
-// app/(admin)/admin/layout.tsx
+// app/(admin)/batman-admin/layout.tsx (Batman Theme)
 "use client";
 
-import AdminLayout from "@/components/googleadminlayout/AdminLayout";
+import BatmanAdminLayout from "@/components/batmanadminlayout/BatmanAdminLayout";
 
-export default function AdminRootLayout({
+export default function BatmanAdminRootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AdminLayout>{children}</AdminLayout>;
+  return <BatmanAdminLayout>{children}</BatmanAdminLayout>;
 }

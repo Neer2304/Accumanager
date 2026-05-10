@@ -7,7 +7,7 @@ interface GoogleAMLogoProps {
   darkMode?: boolean;
 }
 
-const GoogleAMLogo: React.FC<GoogleAMLogoProps> = ({ size = 64, darkMode = false }) => {
+const GoogleAMLogo: React.FC<GoogleAMLogoProps> = ({ size = 64 }) => {
   return (
     <Box
       sx={{

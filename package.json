@@ -32,6 +32,7 @@
     "bull": "^4.16.5",
     "canvas-confetti": "^1.9.4",
     "chart.js": "^4.5.1",
+    "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dexie": "^4.2.1",

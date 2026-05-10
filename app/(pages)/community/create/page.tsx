@@ -20,6 +20,7 @@ import {
   IconButton,
   useTheme,
   alpha,
+  Divider,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -28,23 +29,45 @@ import {
   Category as CategoryIcon,
   Tag as TagIcon,
   Send as SendIcon,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  EmojiEmotions as EmojiIcon,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// Theme colors (matching Facebook-style)
+const useColors = () => {
+  const theme = useTheme();
+  const dark = theme.palette.mode === "dark";
+  return {
+    dark,
+    bg: dark ? "#18191a" : "#f0f2f5",
+    surface: dark ? "#242526" : "#ffffff",
+    surface2: dark ? "#3a3b3c" : "#f0f2f5",
+    border: dark ? "#3e4042" : "#e4e6ea",
+    ink: dark ? "#e4e6eb" : "#050505",
+    inkSub: dark ? "#b0b3b8" : "#65676b",
+    inkMuted: dark ? "#6a6d73" : "#8a8d91",
+    blue: "#1877f2",
+    blueSoft: dark ? "rgba(24,119,242,0.15)" : "rgba(24,119,242,0.08)",
+    green: dark ? "#45bd62" : "#31a24c",
+    red: dark ? "#f28b82" : "#e41e3f",
+  };
+};
+
 const CATEGORIES = [
-  { id: 'general', name: 'General Discussion', icon: '💬', color: '#4285f4' },
-  { id: 'questions', name: 'Questions & Answers', icon: '❓', color: '#ea4335' },
-  { id: 'tips', name: 'Tips & Tricks', icon: '💡', color: '#34a853' },
+  { id: 'general', name: 'General Discussion', icon: '💬', color: '#1877f2' },
+  { id: 'questions', name: 'Questions & Answers', icon: '❓', color: '#e41e3f' },
+  { id: 'tips', name: 'Tips & Tricks', icon: '💡', color: '#31a24c' },
   { id: 'bugs', name: 'Bug Reports', icon: '🐛', color: '#fbbc04' },
   { id: 'features', name: 'Feature Requests', icon: '✨', color: '#f57c00' },
-  { id: 'announcements', name: 'Announcements', icon: '📢', color: '#9c27b0' },
+  { id: 'announcements', name: 'Announcements', icon: '📢', color: '#7b1fa2' },
 ];
 
 export default function CreatePostPage() {
   const router = useRouter();
-  const theme = useTheme();
-  const darkMode = theme.palette.mode === 'dark';
+  const c = useColors();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,9 +89,7 @@ export default function CreatePostPage() {
     try {
       const response = await fetch('/api/community', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           title: formData.title.trim(),
@@ -121,29 +142,31 @@ export default function CreatePostPage() {
 
   if (success) {
     return (
-      <Box sx={{ 
-        backgroundColor: darkMode ? '#202124' : '#ffffff', 
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
+      <Box sx={{ bgcolor: c.bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Container maxWidth="md">
           <Paper sx={{ 
             p: 4, 
             textAlign: 'center', 
-            borderRadius: 3,
-            bgcolor: darkMode ? '#303134' : '#f8f9fa',
-            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            borderRadius: "16px", 
+            bgcolor: c.surface,
+            border: `1px solid ${c.border}`,
           }}>
-            <Typography variant="h5" color="#34a853" gutterBottom>
-              🎉 Post Created Successfully!
+            <Box sx={{ 
+              width: 64, height: 64, borderRadius: "50%", 
+              bgcolor: alpha(c.green, 0.1), 
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              mx: 'auto', mb: 2
+            }}>
+              <SendIcon sx={{ fontSize: 32, color: c.green }} />
+            </Box>
+            <Typography variant="h5" fontWeight={600} sx={{ color: c.ink, mb: 1 }}>
+              Post Created Successfully! 🎉
             </Typography>
-            <Typography sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} paragraph>
+            <Typography sx={{ color: c.inkSub, mb: 3 }}>
               Your post has been published to the community.
             </Typography>
-            <CircularProgress size={24} sx={{ mt: 2, color: '#4285f4' }} />
-            <Typography variant="caption" display="block" sx={{ mt: 1, color: darkMode ? '#9aa0a6' : '#5f6368' }}>
+            <CircularProgress size={24} sx={{ color: c.blue }} />
+            <Typography variant="caption" display="block" sx={{ mt: 1, color: c.inkMuted }}>
               Redirecting to your post...
             </Typography>
           </Paper>
@@ -152,273 +175,309 @@ export default function CreatePostPage() {
     );
   }
 
+  const selectedCategory = CATEGORIES.find(c => c.id === formData.category);
+
   return (
-    <Box sx={{ 
-      backgroundColor: darkMode ? '#202124' : '#ffffff', 
-      minHeight: '100vh',
-      py: 4,
-    }}>
-      <Container maxWidth="md">
-        {/* Back Button */}
-        <Button
-          component={Link}
-          href="/community"
-          startIcon={<ArrowBackIcon />}
-          sx={{ 
-            mb: 3,
-            color: darkMode ? '#e8eaed' : '#202124',
-            '&:hover': {
-              backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-            },
-          }}
-        >
-          Back to Community
-        </Button>
+    <Box sx={{ bgcolor: c.bg, minHeight: '100vh' }}>
+      {/* Sticky Header */}
+      <Box sx={{ 
+        position: "sticky", top: 0, zIndex: 100,
+        bgcolor: alpha(c.surface, 0.95), borderBottom: `1px solid ${c.border}`,
+        backdropFilter: "blur(10px)"
+      }}>
+        <Container maxWidth="md" sx={{ px: { xs: 1.5, sm: 2 } }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.25 }}>
+            <IconButton size="small" onClick={() => router.back()}
+              sx={{ bgcolor: c.surface2, color: c.ink, "&:hover": { bgcolor: c.border } }}>
+              <ArrowBackIcon sx={{ fontSize: 19 }} />
+            </IconButton>
+            <Typography sx={{ fontWeight: 600, fontSize: "1rem", color: c.ink }}>
+              Create New Post
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
 
-        {/* Header */}
-        <Paper sx={{ 
-          p: 3, 
-          mb: 3, 
-          borderRadius: 2,
-          bgcolor: darkMode ? '#303134' : '#f8f9fa',
-          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-        }}>
-          <Typography variant="h4" fontWeight={500} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-            Create New Post
-          </Typography>
-          <Typography sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-            Share your knowledge, ask questions, or start a discussion with the community.
-          </Typography>
-        </Paper>
-
-        {/* Error Alert */}
-        {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 3,
-              borderRadius: 2,
-              bgcolor: darkMode ? '#3c1e1e' : '#fdecea',
-            }}
-          >
-            {error}
-          </Alert>
-        )}
-
-        {/* Form */}
-        <Paper sx={{ 
-          p: 3, 
-          borderRadius: 2,
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-        }}>
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={3}>
-              {/* Title */}
-              <TextField
-                fullWidth
-                label="Title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="What would you like to discuss?"
-                required
-                InputProps={{
-                  sx: { 
-                    fontSize: '1.1rem', 
-                    fontWeight: 500,
-                    color: darkMode ? '#e8eaed' : '#202124',
-                  }
-                }}
-                InputLabelProps={{
-                  sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
-                }}
-                helperText="Be specific and descriptive"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+      <Container maxWidth="md" sx={{ py: 3, px: { xs: 2, sm: 3 } }}>
+        <form onSubmit={handleSubmit}>
+          <Stack spacing={2.5}>
+            {/* Title Input */}
+            <Paper sx={{ 
+              borderRadius: "16px", 
+              bgcolor: c.surface, 
+              border: `1px solid ${c.border}`,
+              overflow: "hidden"
+            }}>
+              <Box sx={{ p: 2.5 }}>
+                <Typography sx={{ fontWeight: 600, color: c.ink, mb: 1, fontSize: "0.85rem" }}>
+                  Title
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="What would you like to discuss?"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  variant="outlined"
+                  required
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "12px",
+                      bgcolor: c.surface2,
+                      "& fieldset": { borderColor: "transparent" },
+                      "&:hover fieldset": { borderColor: c.border },
+                      "&.Mui-focused fieldset": { borderColor: c.blue, borderWidth: 1.5 },
                     },
-                    '&:hover fieldset': {
-                      borderColor: '#4285f4',
-                    },
-                  },
-                }}
-              />
+                    "& .MuiInputBase-input": { 
+                      color: c.ink, 
+                      fontSize: "0.95rem",
+                      "&::placeholder": { color: c.inkMuted }
+                    }
+                  }}
+                />
+                <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted, mt: 0.5 }}>
+                  Be specific and descriptive (max 200 characters)
+                </Typography>
+              </Box>
+            </Paper>
 
-              {/* Content */}
-              <TextField
-                fullWidth
-                label="Content"
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="Describe your question, issue, or discussion topic in detail..."
-                multiline
-                rows={10}
-                required
-                InputProps={{
-                  sx: { color: darkMode ? '#e8eaed' : '#202124' }
-                }}
-                InputLabelProps={{
-                  sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
-                }}
-                helperText="Provide as much detail as possible. Use markdown for formatting."
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+            {/* Content Input */}
+            <Paper sx={{ 
+              borderRadius: "16px", 
+              bgcolor: c.surface, 
+              border: `1px solid ${c.border}`,
+              overflow: "hidden"
+            }}>
+              <Box sx={{ p: 2.5 }}>
+                <Typography sx={{ fontWeight: 600, color: c.ink, mb: 1, fontSize: "0.85rem" }}>
+                  Content
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="Describe your question, issue, or discussion topic in detail..."
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  multiline
+                  rows={8}
+                  variant="outlined"
+                  required
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "12px",
+                      bgcolor: c.surface2,
+                      "& fieldset": { borderColor: "transparent" },
+                      "&:hover fieldset": { borderColor: c.border },
+                      "&.Mui-focused fieldset": { borderColor: c.blue, borderWidth: 1.5 },
                     },
-                    '&:hover fieldset': {
-                      borderColor: '#4285f4',
-                    },
-                  },
-                }}
-              />
+                    "& .MuiInputBase-input": { 
+                      color: c.ink, 
+                      fontSize: "0.9rem",
+                      lineHeight: 1.6,
+                      "&::placeholder": { color: c.inkMuted }
+                    }
+                  }}
+                />
+                
+                {/* Formatting tips */}
+                <Box sx={{ display: "flex", gap: 2, mt: 1.5, flexWrap: "wrap" }}>
+                  <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted, display: "flex", alignItems: "center", gap: 0.5 }}>
+                    💡 Use **bold** or *italic* for emphasis
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted, display: "flex", alignItems: "center", gap: 0.5 }}>
+                    📋 Use bullet points for lists
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
 
-              {/* Category & Tags */}
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {/* Category */}
-                <FormControl sx={{ minWidth: 200 }}>
-                  <InputLabel sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>Category</InputLabel>
-                  <Select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    label="Category"
-                    sx={{
-                      color: darkMode ? '#e8eaed' : '#202124',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: darkMode ? '#3c4043' : '#dadce0',
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#4285f4',
-                      },
-                    }}
-                  >
-                    {CATEGORIES.map((category) => (
-                      <MenuItem key={category.id} value={category.id}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <span>{category.icon}</span>
-                          {category.name}
-                        </Box>
-                      </MenuItem>
+            {/* Category & Tags Row */}
+            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
+              {/* Category */}
+              <Paper sx={{ 
+                flex: 1,
+                borderRadius: "16px", 
+                bgcolor: c.surface, 
+                border: `1px solid ${c.border}`,
+                overflow: "hidden"
+              }}>
+                <Box sx={{ p: 2.5 }}>
+                  <Typography sx={{ fontWeight: 600, color: c.ink, mb: 1, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <CategoryIcon sx={{ fontSize: 16, color: c.blue }} /> Category
+                  </Typography>
+                  <FormControl fullWidth>
+                    <Select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      sx={{
+                        borderRadius: "12px",
+                        bgcolor: c.surface2,
+                        color: c.ink,
+                        "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
+                        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: c.border },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: c.blue }
+                      }}
+                    >
+                      {CATEGORIES.map((category) => (
+                        <MenuItem key={category.id} value={category.id}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <span style={{ fontSize: "1.1rem" }}>{category.icon}</span>
+                            <span style={{ color: c.ink }}>{category.name}</span>
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  {selectedCategory && (
+                    <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted, mt: 1 }}>
+                      Selected: <span style={{ color: selectedCategory.color }}>{selectedCategory.name}</span>
+                    </Typography>
+                  )}
+                </Box>
+              </Paper>
+
+              {/* Tags */}
+              <Paper sx={{ 
+                flex: 1.5,
+                borderRadius: "16px", 
+                bgcolor: c.surface, 
+                border: `1px solid ${c.border}`,
+                overflow: "hidden"
+              }}>
+                <Box sx={{ p: 2.5 }}>
+                  <Typography sx={{ fontWeight: 600, color: c.ink, mb: 1, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <TagIcon sx={{ fontSize: 16, color: c.blue }} /> Tags
+                  </Typography>
+                  <Box sx={{ 
+                    display: "flex", 
+                    flexWrap: "wrap", 
+                    gap: 0.5, 
+                    mb: 1.5,
+                    minHeight: "32px"
+                  }}>
+                    {formData.tags.map((tag, index) => (
+                      <Chip
+                        key={index}
+                        label={tag}
+                        size="small"
+                        onDelete={() => handleRemoveTag(tag)}
+                        sx={{
+                          bgcolor: alpha(c.blue, 0.1),
+                          color: c.blue,
+                          borderRadius: "20px",
+                          "& .MuiChip-deleteIcon": { color: c.blue, fontSize: 14 }
+                        }}
+                      />
                     ))}
-                  </Select>
-                </FormControl>
-
-                {/* Tags */}
-                <Box sx={{ flex: 1, minWidth: 300 }}>
+                  </Box>
                   <TextField
                     fullWidth
-                    label="Tags"
+                    placeholder="Add tags (press Enter)"
                     value={formData.newTag}
                     onChange={(e) => setFormData({ ...formData, newTag: e.target.value })}
                     onKeyDown={handleKeyDown}
-                    placeholder="Add tags (press Enter)"
-                    InputProps={{
-                      sx: { color: darkMode ? '#e8eaed' : '#202124' },
-                      startAdornment: (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mr: 1 }}>
-                          <TagIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                          {formData.tags.map((tag, index) => (
-                            <Chip
-                              key={index}
-                              label={tag}
-                              size="small"
-                              onDelete={() => handleRemoveTag(tag)}
-                              sx={{ 
-                                mr: 0.5,
-                                backgroundColor: alpha('#4285f4', 0.1),
-                                color: '#4285f4',
-                                '& .MuiChip-deleteIcon': {
-                                  color: '#4285f4',
-                                },
-                              }}
-                            />
-                          ))}
-                        </Box>
-                      ),
-                    }}
-                    InputLabelProps={{
-                      sx: { color: darkMode ? '#9aa0a6' : '#5f6368' }
-                    }}
-                    helperText="Add relevant tags to help others find your post"
+                    size="small"
                     sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '& fieldset': {
-                          borderColor: darkMode ? '#3c4043' : '#dadce0',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: '#4285f4',
-                        },
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "12px",
+                        bgcolor: c.surface2,
+                        "& fieldset": { borderColor: "transparent" },
+                        "&:hover fieldset": { borderColor: c.border },
+                        "&.Mui-focused fieldset": { borderColor: c.blue }
                       },
+                      "& .MuiInputBase-input": { color: c.ink, fontSize: "0.85rem" }
                     }}
                   />
+                  <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted, mt: 1 }}>
+                    Add relevant tags to help others find your post
+                  </Typography>
                 </Box>
-              </Box>
+              </Paper>
+            </Box>
 
-              {/* Guidelines */}
-              <Paper 
-                variant="outlined" 
+            {/* Error Alert */}
+            {error && (
+              <Alert 
+                severity="error" 
                 sx={{ 
-                  p: 2, 
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  borderRadius: 1,
-                  borderColor: darkMode ? '#3c4043' : '#dadce0',
+                  borderRadius: "12px",
+                  bgcolor: alpha(c.red, 0.1),
+                  color: c.red,
                 }}
+                onClose={() => setError(null)}
               >
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+                {error}
+              </Alert>
+            )}
+
+            {/* Guidelines Card */}
+            <Paper sx={{ 
+              borderRadius: "16px", 
+              bgcolor: alpha(c.blue, 0.04), 
+              border: `1px solid ${alpha(c.blue, 0.15)}`,
+              overflow: "hidden"
+            }}>
+              <Box sx={{ p: 2.5 }}>
+                <Typography sx={{ fontWeight: 600, color: c.blue, mb: 1.5, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: 0.5 }}>
                   📝 Posting Guidelines
                 </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                  • Be respectful and professional<br/>
-                  • Provide clear and detailed information<br/>
-                  • Use proper formatting and spacing<br/>
-                  • Tag your post appropriately<br/>
-                  • Check for duplicates before posting
-                </Typography>
-              </Paper>
-
-              {/* Submit Button */}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button
-                  component={Link}
-                  href="/community"
-                  variant="outlined"
-                  disabled={loading}
-                  sx={{
-                    borderColor: darkMode ? '#3c4043' : '#dadce0',
-                    color: darkMode ? '#e8eaed' : '#202124',
-                    '&:hover': {
-                      borderColor: '#4285f4',
-                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                    },
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  startIcon={loading ? <CircularProgress size={20} sx={{ color: '#ffffff' }} /> : <SendIcon />}
-                  disabled={loading || !formData.title.trim() || !formData.content.trim()}
-                  sx={{ 
-                    minWidth: 120,
-                    backgroundColor: '#4285f4',
-                    '&:hover': {
-                      backgroundColor: '#3367d6',
-                    },
-                    '&.Mui-disabled': {
-                      backgroundColor: darkMode ? '#303134' : '#f1f3f4',
-                      color: darkMode ? '#5f6368' : '#bdc1c6',
-                    },
-                  }}
-                >
-                  {loading ? 'Creating...' : 'Publish Post'}
-                </Button>
+                <Stack spacing={1}>
+                  <Typography sx={{ fontSize: "0.8rem", color: c.inkSub, display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box component="span" sx={{ width: 4, height: 4, borderRadius: "50%", bgcolor: c.green }} /> 
+                    Be respectful and professional
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.8rem", color: c.inkSub, display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box component="span" sx={{ width: 4, height: 4, borderRadius: "50%", bgcolor: c.green }} /> 
+                    Provide clear and detailed information
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.8rem", color: c.inkSub, display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box component="span" sx={{ width: 4, height: 4, borderRadius: "50%", bgcolor: c.green }} /> 
+                    Use proper formatting and spacing
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.8rem", color: c.inkSub, display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box component="span" sx={{ width: 4, height: 4, borderRadius: "50%", bgcolor: c.green }} /> 
+                    Tag your post appropriately
+                  </Typography>
+                </Stack>
               </Box>
-            </Stack>
-          </form>
-        </Paper>
+            </Paper>
+
+            {/* Action Buttons */}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, pt: 1 }}>
+              <Button
+                component={Link}
+                href="/community"
+                variant="outlined"
+                disabled={loading}
+                sx={{
+                  borderRadius: "40px",
+                  textTransform: "none",
+                  px: 3,
+                  py: 0.75,
+                  borderColor: c.border,
+                  color: c.inkSub,
+                  "&:hover": { borderColor: c.blue, bgcolor: alpha(c.blue, 0.05) }
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                startIcon={loading ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : <SendIcon sx={{ fontSize: 18 }} />}
+                disabled={loading || !formData.title.trim() || !formData.content.trim()}
+                sx={{ 
+                  borderRadius: "40px",
+                  textTransform: "none",
+                  px: 4,
+                  py: 0.75,
+                  bgcolor: c.blue,
+                  "&:hover": { bgcolor: "#166fe5" }
+                }}
+              >
+                {loading ? 'Creating...' : 'Publish Post'}
+              </Button>
+            </Box>
+          </Stack>
+        </form>
       </Container>
     </Box>
   );

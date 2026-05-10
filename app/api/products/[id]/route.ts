@@ -1,315 +1,297 @@
-// app/api/products/[id]/route.ts - UPDATED WITH SUBSCRIPTION CHECKS
-import { NextRequest, NextResponse } from 'next/server'
-import Product from '@/models/Product'
-import { connectToDatabase } from '@/lib/mongodb'
-import { verifyToken } from '@/lib/jwt'
-import { PaymentService } from '@/services/paymentService'
+// app/api/products/[id]/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import Product from '@/models/Product';
+import { verifyToken } from '@/lib/jwt';
+import mongoose from 'mongoose';
 
-// Helper function to verify auth and subscription
-async function verifyAuthAndSubscription(request: NextRequest) {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface DecodedToken {
+  userId: string;
+  email?: string;
+  role?: string;
+}
+
+interface UpdateData {
+  name?: string;
+  description?: string;
+  shortDescription?: string;
+  category?: string;
+  brand?: string;
+  tags?: string[];
+  mrp?: number;
+  sellingPrice?: number;
+  costPrice?: number;
+  gstRate?: number;
+  hsnCode?: string;
+  quantity?: number;
+  lowStockThreshold?: number;
+  trackInventory?: boolean;
+  hasVariations?: boolean;
+  variations?: unknown[];
+  manufacturingDate?: string;
+  expiryDate?: string;
+  batchNumber?: string;
+  manufacturerName?: string;
+  countryOfOrigin?: string;
+  weight?: number;
+  weightUnit?: string;
+  dimensions?: { length?: number; width?: number; height?: number; unit?: string };
+  status?: 'draft' | 'published' | 'archived';
+  visibility?: 'visible' | 'hidden';
+  updatedAt?: Date;
+}
+
+// ─── Helper Functions ─────────────────────────────────────────────────────────
+
+async function getUserIdFromRequest(request: NextRequest): Promise<string> {
   const authToken = request.cookies.get('auth_token')?.value;
-  const authHeader = request.headers.get('authorization');
-  
-  const token = authHeader?.replace('Bearer ', '') || authToken;
-  
-  if (!token) {
+  if (!authToken) {
     throw new Error('Authentication required');
   }
   
-  const decoded = verifyToken(token);
-  await connectToDatabase();
-  
-  // Check subscription status
-  const subscription = await PaymentService.checkSubscription(decoded.userId);
-  if (!subscription.isActive) {
-    throw new Error('Your subscription has expired. Please upgrade to continue using the service.');
+  try {
+    const decoded = verifyToken(authToken) as DecodedToken;
+    if (!decoded.userId) {
+      throw new Error('Invalid token payload');
+    }
+    return decoded.userId;
+  } catch {
+    throw new Error('Invalid token');
   }
-  
-  return { userId: decoded.userId, subscription };
 }
+
+// ─── GET /api/products/[id] ───────────────────────────────────────────────────
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+): Promise<NextResponse> {
   try {
-    console.log('🔍 GET /api/products/[id] - Starting...')
-    
-    const { userId } = await verifyAuthAndSubscription(request);
-    
-    console.log('👤 GET [id] - User ID:', userId)
-    console.log('🎯 GET [id] - Product ID:', params.id)
+    const resolvedParams = await params;
+    const userId = await getUserIdFromRequest(request);
+    await connectToDatabase();
 
-    const product = await Product.findOne({ 
-      _id: params.id, 
-      userId: userId 
+    const productId = resolvedParams.id;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return NextResponse.json({ success: false, message: 'Invalid product ID' }, { status: 400 });
+    }
+
+    const product = await Product.findOne({
+      _id: new mongoose.Types.ObjectId(productId),
+      userId: new mongoose.Types.ObjectId(userId),
     })
+      .populate('category', 'name slug')
+      .populate('brand', 'name logo')
+      .lean();
 
     if (!product) {
-      console.log('❌ GET [id] - Product not found')
-      return NextResponse.json({ message: 'Product not found' }, { status: 404 })
+      return NextResponse.json({ success: false, message: 'Product not found' }, { status: 404 });
     }
 
-    console.log('✅ GET [id] - Product found:', product.name)
-    return NextResponse.json(product)
-  } catch (error: any) {
-    console.error('❌ GET [id] - Error:', error)
+    return NextResponse.json({ success: true, data: product });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('GET product error:', err);
     
-    if (error.message === 'Authentication required') {
-      return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
+    if (err.message === 'Authentication required' || err.message === 'Invalid token') {
+      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
     }
     
-    if (error.message.includes('subscription')) {
-      return NextResponse.json({ message: error.message }, { status: 403 });
-    }
-    
-    return NextResponse.json(
-      { message: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: err.message || 'Internal server error' }, { status: 500 });
   }
 }
+
+// ─── PUT /api/products/[id] ───────────────────────────────────────────────────
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+): Promise<NextResponse> {
   try {
-    console.log('🔄 PUT /api/products/[id] - Starting...')
-    
-    const { userId } = await verifyAuthAndSubscription(request);
-    
-    console.log('👤 PUT [id] - User ID:', userId)
-    console.log('🎯 PUT [id] - Product ID:', params.id)
+    const resolvedParams = await params;
+    const userId = await getUserIdFromRequest(request);
+    await connectToDatabase();
 
-    const updateData = await request.json()
-    console.log('📦 PUT [id] - Update data:', updateData)
+    const productId = resolvedParams.id;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return NextResponse.json({ success: false, message: 'Invalid product ID' }, { status: 400 });
+    }
+
+    const updateData: UpdateData = await request.json();
 
     // Validate required fields if they're being updated
-    if (updateData.name !== undefined && !updateData.name?.trim()) {
-      return NextResponse.json(
-        { message: 'Product name is required' },
-        { status: 400 }
-      );
+    if (updateData.name !== undefined && !updateData.name.trim()) {
+      return NextResponse.json({ success: false, message: 'Product name is required' }, { status: 400 });
     }
 
-    if (updateData.category !== undefined && !updateData.category?.trim()) {
-      return NextResponse.json(
-        { message: 'Category is required' },
-        { status: 400 }
-      );
+    if (updateData.category !== undefined && !updateData.category.trim()) {
+      return NextResponse.json({ success: false, message: 'Category is required' }, { status: 400 });
     }
 
-    if (updateData.basePrice !== undefined && (!updateData.basePrice || updateData.basePrice <= 0)) {
-      return NextResponse.json(
-        { message: 'Valid base price is required' },
-        { status: 400 }
-      );
+    if (updateData.mrp !== undefined && updateData.mrp <= 0) {
+      return NextResponse.json({ success: false, message: 'MRP must be greater than 0' }, { status: 400 });
     }
 
-    if (updateData.gstDetails?.hsnCode !== undefined && !updateData.gstDetails?.hsnCode?.trim()) {
-      return NextResponse.json(
-        { message: 'HSN Code is required' },
-        { status: 400 }
-      );
+    if (updateData.sellingPrice !== undefined && updateData.sellingPrice <= 0) {
+      return NextResponse.json({ success: false, message: 'Selling price must be greater than 0' }, { status: 400 });
     }
 
-    // Clean and prepare update data
-    const cleanUpdateData: any = { ...updateData, updatedAt: new Date() };
+    // Prepare update data
+    const cleanUpdateData: Record<string, unknown> = {
+      ...updateData,
+      updatedAt: new Date(),
+    };
 
-    // Clean nested fields if they exist
-    if (cleanUpdateData.name) cleanUpdateData.name = cleanUpdateData.name.trim();
-    if (cleanUpdateData.description) cleanUpdateData.description = cleanUpdateData.description.trim();
-    if (cleanUpdateData.category) cleanUpdateData.category = cleanUpdateData.category.trim();
-    if (cleanUpdateData.subCategory) cleanUpdateData.subCategory = cleanUpdateData.subCategory.trim();
-    if (cleanUpdateData.brand) cleanUpdateData.brand = cleanUpdateData.brand.trim();
+    // Clean string fields
+    if (cleanUpdateData.name) cleanUpdateData.name = (cleanUpdateData.name as string).trim();
+    if (cleanUpdateData.description) cleanUpdateData.description = (cleanUpdateData.description as string).trim();
+    if (cleanUpdateData.category) cleanUpdateData.category = new mongoose.Types.ObjectId(cleanUpdateData.category as string);
+    if (cleanUpdateData.brand) cleanUpdateData.brand = new mongoose.Types.ObjectId(cleanUpdateData.brand as string);
     
     // Clean numeric fields
-    if (cleanUpdateData.basePrice) cleanUpdateData.basePrice = Number(cleanUpdateData.basePrice);
-    if (cleanUpdateData.baseCostPrice) cleanUpdateData.baseCostPrice = Number(cleanUpdateData.baseCostPrice);
+    if (cleanUpdateData.mrp) cleanUpdateData.mrp = Number(cleanUpdateData.mrp);
+    if (cleanUpdateData.sellingPrice) cleanUpdateData.sellingPrice = Number(cleanUpdateData.sellingPrice);
+    if (cleanUpdateData.costPrice) cleanUpdateData.costPrice = Number(cleanUpdateData.costPrice);
+    if (cleanUpdateData.quantity) cleanUpdateData.quantity = Number(cleanUpdateData.quantity);
     
-    // Clean GST details
-    if (cleanUpdateData.gstDetails) {
-      cleanUpdateData.gstDetails = {
-        type: cleanUpdateData.gstDetails.type || 'cgst_sgst',
-        hsnCode: cleanUpdateData.gstDetails.hsnCode?.trim(),
-        cgstRate: Number(cleanUpdateData.gstDetails.cgstRate) || 0,
-        sgstRate: Number(cleanUpdateData.gstDetails.sgstRate) || 0,
-        igstRate: Number(cleanUpdateData.gstDetails.igstRate) || 0,
-        utgstRate: Number(cleanUpdateData.gstDetails.utgstRate) || 0,
-      };
+    // Handle date fields
+    if (cleanUpdateData.manufacturingDate) {
+      cleanUpdateData.manufacturingDate = new Date(cleanUpdateData.manufacturingDate as string);
     }
-    
-    // Clean variations
-    if (cleanUpdateData.variations) {
-      cleanUpdateData.variations = cleanUpdateData.variations.map((variation: any) => ({
-        ...variation,
-        price: Number(variation.price),
-        costPrice: Number(variation.costPrice) || 0,
-        stock: Number(variation.stock) || 0,
-        weight: variation.weight ? Number(variation.weight) : undefined,
-      }));
-    }
-    
-    // Clean batches
-    if (cleanUpdateData.batches) {
-      cleanUpdateData.batches = cleanUpdateData.batches.map((batch: any) => ({
-        ...batch,
-        quantity: Number(batch.quantity),
-        costPrice: Number(batch.costPrice),
-        sellingPrice: Number(batch.sellingPrice),
-        mfgDate: batch.mfgDate ? new Date(batch.mfgDate) : undefined,
-        expDate: batch.expDate ? new Date(batch.expDate) : undefined,
-        receivedDate: batch.receivedDate ? new Date(batch.receivedDate) : new Date(),
-      }));
+    if (cleanUpdateData.expiryDate) {
+      cleanUpdateData.expiryDate = new Date(cleanUpdateData.expiryDate as string);
     }
 
-    console.log('🧹 PUT [id] - Cleaned update data:', cleanUpdateData)
+    // Remove undefined values
+    Object.keys(cleanUpdateData).forEach(key => {
+      if (cleanUpdateData[key] === undefined) {
+        delete cleanUpdateData[key];
+      }
+    });
 
     const product = await Product.findOneAndUpdate(
-      { _id: params.id, userId: userId },
-      cleanUpdateData,
+      { _id: new mongoose.Types.ObjectId(productId), userId: new mongoose.Types.ObjectId(userId) },
+      { $set: cleanUpdateData },
       { new: true, runValidators: true }
-    )
+    ).populate('category', 'name slug').populate('brand', 'name logo');
 
     if (!product) {
-      console.log('❌ PUT [id] - Product not found')
-      return NextResponse.json({ message: 'Product not found' }, { status: 404 })
+      return NextResponse.json({ success: false, message: 'Product not found' }, { status: 404 });
     }
 
-    console.log('✅ PUT [id] - Product updated:', product.name)
-    return NextResponse.json(product)
-  } catch (error: any) {
-    console.error('❌ PUT [id] - Error:', error)
+    return NextResponse.json({
+      success: true,
+      message: 'Product updated successfully',
+      data: product,
+    });
+  } catch (error: unknown) {
+    const err = error as Error & { code?: number };
+    console.error('PUT product error:', err);
     
-    if (error.message === 'Authentication required') {
-      return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
+    if (err.message === 'Authentication required' || err.message === 'Invalid token') {
+      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
     }
     
-    if (error.message.includes('subscription')) {
-      return NextResponse.json({ message: error.message }, { status: 403 });
+    if (err.code === 11000) {
+      return NextResponse.json({ success: false, message: 'SKU already exists' }, { status: 409 });
     }
     
-    // MongoDB duplicate key error
-    if (error.code === 11000) {
-      return NextResponse.json(
-        { message: 'Product with this SKU already exists' },
-        { status: 400 }
-      );
-    }
-    
-    return NextResponse.json(
-      { message: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: err.message || 'Internal server error' }, { status: 500 });
   }
 }
+
+// ─── DELETE /api/products/[id] ────────────────────────────────────────────────
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+): Promise<NextResponse> {
   try {
-    console.log('🗑️ DELETE /api/products/[id] - Starting...')
-    
-    const { userId } = await verifyAuthAndSubscription(request);
-    
-    console.log('👤 DELETE [id] - User ID:', userId)
-    console.log('🎯 DELETE [id] - Product ID:', params.id)
+    const resolvedParams = await params;
+    const userId = await getUserIdFromRequest(request);
+    await connectToDatabase();
 
-    const product = await Product.findOneAndDelete({ 
-      _id: params.id, 
-      userId: userId 
-    })
+    const productId = resolvedParams.id;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return NextResponse.json({ success: false, message: 'Invalid product ID' }, { status: 400 });
+    }
+
+    const product = await Product.findOneAndDelete({
+      _id: new mongoose.Types.ObjectId(productId),
+      userId: new mongoose.Types.ObjectId(userId),
+    });
 
     if (!product) {
-      console.log('❌ DELETE [id] - Product not found')
-      return NextResponse.json({ message: 'Product not found' }, { status: 404 })
+      return NextResponse.json({ success: false, message: 'Product not found' }, { status: 404 });
     }
 
-    // Update product usage (decrement by 1)
-    try {
-      await PaymentService.updateUsage(userId, 'products', -1);
-      console.log('📊 DELETE [id] - Product usage updated (decremented)');
-    } catch (usageError) {
-      console.warn('⚠️ DELETE [id] - Failed to update product usage:', usageError);
-    }
-
-    console.log('✅ DELETE [id] - Product deleted:', product.name)
-    return NextResponse.json({ 
-      message: 'Product deleted successfully',
-      deletedProduct: {
-        id: product._id,
-        name: product.name
-      }
-    })
-  } catch (error: any) {
-    console.error('❌ DELETE [id] - Error:', error)
+    return NextResponse.json({
+      success: true,
+      message: `Product "${product.name}" deleted successfully`,
+      data: { id: product._id, name: product.name },
+    });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('DELETE product error:', err);
     
-    if (error.message === 'Authentication required') {
-      return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
+    if (err.message === 'Authentication required' || err.message === 'Invalid token') {
+      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
     }
     
-    if (error.message.includes('subscription')) {
-      return NextResponse.json({ message: error.message }, { status: 403 });
-    }
-    
-    return NextResponse.json(
-      { message: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: err.message || 'Internal server error' }, { status: 500 });
   }
 }
 
-// PATCH endpoint for partial updates (optional)
+// ─── PATCH /api/products/[id] (Partial update) ────────────────────────────────
+
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+): Promise<NextResponse> {
   try {
-    console.log('🔧 PATCH /api/products/[id] - Starting...')
-    
-    const { userId } = await verifyAuthAndSubscription(request);
-    
-    console.log('👤 PATCH [id] - User ID:', userId)
-    console.log('🎯 PATCH [id] - Product ID:', params.id)
+    const resolvedParams = await params;
+    const userId = await getUserIdFromRequest(request);
+    await connectToDatabase();
 
-    const partialUpdate = await request.json()
-    console.log('📦 PATCH [id] - Partial update data:', partialUpdate)
+    const productId = resolvedParams.id;
 
-    // Only update specific fields and set updatedAt
-    const updateData = {
-      ...partialUpdate,
-      updatedAt: new Date()
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return NextResponse.json({ success: false, message: 'Invalid product ID' }, { status: 400 });
     }
+
+    const partialUpdate: Record<string, unknown> = await request.json();
+
+    // Add updated timestamp
+    partialUpdate.updatedAt = new Date();
 
     const product = await Product.findOneAndUpdate(
-      { _id: params.id, userId: userId },
-      updateData,
+      { _id: new mongoose.Types.ObjectId(productId), userId: new mongoose.Types.ObjectId(userId) },
+      { $set: partialUpdate },
       { new: true, runValidators: true }
-    )
+    ).populate('category', 'name slug').populate('brand', 'name logo');
 
     if (!product) {
-      console.log('❌ PATCH [id] - Product not found')
-      return NextResponse.json({ message: 'Product not found' }, { status: 404 })
+      return NextResponse.json({ success: false, message: 'Product not found' }, { status: 404 });
     }
 
-    console.log('✅ PATCH [id] - Product partially updated:', product.name)
-    return NextResponse.json(product)
-  } catch (error: any) {
-    console.error('❌ PATCH [id] - Error:', error)
+    return NextResponse.json({
+      success: true,
+      message: 'Product updated successfully',
+      data: product,
+    });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('PATCH product error:', err);
     
-    if (error.message === 'Authentication required') {
-      return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
+    if (err.message === 'Authentication required' || err.message === 'Invalid token') {
+      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
     }
     
-    if (error.message.includes('subscription')) {
-      return NextResponse.json({ message: error.message }, { status: 403 });
-    }
-    
-    return NextResponse.json(
-      { message: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: err.message || 'Internal server error' }, { status: 500 });
   }
 }

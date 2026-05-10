@@ -1,3 +1,4 @@
+// components/community/UserProfileDialog.tsx - REDESIGNED
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -41,6 +42,32 @@ import {
 import { formatDate } from "@/utils/dateUtils";
 import { useTheme } from "@mui/material/styles";
 
+// Theme colors
+const useColors = () => {
+  const theme = useTheme();
+  const dark = theme.palette.mode === "dark";
+  return {
+    dark,
+    bg: dark ? "#18191a" : "#f0f2f5",
+    surface: dark ? "#242526" : "#ffffff",
+    surface2: dark ? "#3a3b3c" : "#f0f2f5",
+    border: dark ? "#3e4042" : "#e4e6ea",
+    ink: dark ? "#e4e6eb" : "#050505",
+    inkSub: dark ? "#b0b3b8" : "#65676b",
+    inkMuted: dark ? "#6a6d73" : "#8a8d91",
+    blue: "#1877f2",
+    blueSoft: dark ? "rgba(24,119,242,0.15)" : "rgba(24,119,242,0.08)",
+    green: dark ? "#45bd62" : "#31a24c",
+    red: dark ? "#f28b82" : "#e41e3f",
+    purple: dark ? "#b39ddb" : "#7b1fa2",
+  };
+};
+
+const AVATAR_COLORS = ["#1877f2", "#e91e63", "#9c27b0", "#ff9800", "#4caf50", "#00bcd4", "#ff5722", "#607d8b"];
+function avatarColor(name: string) {
+  return AVATAR_COLORS[(name || "U").charCodeAt(0) % AVATAR_COLORS.length];
+}
+
 interface UserProfile {
   _id: string;
   userId: {
@@ -49,22 +76,14 @@ interface UserProfile {
     email: string;
     role: string;
     shopName?: string;
-    subscription?: {
-      plan: string;
-      status: string;
-    };
+    subscription?: { plan: string; status: string };
   };
   username: string;
   avatar?: string;
   bio?: string;
   location?: string;
   website?: string;
-  socialLinks?: {
-    twitter?: string;
-    linkedin?: string;
-    instagram?: string;
-    facebook?: string;
-  };
+  socialLinks?: { twitter?: string; linkedin?: string; instagram?: string; facebook?: string };
   isVerified?: boolean;
   verificationBadge?: boolean;
   expertInCategories?: string[];
@@ -99,9 +118,7 @@ export default function UserProfileDialog({
   loading = false,
   user,
 }: UserProfileDialogProps) {
-  const theme = useTheme();
-  const darkMode = theme.palette.mode === 'dark';
-  
+  const c = useColors();
   const [followLoading, setFollowLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(user?.isFollowing || false);
   const [followerCount, setFollowerCount] = useState(user?.followerCount || 0);
@@ -115,59 +132,31 @@ export default function UserProfileDialog({
 
   const handleFollowToggle = async () => {
     if (!user) return;
-    
     setFollowLoading(true);
     try {
       const method = isFollowing ? 'DELETE' : 'POST';
-      const response = await fetch(`/api/community/profile/${user.userId._id}/follow`, {
-        method,
-        credentials: 'include'
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setIsFollowing(!isFollowing);
-        setFollowerCount(prev => isFollowing ? prev - 1 : prev + 1);
-      }
-    } catch (error) {
-      console.error('Failed to toggle follow:', error);
-    } finally {
-      setFollowLoading(false);
-    }
+      await fetch(`/api/community/profile/${user.userId._id}/follow`, { method, credentials: 'include' });
+      setIsFollowing(!isFollowing);
+      setFollowerCount(prev => isFollowing ? prev - 1 : prev + 1);
+    } catch (error) { console.error(error); }
+    finally { setFollowLoading(false); }
   };
 
   const renderSocialLinks = () => {
     if (!user?.socialLinks) return null;
-    
     const { twitter, linkedin, instagram, facebook } = user.socialLinks;
     const links = [];
-    
-    if (twitter) links.push({ icon: <TwitterIcon />, url: twitter });
-    if (linkedin) links.push({ icon: <LinkedInIcon />, url: linkedin });
-    if (instagram) links.push({ icon: <InstagramIcon />, url: instagram });
-    if (facebook) links.push({ icon: <FacebookIcon />, url: facebook });
-    
+    if (twitter) links.push({ icon: <TwitterIcon />, url: twitter, color: "#1DA1F2" });
+    if (linkedin) links.push({ icon: <LinkedInIcon />, url: linkedin, color: "#0077B5" });
+    if (instagram) links.push({ icon: <InstagramIcon />, url: instagram, color: "#E4405F" });
+    if (facebook) links.push({ icon: <FacebookIcon />, url: facebook, color: "#1877F2" });
     if (links.length === 0) return null;
-    
     return (
-      <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-        {links.map((link, index) => (
-          <Tooltip key={index} title={link.url}>
-            <IconButton
-              size="small"
-              onClick={() => window.open(link.url, '_blank')}
-              sx={{ 
-                color: darkMode ? '#9aa0a6' : '#5f6368',
-                bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                '&:hover': {
-                  bgcolor: darkMode ? '#3c4043' : '#f1f3f4',
-                },
-              }}
-            >
-              {link.icon}
-            </IconButton>
-          </Tooltip>
+      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "center" }}>
+        {links.map((link, i) => (
+          <IconButton key={i} size="small" onClick={() => window.open(link.url, '_blank')} sx={{ color: link.color, bgcolor: c.surface2 }}>
+            {link.icon}
+          </IconButton>
         ))}
       </Box>
     );
@@ -177,561 +166,129 @@ export default function UserProfileDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 2,
-          maxHeight: '90vh',
-          m: { xs: 1, sm: 2 },
-          width: { xs: 'calc(100% - 16px)', sm: 'auto' },
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          borderRadius: "16px",
+          maxHeight: "80vh",
+          bgcolor: c.surface,
+          border: `1px solid ${c.border}`,
+          overflow: "hidden",
         },
       }}
     >
-      <DialogTitle sx={{ 
-        pb: 1,
-        borderBottom: 1,
-        borderColor: darkMode ? '#3c4043' : '#dadce0',
-      }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-            User Profile
-          </Typography>
-          <IconButton 
-            onClick={onClose} 
-            size="small"
-            sx={{
-              color: darkMode ? '#9aa0a6' : '#5f6368',
-              '&:hover': {
-                backgroundColor: darkMode ? '#303134' : '#f8f9fa',
-              },
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </Box>
+      <DialogTitle sx={{ p: 2, borderBottom: `1px solid ${c.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography sx={{ fontWeight: 600, fontSize: "1rem", color: c.ink }}>Profile</Typography>
+        <IconButton onClick={onClose} size="small" sx={{ color: c.inkMuted }}><CloseIcon /></IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ 
-        p: { xs: 2, sm: 3 },
-        bgcolor: darkMode ? '#202124' : '#ffffff',
-      }}>
+      <DialogContent sx={{ p: 0, overflow: "auto" }}>
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <CircularProgress sx={{ color: '#4285f4' }} />
-          </Box>
+          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}><CircularProgress sx={{ color: c.blue }} /></Box>
         ) : user ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Header Section */}
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: { xs: 'column', sm: 'row' }, 
-              gap: 3, 
-              alignItems: { xs: 'center', sm: 'flex-start' } 
-            }}>
-              <Box sx={{ position: 'relative' }}>
-                <Badge
-                  overlap="circular"
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  badgeContent={
-                    user.verificationBadge && (
-                      <VerifiedIcon sx={{ 
-                        color: '#4285f4', 
-                        fontSize: 20,
-                        bgcolor: darkMode ? '#202124' : '#ffffff',
-                        borderRadius: '50%',
-                      }} />
-                    )
-                  }
-                >
-                  <Avatar
-                    sx={{
-                      width: { xs: 80, sm: 100 },
-                      height: { xs: 80, sm: 100 },
-                      fontSize: { xs: 32, sm: 40 },
-                      border: '3px solid',
-                      borderColor: darkMode ? '#202124' : '#ffffff',
-                      boxShadow: 2,
-                    }}
-                    src={user.avatar}
-                  >
-                    {user.userId.name?.charAt(0).toUpperCase()}
-                  </Avatar>
-                </Badge>
-              </Box>
-              
-              <Box sx={{ flex: 1, width: '100%', textAlign: { xs: 'center', sm: 'left' } }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: { xs: 'column', sm: 'row' }, 
-                  alignItems: { xs: 'center', sm: 'flex-start' },
-                  gap: 1, 
-                  mb: 1 
-                }}>
-                  <Typography variant="h5" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {user.userId.name}
-                  </Typography>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: 1, 
-                    flexWrap: 'wrap',
-                    justifyContent: { xs: 'center', sm: 'flex-start' } 
-                  }}>
-                    {user.isVerified && (
-                      <Chip
-                        label="Verified"
-                        size="small"
-                        sx={{
-                          bgcolor: darkMode ? '#303134' : '#f1f3f4',
-                          color: '#4285f4',
-                          borderColor: darkMode ? '#5f6368' : '#dadce0',
-                        }}
-                        variant="outlined"
-                      />
-                    )}
-                    <Chip
-                      label={`@${user.username}`}
-                      size="small"
-                      sx={{
-                        bgcolor: darkMode ? '#303134' : '#f1f3f4',
-                        color: darkMode ? '#e8eaed' : '#202124',
-                        borderColor: darkMode ? '#5f6368' : '#dadce0',
-                      }}
-                      variant="outlined"
-                    />
-                  </Box>
-                </Box>
-                
-                {user.userId.shopName && (
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 1, 
-                    mb: 1,
-                    justifyContent: { xs: 'center', sm: 'flex-start' } 
-                  }}>
-                    <BusinessIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                    <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                      {user.userId.shopName}
-                    </Typography>
-                  </Box>
-                )}
-                
-                {user.bio && (
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      mb: 2, 
-                      textAlign: { xs: 'center', sm: 'left' },
-                      color: darkMode ? '#e8eaed' : '#202124',
-                    }}
-                  >
-                    {user.bio}
-                  </Typography>
-                )}
-                
-                {/* Follow Stats */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 3, 
-                  mb: 2,
-                  justifyContent: { xs: 'center', sm: 'flex-start' } 
-                }}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                      {followerCount}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                      Followers
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                      {user.followingCount}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                      Following
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                      {user.communityStats?.totalPosts || 0}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                      Posts
-                    </Typography>
-                  </Box>
-                </Box>
-                
-                {/* Action Buttons */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 1,
-                  justifyContent: { xs: 'center', sm: 'flex-start' },
-                  flexWrap: 'wrap'
-                }}>
-                  <Button
-                    variant={isFollowing ? "outlined" : "contained"}
-                    size="small"
-                    onClick={handleFollowToggle}
-                    disabled={followLoading}
-                    sx={{ 
-                      minWidth: 100,
-                      ...(isFollowing ? {
-                        borderColor: darkMode ? '#5f6368' : '#dadce0',
-                        color: darkMode ? '#e8eaed' : '#202124',
-                        '&:hover': {
-                          borderColor: '#4285f4',
-                          backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                        },
-                      } : {
-                        backgroundColor: '#4285f4',
-                        '&:hover': {
-                          backgroundColor: '#3367d6',
-                        },
-                      }),
-                    }}
-                  >
-                    {followLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<EmailIcon />}
-                    sx={{
-                      borderColor: darkMode ? '#5f6368' : '#dadce0',
-                      color: darkMode ? '#e8eaed' : '#202124',
-                      '&:hover': {
-                        borderColor: '#4285f4',
-                        backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                      },
-                    }}
-                  >
-                    Message
-                  </Button>
-                </Box>
-              </Box>
+          <Box sx={{ p: 3 }}>
+            {/* Header */}
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
+              <Badge
+                overlap="circular"
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                badgeContent={user.verificationBadge && <VerifiedIcon sx={{ fontSize: 20, color: c.blue, bgcolor: c.surface, borderRadius: "50%" }} />}
+              >
+                <Avatar src={user.avatar} sx={{ width: 96, height: 96, bgcolor: avatarColor(user.userId.name), fontSize: 40 }}>
+                  {user.userId.name?.charAt(0).toUpperCase()}
+                </Avatar>
+              </Badge>
+              <Typography sx={{ fontWeight: 700, fontSize: "1.2rem", color: c.ink, mt: 1 }}>{user.userId.name}</Typography>
+              <Typography sx={{ fontSize: "0.8rem", color: c.inkMuted }}>@{user.username}</Typography>
+              {user.userId.shopName && (
+                <Chip icon={<BusinessIcon sx={{ fontSize: 14 }} />} label={user.userId.shopName} size="small" sx={{ mt: 1, bgcolor: c.surface2 }} />
+              )}
+              {user.bio && <Typography sx={{ fontSize: "0.85rem", color: c.inkSub, textAlign: "center", mt: 1.5 }}>{user.bio}</Typography>}
             </Box>
 
-            {/* Details Section */}
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: 2,
-              flexWrap: 'wrap'
-            }}>
+            {/* Stats */}
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 3, mb: 3 }}>
+              <Box sx={{ textAlign: "center" }}><Typography sx={{ fontWeight: 700, fontSize: "1rem", color: c.ink }}>{followerCount}</Typography><Typography sx={{ fontSize: "0.65rem", color: c.inkMuted }}>Followers</Typography></Box>
+              <Box sx={{ textAlign: "center" }}><Typography sx={{ fontWeight: 700, fontSize: "1rem", color: c.ink }}>{user.followingCount}</Typography><Typography sx={{ fontSize: "0.65rem", color: c.inkMuted }}>Following</Typography></Box>
+              <Box sx={{ textAlign: "center" }}><Typography sx={{ fontWeight: 700, fontSize: "1rem", color: c.ink }}>{user.communityStats?.totalPosts || 0}</Typography><Typography sx={{ fontSize: "0.65rem", color: c.inkMuted }}>Posts</Typography></Box>
+            </Box>
+
+            {/* Actions */}
+            <Box sx={{ display: "flex", gap: 1, justifyContent: "center", mb: 3 }}>
+              <Button
+                variant={isFollowing ? "outlined" : "contained"}
+                onClick={handleFollowToggle}
+                disabled={followLoading}
+                sx={{ borderRadius: "40px", textTransform: "none", px: 3, ...(isFollowing ? { borderColor: c.border, color: c.ink } : { bgcolor: c.blue }) }}
+              >
+                {followLoading ? "..." : isFollowing ? "Following" : "Follow"}
+              </Button>
+              <Button variant="outlined" startIcon={<MessageIcon />} sx={{ borderRadius: "40px", textTransform: "none", borderColor: c.border, color: c.ink }}>Message</Button>
+            </Box>
+
+            {/* Info Cards */}
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5, mb: 2 }}>
               {user.location && (
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2,
-                  flex: 1,
-                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' },
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                    <LocationIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                    <Typography variant="subtitle2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                      Location
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {user.location}
-                  </Typography>
+                <Paper sx={{ p: 1.5, borderRadius: "12px", bgcolor: c.surface2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}><LocationIcon sx={{ fontSize: 14, color: c.blue }} /><Typography sx={{ fontWeight: 600, fontSize: "0.75rem", color: c.ink }}>Location</Typography></Box>
+                  <Typography sx={{ fontSize: "0.8rem", color: c.inkSub }}>{user.location}</Typography>
                 </Paper>
               )}
-              
               {user.website && (
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2,
-                  flex: 1,
-                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' },
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                    <LinkIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                    <Typography variant="subtitle2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                      Website
-                    </Typography>
-                  </Box>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: '#4285f4',
-                      textDecoration: 'underline',
-                      cursor: 'pointer',
-                      wordBreak: 'break-word',
-                      '&:hover': {
-                        textDecoration: 'none',
-                      },
-                    }}
-                    onClick={() => window.open(user.website, '_blank')}
-                  >
-                    {user.website}
-                  </Typography>
+                <Paper sx={{ p: 1.5, borderRadius: "12px", bgcolor: c.surface2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}><LinkIcon sx={{ fontSize: 14, color: c.blue }} /><Typography sx={{ fontWeight: 600, fontSize: "0.75rem", color: c.ink }}>Website</Typography></Box>
+                  <Typography component="a" href={user.website} target="_blank" sx={{ fontSize: "0.8rem", color: c.blue, textDecoration: "none" }}>{user.website}</Typography>
                 </Paper>
               )}
-              
-              {user.userId.subscription && (
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2,
-                  flex: 1,
-                  minWidth: { xs: '100%', sm: 'calc(50% - 8px)' },
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                }}>
-                  <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    Subscription
-                  </Typography>
-                  <Chip
-                    label={user.userId.subscription.plan}
-                    size="small"
-                    sx={{
-                      bgcolor: user.userId.subscription.plan === 'premium' ? '#fbbc04' : 
-                               user.userId.subscription.plan === 'pro' ? '#34a853' : 
-                               darkMode ? '#303134' : '#f1f3f4',
-                      color: user.userId.subscription.plan === 'premium' ? '#202124' : 
-                             user.userId.subscription.plan === 'pro' ? 'white' : 
-                             darkMode ? '#e8eaed' : '#202124',
-                      borderColor: darkMode ? '#5f6368' : '#dadce0',
-                    }}
-                    variant="outlined"
-                  />
-                </Paper>
-              )}
-              
-              <Paper sx={{ 
-                p: 2, 
-                borderRadius: 2,
-                flex: 1,
-                minWidth: { xs: '100%', sm: 'calc(50% - 8px)' },
-                bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-              }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  Member Since
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  {formatDate(user.communityStats?.joinDate || user.userId._id.toString())}
-                </Typography>
-              </Paper>
             </Box>
 
             {/* Social Links */}
             {renderSocialLinks()}
 
-            <Divider sx={{ 
-              my: 2, 
-              borderColor: darkMode ? '#3c4043' : '#dadce0',
-            }} />
+            <Divider sx={{ my: 2, borderColor: c.border }} />
 
             {/* Community Stats */}
-            <Box>
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                Community Activity
-              </Typography>
-              <Box sx={{ 
-                display: 'flex', 
-                flexWrap: 'wrap',
-                gap: 2,
-                justifyContent: { xs: 'center', sm: 'flex-start' }
-              }}>
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2, 
-                  textAlign: 'center',
-                  flex: '1 1 calc(50% - 8px)',
-                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' },
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                }}>
-                  <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    bgcolor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
-                    margin: '0 auto 8px',
-                  }}>
-                    <ForumIcon sx={{ fontSize: 16, color: '#4285f4' }} />
-                  </Box>
-                  <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {user.communityStats?.totalPosts || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    Posts
-                  </Typography>
+            <Typography sx={{ fontWeight: 600, fontSize: "0.85rem", color: c.ink, mb: 1.5 }}>Community Activity</Typography>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, mb: 2 }}>
+              {[
+                { icon: <ForumIcon />, value: user.communityStats?.totalComments || 0, label: "Comments", color: c.green },
+                { icon: <LikeIcon />, value: user.communityStats?.totalLikesGiven || 0, label: "Likes", color: c.red },
+                { icon: <BookmarkIcon />, value: user.communityStats?.totalBookmarks || 0, label: "Bookmarks", color: c.purple },
+                { icon: <PeopleIcon />, value: user.communityStats?.engagementScore || 0, label: "Score", color: c.blue },
+              ].map((stat, i) => (
+                <Paper key={i} sx={{ p: 1, textAlign: "center", borderRadius: "12px", bgcolor: c.surface2 }}>
+                  <Box sx={{ display: "flex", justifyContent: "center", mb: 0.5, color: stat.color }}>{stat.icon}</Box>
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.9rem", color: c.ink }}>{stat.value}</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: c.inkMuted }}>{stat.label}</Typography>
                 </Paper>
-                
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2, 
-                  textAlign: 'center',
-                  flex: '1 1 calc(50% - 8px)',
-                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' },
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                }}>
-                  <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    bgcolor: alpha('#34a853', darkMode ? 0.2 : 0.1),
-                    margin: '0 auto 8px',
-                  }}>
-                    <ForumIcon sx={{ fontSize: 16, color: '#34a853' }} />
-                  </Box>
-                  <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {user.communityStats?.totalComments || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    Comments
-                  </Typography>
-                </Paper>
-                
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2, 
-                  textAlign: 'center',
-                  flex: '1 1 calc(50% - 8px)',
-                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' },
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                }}>
-                  <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    bgcolor: alpha('#ea4335', darkMode ? 0.2 : 0.1),
-                    margin: '0 auto 8px',
-                  }}>
-                    <LikeIcon sx={{ fontSize: 16, color: '#ea4335' }} />
-                  </Box>
-                  <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {user.communityStats?.totalLikesGiven || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    Likes Given
-                  </Typography>
-                </Paper>
-                
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2, 
-                  textAlign: 'center',
-                  flex: '1 1 calc(50% - 8px)',
-                  minWidth: { xs: 'calc(50% - 8px)', sm: '120px' },
-                  bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                }}>
-                  <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    bgcolor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
-                    margin: '0 auto 8px',
-                  }}>
-                    <BookmarkIcon sx={{ fontSize: 16, color: '#4285f4' }} />
-                  </Box>
-                  <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {user.communityStats?.totalBookmarks || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    Bookmarks
-                  </Typography>
-                </Paper>
-              </Box>
+              ))}
             </Box>
 
             {/* Expert Categories */}
             {user.expertInCategories && user.expertInCategories.length > 0 && (
-              <Box sx={{ mt: 3 }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  Expert In
-                </Typography>
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 1, 
-                  flexWrap: 'wrap',
-                  justifyContent: { xs: 'center', sm: 'flex-start' }
-                }}>
-                  {user.expertInCategories.map((category, index) => (
-                    <Chip
-                      key={index}
-                      label={category}
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        bgcolor: darkMode ? '#303134' : '#f1f3f4',
-                        color: '#4285f4',
-                        borderColor: darkMode ? '#5f6368' : '#dadce0',
-                      }}
-                    />
-                  ))}
+              <>
+                <Typography sx={{ fontWeight: 600, fontSize: "0.85rem", color: c.ink, mb: 1 }}>Expert In</Typography>
+                <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 2 }}>
+                  {user.expertInCategories.map((cat, i) => (<Chip key={i} label={cat} size="small" sx={{ bgcolor: c.blueSoft, color: c.blue }} />))}
                 </Box>
-              </Box>
+              </>
             )}
-            
+
             {/* Badges */}
             {user.badges && user.badges.length > 0 && (
-              <Box sx={{ mt: 3 }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  Badges
-                </Typography>
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 1, 
-                  flexWrap: 'wrap',
-                  justifyContent: { xs: 'center', sm: 'flex-start' }
-                }}>
-                  {user.badges.map((badge, index) => (
-                    <Tooltip key={index} title={badge}>
-                      <Chip
-                        label={badge}
-                        size="small"
-                        sx={{
-                          bgcolor: darkMode ? '#303134' : '#f1f3f4',
-                          color: darkMode ? '#fbbc04' : '#f57c00',
-                          borderColor: darkMode ? '#5f6368' : '#dadce0',
-                        }}
-                        variant="outlined"
-                      />
-                    </Tooltip>
-                  ))}
+              <>
+                <Typography sx={{ fontWeight: 600, fontSize: "0.85rem", color: c.ink, mb: 1 }}>Badges</Typography>
+                <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                  {user.badges.map((badge, i) => (<Chip key={i} label={badge} size="small" sx={{ bgcolor: c.surface2, color: c.ink }} />))}
                 </Box>
-              </Box>
+              </>
             )}
           </Box>
         ) : (
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <PersonIcon sx={{ 
-              fontSize: 60, 
-              color: darkMode ? '#9aa0a6' : '#5f6368', 
-              opacity: 0.5, 
-              mb: 2 
-            }} />
-            <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }} gutterBottom>
-              User not found
-            </Typography>
-            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-              The user profile could not be loaded.
-            </Typography>
+          <Box sx={{ p: 4, textAlign: "center" }}>
+            <PersonIcon sx={{ fontSize: 64, color: c.inkMuted, mb: 1, opacity: 0.5 }} />
+            <Typography sx={{ color: c.ink }}>User not found</Typography>
           </Box>
         )}
       </DialogContent>

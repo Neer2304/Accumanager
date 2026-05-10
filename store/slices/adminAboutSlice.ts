@@ -26,7 +26,6 @@ const adminAboutSlice = createSlice({
   name: 'adminAbout',
   initialState,
   reducers: {
-    // Data actions
     setAboutData: (state, action: PayloadAction<About>) => {
       state.data = action.payload
       if (action.payload.labels) {
@@ -39,44 +38,57 @@ const adminAboutSlice = createSlice({
         state.data.labels = action.payload
       }
     },
-    updateSection: (state, action: PayloadAction<{ section: AboutSection; data: any }>) => {
-      if (state.data) {
-        if (action.payload.section === 'company') {
-          // Company fields are at root
-          state.data = { ...state.data, ...action.payload.data }
-        } else {
-          // Nested sections
-          state.data[action.payload.section] = {
-            ...state.data[action.payload.section],
-            ...action.payload.data
-          }
-        }
+    updateSection: (state, action: PayloadAction<{ section: AboutSection; data: Record<string, unknown> }>) => {
+      if (!state.data) return
+
+      const { section, data } = action.payload
+      
+      switch (section) {
+        case 'company':
+          state.data = { ...state.data, ...data }
+          break
+        case 'contact':
+          state.data.contact = { ...state.data.contact, ...data }
+          break
+        case 'socialMedia':
+          state.data.socialMedia = { ...state.data.socialMedia, ...data }
+          break
+        case 'labels':
+          state.data.labels = { ...state.data.labels, ...data }
+          state.labels = state.data.labels
+          break
+        case 'seo':
+          state.data.seo = { ...state.data.seo, ...data }
+          break
+        case 'theme':
+          state.data.theme = { ...state.data.theme, ...data }
+          break
+        case 'system':
+          state.data.system = { ...state.data.system, ...data }
+          break
       }
     },
     updateLabel: (state, action: PayloadAction<{ key: string; value: string }>) => {
       if (state.labels) {
         state.labels[action.payload.key] = action.payload.value
       }
+      if (state.data?.labels) {
+        state.data.labels[action.payload.key] = action.payload.value
+      }
     },
     clearData: (state) => {
       state.data = null
       state.labels = null
     },
-
-    // UI state
     setActiveSection: (state, action: PayloadAction<AboutSection>) => {
       state.activeSection = action.payload
     },
-
-    // Loading states
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload
     },
     setSaving: (state, action: PayloadAction<boolean>) => {
       state.saving = action.payload
     },
-
-    // Error/Success
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload
     },
@@ -87,8 +99,6 @@ const adminAboutSlice = createSlice({
       state.error = null
       state.success = null
     },
-
-    // Reset
     resetState: () => initialState,
   },
 })

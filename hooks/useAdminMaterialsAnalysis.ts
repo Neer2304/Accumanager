@@ -2,7 +2,7 @@
 import { useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AdminMaterialsAnalysisService } from '@/services/adminMaterialsAnalysisService';
-import { TIME_RANGE_OPTIONS } from '@/types/analysis';
+import { TIME_RANGE_OPTIONS, TimeRangeOption } from '@/types/analysis';
 import {
   setMaterialsAnalysisData,
   clearMaterialsAnalysisData,
@@ -13,9 +13,80 @@ import {
   clearError,
 } from '@/store/slices/adminMaterialsAnalysisSlice';
 
+// Define interfaces
+interface MaterialsAnalysisData {
+  summary?: {
+    totalMaterials: number;
+    recentMaterials: number;
+    totalStockValue: number;
+    lowStockItems: number;
+    outOfStockItems: number;
+    avgMaterialsPerUser: number;
+    materialGrowthRate: number;
+    activeMaterialUsers: number;
+  };
+  materialAnalysis?: {
+    materialsByCategory: Array<{ _id: string | null; count: number }>;
+    materialsByStatus: Array<{ _id: string | null; count: number }>;
+    categoryValue: Array<{ _id: string; itemCount: number; totalValue: number }>;
+    materialsByDay: Array<{ _id: string; count: number; totalValue: number }>;
+    topUsersByMaterials: Array<{ userId: string; name: string; count: number }>;
+  };
+}
+
+interface CategoryItem {
+  category: string;
+  count: number;
+}
+
+interface StatusItem {
+  status: string;
+  count: number;
+}
+
+interface CategoryValueItem {
+  category: string;
+  count: number;
+  value: number;
+}
+
+interface MaterialsByDayItem {
+  date: string;
+  count: number;
+  value: number;
+}
+
+interface TopUserItem {
+  userId: string;
+  name: string;
+  count: number;
+}
+
+interface ChartDataItem {
+  name: string;
+  value: number;
+}
+
+interface MaterialsByDayChartItem {
+  name: string;
+  count: number;
+  value: number;
+}
+
+interface RootState {
+  adminMaterialsAnalysis: {
+    data: MaterialsAnalysisData | null;
+    loading: boolean;
+    refreshing: boolean;
+    error: string | null;
+    timeframe: number;
+    lastUpdated: string | null;
+  };
+}
+
 interface UseAdminMaterialsAnalysisReturn {
   // State
-  data: any;
+  data: MaterialsAnalysisData | null;
   loading: boolean;
   refreshing: boolean;
   error: string | null;
@@ -24,7 +95,7 @@ interface UseAdminMaterialsAnalysisReturn {
 
   // Time range options
   timeRangeOptions: typeof TIME_RANGE_OPTIONS;
-  currentTimeRangeOption: typeof TIME_RANGE_OPTIONS[0] | undefined;
+  currentTimeRangeOption: TimeRangeOption | undefined;
 
   // Actions
   loadMaterialsAnalysis: (timeframe?: number, forceRefresh?: boolean) => Promise<void>;
@@ -41,29 +112,29 @@ interface UseAdminMaterialsAnalysisReturn {
   getAvgMaterialsPerUser: () => number;
   getMaterialGrowthRate: () => number;
   getActiveMaterialUsers: () => number;
-  getMaterialsByCategory: () => Array<{ category: string; count: number }>;
-  getMaterialsByStatus: () => Array<{ status: string; count: number }>;
-  getCategoryValue: () => Array<{ category: string; count: number; value: number }>;
-  getMaterialsByDay: () => Array<{ date: string; count: number; value: number }>;
-  getTopUsersByMaterials: () => any[];
+  getMaterialsByCategory: () => CategoryItem[];
+  getMaterialsByStatus: () => StatusItem[];
+  getCategoryValue: () => CategoryValueItem[];
+  getMaterialsByDay: () => MaterialsByDayItem[];
+  getTopUsersByMaterials: () => TopUserItem[];
 
   // Chart data formatters
-  getMaterialsByCategoryChartData: () => Array<{ name: string; value: number }>;
-  getMaterialsByStatusChartData: () => Array<{ name: string; value: number }>;
-  getMaterialsByDayChartData: () => Array<{ name: string; count: number; value: number }>;
-  getCategoryValueChartData: () => Array<{ name: string; value: number }>;
+  getMaterialsByCategoryChartData: () => ChartDataItem[];
+  getMaterialsByStatusChartData: () => ChartDataItem[];
+  getMaterialsByDayChartData: () => MaterialsByDayChartItem[];
+  getCategoryValueChartData: () => ChartDataItem[];
 }
 
 export const useAdminMaterialsAnalysis = (autoLoad: boolean = true): UseAdminMaterialsAnalysisReturn => {
   const dispatch = useDispatch();
 
-  // Selectors
-  const data = useSelector((state: any) => state.adminMaterialsAnalysis.data);
-  const loading = useSelector((state: any) => state.adminMaterialsAnalysis.loading);
-  const refreshing = useSelector((state: any) => state.adminMaterialsAnalysis.refreshing);
-  const error = useSelector((state: any) => state.adminMaterialsAnalysis.error);
-  const timeframe = useSelector((state: any) => state.adminMaterialsAnalysis.timeframe);
-  const lastUpdated = useSelector((state: any) => state.adminMaterialsAnalysis.lastUpdated);
+  // Selectors with proper typing
+  const data = useSelector((state: RootState) => state.adminMaterialsAnalysis.data);
+  const loading = useSelector((state: RootState) => state.adminMaterialsAnalysis.loading);
+  const refreshing = useSelector((state: RootState) => state.adminMaterialsAnalysis.refreshing);
+  const error = useSelector((state: RootState) => state.adminMaterialsAnalysis.error);
+  const timeframe = useSelector((state: RootState) => state.adminMaterialsAnalysis.timeframe);
+  const lastUpdated = useSelector((state: RootState) => state.adminMaterialsAnalysis.lastUpdated);
 
   // Current time range option
   const currentTimeRangeOption = useMemo(
@@ -87,8 +158,9 @@ export const useAdminMaterialsAnalysis = (autoLoad: boolean = true): UseAdminMat
       if (newTimeframe !== undefined && newTimeframe !== timeframe) {
         dispatch(setTimeframe(newTimeframe));
       }
-    } catch (err: any) {
-      dispatch(setError(err.message || 'Failed to load materials analysis'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load materials analysis';
+      dispatch(setError(errorMessage));
     } finally {
       dispatch(setLoading(false));
     }
@@ -102,8 +174,9 @@ export const useAdminMaterialsAnalysis = (autoLoad: boolean = true): UseAdminMat
 
       const analysisData = await AdminMaterialsAnalysisService.getMaterialsAnalysis(timeframe);
       dispatch(setMaterialsAnalysisData(analysisData));
-    } catch (err: any) {
-      dispatch(setError(err.message || 'Failed to refresh materials analysis'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to refresh materials analysis';
+      dispatch(setError(errorMessage));
     } finally {
       dispatch(setRefreshing(false));
     }
@@ -138,58 +211,60 @@ export const useAdminMaterialsAnalysis = (autoLoad: boolean = true): UseAdminMat
   const getMaterialGrowthRate = useCallback(() => data?.summary?.materialGrowthRate || 0, [data]);
   const getActiveMaterialUsers = useCallback(() => data?.summary?.activeMaterialUsers || 0, [data]);
 
-  const getMaterialsByCategory = useCallback(() => {
+  const getMaterialsByCategory = useCallback((): CategoryItem[] => {
     if (!data?.materialAnalysis?.materialsByCategory) return [];
-    return data.materialAnalysis.materialsByCategory.map((item: any) => ({
+    return data.materialAnalysis.materialsByCategory.map((item: { _id: string | null; count: number }) => ({
       category: item._id || 'Uncategorized',
       count: item.count
     }));
   }, [data]);
 
-  const getMaterialsByStatus = useCallback(() => {
+  const getMaterialsByStatus = useCallback((): StatusItem[] => {
     if (!data?.materialAnalysis?.materialsByStatus) return [];
-    return data.materialAnalysis.materialsByStatus.map((item: any) => ({
+    return data.materialAnalysis.materialsByStatus.map((item: { _id: string | null; count: number }) => ({
       status: item._id || 'unknown',
       count: item.count
     }));
   }, [data]);
 
-  const getCategoryValue = useCallback(() => {
+  const getCategoryValue = useCallback((): CategoryValueItem[] => {
     if (!data?.materialAnalysis?.categoryValue) return [];
-    return data.materialAnalysis.categoryValue.map((item: any) => ({
+    return data.materialAnalysis.categoryValue.map((item: { _id: string; itemCount: number; totalValue: number }) => ({
       category: item._id,
       count: item.itemCount,
       value: item.totalValue
     }));
   }, [data]);
 
-  const getMaterialsByDay = useCallback(() => {
+  const getMaterialsByDay = useCallback((): MaterialsByDayItem[] => {
     if (!data?.materialAnalysis?.materialsByDay) return [];
-    return data.materialAnalysis.materialsByDay.map((item: any) => ({
+    return data.materialAnalysis.materialsByDay.map((item: { _id: string; count: number; totalValue: number }) => ({
       date: item._id,
       count: item.count,
       value: item.totalValue
     }));
   }, [data]);
 
-  const getTopUsersByMaterials = useCallback(() => data?.materialAnalysis?.topUsersByMaterials || [], [data]);
+  const getTopUsersByMaterials = useCallback((): TopUserItem[] => {
+    return data?.materialAnalysis?.topUsersByMaterials || [];
+  }, [data]);
 
   // Chart data formatters
-  const getMaterialsByCategoryChartData = useCallback(() => {
+  const getMaterialsByCategoryChartData = useCallback((): ChartDataItem[] => {
     return getMaterialsByCategory().map(item => ({
       name: item.category,
       value: item.count
     }));
   }, [getMaterialsByCategory]);
 
-  const getMaterialsByStatusChartData = useCallback(() => {
+  const getMaterialsByStatusChartData = useCallback((): ChartDataItem[] => {
     return getMaterialsByStatus().map(item => ({
       name: item.status.split('-').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' '),
       value: item.count
     }));
   }, [getMaterialsByStatus]);
 
-  const getMaterialsByDayChartData = useCallback(() => {
+  const getMaterialsByDayChartData = useCallback((): MaterialsByDayChartItem[] => {
     return getMaterialsByDay().map(item => ({
       name: item.date,
       count: item.count,
@@ -197,7 +272,7 @@ export const useAdminMaterialsAnalysis = (autoLoad: boolean = true): UseAdminMat
     }));
   }, [getMaterialsByDay]);
 
-  const getCategoryValueChartData = useCallback(() => {
+  const getCategoryValueChartData = useCallback((): ChartDataItem[] => {
     return getCategoryValue().map(item => ({
       name: item.category,
       value: item.value

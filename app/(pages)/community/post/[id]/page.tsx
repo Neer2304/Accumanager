@@ -1,782 +1,695 @@
-// app/(pages)/community/post/[id]/page.tsx - UPDATED WITH GOOGLE DESIGN
+// app/community/post/[id]/page.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Container,
-  Paper,
-  Typography,
-  Box,
-  Button,
-  Chip,
-  Stack,
-  Avatar,
-  IconButton,
-  TextField,
-  Alert,
-  CircularProgress,
-  Divider,
-  useTheme,
-  alpha,
-  Breadcrumbs,
-  Link as MuiLink,
-  Badge,
-  Tooltip,
-} from '@mui/material';
+  Container, Paper, Typography, Box, Button, Chip, Stack,
+  Avatar, IconButton, TextField, CircularProgress, useTheme,
+  alpha, Tooltip, Divider, Menu, MenuItem,
+  Skeleton,
+} from "@mui/material";
 import {
-  ArrowBack as ArrowBackIcon,
-  ThumbUp as ThumbUpIcon,
-  ThumbUpOutlined as ThumbUpOutlinedIcon,
-  Bookmark as BookmarkIcon,
-  BookmarkBorder as BookmarkBorderIcon,
-  Share as ShareIcon,
-  Comment as CommentIcon,
-  Send as SendIcon,
-  CheckCircle as CheckCircleIcon,
-  Person as PersonIcon,
-  AccessTime as AccessTimeIcon,
-  Visibility as VisibilityIcon,
-  Tag as TagIcon,
-  Home as HomeIcon,
-  Flag as FlagIcon,
-  MoreVert as MoreVertIcon,
-} from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { formatDate } from '@/utils/dateUtils';
-import { useCommunity } from '@/hooks/useCommunity';
+  ArrowBack, ThumbUp, ThumbUpOutlined, Bookmark, BookmarkBorder,
+  Share, Comment as CommentIcon, Send, CheckCircle, AccessTime,
+  Visibility, MoreVert, Edit, Delete, Lock,
+  ExpandMore, ExpandLess, Check, EmojiEmotions,
+} from "@mui/icons-material";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { formatDate } from "@/utils/dateUtils";
+import { useCommunity } from "@/hooks/useCommunity";
 
-interface Comment {
-  _id: string;
-  user?: {
-    _id: string;
-    name?: string;
-    avatar?: string;
-    role?: string;
-  };
-  content: string;
-  createdAt: string;
-  isSolution?: boolean;
-  likes?: string[];
-  likeCount?: number;
-}
-
-interface Post {
-  _id: string;
-  title: string;
-  content: string;
-  author?: {
-    _id: string;
-    name?: string;
-    avatar?: string;
-    role?: string;
-    isVerified?: boolean;
-  };
-  category: string;
-  tags: string[];
-  likes: string[];
-  likeCount: number;
-  comments: Comment[];
-  commentCount: number;
-  views: number;
-  isPinned: boolean;
-  isSolved: boolean;
-  solutionCommentId?: string;
-  createdAt: string;
-  updatedAt: string;
-  bookmarks?: string[];
-}
-
-export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
-  const router = useRouter();
+// ─── Theme helper ─────────────────────────────────────────────────────────────
+const useColors = () => {
   const theme = useTheme();
-  const darkMode = theme.palette.mode === 'dark';
-  
-  const [commentText, setCommentText] = useState('');
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  
-  const {
-    post: hookPost,
-    loading,
-    error,
-    fetchPost,
-    toggleLike,
-    addComment,
-    toggleBookmark,
-    markAsSolution,
-    setError,
-  } = useCommunity();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { id } = await params;
-        console.log('🔄 Fetching post with ID:', id);
-        
-        await fetchPost(id);
-        
-        const token = document.cookie.match(/auth_token=([^;]+)/)?.[1];
-        if (token) {
-          try {
-            const tokenParts = token.split('.');
-            if (tokenParts.length === 3) {
-              const payload = JSON.parse(atob(tokenParts[1]));
-              setCurrentUserId(payload.userId);
-            }
-          } catch (e) {
-            console.error('Failed to decode token:', e);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch data:', err);
-      }
-    };
-
-    fetchData();
-  }, [params, fetchPost]);
-
-  const handleLike = async () => {
-    if (!hookPost || !hookPost._id || actionLoading) return;
-    
-    setActionLoading(true);
-    try {
-      await toggleLike(hookPost._id);
-    } catch (error) {
-      console.error('Failed to like post:', error);
-    } finally {
-      setActionLoading(false);
-    }
+  const dark = theme.palette.mode === "dark";
+  return {
+    dark,
+    bg:       dark ? "#18191a" : "#f0f2f5",
+    surface:  dark ? "#242526" : "#ffffff",
+    surface2: dark ? "#3a3b3c" : "#f0f2f5",
+    border:   dark ? "#3e4042" : "#e4e6ea",
+    ink:      dark ? "#e4e6eb" : "#050505",
+    inkSub:   dark ? "#b0b3b8" : "#65676b",
+    inkMuted: dark ? "#6a6d73" : "#8a8d91",
+    blue:     "#1877f2",
+    blueSoft: dark ? "rgba(24,119,242,0.15)" : "rgba(24,119,242,0.08)",
+    green:    dark ? "#45bd62" : "#31a24c",
+    red:      dark ? "#f28b82" : "#e41e3f",
+    redSoft:  dark ? "rgba(242,139,130,0.12)" : "rgba(228,30,63,0.06)",
   };
+};
 
-  const handleBookmark = async () => {
-    if (!hookPost || !hookPost._id || actionLoading) return;
-    
-    setActionLoading(true);
-    try {
-      await toggleBookmark(hookPost._id);
-    } catch (error) {
-      console.error('Failed to bookmark post:', error);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+// ─── Deterministic avatar color ───────────────────────────────────────────────
+const AVATAR_COLORS = ["#1877f2","#e91e63","#9c27b0","#ff9800","#4caf50","#00bcd4","#ff5722","#607d8b"];
+function avatarColor(name: string) { return AVATAR_COLORS[(name || "U").charCodeAt(0) % AVATAR_COLORS.length]; }
 
-  const handleSubmitComment = async () => {
-    if (!hookPost || !commentText.trim() || actionLoading) return;
-    
-    setActionLoading(true);
-    try {
-      await addComment(hookPost._id, commentText.trim());
-      setCommentText('');
-    } catch (error) {
-      console.error('Failed to add comment:', error);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleMarkAsSolution = async (commentId: string) => {
-    if (!hookPost || !hookPost._id || actionLoading) return;
-    
-    setActionLoading(true);
-    try {
-      await markAsSolution(hookPost._id, commentId);
-    } catch (error) {
-      console.error('Failed to mark as solution:', error);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleShare = () => {
-    if (!hookPost) return;
-    
-    const url = `${window.location.origin}/community/post/${hookPost._id}`;
-    if (navigator.share) {
-      navigator.share({
-        title: hookPost.title,
-        text: hookPost.content?.substring(0, 100) || '',
-        url: url,
-      });
-    } else {
-      navigator.clipboard.writeText(url).then(() => {
-        alert('Link copied to clipboard!');
-      });
-    }
-  };
-
-  if (loading) {
-    return (
-      <Box sx={{ 
-        backgroundColor: darkMode ? '#202124' : '#ffffff', 
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <CircularProgress sx={{ color: '#4285f4' }} />
-      </Box>
-    );
-  }
-
-  if (error || !hookPost) {
-    return (
-      <Box sx={{ 
-        backgroundColor: darkMode ? '#202124' : '#ffffff', 
-        minHeight: '100vh',
-        py: 4,
-      }}>
-        <Container maxWidth="lg">
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 3,
-              borderRadius: 2,
-              bgcolor: darkMode ? '#3c1e1e' : '#fdecea',
-            }}
-          >
-            {error || 'Post not found'}
-          </Alert>
-          <Button
-            component={Link}
-            href="/community"
-            startIcon={<ArrowBackIcon />}
-            sx={{
-              color: '#4285f4',
-              '&:hover': {
-                backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-              },
-            }}
-          >
-            Back to Community
-          </Button>
-        </Container>
-      </Box>
-    );
-  }
-
-  const post = hookPost as unknown as Post;
-  const isLiked = currentUserId ? post.likes.includes(currentUserId) : false;
-  const isBookmarked = currentUserId 
-    ? (post as any).bookmarks?.includes(currentUserId) || false
-    : false;
-
+function UserAvatar({ name, src, size = 40, onClick }: {
+  name?: string; src?: string; size?: number; onClick?: () => void;
+}) {
+  const c = useColors();
+  const initials = (name || "U").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
   return (
-    <Box sx={{ 
-      backgroundColor: darkMode ? '#202124' : '#ffffff', 
-      minHeight: '100vh',
-      py: 4,
-    }}>
-      <Container maxWidth="lg">
-        {/* Breadcrumbs */}
-        <Breadcrumbs sx={{ mb: 3 }}>
-          <MuiLink
-            component={Link}
-            href="/dashboard"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              textDecoration: 'none',
-              color: darkMode ? '#9aa0a6' : '#5f6368',
-              '&:hover': { color: darkMode ? '#8ab4f8' : '#4285f4' },
-            }}
-          >
-            <HomeIcon sx={{ mr: 0.5, fontSize: 16 }} />
-            Dashboard
-          </MuiLink>
-          <MuiLink
-            component={Link}
-            href="/community"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              textDecoration: 'none',
-              color: darkMode ? '#9aa0a6' : '#5f6368',
-              '&:hover': { color: darkMode ? '#8ab4f8' : '#4285f4' },
-            }}
-          >
-            Community
-          </MuiLink>
-          <Typography sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-            Post
-          </Typography>
-        </Breadcrumbs>
+    <Avatar src={src || undefined} onClick={onClick}
+      sx={{
+        width: size, height: size, bgcolor: avatarColor(name || "U"),
+        fontSize: size * 0.38, fontWeight: 700,
+        cursor: onClick ? "pointer" : "default",
+        border: `2px solid ${c.surface}`,
+        flexShrink: 0,
+        transition: "transform 0.15s",
+        "&:hover": onClick ? { transform: "scale(1.06)" } : {},
+      }}>
+      {!src && initials}
+    </Avatar>
+  );
+}
 
-        {/* Back Button */}
-        <Button
-          component={Link}
-          href="/community"
-          startIcon={<ArrowBackIcon />}
+// ─── Animated like button ─────────────────────────────────────────────────────
+function LikeButton({ liked, count, loading, onClick }: {
+  liked: boolean; count: number; loading: boolean; onClick: () => void;
+}) {
+  const c = useColors();
+  const [pop, setPop] = useState(false);
+  const handle = () => {
+    if (!liked) { setPop(true); setTimeout(() => setPop(false), 350); }
+    onClick();
+  };
+  return (
+    <Box sx={{ position: "relative", display: "inline-flex" }}>
+      {pop && <Box sx={{
+        position: "absolute", inset: -4, borderRadius: "50%",
+        bgcolor: alpha(c.blue, 0.18), pointerEvents: "none",
+        animation: "popout 0.35s ease-out forwards",
+        "@keyframes popout": {
+          "0%":   { transform: "scale(0.6)", opacity: 1 },
+          "100%": { transform: "scale(2.4)", opacity: 0 },
+        },
+      }} />}
+      <Button onClick={handle} disabled={loading}
+        startIcon={liked
+          ? <ThumbUp sx={{ fontSize: 18, color: c.blue,
+              animation: liked && pop ? "thumbpop 0.3s ease" : "none",
+              "@keyframes thumbpop": { "50%": { transform: "scale(1.4)" } } }} />
+          : <ThumbUpOutlined sx={{ fontSize: 18 }} />}
+        sx={{
+          color: liked ? c.blue : c.inkSub,
+          fontWeight: liked ? 700 : 500, fontSize: "0.9rem",
+          borderRadius: "8px", px: 1.5, py: 0.75, minWidth: 0,
+          transition: "all 0.2s",
+          "&:hover": { bgcolor: liked ? alpha(c.blue, 0.08) : alpha(c.ink, 0.06) },
+        }}>
+        {liked ? "Liked" : "Like"}{count > 0 ? ` · ${count}` : ""}
+      </Button>
+    </Box>
+  );
+}
+
+// ─── Comment action menu ──────────────────────────────────────────────────────
+function CommentMenu({ isOwn, onEdit, onDelete }: {
+  isOwn: boolean; onEdit: () => void; onDelete: () => void;
+}) {
+  const c = useColors();
+  const [anchor, setAnchor] = useState<null | HTMLElement>(null);
+  
+  // Don't show anything if not the owner
+  if (!isOwn) return null;
+  
+  return (
+    <>
+      <IconButton 
+        size="small" 
+        onClick={(e) => { e.stopPropagation(); setAnchor(e.currentTarget); }}
+        sx={{ 
+          color: c.inkMuted,
+          '&:hover': { 
+            backgroundColor: alpha(c.ink, 0.08),
+            color: c.blue 
+          }
+        }}
+      >
+        <MoreVert sx={{ fontSize: 18 }} />
+      </IconButton>
+      <Menu 
+        anchorEl={anchor} 
+        open={Boolean(anchor)} 
+        onClose={() => setAnchor(null)}
+        PaperProps={{ 
+          sx: { 
+            borderRadius: "12px", 
+            bgcolor: c.surface, 
+            border: `1px solid ${c.border}`, 
+            minWidth: 148, 
+            boxShadow: "0 4px 16px rgba(0,0,0,0.12)" 
+          } 
+        }}
+      >
+        <MenuItem 
+          onClick={() => { 
+            onEdit(); 
+            setAnchor(null); 
+          }}
           sx={{ 
-            mb: 3,
-            color: '#4285f4',
-            '&:hover': {
-              backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-            },
+            gap: 1.5, 
+            fontSize: "0.88rem", 
+            color: c.ink, 
+            borderRadius: "8px", 
+            mx: 0.5,
+            '&:hover': { backgroundColor: alpha(c.blue, 0.08) }
           }}
         >
+          <Edit sx={{ fontSize: 16 }} /> Edit
+        </MenuItem>
+        <MenuItem 
+          onClick={() => { 
+            onDelete(); 
+            setAnchor(null); 
+          }}
+          sx={{ 
+            gap: 1.5, 
+            fontSize: "0.88rem", 
+            color: c.red, 
+            borderRadius: "8px", 
+            mx: 0.5,
+            '&:hover': { backgroundColor: alpha(c.red, 0.08) }
+          }}
+        >
+          <Delete sx={{ fontSize: 16 }} /> Delete
+        </MenuItem>
+      </Menu>
+    </>
+  );
+}
+
+// ─── Comment card ─────────────────────────────────────────────────────────────
+function CommentCard({
+  comment, currentUserId, postAuthorId, postId, isSolved,
+  onMarkSolution, onDelete, onEdit,
+}: {
+  comment: any; currentUserId: string | null; postAuthorId: string;
+  postId: string; isSolved: boolean;
+  onMarkSolution: (id: string) => void;
+  onDelete: (id: string) => void;
+  onEdit: (id: string, content: string) => void;
+}) {
+  const c = useColors();
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.content);
+  const [saving, setSaving] = useState(false);
+
+  // Safe ID extraction
+  const commentId = comment._id?.toString() || comment.id?.toString() || '';
+  
+  // Get user ID from multiple possible locations
+  const commentUserId = comment.user?._id?.toString() || 
+                        comment.user?.toString() || 
+                        comment.userId?.toString() || 
+                        '';
+  
+  const isOwn = !!currentUserId && currentUserId === commentUserId;
+  const isPostAuthor = !!currentUserId && currentUserId === postAuthorId;
+
+  // Get display name
+  const displayName = comment.userName && comment.userName !== "User" && comment.userName.length > 2
+    ? comment.userName
+    : commentUserId ? `User_${commentUserId.slice(-5)}` : "Anonymous";
+
+  const handleSave = async () => {
+    if (!editText.trim() || editText === comment.content) { 
+      setEditing(false); 
+      return; 
+    }
+    setSaving(true);
+    await onEdit(commentId, editText.trim());
+    setSaving(false); 
+    setEditing(false);
+  };
+
+  const handleDelete = () => {
+    if (commentId && confirm('Are you sure you want to delete this comment?')) {
+      onDelete(commentId);
+    }
+  };
+
+  const handleMarkSolution = () => {
+    if (commentId) {
+      onMarkSolution(commentId);
+    }
+  };
+
+  return (
+    <Box sx={{
+      display: "flex", 
+      gap: 1.5, 
+      p: "8px 10px", 
+      borderRadius: "12px",
+      borderLeft: comment.isSolution ? `3px solid ${c.green}` : "3px solid transparent",
+      bgcolor: comment.isSolution ? alpha(c.green, 0.04) : "transparent",
+      transition: "background 0.15s",
+      '&:hover': { 
+        bgcolor: comment.isSolution ? alpha(c.green, 0.06) : alpha(c.ink, 0.025) 
+      },
+    }}>
+      <UserAvatar 
+        name={displayName} 
+        src={comment.userAvatar} 
+        size={34}
+        onClick={() => commentUserId && router.push(`/community/profile/${commentUserId}`)} 
+      />
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
+            <Typography 
+              onClick={() => commentUserId && router.push(`/community/profile/${commentUserId}`)}
+              sx={{ 
+                fontWeight: 700, 
+                fontSize: "0.875rem", 
+                color: c.ink,
+                cursor: "pointer", 
+                "&:hover": { textDecoration: "underline" } 
+              }}
+            >
+              {displayName}
+            </Typography>
+            {comment.isSolution && (
+              <Chip 
+                icon={<CheckCircle sx={{ fontSize: "11px !important" }} />} 
+                label="Solution"
+                size="small" 
+                sx={{ 
+                  bgcolor: c.green, 
+                  color: "#fff", 
+                  height: 18, 
+                  fontSize: "0.62rem", 
+                  fontWeight: 700 
+                }} 
+              />
+            )}
+            <Typography sx={{ fontSize: "0.72rem", color: c.inkMuted }}>
+              {formatDate(comment.createdAt)}
+              {comment.editedAt && " · edited"}
+            </Typography>
+          </Box>
+          
+          <CommentMenu 
+            isOwn={isOwn}
+            onEdit={() => { 
+              setEditing(true); 
+              setEditText(comment.content); 
+            }}
+            onDelete={handleDelete} 
+          />
+        </Box>
+
+        {editing ? (
+          <Box sx={{ mt: 0.75 }}>
+            <TextField 
+              fullWidth 
+              multiline 
+              size="small" 
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && e.ctrlKey) handleSave(); }}
+              sx={{ 
+                "& .MuiOutlinedInput-root": { 
+                  borderRadius: "10px", 
+                  bgcolor: c.surface2,
+                  "& fieldset": { borderColor: c.blue } 
+                } 
+              }} 
+            />
+            <Box sx={{ display: "flex", gap: 1, mt: 0.75 }}>
+              <Button 
+                size="small" 
+                variant="contained" 
+                onClick={handleSave} 
+                disabled={saving}
+                sx={{ 
+                  borderRadius: "8px", 
+                  bgcolor: c.blue, 
+                  textTransform: "none", 
+                  fontSize: "0.8rem", 
+                  px: 2 
+                }}
+              >
+                {saving ? <CircularProgress size={12} sx={{ color: "#fff" }} /> : "Save"}
+              </Button>
+              <Button 
+                size="small" 
+                onClick={() => setEditing(false)}
+                sx={{ 
+                  borderRadius: "8px", 
+                  textTransform: "none", 
+                  fontSize: "0.8rem", 
+                  color: c.inkSub 
+                }}
+              >
+                Cancel
+              </Button>
+            </Box>
+          </Box>
+        ) : (
+          <Typography sx={{ 
+            fontSize: "0.9rem", 
+            color: c.ink, 
+            lineHeight: 1.6,
+            wordBreak: "break-word", 
+            mt: 0.25 
+          }}>
+            {comment.content}
+          </Typography>
+        )}
+
+        {!editing && !isSolved && isPostAuthor && !isOwn && (
+          <Button 
+            size="small" 
+            startIcon={<CheckCircle sx={{ fontSize: 13 }} />}
+            onClick={handleMarkSolution}
+            sx={{ 
+              mt: 0.5, 
+              color: c.green, 
+              fontSize: "0.78rem", 
+              textTransform: "none",
+              borderRadius: "8px", 
+              px: 1, 
+              py: 0.25, 
+              "&:hover": { bgcolor: alpha(c.green, 0.07) } 
+            }}
+          >
+            Mark as solution
+          </Button>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
+  const c = useColors();
+  const router = useRouter();
+  const commentRef = useRef<HTMLTextAreaElement>(null);
+
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const { post: hookPost, loading, error, fetchPost, toggleLike, addComment, toggleBookmark, markAsSolution } = useCommunity();
+
+  useEffect(() => {
+    const init = async () => {
+      const { id } = await params;
+      await fetchPost(id);
+      const token = document.cookie.match(/auth_token=([^;]+)/)?.[1];
+      if (token) {
+        try { 
+          const decoded = JSON.parse(atob(token.split(".")[1]));
+          setCurrentUserId(decoded.userId); 
+        }
+        catch { /* ignore */ }
+      }
+    };
+    init();
+  }, [params, fetchPost]);
+
+  const post = hookPost as any;
+
+  const act = useCallback(async (fn: () => Promise<void>) => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try { await fn(); } finally { setActionLoading(false); }
+  }, [actionLoading]);
+
+  const handleDeleteComment = useCallback(async (commentId: string) => {
+    if (!post?._id) return;
+    const res = await fetch(`/api/community/${post._id}/comments/${commentId}`, { 
+      method: "DELETE", 
+      credentials: "include" 
+    });
+    const data = await res.json();
+    if (data.success) fetchPost(post._id);
+  }, [post, fetchPost]);
+
+  const handleEditComment = useCallback(async (commentId: string, content: string) => {
+    if (!post?._id) return;
+    const res = await fetch(`/api/community/${post._id}/comments/${commentId}`, {
+      method: "PUT", 
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    const data = await res.json();
+    if (data.success) fetchPost(post._id);
+  }, [post, fetchPost]);
+
+  if (loading) return (
+    <Box sx={{ bgcolor: c.bg, minHeight: "100vh", py: 4 }}>
+      <Container maxWidth="md">
+        {[400, 60, 200].map((h, i) => (
+          <Skeleton key={i} variant="rounded" height={h} sx={{ borderRadius: "16px", mb: 2 }} />
+        ))}
+      </Container>
+    </Box>
+  );
+
+  if (error || !post) return (
+    <Box sx={{ bgcolor: c.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Box sx={{ textAlign: "center" }}>
+        <Typography sx={{ color: c.inkSub, mb: 2 }}>{error || "Post not found"}</Typography>
+        <Button component={Link} href="/community" startIcon={<ArrowBack />} sx={{ color: c.blue }}>
           Back to Community
         </Button>
+      </Box>
+    </Box>
+  );
 
-        {/* Post Header */}
-        <Paper sx={{ 
-          p: 3, 
-          mb: 3, 
-          borderRadius: 2,
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-        }}>
-          <Stack spacing={2}>
-            {/* Category & Status */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Chip
-                label={post.category}
-                size="small"
-                sx={{
-                  bgcolor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
-                  color: '#4285f4',
-                  fontWeight: 600,
-                  borderColor: darkMode ? '#5f6368' : '#dadce0',
-                }}
-                variant="outlined"
-              />
-              {post.isPinned && (
-                <Chip 
-                  label="Pinned" 
-                  size="small" 
-                  sx={{
-                    bgcolor: '#fbbc04',
-                    color: '#202124',
-                    fontWeight: 500,
-                  }}
-                />
-              )}
-              {post.isSolved && (
-                <Chip
-                  label="Solved"
-                  size="small"
-                  icon={<CheckCircleIcon />}
-                  sx={{
-                    bgcolor: '#34a853',
-                    color: 'white',
-                    fontWeight: 500,
-                  }}
-                />
-              )}
+  const authorId = post.author?._id?.toString() || post.author?.toString() || "";
+  const isLiked = currentUserId
+    ? (post.likes || []).some((id: any) => (id?._id || id)?.toString() === currentUserId)
+    : false;
+  const isBookmarked = currentUserId
+    ? (post.bookmarks || []).some((id: any) => (id?._id || id)?.toString() === currentUserId)
+    : false;
+  const comments = post.comments || [];
+  const visible = showAll ? comments : comments.slice(0, 5);
+  const postUrl = typeof window !== "undefined" ? `${window.location.origin}/community/post/${post._id}` : "";
+
+  const CAT_COLOR: Record<string, string> = {
+    general:"#1877f2", questions:"#0288d1", tips:"#388e3c",
+    bugs:"#d32f2f", features:"#f57c00", announcements:"#7b1fa2",
+  };
+  const catColor = CAT_COLOR[post.category] || c.blue;
+
+  return (
+    <Box sx={{ bgcolor: c.bg, minHeight: "100vh" }}>
+      {/* Sticky top bar */}
+      <Box sx={{ position: "sticky", top: 0, zIndex: 100,
+        bgcolor: alpha(c.surface, 0.95), borderBottom: `1px solid ${c.border}`,
+        backdropFilter: "blur(10px)" }}>
+        <Container maxWidth="md">
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.25 }}>
+            <IconButton size="small" onClick={() => router.back()}
+              sx={{ bgcolor: c.surface2, color: c.ink, "&:hover": { bgcolor: c.border } }}>
+              <ArrowBack sx={{ fontSize: 19 }} />
+            </IconButton>
+            <Typography sx={{ flex: 1, fontWeight: 600, fontSize: "0.93rem", color: c.ink,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {post.title}
+            </Typography>
+            <Tooltip title={copied ? "Copied!" : "Copy link"} arrow>
+              <IconButton size="small" onClick={async () => {
+                await navigator.clipboard.writeText(postUrl);
+                setCopied(true); setTimeout(() => setCopied(false), 2000);
+              }} sx={{ color: copied ? c.green : c.inkSub }}>
+                {copied ? <Check sx={{ fontSize: 19 }} /> : <Share sx={{ fontSize: 19 }} />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={isBookmarked ? "Saved" : "Save"} arrow>
+              <IconButton size="small" onClick={() => act(() => toggleBookmark(post._id))}
+                sx={{ color: isBookmarked ? c.blue : c.inkSub }}>
+                {isBookmarked ? <Bookmark sx={{ fontSize: 19 }} /> : <BookmarkBorder sx={{ fontSize: 19 }} />}
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Container>
+      </Box>
+
+      <Container maxWidth="md" sx={{ py: { xs: 2, sm: 3 } }}>
+        {/* Post card */}
+        <Paper sx={{ borderRadius: "16px", overflow: "hidden", bgcolor: c.surface,
+          border: `1px solid ${c.border}`, mb: 2, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+          <Box sx={{ height: 4, bgcolor: catColor }} />
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            {/* Chips */}
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
+              <Chip label={post.category} size="small"
+                sx={{ bgcolor: alpha(catColor, 0.1), color: catColor, fontWeight: 700, fontSize: "0.72rem" }} />
+              {post.isPinned && <Chip label="📌 Pinned" size="small" sx={{ bgcolor: "#fbbc04", color: "#202124", fontWeight: 700 }} />}
+              {post.isSolved && <Chip icon={<CheckCircle sx={{ fontSize: "13px !important" }} />} label="Solved" size="small" sx={{ bgcolor: c.green, color: "#fff", fontWeight: 700 }} />}
+              {post.isLocked && <Chip icon={<Lock sx={{ fontSize: "13px !important" }} />} label="Locked" size="small" sx={{ bgcolor: c.inkMuted, color: "#fff" }} />}
             </Box>
 
             {/* Title */}
-            <Typography variant="h4" fontWeight={700} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
+            <Typography sx={{ fontWeight: 800, color: c.ink, mb: 2.5, lineHeight: 1.2,
+              fontSize: { xs: "1.35rem", sm: "1.75rem" }, letterSpacing: "-0.02em" }}>
               {post.title}
             </Typography>
 
-            {/* Author Info & Stats */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar src={post.author?.avatar} sx={{ 
-                  border: `2px solid ${darkMode ? '#202124' : '#ffffff'}`,
-                }}>
-                  {post.author?.name?.charAt(0) || 'A'}
-                </Avatar>
+            {/* Author row */}
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+              flexWrap: "wrap", gap: 2, mb: 3 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, cursor: "pointer" }}
+                onClick={() => authorId && router.push(`/community/profile/${authorId}`)}>
+                <UserAvatar name={post.authorName} size={44} />
                 <Box>
-                  <Typography variant="subtitle1" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {post.author?.name || 'Unknown Author'}
-                    {post.author?.isVerified && (
-                      <CheckCircleIcon 
-                        sx={{ 
-                          color: '#4285f4', 
-                          ml: 0.5,
-                          fontSize: 16,
-                          verticalAlign: 'middle',
-                        }} 
-                      />
-                    )}
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.92rem", color: c.ink,
+                    "&:hover": { textDecoration: "underline" } }}>
+                    {post.authorName || "Anonymous"}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AccessTimeIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                    <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                      Posted {formatDate(post.createdAt)}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <AccessTime sx={{ fontSize: 11, color: c.inkMuted }} />
+                    <Typography sx={{ fontSize: "0.74rem", color: c.inkMuted }}>
+                      {formatDate(post.createdAt)}
                     </Typography>
                   </Box>
                 </Box>
               </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Chip
-                  icon={<VisibilityIcon sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />}
-                  label={`${post.views} views`}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                    color: darkMode ? '#e8eaed' : '#202124',
-                    borderColor: darkMode ? '#5f6368' : '#dadce0',
-                  }}
-                />
+              <Box sx={{ display: "flex", gap: 1 }}>
+                {[
+                  { icon: <Visibility sx={{ fontSize: 13 }} />, val: post.views },
+                  { icon: <CommentIcon sx={{ fontSize: 13 }} />, val: post.commentCount || 0 },
+                  { icon: <ThumbUp sx={{ fontSize: 13 }} />, val: post.likeCount || 0 },
+                ].map((s, i) => (
+                  <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 0.5,
+                    px: 1.25, py: 0.35, borderRadius: "20px", bgcolor: c.surface2 }}>
+                    <Box sx={{ color: c.inkMuted }}>{s.icon}</Box>
+                    <Typography sx={{ fontSize: "0.76rem", color: c.inkMuted }}>{s.val}</Typography>
+                  </Box>
+                ))}
               </Box>
             </Box>
-          </Stack>
+
+            {/* Content */}
+            <Typography sx={{ whiteSpace: "pre-wrap", lineHeight: 1.85, color: c.ink,
+              fontSize: { xs: "0.95rem", sm: "1rem" } }}>
+              {post.content}
+            </Typography>
+
+            {/* Tags */}
+            {post.tags?.length > 0 && (
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 2.5 }}>
+                {post.tags.map((tag: string, i: number) => (
+                  <Chip key={i} label={`#${tag}`} size="small" variant="outlined"
+                    sx={{ borderColor: c.border, color: c.blue, fontSize: "0.78rem",
+                      "&:hover": { bgcolor: c.blueSoft } }} />
+                ))}
+              </Box>
+            )}
+          </Box>
+
+          {/* Action bar */}
+          <Box sx={{ px: { xs: 2, sm: 3 }, py: 1.25, borderTop: `1px solid ${c.border}`,
+            display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
+            <LikeButton liked={isLiked} count={post.likeCount || 0}
+              loading={actionLoading} onClick={() => act(() => toggleLike(post._id))} />
+            <Button startIcon={<CommentIcon sx={{ fontSize: 17 }} />}
+              onClick={() => { setTimeout(() => commentRef.current?.focus(), 100); }}
+              sx={{ color: c.inkSub, fontSize: "0.88rem", fontWeight: 500, textTransform: "none",
+                borderRadius: "8px", px: 1.5, py: 0.75, "&:hover": { bgcolor: alpha(c.ink, 0.06) } }}>
+              Comment
+            </Button>
+            <Button startIcon={<Share sx={{ fontSize: 17 }} />}
+              onClick={async () => { await navigator.clipboard.writeText(postUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+              sx={{ color: c.inkSub, fontSize: "0.88rem", fontWeight: 500, textTransform: "none",
+                borderRadius: "8px", px: 1.5, py: 0.75, "&:hover": { bgcolor: alpha(c.ink, 0.06) } }}>
+              {copied ? "Copied!" : "Share"}
+            </Button>
+          </Box>
         </Paper>
 
-        {/* Post Content & Actions */}
-        <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', lg: 'row' } }}>
-          {/* Main Content */}
-          <Box sx={{ flex: 1 }}>
-            {/* Post Content */}
-            <Paper sx={{ 
-              p: 3, 
-              mb: 3, 
-              borderRadius: 2,
-              bgcolor: darkMode ? '#202124' : '#ffffff',
-              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-            }}>
-              <Typography
-                variant="body1"
-                sx={{ 
-                  whiteSpace: 'pre-wrap', 
-                  lineHeight: 1.8,
-                  color: darkMode ? '#e8eaed' : '#202124',
-                }}
-              >
-                {post.content}
-              </Typography>
+        {/* Comments card */}
+        <Paper sx={{ borderRadius: "16px", overflow: "hidden", bgcolor: c.surface,
+          border: `1px solid ${c.border}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            <Typography sx={{ fontWeight: 700, fontSize: "1rem", color: c.ink, mb: 2.5 }}>
+              {comments.length} Comment{comments.length !== 1 ? "s" : ""}
+            </Typography>
 
-              {/* Tags */}
-              {post.tags.length > 0 && (
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 3 }}>
-                  {post.tags.map((tag, index) => (
-                    <Chip
-                      key={index}
-                      label={tag}
-                      size="small"
-                      icon={<TagIcon fontSize="small" />}
-                      variant="outlined"
-                      sx={{
-                        bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                        color: darkMode ? '#e8eaed' : '#202124',
-                        borderColor: darkMode ? '#5f6368' : '#dadce0',
-                      }}
-                    />
-                  ))}
-                </Box>
-              )}
-            </Paper>
-
-            {/* Actions Bar */}
-            <Paper sx={{ 
-              p: 2, 
-              mb: 3, 
-              borderRadius: 2,
-              bgcolor: darkMode ? '#202124' : '#ffffff',
-              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                {/* Like Button - Blue only when liked */}
-                <Tooltip title={isLiked ? "Unlike" : "Like"}>
-                  <Button
-                    startIcon={isLiked ? <ThumbUpIcon /> : <ThumbUpOutlinedIcon />}
-                    onClick={handleLike}
-                    disabled={actionLoading}
-                    sx={{
-                      color: isLiked ? '#4285f4' : (darkMode ? '#9aa0a6' : '#5f6368'),
-                      minWidth: 'auto',
-                      '&:hover': {
-                        backgroundColor: isLiked ? alpha('#4285f4', darkMode ? 0.1 : 0.05) : undefined,
-                      },
-                    }}
-                  >
-                    {post.likeCount} {post.likeCount === 1 ? 'Like' : 'Likes'}
-                  </Button>
-                </Tooltip>
-
-                {/* Comments Button */}
-                <Button
-                  startIcon={<CommentIcon />}
-                  sx={{ 
-                    minWidth: 'auto',
-                    color: darkMode ? '#9aa0a6' : '#5f6368',
-                  }}
-                >
-                  {post.commentCount} {post.commentCount === 1 ? 'Comment' : 'Comments'}
-                </Button>
-
-                {/* Bookmark Button - Blue only when bookmarked */}
-                <Tooltip title={isBookmarked ? "Remove bookmark" : "Bookmark"}>
-                  <Button
-                    startIcon={isBookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
-                    onClick={handleBookmark}
-                    disabled={actionLoading}
-                    sx={{
-                      color: isBookmarked ? '#4285f4' : (darkMode ? '#9aa0a6' : '#5f6368'),
-                      minWidth: 'auto',
-                      '&:hover': {
-                        backgroundColor: isBookmarked ? alpha('#4285f4', darkMode ? 0.1 : 0.05) : undefined,
-                      },
-                    }}
-                  >
-                    Bookmark
-                  </Button>
-                </Tooltip>
-
-                {/* Share Button */}
-                <Button
-                  startIcon={<ShareIcon />}
-                  onClick={handleShare}
-                  sx={{ 
-                    ml: 'auto', 
-                    minWidth: 'auto',
-                    color: '#4285f4',
-                    '&:hover': {
-                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                    },
-                  }}
-                >
-                  Share
-                </Button>
-              </Box>
-            </Paper>
-
-            {/* Comments Section */}
-            <Paper sx={{ 
-              p: 3, 
-              borderRadius: 2,
-              bgcolor: darkMode ? '#202124' : '#ffffff',
-              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-            }}>
-              <Typography variant="h6" gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                Comments ({post.commentCount})
-              </Typography>
-
-              {/* Add Comment */}
-              <Box sx={{ mb: 3 }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  value={commentText}
+            {/* Write comment */}
+            <Box sx={{ display: "flex", gap: 1.5, mb: 3 }}>
+              <UserAvatar name="Me" size={36} />
+              <Box sx={{ flex: 1 }}>
+                <TextField fullWidth multiline minRows={1} maxRows={6}
+                  placeholder="Write a comment… (Ctrl+Enter to post)"
+                  value={commentText} inputRef={commentRef}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Add a comment..."
-                  sx={{ mb: 1 }}
-                  InputProps={{
-                    sx: { 
-                      color: darkMode ? '#e8eaed' : '#202124',
-                      '& fieldset': {
-                        borderColor: darkMode ? '#3c4043' : '#dadce0',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: '#4285f4',
-                      },
-                    }
-                  }}
-                />
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="contained"
-                    startIcon={actionLoading ? <CircularProgress size={20} sx={{ color: '#ffffff' }} /> : <SendIcon />}
-                    onClick={handleSubmitComment}
-                    disabled={!commentText.trim() || actionLoading}
-                    sx={{
-                      backgroundColor: '#4285f4',
-                      '&:hover': {
-                        backgroundColor: '#3367d6',
-                      },
-                      '&.Mui-disabled': {
-                        backgroundColor: darkMode ? '#303134' : '#f1f3f4',
-                        color: darkMode ? '#5f6368' : '#bdc1c6',
-                      },
-                    }}
-                  >
-                    {actionLoading ? 'Posting...' : 'Post Comment'}
+                  onKeyDown={(e) => { if (e.key === "Enter" && e.ctrlKey && commentText.trim()) {
+                    act(() => addComment(post._id, commentText.trim()).then(() => setCommentText("")));
+                  }}}
+                  sx={{ "& .MuiOutlinedInput-root": {
+                    borderRadius: "22px", bgcolor: c.surface2, fontSize: "0.9rem",
+                    "& fieldset": { borderColor: "transparent" },
+                    "&:hover fieldset": { borderColor: c.border },
+                    "&.Mui-focused fieldset": { borderColor: c.blue, borderWidth: 1.5 },
+                    "& .MuiOutlinedInput-input": { px: 2, py: 1 },
+                  }}} />
+                {commentText.trim() && (
+                  <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 1 }}>
+                    <Button size="small" onClick={() => setCommentText("")}
+                      sx={{ color: c.inkSub, textTransform: "none", borderRadius: "8px" }}>Cancel</Button>
+                    <Button size="small" variant="contained"
+                      onClick={() => act(() => addComment(post._id, commentText.trim()).then(() => setCommentText("")))}
+                      disabled={actionLoading}
+                      startIcon={actionLoading ? <CircularProgress size={12} sx={{ color: "#fff" }} /> : <Send sx={{ fontSize: 14 }} />}
+                      sx={{ bgcolor: c.blue, textTransform: "none", borderRadius: "8px",
+                        "&:hover": { bgcolor: "#166fe5" } }}>
+                      Post
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+
+            <Divider sx={{ borderColor: c.border, mb: 1.5 }} />
+
+            {/* Comments list */}
+            {comments.length === 0 ? (
+              <Box sx={{ textAlign: "center", py: 5 }}>
+                <EmojiEmotions sx={{ fontSize: 44, color: c.inkMuted, mb: 1.5 }} />
+                <Typography sx={{ color: c.inkMuted }}>No comments yet — be the first!</Typography>
+              </Box>
+            ) : (
+              <Stack spacing={0.25}>
+                {visible.map((comment: any) => (
+                  <CommentCard 
+                    key={comment._id} 
+                    comment={comment}
+                    currentUserId={currentUserId} 
+                    postAuthorId={authorId}
+                    postId={post._id} 
+                    isSolved={post.isSolved}
+                    onMarkSolution={(id) => act(() => markAsSolution(post._id, id))}
+                    onDelete={handleDeleteComment}
+                    onEdit={handleEditComment} 
+                  />
+                ))}
+                {comments.length > 5 && (
+                  <Button onClick={() => setShowAll(v => !v)}
+                    startIcon={showAll ? <ExpandLess /> : <ExpandMore />}
+                    sx={{ alignSelf: "flex-start", color: c.blue, textTransform: "none",
+                      fontWeight: 600, fontSize: "0.85rem", borderRadius: "8px", mt: 0.5,
+                      "&:hover": { bgcolor: c.blueSoft } }}>
+                    {showAll ? "Show less" : `View ${comments.length - 5} more comment${comments.length - 5 !== 1 ? "s" : ""}`}
                   </Button>
-                </Box>
-              </Box>
-
-              <Divider sx={{ 
-                my: 3, 
-                borderColor: darkMode ? '#3c4043' : '#dadce0',
-              }} />
-
-              {/* Comments List */}
-              {post.comments.length === 0 ? (
-                <Alert 
-                  severity="info"
-                  sx={{ 
-                    borderRadius: 2,
-                    bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                  }}
-                >
-                  No comments yet. Be the first to comment!
-                </Alert>
-              ) : (
-                <Stack spacing={2}>
-                  {post.comments.map((comment) => (
-                    <Paper
-                      key={comment._id}
-                      sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        bgcolor: darkMode ? '#303134' : '#f8f9fa',
-                        border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                        borderLeft: comment.isSolution ? '4px solid #34a853' : undefined,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Avatar sx={{ 
-                            width: 32, 
-                            height: 32,
-                            border: `1px solid ${darkMode ? '#202124' : '#ffffff'}`,
-                          }}>
-                            {comment.user?.name?.charAt(0) || 'U'}
-                          </Avatar>
-                          <Typography variant="subtitle2" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                            {comment.user?.name || 'Unknown User'}
-                          </Typography>
-                          {comment.isSolution && (
-                            <Chip
-                              label="Solution"
-                              size="small"
-                              sx={{
-                                bgcolor: '#34a853',
-                                color: 'white',
-                                fontWeight: 500,
-                              }}
-                              icon={<CheckCircleIcon sx={{ color: 'white' }} />}
-                            />
-                          )}
-                        </Box>
-                        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                          {formatDate(comment.createdAt)}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" sx={{ 
-                        mb: 1,
-                        color: darkMode ? '#e8eaed' : '#202124',
-                      }}>
-                        {comment.content}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        {!post.isSolved && currentUserId === post.author?._id && (
-                          <Button
-                            size="small"
-                            onClick={() => handleMarkAsSolution(comment._id)}
-                            sx={{
-                              color: '#4285f4',
-                              '&:hover': {
-                                backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                              },
-                            }}
-                          >
-                            Mark as Solution
-                          </Button>
-                        )}
-                      </Box>
-                    </Paper>
-                  ))}
-                </Stack>
-              )}
-            </Paper>
-          </Box>
-
-          {/* Sidebar */}
-          <Box sx={{ width: { xs: '100%', lg: 300 } }}>
-            {/* Author Card */}
-            <Paper sx={{ 
-              p: 2, 
-              mb: 3, 
-              borderRadius: 2,
-              bgcolor: darkMode ? '#202124' : '#ffffff',
-              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-            }}>
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                Author
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <Avatar src={post.author?.avatar} sx={{ 
-                  width: 48, 
-                  height: 48,
-                  border: `2px solid ${darkMode ? '#202124' : '#ffffff'}`,
-                }}>
-                  {post.author?.name?.charAt(0) || 'A'}
-                </Avatar>
-                <Box>
-                  <Typography variant="subtitle1" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {post.author?.name || 'Unknown Author'}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    {post.author?.role || 'User'}
-                  </Typography>
-                </Box>
-              </Box>
-              <Button
-                fullWidth
-                variant="outlined"
-                component={Link}
-                href={`/community/profile/${post.author?._id}`}
-                disabled={!post.author?._id}
-                sx={{
-                  borderColor: darkMode ? '#5f6368' : '#dadce0',
-                  color: darkMode ? '#e8eaed' : '#202124',
-                  '&:hover': {
-                    borderColor: '#4285f4',
-                    backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                  },
-                }}
-              >
-                View Profile
-              </Button>
-            </Paper>
-
-            {/* Post Info */}
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: darkMode ? '#202124' : '#ffffff',
-              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-            }}>
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                Post Information
-              </Typography>
-              <Stack spacing={1}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    Created
-                  </Typography>
-                  <Typography variant="caption" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {formatDate(post.createdAt)}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    Last Updated
-                  </Typography>
-                  <Typography variant="caption" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {formatDate(post.updatedAt)}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    Views
-                  </Typography>
-                  <Typography variant="caption" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                    {post.views}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                    Status
-                  </Typography>
-                  <Typography variant="caption" fontWeight={500} sx={{ 
-                    color: post.isSolved ? '#34a853' : (darkMode ? '#e8eaed' : '#202124'),
-                  }}>
-                    {post.isSolved ? 'Solved' : 'Open'}
-                  </Typography>
-                </Box>
+                )}
               </Stack>
-            </Paper>
+            )}
           </Box>
-        </Box>
+        </Paper>
       </Container>
     </Box>
   );

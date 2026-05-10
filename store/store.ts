@@ -7,6 +7,7 @@ import customersSlice from './slices/customersSlice'
 import billingSlice from './slices/billingSlice'
 import attendanceSlice from './slices/attendanceSlice'
 import visitorsSlice from './slices/visitorsSlice'
+import adminAboutSlice from './slices/adminAboutSlice'
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     billing: billingSlice,
     attendance: attendanceSlice,
     visitors: visitorsSlice,
+    adminAbout: adminAboutSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

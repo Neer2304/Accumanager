@@ -13,64 +13,95 @@ import {
   Chip,
   Avatar,
   CircularProgress,
-  Alert,
   alpha,
   IconButton,
   Divider,
   useTheme,
+  Stack,
+  Skeleton,
 } from '@mui/material';
 import {
-  ArrowBack as ArrowBackIcon,
+  ArrowBack,
   Bookmark as BookmarkIcon,
-  BookmarkBorder as BookmarkBorderIcon,
-  Favorite as FavoriteIcon,
-  ChatBubbleOutline as CommentIcon,
-  Person as PersonIcon,
-  AccessTime as TimeIcon,
-  Delete as DeleteIcon,
-  Launch as LaunchIcon,
-  Groups as GroupsIcon,
-  TrendingUp as TrendingIcon,
-  Forum as ForumIcon,
+  BookmarkBorder,
+  Favorite,
+  ChatBubbleOutline,
+  AccessTime,
+  Delete,
+  Launch,
+  CheckCircle,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCommunity } from '@/hooks/useCommunity';
 import { PostType } from '@/types/community';
+import { formatDate } from '@/utils/dateUtils';
+
+// Theme colors (matching Facebook-style)
+const useColors = () => {
+  const theme = useTheme();
+  const dark = theme.palette.mode === "dark";
+  return {
+    dark,
+    bg:       dark ? "#18191a" : "#f0f2f5",
+    surface:  dark ? "#242526" : "#ffffff",
+    surface2: dark ? "#3a3b3c" : "#f0f2f5",
+    border:   dark ? "#3e4042" : "#e4e6ea",
+    ink:      dark ? "#e4e6eb" : "#050505",
+    inkSub:   dark ? "#b0b3b8" : "#65676b",
+    inkMuted: dark ? "#6a6d73" : "#8a8d91",
+    blue:     "#1877f2",
+    blueSoft: dark ? "rgba(24,119,242,0.15)" : "rgba(24,119,242,0.08)",
+    green:    dark ? "#45bd62" : "#31a24c",
+    red:      dark ? "#f28b82" : "#e41e3f",
+    redSoft:  dark ? "rgba(242,139,130,0.12)" : "rgba(228,30,63,0.06)",
+  };
+};
+
+// Avatar with deterministic color
+const AVATAR_COLORS = ["#1877f2","#e91e63","#9c27b0","#ff9800","#4caf50","#00bcd4","#ff5722","#607d8b"];
+function avatarColor(name: string) { return AVATAR_COLORS[(name || "U").charCodeAt(0) % AVATAR_COLORS.length]; }
+
+function UserAvatar({ name, src, size = 40 }: { name?: string; src?: string; size?: number }) {
+  const c = useColors();
+  const initials = (name || "U").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  return (
+    <Avatar src={src || undefined}
+      sx={{
+        width: size, height: size, bgcolor: avatarColor(name || "U"),
+        fontSize: size * 0.38, fontWeight: 700,
+        border: `2px solid ${c.surface}`,
+      }}>
+      {!src && initials}
+    </Avatar>
+  );
+}
 
 export default function BookmarksPage() {
   const theme = useTheme();
-  const darkMode = theme.palette.mode === 'dark';
+  const c = useColors();
+  const router = useRouter();
   
-  const { toggleBookmark, loading, error } = useCommunity();
+  const { toggleBookmark, loading } = useCommunity();
   const [bookmarkedPosts, setBookmarkedPosts] = useState<PostType[]>([]);
   const [localLoading, setLocalLoading] = useState(true);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Custom function to fetch bookmarks since it doesn't exist in useCommunity
   const fetchUserBookmarks = async () => {
     try {
       const response = await fetch('/api/community/bookmarks', {
         credentials: 'include',
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch bookmarks: ${response.statusText}`);
-      }
-
+      if (!response.ok) throw new Error(`Failed to fetch bookmarks`);
       const data = await response.json();
-
-      if (data.success) {
-        return data.data || [];
-      } else {
-        throw new Error(data.message || 'Failed to fetch bookmarks');
-      }
+      if (data.success) return data.data || [];
+      throw new Error(data.message || 'Failed to fetch bookmarks');
     } catch (err) {
       console.error('Fetch bookmarks error:', err);
       throw err;
     }
   };
 
-  // Fetch bookmarked posts
   const loadBookmarks = async () => {
     try {
       setLocalLoading(true);
@@ -78,7 +109,6 @@ export default function BookmarksPage() {
       const posts = await fetchUserBookmarks();
       setBookmarkedPosts(posts || []);
     } catch (err) {
-      console.error('Failed to load bookmarks:', err);
       setLocalError(err instanceof Error ? err.message : 'Failed to load bookmarks');
     } finally {
       setLocalLoading(false);
@@ -89,589 +119,277 @@ export default function BookmarksPage() {
     loadBookmarks();
   }, []);
 
-  // Handle remove bookmark
   const handleRemoveBookmark = async (postId: string) => {
     try {
       await toggleBookmark(postId);
-      // Remove from local state
       setBookmarkedPosts(prev => prev.filter(post => post._id !== postId));
     } catch (error) {
       console.error('Failed to remove bookmark:', error);
     }
   };
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) {
-      return `${diffMins}m ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    } else if (diffDays < 7) {
-      return `${diffDays}d ago`;
-    } else {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-    }
+  const CAT_COLOR: Record<string, string> = {
+    general:"#1877f2", questions:"#0288d1", tips:"#388e3c",
+    bugs:"#d32f2f", features:"#f57c00", announcements:"#7b1fa2",
   };
 
-  // Get category color
-  const getCategoryColor = (category: string) => {
-    switch (category?.toLowerCase()) {
-      case 'questions': return '#4285f4';
-      case 'announcements': return '#9c27b0';
-      case 'feedback': return '#00bcd4';
-      case 'ideas': return '#34a853';
-      case 'help': return '#f57c00';
-      default: return darkMode ? '#5f6368' : '#5f6368';
-    }
-  };
+  // Calculate stats
+  const totalBookmarks = bookmarkedPosts.length;
+  const solvedPosts = bookmarkedPosts.filter(p => p.isSolved).length;
+  const totalLikes = bookmarkedPosts.reduce((acc, post) => acc + (post.likeCount || 0), 0);
+  const totalComments = bookmarkedPosts.reduce((acc, post) => acc + (post.commentCount || 0), 0);
+
+  if (localLoading) {
+    return (
+      <Box sx={{ bgcolor: c.bg, minHeight: "100vh", py: 4 }}>
+        <Container maxWidth="md">
+          <Skeleton variant="rounded" height={60} sx={{ borderRadius: "16px", mb: 2 }} />
+          <Skeleton variant="rounded" height={100} sx={{ borderRadius: "16px", mb: 2 }} />
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} variant="rounded" height={200} sx={{ borderRadius: "16px", mb: 2 }} />
+          ))}
+        </Container>
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ 
-      backgroundColor: darkMode ? '#202124' : '#ffffff', 
-      minHeight: '100vh',
-      py: { xs: 2, md: 4 },
-    }}>
-      <Container maxWidth="lg">
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Button
-            component={Link}
-            href="/community"
-            startIcon={<ArrowBackIcon />}
-            sx={{ 
-              mb: 3,
-              color: darkMode ? '#e8eaed' : '#202124',
-              '&:hover': {
-                backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-              },
-            }}
-          >
-            Back to Community
-          </Button>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              bgcolor: alpha('#4285f4', darkMode ? 0.2 : 0.1),
-            }}>
-              <BookmarkIcon sx={{ 
-                fontSize: { xs: 32, md: 40 }, 
-                color: '#4285f4',
-              }} />
-            </Box>
-            <Box>
-              <Typography variant="h4" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                My Bookmarks
-              </Typography>
-              <Typography sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} variant="body1">
-                Posts you've saved for later
-              </Typography>
-            </Box>
+    <Box sx={{ bgcolor: c.bg, minHeight: "100vh" }}>
+      {/* Sticky Header */}
+      <Box sx={{ 
+        position: "sticky", top: 0, zIndex: 100,
+        bgcolor: alpha(c.surface, 0.95), borderBottom: `1px solid ${c.border}`,
+        backdropFilter: "blur(10px)" 
+      }}>
+        <Container maxWidth="md">
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.25 }}>
+            <IconButton size="small" onClick={() => router.back()}
+              sx={{ bgcolor: c.surface2, color: c.ink, "&:hover": { bgcolor: c.border } }}>
+              <ArrowBack sx={{ fontSize: 19 }} />
+            </IconButton>
+            <Typography sx={{ flex: 1, fontWeight: 600, fontSize: "1rem", color: c.ink }}>
+              Saved Posts
+            </Typography>
+            <Typography sx={{ fontSize: "0.85rem", color: c.inkMuted }}>
+              {totalBookmarks} saved
+            </Typography>
           </Box>
+        </Container>
+      </Box>
 
-          {/* Stats - Replaced Grid with flexbox */}
-          <Paper sx={{ 
-            p: 3, 
-            mb: 3,
-            borderRadius: 3,
-            bgcolor: darkMode ? '#303134' : '#f8f9fa',
-            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+      <Container maxWidth="md" sx={{ py: 3 }}>
+        {/* Stats Cards */}
+        <Paper sx={{ 
+          p: 2.5, mb: 3, borderRadius: "16px",
+          bgcolor: c.surface, border: `1px solid ${c.border}`
+        }}>
+          <Box sx={{ 
+            display: "flex", flexWrap: "wrap", gap: 2,
+            justifyContent: "space-around"
           }}>
-            <Box sx={{ 
-              display: 'flex', 
-              flexWrap: 'wrap',
-              justifyContent: 'space-between',
-              gap: 2,
-            }}>
-              <Box sx={{ 
-                flex: '1 1 120px', 
-                minWidth: 120,
-                textAlign: 'center',
-                p: 1
-              }}>
-                <Typography variant="h4" fontWeight={500} color="#4285f4">
-                  {bookmarkedPosts.length}
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                  Total Bookmarks
-                </Typography>
-              </Box>
-              <Box sx={{ 
-                flex: '1 1 120px', 
-                minWidth: 120,
-                textAlign: 'center',
-                p: 1
-              }}>
-                <Typography variant="h4" fontWeight={500} color="#9c27b0">
-                  {bookmarkedPosts.filter(p => p.isSolved).length}
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                  Solved Posts
-                </Typography>
-              </Box>
-              <Box sx={{ 
-                flex: '1 1 120px', 
-                minWidth: 120,
-                textAlign: 'center',
-                p: 1
-              }}>
-                <Typography variant="h4" fontWeight={500} color="#34a853">
-                  {bookmarkedPosts.reduce((acc, post) => acc + (post.likeCount || 0), 0)}
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                  Total Likes
-                </Typography>
-              </Box>
-              <Box sx={{ 
-                flex: '1 1 120px', 
-                minWidth: 120,
-                textAlign: 'center',
-                p: 1
-              }}>
-                <Typography variant="h4" fontWeight={500} color="#00bcd4">
-                  {bookmarkedPosts.reduce((acc, post) => acc + (post.commentCount || 0), 0)}
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                  Total Comments
-                </Typography>
-              </Box>
+            <Box sx={{ textAlign: "center", flex: 1, minWidth: 80 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: "1.5rem", color: c.blue }}>
+                {totalBookmarks}
+              </Typography>
+              <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>Saved</Typography>
             </Box>
-          </Paper>
-        </Box>
-
-        {/* Loading State */}
-        {(loading || localLoading) && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 8 }}>
-            <CircularProgress sx={{ color: '#4285f4' }} />
+            <Divider orientation="vertical" flexItem sx={{ borderColor: c.border }} />
+            <Box sx={{ textAlign: "center", flex: 1, minWidth: 80 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: "1.5rem", color: c.green }}>
+                {solvedPosts}
+              </Typography>
+              <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>Solved</Typography>
+            </Box>
+            <Divider orientation="vertical" flexItem sx={{ borderColor: c.border }} />
+            <Box sx={{ textAlign: "center", flex: 1, minWidth: 80 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: "1.5rem", color: c.red }}>
+                {totalLikes}
+              </Typography>
+              <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>Likes</Typography>
+            </Box>
+            <Divider orientation="vertical" flexItem sx={{ borderColor: c.border }} />
+            <Box sx={{ textAlign: "center", flex: 1, minWidth: 80 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: "1.5rem", color: c.blue }}>
+                {totalComments}
+              </Typography>
+              <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>Comments</Typography>
+            </Box>
           </Box>
-        )}
+        </Paper>
 
         {/* Error State */}
-        {(error || localError) && !loading && !localLoading && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 3, 
-              borderRadius: 2,
-              bgcolor: darkMode ? '#3c1e1e' : '#fdecea',
-            }}
-          >
-            {error || localError}
-          </Alert>
+        {localError && (
+          <Paper sx={{ p: 3, borderRadius: "16px", bgcolor: c.surface, border: `1px solid ${c.border}`, mb: 3 }}>
+            <Typography sx={{ color: c.red, textAlign: "center" }}>{localError}</Typography>
+            <Button fullWidth onClick={loadBookmarks} sx={{ mt: 2, color: c.blue }}>Retry</Button>
+          </Paper>
         )}
 
         {/* No Bookmarks State */}
-        {!loading && !localLoading && bookmarkedPosts.length === 0 && (
+        {!localLoading && totalBookmarks === 0 && (
           <Paper sx={{ 
-            p: 8, 
-            textAlign: 'center', 
-            borderRadius: 3,
-            bgcolor: darkMode ? '#303134' : '#f8f9fa',
-            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+            p: 6, textAlign: "center", borderRadius: "16px", 
+            bgcolor: c.surface, border: `1px solid ${c.border}` 
           }}>
-            <BookmarkBorderIcon sx={{ 
-              fontSize: 80, 
-              color: darkMode ? '#5f6368' : '#9aa0a6', 
-              mb: 2, 
-              opacity: 0.5 
-            }} />
-            <Typography variant="h5" fontWeight={500} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-              No bookmarks yet
+            <BookmarkBorder sx={{ fontSize: 64, color: c.inkMuted, mb: 2, opacity: 0.5 }} />
+            <Typography sx={{ fontWeight: 600, fontSize: "1.2rem", color: c.ink, mb: 1 }}>
+              No saved posts yet
             </Typography>
-            <Typography sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} paragraph>
-              When you find posts you want to save for later, click the bookmark icon to add them here.
+            <Typography sx={{ color: c.inkSub, mb: 3 }}>
+              When you find posts you want to save, click the bookmark icon to add them here.
             </Typography>
-            <Button
-              variant="contained"
-              component={Link}
-              href="/community"
-              sx={{ 
-                borderRadius: 2, 
-                px: 4, 
-                py: 1.5,
-                backgroundColor: '#4285f4',
-                '&:hover': {
-                  backgroundColor: '#3367d6',
-                },
-              }}
+            <Button 
+              component={Link} href="/community"
+              sx={{ bgcolor: c.blue, color: "#fff", textTransform: "none", borderRadius: "8px",
+                "&:hover": { bgcolor: "#166fe5" } }}
             >
               Explore Community
             </Button>
           </Paper>
         )}
 
-        {/* Bookmarks Grid */}
-        {!loading && !localLoading && bookmarkedPosts.length > 0 && (
-          <Box>
-            {/* Results Header */}
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              mb: 3,
-              p: 2,
-              borderRadius: 2,
-              bgcolor: darkMode ? '#303134' : '#f8f9fa',
-              border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-            }}>
-              <Typography variant="body1" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                <span style={{ color: '#4285f4' }}>{bookmarkedPosts.length}</span> bookmarked posts
-              </Typography>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  if (confirm('Clear all bookmarks? This action cannot be undone.')) {
-                    // TODO: Implement bulk bookmark removal
-                    setBookmarkedPosts([]);
-                  }
-                }}
-                disabled={bookmarkedPosts.length === 0}
-                sx={{
-                  color: '#ea4335',
-                  borderColor: '#ea4335',
-                  '&:hover': {
-                    backgroundColor: alpha('#ea4335', darkMode ? 0.1 : 0.05),
-                    borderColor: '#ea4335',
-                  },
-                }}
-              >
-                Clear All
-              </Button>
-            </Box>
-
-            {/* Posts List - Replaced Grid with flexbox */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {bookmarkedPosts.map((post) => (
-                <Card
+        {/* Bookmarks List */}
+        {!localLoading && totalBookmarks > 0 && (
+          <Stack spacing={2}>
+            {bookmarkedPosts.map((post) => {
+              const catColor = CAT_COLOR[post.category] || c.blue;
+              
+              return (
+                <Paper 
                   key={post._id}
-                  sx={{
-                    borderRadius: 3,
-                    border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-                    transition: 'all 0.2s ease',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    backgroundColor: darkMode ? '#202124' : '#ffffff',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: darkMode 
-                        ? '0 8px 25px rgba(0,0,0,0.3)' 
-                        : '0 8px 25px rgba(0,0,0,0.1)',
-                      borderColor: '#4285f4',
-                    },
+                  sx={{ 
+                    borderRadius: "16px", overflow: "hidden",
+                    bgcolor: c.surface, border: `1px solid ${c.border}`,
+                    transition: "all 0.2s",
+                    "&:hover": { transform: "translateY(-2px)", borderColor: c.blue }
                   }}
                 >
-                  <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ height: 3, bgcolor: catColor }} />
+                  
+                  <CardContent sx={{ p: 2.5 }}>
                     {/* Header */}
-                    <Box sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'flex-start',
-                      mb: 2,
-                    }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar
-                          src={post.author?.avatar}
-                          sx={{ 
-                            width: 40, 
-                            height: 40,
-                            border: '2px solid',
-                            borderColor: darkMode ? '#303134' : '#ffffff',
-                            bgcolor: darkMode ? '#5f6368' : '#4285f4',
-                          }}
-                        >
-                          {post.author?.name?.charAt(0) || <PersonIcon />}
-                        </Avatar>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <UserAvatar name={post.author?.name} src={post.author?.avatar} size={36} />
                         <Box>
-                          <Typography variant="body1" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                            {post.author?.name || 'Anonymous'}
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <TimeIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                            <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                              {formatDate(post.createdAt)} • {post.author?.role || 'Member'}
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            <Typography sx={{ fontWeight: 600, fontSize: "0.9rem", color: c.ink }}>
+                              {post.author?.name || "Anonymous"}
                             </Typography>
+                            {post.author?.isVerified && (
+                              <CheckCircle sx={{ fontSize: 12, color: c.blue }} />
+                            )}
+                          </Box>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <AccessTime sx={{ fontSize: 11, color: c.inkMuted }} />
+                            <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>
+                              {formatDate(post.createdAt)}
+                            </Typography>
+                            {post.category && (
+                              <>
+                                <Box sx={{ width: 3, height: 3, borderRadius: "50%", bgcolor: c.inkMuted }} />
+                                <Chip 
+                                  label={post.category} size="small" 
+                                  sx={{ height: 18, fontSize: "0.6rem", bgcolor: alpha(catColor, 0.1), color: catColor }} 
+                                />
+                              </>
+                            )}
+                            {post.isSolved && (
+                              <Chip 
+                                label="Solved" size="small" 
+                                sx={{ height: 18, fontSize: "0.6rem", bgcolor: alpha(c.green, 0.1), color: c.green }} 
+                              />
+                            )}
                           </Box>
                         </Box>
                       </Box>
                       
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {post.category && (
-                          <Chip
-                            label={post.category}
-                            size="small"
-                            sx={{
-                              borderRadius: 1,
-                              backgroundColor: alpha(getCategoryColor(post.category), 0.1),
-                              color: getCategoryColor(post.category),
-                              borderColor: alpha(getCategoryColor(post.category), 0.3),
-                            }}
-                          />
-                        )}
-                        {post.isSolved && (
-                          <Chip
-                            label="Solved"
-                            size="small"
-                            sx={{
-                              borderRadius: 1,
-                              backgroundColor: alpha('#34a853', 0.1),
-                              color: '#34a853',
-                              borderColor: alpha('#34a853', 0.3),
-                            }}
-                          />
-                        )}
-                      </Box>
+                      <IconButton 
+                        size="small" onClick={() => handleRemoveBookmark(post._id)}
+                        sx={{ color: c.inkMuted, "&:hover": { color: c.red, bgcolor: c.redSoft } }}
+                      >
+                        <Delete sx={{ fontSize: 18 }} />
+                      </IconButton>
                     </Box>
 
-                    {/* Title and Content */}
+                    {/* Title */}
                     <Typography 
-                      variant="h6" 
-                      fontWeight={600} 
-                      gutterBottom
-                      component={Link}
-                      href={`/community/post/${post._id}`}
-                      sx={{
-                        color: darkMode ? '#e8eaed' : '#202124',
-                        textDecoration: 'none',
-                        '&:hover': {
-                          color: '#4285f4',
-                        },
-                        display: 'block',
+                      component={Link} href={`/community/post/${post._id}`}
+                      sx={{ 
+                        fontWeight: 700, fontSize: "1.1rem", color: c.ink, mb: 1,
+                        display: "block", textDecoration: "none",
+                        "&:hover": { color: c.blue }
                       }}
                     >
                       {post.title}
                     </Typography>
 
-                    <Typography 
-                      variant="body2" 
-                      sx={{
-                        mb: 2,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        lineHeight: 1.6,
-                        color: darkMode ? '#9aa0a6' : '#5f6368',
-                      }}
-                    >
-                      {post.excerpt || post.content?.substring(0, 300)}
-                      {post.content && post.content.length > 300 && '...'}
+                    {/* Content Preview */}
+                    <Typography sx={{ 
+                      fontSize: "0.85rem", color: c.inkSub, lineHeight: 1.5,
+                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                      overflow: "hidden", mb: 1.5
+                    }}>
+                      {post.excerpt || post.content?.substring(0, 200)}...
                     </Typography>
 
                     {/* Tags */}
-                    {post.tags && post.tags.length > 0 && (
-                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
-                        {post.tags.slice(0, 3).map((tag, index) => (
-                          <Chip
-                            key={index}
-                            label={tag}
-                            size="small"
-                            variant="outlined"
-                            sx={{ 
-                              fontSize: '0.7rem', 
-                              borderRadius: 1,
-                              borderColor: darkMode ? '#3c4043' : '#dadce0',
-                              color: darkMode ? '#9aa0a6' : '#5f6368',
-                            }}
-                          />
+                    {post.tags?.length > 0 && (
+                      <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 1.5 }}>
+                        {post.tags.slice(0, 3).map((tag, i) => (
+                          <Chip key={i} label={`#${tag}`} size="small" variant="outlined"
+                            sx={{ height: 22, fontSize: "0.65rem", borderColor: c.border, color: c.inkMuted }} />
                         ))}
                         {post.tags.length > 3 && (
-                          <Chip
-                            label={`+${post.tags.length - 3}`}
-                            size="small"
-                            sx={{ 
-                              fontSize: '0.7rem',
-                              borderRadius: 1,
-                              backgroundColor: alpha('#4285f4', 0.1),
-                              color: '#4285f4',
-                            }}
-                          />
+                          <Chip label={`+${post.tags.length - 3}`} size="small"
+                            sx={{ height: 22, fontSize: "0.65rem", bgcolor: c.blueSoft, color: c.blue }} />
                         )}
                       </Box>
                     )}
 
-                    {/* Stats and Actions */}
+                    {/* Stats */}
                     <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between',
-                      pt: 2,
-                      borderTop: '1px solid',
-                      borderColor: darkMode ? '#3c4043' : '#dadce0',
+                      display: "flex", alignItems: "center", gap: 2, pt: 1,
+                      borderTop: `1px solid ${c.border}`
                     }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <FavoriteIcon fontSize="small" sx={{ color: '#ea4335' }} />
-                          <Typography variant="body2" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                            {post.likeCount || 0}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <CommentIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
-                          <Typography variant="body2" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                            {post.commentCount || 0}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <BookmarkIcon fontSize="small" sx={{ color: '#4285f4' }} />
-                          <Typography variant="body2" fontWeight={500} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                            {post.bookmarkCount || 0}
-                          </Typography>
-                        </Box>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Favorite sx={{ fontSize: 14, color: c.red }} />
+                        <Typography sx={{ fontSize: "0.75rem", color: c.inkMuted }}>
+                          {post.likeCount || 0}
+                        </Typography>
                       </Box>
-
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveBookmark(post._id)}
-                          sx={{ 
-                            color: '#ea4335',
-                            '&:hover': {
-                              backgroundColor: alpha('#ea4335', darkMode ? 0.1 : 0.05),
-                            },
-                          }}
-                          title="Remove bookmark"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          component={Link}
-                          href={`/community/post/${post._id}`}
-                          sx={{
-                            color: '#4285f4',
-                            '&:hover': {
-                              backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                            },
-                          }}
-                          title="View post"
-                        >
-                          <LaunchIcon fontSize="small" />
-                        </IconButton>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <ChatBubbleOutline sx={{ fontSize: 14, color: c.inkMuted }} />
+                        <Typography sx={{ fontSize: "0.75rem", color: c.inkMuted }}>
+                          {post.commentCount || 0}
+                        </Typography>
                       </Box>
+                      <Box sx={{ flex: 1 }} />
+                      <Button 
+                        size="small" component={Link} href={`/community/post/${post._id}`}
+                        startIcon={<Launch sx={{ fontSize: 14 }} />}
+                        sx={{ color: c.blue, textTransform: "none", fontSize: "0.75rem" }}
+                      >
+                        Read More
+                      </Button>
                     </Box>
                   </CardContent>
-                </Card>
-              ))}
-            </Box>
-
-            {/* Empty state after clearing */}
-            {bookmarkedPosts.length === 0 && (
-              <Box sx={{ textAlign: 'center', py: 8 }}>
-                <BookmarkIcon sx={{ fontSize: 64, color: darkMode ? '#5f6368' : '#9aa0a6', mb: 2, opacity: 0.5 }} />
-                <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }} gutterBottom>
-                  All bookmarks cleared
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mb: 3 }}>
-                  Your bookmarks list is now empty
-                </Typography>
-                <Button
-                  variant="outlined"
-                  component={Link}
-                  href="/community"
-                  sx={{
-                    borderColor: darkMode ? '#3c4043' : '#dadce0',
-                    color: darkMode ? '#e8eaed' : '#202124',
-                    '&:hover': {
-                      borderColor: '#4285f4',
-                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                    },
-                  }}
-                >
-                  Browse Community
-                </Button>
-              </Box>
-            )}
-
-            {/* Load More (if paginated) */}
-            {bookmarkedPosts.length > 0 && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                <Button
-                  variant="outlined"
-                  onClick={loadBookmarks}
-                  disabled={loading}
-                  sx={{ 
-                    borderRadius: 2, 
-                    px: 4,
-                    borderColor: darkMode ? '#3c4043' : '#dadce0',
-                    color: darkMode ? '#e8eaed' : '#202124',
-                    '&:hover': {
-                      borderColor: '#4285f4',
-                      backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                    },
-                  }}
-                >
-                  {loading ? 'Loading...' : 'Refresh Bookmarks'}
-                </Button>
-              </Box>
-            )}
-          </Box>
+                </Paper>
+              );
+            })}
+          </Stack>
         )}
 
-        {/* Tips Section - Replaced Grid with flexbox */}
-        {!loading && !localLoading && bookmarkedPosts.length > 0 && (
-          <Paper sx={{ 
-            p: 3, 
-            mt: 4, 
-            borderRadius: 3,
-            bgcolor: darkMode ? '#303134' : '#f8f9fa',
-            border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-              <BookmarkIcon sx={{ color: '#4285f4' }} />
-              <Typography variant="h6" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                Tips for Managing Bookmarks
-              </Typography>
-            </Box>
-            <Divider sx={{ my: 2, borderColor: darkMode ? '#3c4043' : '#dadce0' }} />
-            <Box sx={{ 
-              display: 'flex', 
-              flexWrap: 'wrap',
-              gap: 3,
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ flex: '1 1 250px', minWidth: 250 }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  📌 Organize by Category
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                  Bookmark posts by categories like "Tutorials", "Questions", or "Inspiration" for easy reference.
-                </Typography>
-              </Box>
-              <Box sx={{ flex: '1 1 250px', minWidth: 250 }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  🔄 Review Regularly
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                  Periodically review your bookmarks and remove posts you no longer need to keep your list relevant.
-                </Typography>
-              </Box>
-              <Box sx={{ flex: '1 1 250px', minWidth: 250 }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                  💬 Engage with Bookmarks
-                </Typography>
-                <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                  Revisit bookmarked posts to add comments, ask follow-up questions, or share with others.
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
+        {/* Refresh Button */}
+        {!localLoading && totalBookmarks > 0 && (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+            <Button 
+              onClick={loadBookmarks} disabled={loading}
+              sx={{ color: c.blue, textTransform: "none", "&:hover": { bgcolor: c.blueSoft } }}
+            >
+              {loading ? <CircularProgress size={20} sx={{ color: c.blue }} /> : "Refresh"}
+            </Button>
+          </Box>
         )}
       </Container>
     </Box>

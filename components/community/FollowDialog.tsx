@@ -18,7 +18,6 @@ import {
   InputAdornment,
   IconButton,
   Divider,
-  Alert,
   Badge,
   alpha,
 } from "@mui/material";
@@ -27,11 +26,31 @@ import {
   Close as CloseIcon,
   Person as PersonIcon,
   CheckCircle as VerifiedIcon,
-  Business as BusinessIcon,
   Message as MessageIcon,
+  People as PeopleIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@mui/material/styles";
+
+// Theme colors (matching Facebook-style)
+const useColors = () => {
+  const theme = useTheme();
+  const dark = theme.palette.mode === "dark";
+  return {
+    dark,
+    bg: dark ? "#18191a" : "#f0f2f5",
+    surface: dark ? "#242526" : "#ffffff",
+    surface2: dark ? "#3a3b3c" : "#f0f2f5",
+    border: dark ? "#3e4042" : "#e4e6ea",
+    ink: dark ? "#e4e6eb" : "#050505",
+    inkSub: dark ? "#b0b3b8" : "#65676b",
+    inkMuted: dark ? "#6a6d73" : "#8a8d91",
+    blue: "#1877f2",
+    blueSoft: dark ? "rgba(24,119,242,0.15)" : "rgba(24,119,242,0.08)",
+    green: dark ? "#45bd62" : "#31a24c",
+    red: dark ? "#f28b82" : "#e41e3f",
+  };
+};
 
 interface User {
   _id: string;
@@ -40,22 +59,13 @@ interface User {
   bio?: string;
   isVerified?: boolean;
   expertInCategories?: string[];
-  badges?: string[];
   communityStats: {
     totalPosts: number;
     followerCount: number;
-    followingCount: number;
   };
   userId: {
     _id: string;
     name: string;
-    email: string;
-    role: string;
-    shopName?: string;
-    subscription?: {
-      plan: string;
-      status: string;
-    };
   };
   isFollowing?: boolean;
 }
@@ -69,14 +79,31 @@ interface FollowDialogProps {
 }
 
 const formatNumber = (num: number): string => {
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + "M";
-  }
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + "K";
-  }
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
   return num.toString();
 };
+
+// Avatar with deterministic color
+const AVATAR_COLORS = ["#1877f2", "#e91e63", "#9c27b0", "#ff9800", "#4caf50", "#00bcd4", "#ff5722", "#607d8b"];
+function avatarColor(name: string) {
+  return AVATAR_COLORS[(name || "U").charCodeAt(0) % AVATAR_COLORS.length];
+}
+
+function UserAvatar({ name, src, size = 56 }: { name?: string; src?: string; size?: number }) {
+  const c = useColors();
+  const initials = (name || "U").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  return (
+    <Avatar src={src || undefined}
+      sx={{
+        width: size, height: size, bgcolor: avatarColor(name || "U"),
+        fontSize: size * 0.38, fontWeight: 700,
+        border: `2px solid ${c.surface}`,
+      }}>
+      {!src && initials}
+    </Avatar>
+  );
+}
 
 export default function FollowDialog({
   open,
@@ -86,205 +113,63 @@ export default function FollowDialog({
   title = "Connections",
 }: FollowDialogProps) {
   const router = useRouter();
-  const theme = useTheme();
-  const darkMode = theme.palette.mode === 'dark';
+  const c = useColors();
   
   const [activeTab, setActiveTab] = useState(type === "followers" ? 0 : 1);
   const [followers, setFollowers] = useState<User[]>([]);
   const [following, setFollowing] = useState<User[]>([]);
-  const [loading, setLoading] = useState({
-    followers: false,
-    following: false,
-  });
-  const [followLoading, setFollowLoading] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [loading, setLoading] = useState(false);
+  const [followLoading, setFollowLoading] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
-  const [stats, setStats] = useState({
-    followerCount: 0,
-    followingCount: 0,
-  });
+  const [stats, setStats] = useState({ followerCount: 0, followingCount: 0 });
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const getCurrentUser = async () => {
       try {
-        const response = await fetch("/api/community/profile", {
-          credentials: "include",
-        });
+        const response = await fetch("/api/community/profile", { credentials: "include" });
         if (response.ok) {
           const data = await response.json();
-          if (data.success) {
-            setCurrentUserId(data.data.userId?._id || data.data.userId);
-          }
+          if (data.success) setCurrentUserId(data.data.userId?._id || data.data.userId);
         }
-      } catch (error) {
-        console.error("Failed to get current user:", error);
-      }
+      } catch (error) { console.error(error); }
     };
-
-    if (open) {
-      getCurrentUser();
-    }
+    if (open) getCurrentUser();
   }, [open]);
 
-  const fetchFollowers = async () => {
-    setLoading((prev) => ({ ...prev, followers: true }));
+  const fetchData = async () => {
+    setLoading(true);
     setError(null);
-
     try {
+      const isFollowers = activeTab === 0;
       const response = await fetch(
-        `/api/community/profile/${profileId}/connections?type=followers&limit=100`,
-        { credentials: "include" },
+        `/api/community/profile/${profileId}/connections?type=${isFollowers ? "followers" : "following"}&limit=100`,
+        { credentials: "include" }
       );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const users = data.data?.users || [];
-          setFollowers(users);
-          setStats((prev) => ({
-            ...prev,
-            followerCount:
-              data.data?.profile?.followerCount ||
-              data.data?.pagination?.total ||
-              users.length,
-          }));
-        } else {
-          setError(data.message || "Failed to fetch followers");
-        }
-      }
-    } catch (error: any) {
-      console.error("Error fetching followers:", error);
-      setError(error.message || "Failed to fetch followers");
-    } finally {
-      setLoading((prev) => ({ ...prev, followers: false }));
-    }
-  };
-
-  const fetchFollowing = async () => {
-    setLoading((prev) => ({ ...prev, following: true }));
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `/api/community/profile/${profileId}/connections?type=following&limit=100`,
-        { credentials: "include" },
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const users = data.data?.users || [];
-          setFollowing(users);
-          setStats((prev) => ({
-            ...prev,
-            followingCount:
-              data.data?.profile?.followingCount ||
-              data.data?.pagination?.total ||
-              users.length,
-          }));
-        } else {
-          setError(data.message || "Failed to fetch following");
-        }
-      }
-    } catch (error: any) {
-      console.error("Error fetching following:", error);
-      setError(error.message || "Failed to fetch following");
-    } finally {
-      setLoading((prev) => ({ ...prev, following: false }));
-    }
-  };
-
-  const handleFollowToggle = async (
-    user: User,
-    isCurrentlyFollowing: boolean,
-  ) => {
-    setFollowLoading((prev) => ({ ...prev, [user._id]: true }));
-
-    try {
-      const method = isCurrentlyFollowing ? "DELETE" : "POST";
-      const url = `/api/community/profile/${encodeURIComponent(user.username)}/follow`;
-
-      const response = await fetch(url, {
-        method,
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        let errorMessage = `HTTP error! status: ${response.status}`;
-
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          try {
-            const errorText = await response.text();
-            if (errorText) errorMessage = `${errorMessage}: ${errorText}`;
-          } catch {
-          }
-        }
-
-        throw new Error(errorMessage);
-      }
-
       const data = await response.json();
-
       if (data.success) {
-        const updateUserInList = (
-          users: User[],
-          userId: string,
-          isFollowing: boolean,
-        ) =>
-          users.map((u) => {
-            if (u._id === userId) {
-              return {
-                ...u,
-                isFollowing,
-                communityStats: {
-                  ...u.communityStats,
-                  followerCount: isFollowing
-                    ? (u.communityStats.followerCount || 0) + 1
-                    : Math.max(0, (u.communityStats.followerCount || 0) - 1),
-                },
-              };
-            }
-            return u;
-          });
-
+        const users = data.data?.users || [];
         if (activeTab === 0) {
-          setFollowers((prev) =>
-            updateUserInList(prev, user._id, !isCurrentlyFollowing),
-          );
+          setFollowers(users);
+          setStats(prev => ({ ...prev, followerCount: data.data?.profile?.followerCount || users.length }));
         } else {
-          setFollowing((prev) =>
-            updateUserInList(prev, user._id, !isCurrentlyFollowing),
-          );
+          setFollowing(users);
+          setStats(prev => ({ ...prev, followingCount: data.data?.profile?.followingCount || users.length }));
         }
-
-        console.log(`Successfully ${isCurrentlyFollowing ? 'unfollowed' : 'followed'} ${user.username}`);
       } else {
-        throw new Error(data.message || "Failed to follow/unfollow");
+        setError(data.message || "Failed to fetch data");
       }
-    } catch (error) {
-      console.error("Failed to toggle follow:", error);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch data");
     } finally {
-      setFollowLoading((prev) => ({ ...prev, [user._id]: false }));
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (open) {
-      if (activeTab === 0) {
-        fetchFollowers();
-      } else {
-        fetchFollowing();
-      }
-    } else {
+    if (open) fetchData();
+    else {
       setFollowers([]);
       setFollowing([]);
       setSearchQuery("");
@@ -292,190 +177,95 @@ export default function FollowDialog({
     }
   }, [open, activeTab]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+  const handleFollowToggle = async (user: User, isCurrentlyFollowing: boolean) => {
+    setFollowLoading(prev => ({ ...prev, [user._id]: true }));
+    try {
+      const response = await fetch(`/api/community/profile/${encodeURIComponent(user.username)}/follow`, {
+        method: isCurrentlyFollowing ? "DELETE" : "POST",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (data.success) {
+        const updateList = (users: User[]) =>
+          users.map(u => u._id === user._id ? { ...u, isFollowing: !isCurrentlyFollowing } : u);
+        if (activeTab === 0) setFollowers(updateList);
+        else setFollowing(updateList);
+      }
+    } catch (error) { console.error(error); }
+    finally { setFollowLoading(prev => ({ ...prev, [user._id]: false })); }
   };
 
-  const handleViewProfile = (username: string) => {
-    onClose();
-    router.push(`/community/profile/${username}`);
-  };
-
-  const handleMessage = (userId: string) => {
-    onClose();
-    router.push(`/messages?userId=${userId}`);
-  };
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => setActiveTab(newValue);
+  const handleViewProfile = (username: string) => { onClose(); router.push(`/community/profile/${username}`); };
 
   const filterUsers = (users: User[]) => {
     if (!searchQuery.trim()) return users;
-
     const query = searchQuery.toLowerCase();
-    return users.filter(
-      (user) =>
-        (user.username && user.username.toLowerCase().includes(query)) ||
-        (user.userId?.name && user.userId.name.toLowerCase().includes(query)) ||
-        (user.userId?.email &&
-          user.userId.email.toLowerCase().includes(query)) ||
-        (user.bio && user.bio.toLowerCase().includes(query)),
-    );
+    return users.filter(u => u.username?.toLowerCase().includes(query) || u.userId?.name?.toLowerCase().includes(query));
   };
 
   const currentUsers = activeTab === 0 ? followers : following;
   const filteredUsers = filterUsers(currentUsers);
-
-  const isCurrentUser = (userId: string) => {
-    if (!currentUserId) return false;
-    return (
-      userId === currentUserId ||
-      currentUsers.find((u) => u._id === userId)?.userId?._id === currentUserId
-    );
-  };
+  const isCurrentUser = (userId: string) => currentUserId === userId;
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 2,
-          maxHeight: "85vh",
-          minHeight: "400px",
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          border: `1px solid ${darkMode ? '#3c4043' : '#dadce0'}`,
+          borderRadius: "16px",
+          maxHeight: "80vh",
+          bgcolor: c.surface,
+          border: `1px solid ${c.border}`,
+          overflow: "hidden",
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          py: 2,
-          px: 3,
-          borderBottom: 1,
-          borderColor: darkMode ? '#3c4043' : '#dadce0',
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          position: "sticky",
-          top: 0,
-          zIndex: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="h6" component="span" fontWeight={600} sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-            {title}
-          </Typography>
-        </Box>
-        <IconButton
-          onClick={onClose}
-          size="small"
-          sx={{
-            color: darkMode ? '#9aa0a6' : '#5f6368',
-            '&:hover': {
-              bgcolor: darkMode ? '#303134' : '#f8f9fa',
-            },
-          }}
-        >
+      {/* Header */}
+      <DialogTitle sx={{ 
+        p: 2, 
+        borderBottom: `1px solid ${c.border}`,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}>
+        <Typography sx={{ fontWeight: 600, fontSize: "1rem", color: c.ink }}>
+          {title}
+        </Typography>
+        <IconButton onClick={onClose} size="small" sx={{ color: c.inkMuted }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
-      <Box
-        sx={{
-          borderBottom: 1,
-          borderColor: darkMode ? '#3c4043' : '#dadce0',
-          px: 3,
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          position: "sticky",
-          top: 64,
-          zIndex: 1,
-        }}
-      >
+      {/* Tabs */}
+      <Box sx={{ px: 2, borderBottom: `1px solid ${c.border}` }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
           variant="fullWidth"
           sx={{
-            '& .MuiTab-root': {
-              py: 1.5,
-              minHeight: "48px",
+            minHeight: "44px",
+            "& .MuiTab-root": {
               textTransform: "none",
-              fontSize: "0.95rem",
-              color: darkMode ? '#9aa0a6' : '#5f6368',
-              '&.Mui-selected': {
-                color: '#4285f4',
-                fontWeight: 600,
-              },
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              minHeight: "44px",
+              color: c.inkSub,
+              "&.Mui-selected": { color: c.blue },
             },
-            '& .MuiTabs-indicator': {
-              backgroundColor: '#4285f4',
-            },
+            "& .MuiTabs-indicator": { bgcolor: c.blue },
           }}
         >
-          <Tab
-            label={
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography variant="body2" fontWeight={500}>
-                  Followers
-                </Typography>
-                {stats.followerCount > 0 && (
-                  <Badge
-                    badgeContent={formatNumber(stats.followerCount)}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        fontSize: "0.65rem",
-                        height: "18px",
-                        minWidth: "18px",
-                        borderRadius: "9px",
-                        backgroundColor: '#4285f4',
-                        color: 'white',
-                      },
-                    }}
-                  />
-                )}
-              </Box>
-            }
-          />
-          <Tab
-            label={
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography variant="body2" fontWeight={500}>
-                  Following
-                </Typography>
-                {stats.followingCount > 0 && (
-                  <Badge
-                    badgeContent={formatNumber(stats.followingCount)}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        fontSize: "0.65rem",
-                        height: "18px",
-                        minWidth: "18px",
-                        borderRadius: "9px",
-                        backgroundColor: '#4285f4',
-                        color: 'white',
-                      },
-                    }}
-                  />
-                )}
-              </Box>
-            }
-          />
+          <Tab label={`Followers ${stats.followerCount > 0 ? `(${formatNumber(stats.followerCount)})` : ""}`} />
+          <Tab label={`Following ${stats.followingCount > 0 ? `(${formatNumber(stats.followingCount)})` : ""}`} />
         </Tabs>
       </Box>
 
-      <Box
-        sx={{
-          px: 3,
-          py: 2,
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          position: "sticky",
-          top: 112,
-          zIndex: 1,
-          borderBottom: 1,
-          borderColor: darkMode ? '#3c4043' : '#dadce0',
-        }}
-      >
+      {/* Search */}
+      <Box sx={{ p: 2, borderBottom: `1px solid ${c.border}` }}>
         <TextField
           fullWidth
           size="small"
@@ -485,360 +275,123 @@ export default function FollowDialog({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon fontSize="small" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }} />
+                <SearchIcon sx={{ fontSize: 18, color: c.inkMuted }} />
               </InputAdornment>
             ),
-            sx: { color: darkMode ? '#e8eaed' : '#202124' }
           }}
           sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
-              bgcolor: darkMode ? '#303134' : '#f8f9fa',
-              '& fieldset': {
-                borderColor: darkMode ? '#3c4043' : '#dadce0',
-              },
-              '&:hover fieldset': {
-                borderColor: '#4285f4',
-              },
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "40px",
+              bgcolor: c.surface2,
+              "& fieldset": { borderColor: "transparent" },
+              "&:hover fieldset": { borderColor: c.border },
+              "&.Mui-focused fieldset": { borderColor: c.blue },
             },
+            "& .MuiInputBase-input": { fontSize: "0.85rem", py: 1, color: c.ink },
           }}
         />
       </Box>
 
-      {error && (
-        <Box sx={{ px: 3, py: 2 }}>
-          <Alert
-            severity="error"
-            onClose={() => setError(null)}
-            sx={{ 
-              borderRadius: 2,
-              bgcolor: darkMode ? '#3c1e1e' : '#fdecea',
-            }}
-          >
-            {error}
-          </Alert>
-        </Box>
-      )}
-
-      <DialogContent
-        sx={{
-          p: 0,
-          display: "flex",
-          flexDirection: "column",
-          minHeight: "300px",
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-        }}
-      >
-        {loading.followers && activeTab === 0 ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              flex: 1,
-              flexDirection: "column",
-              gap: 2,
-            }}
-          >
-            <CircularProgress sx={{ color: '#4285f4' }} />
-            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-              Loading followers...
-            </Typography>
+      {/* Content */}
+      <DialogContent sx={{ p: 0, flex: 1, overflow: "auto" }}>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+            <CircularProgress size={32} sx={{ color: c.blue }} />
           </Box>
-        ) : loading.following && activeTab === 1 ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              flex: 1,
-              flexDirection: "column",
-              gap: 2,
-            }}
-          >
-            <CircularProgress sx={{ color: '#4285f4' }} />
-            <Typography variant="body2" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-              Loading following...
-            </Typography>
+        ) : error ? (
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography sx={{ color: c.red, fontSize: "0.85rem" }}>{error}</Typography>
           </Box>
         ) : filteredUsers.length === 0 ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              flex: 1,
-              textAlign: "center",
-              p: 4,
-            }}
-          >
-            <Box>
-              <PersonIcon
-                sx={{
-                  fontSize: 64,
-                  color: darkMode ? '#9aa0a6' : '#5f6368',
-                  opacity: 0.3,
-                  mb: 2,
-                }}
-              />
-              <Typography variant="h6" sx={{ color: darkMode ? '#e8eaed' : '#202124' }} gutterBottom>
-                {searchQuery.trim()
-                  ? "No users found"
-                  : `No ${activeTab === 0 ? "followers" : "following"} yet`}
-              </Typography>
-              {!searchQuery.trim() && (
-                <Typography
-                  variant="body2"
-                  sx={{ color: darkMode ? '#9aa0a6' : '#5f6368', mt: 1 }}
-                >
-                  {activeTab === 0
-                    ? "When someone follows this user, they'll appear here."
-                    : "When this user follows someone, they'll appear here."}
-                </Typography>
-              )}
-            </Box>
+          <Box sx={{ py: 6, textAlign: "center" }}>
+            <PeopleIcon sx={{ fontSize: 48, color: c.inkMuted, mb: 1, opacity: 0.5 }} />
+            <Typography sx={{ color: c.inkSub, fontSize: "0.85rem" }}>
+              {searchQuery ? "No users found" : `No ${activeTab === 0 ? "followers" : "following"} yet`}
+            </Typography>
           </Box>
         ) : (
-          <Box sx={{ overflow: "auto", flex: 1 }}>
-            {filteredUsers.map((user, index) => (
-              <React.Fragment key={user._id || index}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    p: 2,
-                    gap: 2,
-                    transition: "all 0.2s",
-                    '&:hover': {
-                      backgroundColor: darkMode ? '#303134' : '#f8f9fa',
-                    },
-                    cursor: "pointer",
-                  }}
-                  onClick={() => handleViewProfile(user.username)}
-                >
-                  <Box sx={{ flexShrink: 0 }}>
-                    <Avatar
-                      src={user.avatar}
-                      sx={{
-                        width: 56,
-                        height: 56,
-                        border: "2px solid",
-                        borderColor: darkMode ? '#202124' : '#ffffff',
-                        boxShadow: 1,
-                      }}
-                    >
-                      {user.userId?.name?.charAt(0)?.toUpperCase() ||
-                        user.username?.charAt(0)?.toUpperCase() ||
-                        "U"}
-                    </Avatar>
-                  </Box>
-
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        mb: 0.5,
-                      }}
-                    >
-                      <Typography variant="subtitle2" fontWeight={600} noWrap sx={{ color: darkMode ? '#e8eaed' : '#202124' }}>
-                        {user.userId?.name || user.username || "Unknown User"}
-                      </Typography>
-                      {user.isVerified && (
-                        <VerifiedIcon
-                          fontSize="small"
-                          sx={{ flexShrink: 0, color: '#4285f4' }}
-                        />
-                      )}
-                    </Box>
-
-                    <Typography
-                      variant="caption"
-                      noWrap
-                      sx={{ display: "block", mb: 0.5, color: darkMode ? '#9aa0a6' : '#5f6368' }}
-                    >
-                      @{user.username || "unknown"}
+          filteredUsers.map((user, idx) => (
+            <React.Fragment key={user._id}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  p: 2,
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                  "&:hover": { bgcolor: c.surface2 },
+                }}
+                onClick={() => handleViewProfile(user.username)}
+              >
+                <UserAvatar name={user.userId?.name || user.username} src={user.avatar} size={48} />
+                
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: "0.85rem", color: c.ink }}>
+                      {user.userId?.name || user.username}
                     </Typography>
-
-                    {user.bio && (
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          lineHeight: 1.4,
-                          fontSize: "0.85rem",
-                          color: darkMode ? '#9aa0a6' : '#5f6368',
-                        }}
-                      >
-                        {user.bio}
-                      </Typography>
-                    )}
-
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 2,
-                        mt: 1,
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                        <strong>
-                          {formatNumber(
-                            user.communityStats?.followerCount || 0,
-                          )}
-                        </strong>{" "}
-                        followers
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-                        <strong>
-                          {formatNumber(user.communityStats?.totalPosts || 0)}
-                        </strong>{" "}
-                        posts
-                      </Typography>
-                    </Box>
-
-                    {user.expertInCategories &&
-                      user.expertInCategories.length > 0 && (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 0.5,
-                            mt: 1,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          {user.expertInCategories
-                            .slice(0, 2)
-                            .map((category, idx) => (
-                              <Chip
-                                key={idx}
-                                label={category}
-                                size="small"
-                                sx={{
-                                  height: "22px",
-                                  fontSize: "0.65rem",
-                                  bgcolor: darkMode ? '#303134' : '#f1f3f4',
-                                  color: darkMode ? '#8ab4f8' : '#4285f4',
-                                  borderColor: darkMode ? '#5f6368' : '#dadce0',
-                                }}
-                                variant="outlined"
-                              />
-                            ))}
-                        </Box>
-                      )}
+                    {user.isVerified && <VerifiedIcon sx={{ fontSize: 14, color: c.blue }} />}
                   </Box>
-
-                  <Box
-                    sx={{
-                      flexShrink: 0,
-                      display: "flex",
-                      gap: 1,
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {!isCurrentUser(user.userId?._id || user._id) && (
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          handleMessage(user.userId?._id || user._id)
-                        }
-                        sx={{
-                          border: 1,
-                          borderColor: darkMode ? '#5f6368' : '#dadce0',
-                          borderRadius: 1,
-                          p: 0.75,
-                          color: darkMode ? '#e8eaed' : '#202124',
-                          '&:hover': {
-                            backgroundColor: darkMode ? '#3c4043' : '#f1f3f4',
-                          },
-                        }}
-                      >
-                        <MessageIcon fontSize="small" />
-                      </IconButton>
-                    )}
-
-                    {!isCurrentUser(user.userId?._id || user._id) && (
-                      <Button
-                        size="small"
-                        variant={user.isFollowing ? "outlined" : "contained"}
-                        sx={{
-                          minWidth: "100px",
-                          borderRadius: 1.5,
-                          textTransform: "none",
-                          fontWeight: 500,
-                          ...(user.isFollowing ? {
-                            borderColor: darkMode ? '#5f6368' : '#dadce0',
-                            color: darkMode ? '#e8eaed' : '#202124',
-                            '&:hover': {
-                              borderColor: '#4285f4',
-                              backgroundColor: alpha('#4285f4', darkMode ? 0.1 : 0.05),
-                            },
-                          } : {
-                            backgroundColor: '#4285f4',
-                            '&:hover': {
-                              backgroundColor: '#3367d6',
-                            },
-                          }),
-                        }}
-                        onClick={() =>
-                          handleFollowToggle(user, !!user.isFollowing)
-                        }
-                        disabled={followLoading[user._id]}
-                        startIcon={
-                          followLoading[user._id] ? (
-                            <CircularProgress size={16} sx={{ color: user.isFollowing ? '#4285f4' : 'white' }} />
-                          ) : undefined
-                        }
-                      >
-                        {followLoading[user._id]
-                          ? "..."
-                          : user.isFollowing
-                            ? "Following"
-                            : "Follow"}
-                      </Button>
-                    )}
+                  <Typography sx={{ fontSize: "0.7rem", color: c.inkMuted }}>@{user.username}</Typography>
+                  {user.bio && (
+                    <Typography sx={{ fontSize: "0.75rem", color: c.inkSub, mt: 0.5, display: "-webkit-box", WebkitLineClamp: 1, overflow: "hidden" }}>
+                      {user.bio}
+                    </Typography>
+                  )}
+                  <Box sx={{ display: "flex", gap: 2, mt: 0.5 }}>
+                    <Typography sx={{ fontSize: "0.65rem", color: c.inkMuted }}>
+                      {formatNumber(user.communityStats?.followerCount || 0)} followers
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.65rem", color: c.inkMuted }}>
+                      {formatNumber(user.communityStats?.totalPosts || 0)} posts
+                    </Typography>
                   </Box>
                 </Box>
 
-                {index < filteredUsers.length - 1 && (
-                  <Divider sx={{ 
-                    mx: 2,
-                    borderColor: darkMode ? '#3c4043' : '#dadce0',
-                  }} />
+                {!isCurrentUser(user.userId?._id || user._id) && (
+                  <Button
+                    size="small"
+                    variant={user.isFollowing ? "outlined" : "contained"}
+                    onClick={(e) => { e.stopPropagation(); handleFollowToggle(user, !!user.isFollowing); }}
+                    disabled={followLoading[user._id]}
+                    sx={{
+                      minWidth: "90px",
+                      borderRadius: "20px",
+                      textTransform: "none",
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      ...(user.isFollowing ? {
+                        borderColor: c.border,
+                        color: c.ink,
+                        "&:hover": { borderColor: c.blue, bgcolor: c.blueSoft }
+                      } : {
+                        bgcolor: c.blue,
+                        "&:hover": { bgcolor: "#166fe5" }
+                      }),
+                    }}
+                  >
+                    {followLoading[user._id] ? <CircularProgress size={16} /> : (user.isFollowing ? "Following" : "Follow")}
+                  </Button>
                 )}
-              </React.Fragment>
-            ))}
-          </Box>
+              </Box>
+              {idx < filteredUsers.length - 1 && <Divider sx={{ borderColor: c.border }} />}
+            </React.Fragment>
+          ))
         )}
       </DialogContent>
 
-      <DialogActions
-        sx={{
-          px: 3,
-          py: 2,
-          borderTop: 1,
-          borderColor: darkMode ? '#3c4043' : '#dadce0',
-          bgcolor: darkMode ? '#202124' : '#ffffff',
-          justifyContent: "space-between",
-        }}
-      >
-        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-          Showing {filteredUsers.length} of{" "}
-          {formatNumber(
-            activeTab === 0 ? stats.followerCount : stats.followingCount,
-          )}{" "}
-          {activeTab === 0 ? "followers" : "following"}
+      {/* Footer */}
+      <DialogActions sx={{ 
+        p: 1.5, 
+        borderTop: `1px solid ${c.border}`,
+        justifyContent: "space-between",
+      }}>
+        <Typography variant="caption" sx={{ color: c.inkMuted }}>
+          {filteredUsers.length} {activeTab === 0 ? "followers" : "following"}
         </Typography>
-
-        <Typography variant="caption" sx={{ color: darkMode ? '#9aa0a6' : '#5f6368' }}>
-          Click on a user to view their profile
+        <Typography variant="caption" sx={{ color: c.inkMuted }}>
+          Click a user to view profile
         </Typography>
       </DialogActions>
     </Dialog>

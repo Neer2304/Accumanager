@@ -1,5 +1,6 @@
 // User Interface
 export interface UserType {
+  isVerified: import("react/jsx-runtime").JSX.Element;
   _id: string;
   name: string;
   avatar?: string;
@@ -153,6 +154,7 @@ export interface TopPostType {
 
 // Stats Interface
 export interface CommunityStats {
+  totalLikes: number;
   totalPosts: number;
   totalComments: number;
   totalUsers: number;

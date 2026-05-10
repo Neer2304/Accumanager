@@ -1,6 +1,8 @@
-// app/admin/page.tsx
-import AdminDashboardPage from "@/components/googleadmindashboard/AdminDashboardPage";
+// app/batman-admin/dashboard/page.tsx
+"use client";
 
-export default function Page() {
-  return <AdminDashboardPage />;
+import BatmanAdminDashboardPage from "@/components/batmanadmindashboard/BatmanAdminDashboardPage";
+
+export default function BatmanAdminDashboard() {
+  return <BatmanAdminDashboardPage />;
 }
